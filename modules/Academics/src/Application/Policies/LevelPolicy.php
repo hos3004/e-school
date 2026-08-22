@@ -15,28 +15,27 @@ final class LevelPolicy
 {
     public function viewAny($user): bool
     {
-        return $user->can('academics.levels.view_any');
+        return $user->can('program.manage');
     }
 
     public function view($user, Level $level): bool
     {
-        return $user->can('academics.levels.view_any')
-            || $user->can('academics.levels.view');
+        return $user->can('program.manage');
     }
 
     public function create($user): bool
     {
-        return $user->can('academics.levels.create');
+        return $user->can('program.manage');
     }
 
     public function update($user, Level $level): bool
     {
-        return $user->can('academics.levels.update');
+        return $user->can('program.manage');
     }
 
     /** إعادة ترتيب مستويات برنامج. */
     public function reorder($user): bool
     {
-        return $user->can('academics.levels.reorder');
+        return $user->can('program.manage');
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\AcademicReports\Presentation\Http\Controllers;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Modules\AcademicReports\Application\Actions\SubmitSessionReportAction;
@@ -20,7 +21,7 @@ final class SubmitSessionReportController extends Controller
         private readonly SubmitSessionReportAction $action,
     ) {}
 
-    public function __invoke(SubmitSessionReportRequest $request): SessionReportResource
+    public function __invoke(SubmitSessionReportRequest $request): JsonResponse
     {
         $validated = $request->validated();
 

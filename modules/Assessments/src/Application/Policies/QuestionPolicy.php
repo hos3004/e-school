@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Assessments\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Assessments\Domain\Models\Question;
 
 /**
@@ -11,31 +13,31 @@ use Modules\Assessments\Domain\Models\Question;
  */
 final class QuestionPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('assessments.question.view_any');
     }
 
-    public function view($user, Question $question): bool
+    public function view(Authenticatable&Authorizable $user, Question $question): bool
     {
         return $user->can('assessments.question.view')
-            && $question->assessment?->organization_id === $user->organization_id;
+            && $question->assessment?->organization_id === data_get($user, 'organization_id');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('assessments.question.create');
     }
 
-    public function update($user, Question $question): bool
+    public function update(Authenticatable&Authorizable $user, Question $question): bool
     {
         return $user->can('assessments.question.update')
-            && $question->assessment?->organization_id === $user->organization_id;
+            && $question->assessment?->organization_id === data_get($user, 'organization_id');
     }
 
-    public function delete($user, Question $question): bool
+    public function delete(Authenticatable&Authorizable $user, Question $question): bool
     {
         return $user->can('assessments.question.delete')
-            && $question->assessment?->organization_id === $user->organization_id;
+            && $question->assessment?->organization_id === data_get($user, 'organization_id');
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Payroll\Application\Policies;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Payroll\Domain\Models\PayrollAdjustment;
 
 /**
@@ -14,35 +15,35 @@ use Modules\Payroll\Domain\Models\PayrollAdjustment;
  */
 final class PayrollAdjustmentPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable $user): bool
     {
         return $user->can('payroll.adjustments.view_any');
     }
 
-    public function view($user, PayrollAdjustment $adjustment): bool
+    public function view(Authenticatable $user, PayrollAdjustment $adjustment): bool
     {
         return $user->can('payroll.adjustments.view_any')
             || $user->can('payroll.adjustments.view')
             || (string) $adjustment->proposed_by === (string) $user->getAuthIdentifier();
     }
 
-    public function create($user): bool
+    public function create(Authenticatable $user): bool
     {
         return $user->can((string) config('payroll.adjustments.propose_permission'));
     }
 
     /** التسوية المقترحة قيد معلّق لا يُعدَّل — تُرفض وتُقترح بديلة. */
-    public function update($user, PayrollAdjustment $adjustment): bool
+    public function update(Authenticatable $user, PayrollAdjustment $adjustment): bool
     {
         return false;
     }
 
-    public function delete($user, PayrollAdjustment $adjustment): bool
+    public function delete(Authenticatable $user, PayrollAdjustment $adjustment): bool
     {
         return false;
     }
 
-    public function approve($user, PayrollAdjustment $adjustment): bool
+    public function approve(Authenticatable $user, PayrollAdjustment $adjustment): bool
     {
         return $user->can((string) config('payroll.adjustments.approve_permission'))
             && $adjustment->approved_at === null
@@ -50,7 +51,7 @@ final class PayrollAdjustmentPolicy
             && (string) $adjustment->proposed_by !== (string) $user->getAuthIdentifier();
     }
 
-    public function reject($user, PayrollAdjustment $adjustment): bool
+    public function reject(Authenticatable $user, PayrollAdjustment $adjustment): bool
     {
         return $this->approve($user, $adjustment);
     }

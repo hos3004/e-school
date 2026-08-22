@@ -6,9 +6,28 @@ namespace Modules\Payroll\Domain\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $organization_id
+ * @property string $staff_profile_id
+ * @property string $payroll_period_id
+ * @property string $obligation_type
+ * @property int $amount
+ * @property string $currency
+ * @property int $target_teaching
+ * @property int $achieved_teaching
+ * @property int $target_admin
+ * @property int $achieved_admin
+ * @property int $target_training
+ * @property int $achieved_training
+ * @property string $status
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 final class StaffObligation extends Model
 {
     use HasModuleFactory;
@@ -46,11 +65,19 @@ final class StaffObligation extends Model
         ];
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForStaff(Builder $query, string $staffProfileId): Builder
     {
         return $query->where('staff_profile_id', $staffProfileId);

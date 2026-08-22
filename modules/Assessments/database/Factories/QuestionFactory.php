@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Assessments\Database\Factories;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Assessments\Domain\Enums\QuestionType;
 use Modules\Assessments\Domain\Models\Question;
@@ -31,6 +32,7 @@ final class QuestionFactory extends Factory
             'correct_answer' => ['key' => 'a'],
             'score' => 10,
             'sort_order' => $this->faker->numberBetween(1, 20),
+            'created_at' => CarbonImmutable::now('UTC'),
         ];
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Reporting\Presentation\Filament\Resources;
 
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
@@ -13,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Modules\Reporting\Domain\Enums\SnapshotType;
 use Modules\Reporting\Domain\Models\OrganizationSnapshot;
 
@@ -25,9 +27,12 @@ final class OrganizationSnapshotResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التقارير';
-
     protected static ?int $navigationSort = 90;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('reporting::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {
@@ -44,7 +49,7 @@ final class OrganizationSnapshotResource extends Resource
         return false;
     }
 
-    public static function canEdit($record): bool
+    public static function canEdit(Model $record): bool
     {
         return false; // اللقطات append/upsert عبر الإجراء — لا تعديل يدوي.
     }

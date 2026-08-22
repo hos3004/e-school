@@ -6,6 +6,7 @@ namespace Modules\Payroll\Presentation\Http\Controllers;
 
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Gate;
 use Modules\Payroll\Application\Queries\ListPayrollPeriodsQuery;
 use Modules\Payroll\Domain\Models\PayrollPeriod;
 use Modules\Payroll\Presentation\Http\Resources\PayrollPeriodResource;
@@ -21,7 +22,7 @@ final class ListPayrollPeriodsController extends Controller
 
     public function __invoke(): AnonymousResourceCollection
     {
-        $this->authorize('viewAny', PayrollPeriod::class);
+        Gate::authorize('viewAny', PayrollPeriod::class);
 
         return PayrollPeriodResource::collection(
             $this->query->handle(),

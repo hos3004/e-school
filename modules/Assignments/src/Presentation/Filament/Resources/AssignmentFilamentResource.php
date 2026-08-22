@@ -30,9 +30,12 @@ final class AssignmentFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التعلّم';
-
     protected static ?int $navigationSort = 50;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('assignments::filament.navigation_group');
+    }
 
     public static function getNavigationLabel(): string
     {

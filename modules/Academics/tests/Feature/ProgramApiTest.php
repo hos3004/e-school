@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Models\Program;
 use Modules\Identity\Domain\Models\User;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
@@ -16,7 +17,7 @@ beforeEach(function (): void {
 function programPayload(array $overrides = []): array
 {
     return array_merge([
-        'organization_id' => (string) str()->ulid(),
+        'organization_id' => Fixtures::organizationId(),
         'code' => 'PRG-'.strtoupper(str()->random(5)),
         'name' => ['ar' => 'برنامج جديد', 'en' => 'New Program'],
         'default_session_minutes' => 60,

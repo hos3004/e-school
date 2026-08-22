@@ -10,7 +10,9 @@ use Modules\Attendance\Tests\Support\ApiUser;
 
 function attendancePolicyUser(bool $granted): ApiUser
 {
-    Gate::after(fn (): bool => $granted);
+    foreach (['view_any', 'record', 'override', 'delete_any', 'confirm'] as $ability) {
+        Gate::define("attendance.{$ability}", fn (): bool => $granted);
+    }
 
     return new ApiUser((string) str()->ulid());
 }

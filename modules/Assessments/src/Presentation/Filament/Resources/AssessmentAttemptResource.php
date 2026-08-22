@@ -27,9 +27,12 @@ final class AssessmentAttemptResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التعلّم';
-
     protected static ?int $navigationSort = 51;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('assessments::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {
@@ -78,7 +81,6 @@ final class AssessmentAttemptResource extends Resource
                             ->label(__('assessments::fields.passed')),
                         Select::make('graded_by')
                             ->label(__('assessments::fields.graded_by'))
-                            ->maxLength(26)
                             ->disabled(),
                         DateTimePicker::make('graded_at')
                             ->label(__('assessments::fields.graded_at'))

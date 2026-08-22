@@ -4,12 +4,29 @@ declare(strict_types=1);
 
 namespace Modules\Assessments\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $assessment_id
+ * @property string $student_profile_id
+ * @property string|null $reactivation_request_id
+ * @property int $attempt_number
+ * @property CarbonImmutable $started_at
+ * @property CarbonImmutable|null $submitted_at
+ * @property int|null $score
+ * @property bool|null $passed
+ * @property string|null $graded_by
+ * @property CarbonImmutable|null $graded_at
+ * @property array<string, mixed> $answers
+ * @property CarbonImmutable $created_at
+ * @property-read Assessment $assessment
+ */
 final class AssessmentAttempt extends Model
 {
     use HasModuleFactory;
@@ -31,6 +48,7 @@ final class AssessmentAttempt extends Model
         'graded_by',
         'graded_at',
         'answers',
+        'created_at',
     ];
 
     protected function casts(): array
@@ -43,19 +61,29 @@ final class AssessmentAttempt extends Model
             'passed' => 'bool',
             'graded_at' => 'immutable_datetime',
             'answers' => 'array',
+            'created_at' => 'immutable_datetime',
         ];
     }
 
+    /** @return BelongsTo<Assessment, $this> */
     public function assessment(): BelongsTo
     {
         return $this->belongsTo(Assessment::class, 'assessment_id');
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopePassed(Builder $query): Builder
     {
         return $query->where('passed', true);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForStudent(Builder $query, string $studentProfileId): Builder
     {
         return $query->where('student_profile_id', $studentProfileId);

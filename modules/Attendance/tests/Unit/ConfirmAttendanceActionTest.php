@@ -8,9 +8,11 @@ use Modules\Attendance\Application\Actions\ConfirmAttendanceAction;
 use Modules\Attendance\Application\Actions\RecordAttendanceAction;
 use Modules\Attendance\Domain\Events\AttendanceConfirmed;
 use Modules\Attendance\Domain\Models\Attendance;
+use Modules\Attendance\Tests\Concerns\CreatesSessionParticipant;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
-uses(RefreshDatabase::class);
+uses(RefreshDatabase::class, CreatesSessionParticipant::class);
 
 beforeEach(function (): void {
     config()->set('academic.attendance.thresholds', [
@@ -21,10 +23,10 @@ beforeEach(function (): void {
     ]);
 });
 
-function createUnconfirmedAttendance(): Attendance
+function createUnconfirmedAttendance(string $participantId): Attendance
 {
     return app(RecordAttendanceAction::class)->execute(
-        sessionParticipantId: (string) str()->ulid(),
+        sessionParticipantId: $participantId,
         attendedMinutes: 60,
         sessionMinutes: 60,
     );
@@ -33,8 +35,8 @@ function createUnconfirmedAttendance(): Attendance
 it('confirms attendance and stamps the confirmer and time', function (): void {
     Event::fake([AttendanceConfirmed::class]);
 
-    $attendance = createUnconfirmedAttendance();
-    $confirmerId = (string) str()->ulid();
+    $attendance = createUnconfirmedAttendance($this->createSessionParticipant());
+    $confirmerId = Fixtures::userId();
 
     app(ConfirmAttendanceAction::class)->execute($attendance, $confirmerId);
 
@@ -53,15 +55,15 @@ it('confirms attendance and stamps the confirmer and time', function (): void {
 });
 
 it('rejects confirming an already confirmed record', function (): void {
-    $attendance = createUnconfirmedAttendance();
+    $attendance = createUnconfirmedAttendance($this->createSessionParticipant());
     $action = app(ConfirmAttendanceAction::class);
 
-    $action->execute($attendance, (string) str()->ulid());
-    $action->execute($attendance, (string) str()->ulid());
+    $action->execute($attendance, Fixtures::userId());
+    $action->execute($attendance, Fixtures::userId());
 })->throws(BusinessRuleViolation::class);
 
 it('rejects confirming without a confirmer identifier', function (): void {
-    $attendance = createUnconfirmedAttendance();
+    $attendance = createUnconfirmedAttendance($this->createSessionParticipant());
 
     app(ConfirmAttendanceAction::class)->execute($attendance, ' ');
 })->throws(BusinessRuleViolation::class);

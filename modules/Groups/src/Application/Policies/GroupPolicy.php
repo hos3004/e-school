@@ -16,62 +16,62 @@ final class GroupPolicy
 {
     public function viewAny($user): bool
     {
-        return $user->can('groups.view_any');
+        return $user->can('group.view');
     }
 
     public function view($user, Group $group): bool
     {
-        return $user->can('groups.view_any');
+        return $user->can('group.view');
     }
 
     public function create($user): bool
     {
-        return $user->can('groups.create');
+        return $user->can('group.manage');
     }
 
     public function update($user, Group $group): bool
     {
-        return $user->can('groups.update_any');
+        return $user->can('group.manage');
     }
 
     /** أرشفة مجموعة — إجراء حسّاس للمؤسسة. */
     public function delete($user, Group $group): bool
     {
-        return $user->can('groups.archive_any');
+        return $user->can('group.manage');
     }
 
     public function restore($user, Group $group): bool
     {
-        return $user->can('groups.restore_any');
+        return $user->can('group.manage');
     }
 
     public function activate($user, Group $group): bool
     {
-        return $user->can('groups.activate');
+        return $user->can('group.manage');
     }
 
     public function complete($user, Group $group): bool
     {
-        return $user->can('groups.complete');
+        return $user->can('group.manage');
     }
 
     public function enrollStudent($user, Group $group): bool
     {
-        return $user->can('groups.enroll_student');
+        return $user->can('group.manage');
     }
 
     public function withdrawStudent($user, Group $group): bool
     {
-        return $user->can('groups.withdraw_student');
+        return $user->can('group.manage');
     }
 
     public function assignTeacher($user, Group $group): bool
     {
-        return $user->can('groups.assign_teacher');
+        return $user->can('group.manage');
     }
 
     public function attachProgram($user, Group $group): bool
     {
-        return $user->can('groups.attach_program');
+        return $user->can('group.manage');
     }
 }

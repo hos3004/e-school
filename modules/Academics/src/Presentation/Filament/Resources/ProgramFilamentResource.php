@@ -24,9 +24,12 @@ final class ProgramFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'الأكاديمي';
-
     protected static ?int $navigationSort = 10;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('academics::filament.group');
+    }
 
     public static function canAccess(): bool
     {
@@ -146,4 +149,15 @@ final class ProgramFilamentResource extends Resource
                     ->visible(fn (Program $record): bool => auth()->user()?->can('delete', $record) === true),
             ]);
     }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ProgramFilamentResource\Pages\ListPrograms::route('/'),
+            'create' => ProgramFilamentResource\Pages\CreateProgram::route('/create'),
+            'view' => ProgramFilamentResource\Pages\ViewProgram::route('/{record}'),
+            'edit' => ProgramFilamentResource\Pages\EditProgram::route('/{record}/edit'),
+        ];
+    }
 }
+

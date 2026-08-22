@@ -15,9 +15,6 @@ use Illuminate\Support\Facades\Schedule;
 // حذف التسجيلات بعد انتهاء مدة الاحتفاظ (config/recordings.php)
 Schedule::command('recordings:enforce-retention')->dailyAt('03:17');
 
-// تصفير عدّادات الغياب الشهرية (config/discipline.php)
-Schedule::command('discipline:reset-counters')->monthlyOn(1, '00:07');
-
 // إعادة محاولة الإشعارات الفاشلة
 Schedule::command('notifications:retry-failed')->everyFifteenMinutes()->withoutOverlapping();
 

@@ -31,6 +31,7 @@ final class AssessmentAttemptFactory extends Factory
             'graded_by' => null,
             'graded_at' => null,
             'answers' => [],
+            'created_at' => CarbonImmutable::now('UTC'),
         ];
     }
 

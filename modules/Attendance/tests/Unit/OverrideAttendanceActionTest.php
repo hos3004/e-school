@@ -9,9 +9,10 @@ use Modules\Attendance\Application\Actions\RecordAttendanceAction;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Events\AttendanceOverridden;
 use Modules\Attendance\Domain\Models\Attendance;
+use Modules\Attendance\Tests\Concerns\CreatesSessionParticipant;
 use Shared\Support\BusinessRuleViolation;
 
-uses(RefreshDatabase::class);
+uses(RefreshDatabase::class, CreatesSessionParticipant::class);
 
 beforeEach(function (): void {
     config()->set('academic.attendance.thresholds', [
@@ -23,10 +24,10 @@ beforeEach(function (): void {
     config()->set('attendance.override.reason_min_chars', 5);
 });
 
-function createOverridableAttendance(): Attendance
+function createOverridableAttendance(string $participantId): Attendance
 {
     return app(RecordAttendanceAction::class)->execute(
-        sessionParticipantId: (string) str()->ulid(),
+        sessionParticipantId: $participantId,
         attendedMinutes: 0,
         sessionMinutes: 60,
     );
@@ -35,7 +36,7 @@ function createOverridableAttendance(): Attendance
 it('overrides the derived status with a documented reason and seals the record', function (): void {
     Event::fake([AttendanceOverridden::class]);
 
-    $attendance = createOverridableAttendance();
+    $attendance = createOverridableAttendance($this->createSessionParticipant());
     expect($attendance->status)->toBe(AttendanceStatus::NoShow);
 
     app(OverrideAttendanceAction::class)->execute(
@@ -61,20 +62,20 @@ it('overrides the derived status with a documented reason and seals the record',
 });
 
 it('rejects an override without a sufficient reason', function (): void {
-    $attendance = createOverridableAttendance();
+    $attendance = createOverridableAttendance($this->createSessionParticipant());
 
     app(OverrideAttendanceAction::class)->execute($attendance, AttendanceStatus::Excused, '   ');
 })->throws(BusinessRuleViolation::class);
 
 it('rejects an override with a reason shorter than the configured minimum', function (): void {
-    $attendance = createOverridableAttendance();
+    $attendance = createOverridableAttendance($this->createSessionParticipant());
 
     // أقل من config('attendance.override.reason_min_chars') = 5
     app(OverrideAttendanceAction::class)->execute($attendance, AttendanceStatus::Excused, 'نعم');
 })->throws(BusinessRuleViolation::class);
 
 it('rejects an override that does not change the status', function (): void {
-    $attendance = createOverridableAttendance();
+    $attendance = createOverridableAttendance($this->createSessionParticipant());
 
     app(OverrideAttendanceAction::class)->execute(
         $attendance,

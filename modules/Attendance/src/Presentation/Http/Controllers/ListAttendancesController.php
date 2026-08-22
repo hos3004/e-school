@@ -26,7 +26,7 @@ final class ListAttendancesController extends Controller
 
         $filters = $this->validateFilters($request);
 
-        /** @var LengthAwarePaginator $page */
+        /** @var LengthAwarePaginator<int, Attendance> $page */
         $page = Attendance::query()
             ->when(
                 isset($filters['status']),

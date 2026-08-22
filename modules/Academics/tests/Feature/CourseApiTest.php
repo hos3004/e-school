@@ -9,6 +9,7 @@ use Modules\Academics\Domain\Events\CourseArchived;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Identity\Domain\Models\User;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
@@ -21,7 +22,7 @@ beforeEach(function (): void {
 function coursePayload(array $overrides = []): array
 {
     return array_merge([
-        'organization_id' => (string) str()->ulid(),
+        'organization_id' => Fixtures::organizationId(),
         'level_id' => Level::factory()->create()->getKey(),
         'code' => 'CRS-'.strtoupper(str()->random(5)),
         'name' => ['ar' => 'كورس جديد', 'en' => 'New Course'],

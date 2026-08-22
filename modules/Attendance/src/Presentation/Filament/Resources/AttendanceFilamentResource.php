@@ -34,9 +34,12 @@ final class AttendanceFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التشغيل';
-
     protected static ?int $navigationSort = 42;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('attendance::filament.navigation_group');
+    }
 
     public static function getModelLabel(): string
     {

@@ -31,7 +31,7 @@ final class ModuleRegistry
         /** @var array<string, bool> $modules */
         $modules = config('modules.enabled', []);
 
-        return self::$cache = array_values(array_keys(array_filter($modules)));
+        return self::$cache = array_keys(array_filter($modules));
     }
 
     public static function isEnabled(string $module): bool

@@ -24,7 +24,6 @@ final class StartAttemptController extends Controller
     {
         $assessmentModel = Assessment::query()->findOrFail($assessment);
 
-        Gate::authorize('create', Assessment::class);
         Gate::authorize('view', $assessmentModel);
 
         $attempt = $this->action->execute(

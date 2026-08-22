@@ -7,6 +7,7 @@ namespace Modules\Assessments\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Modules\Assessments\Application\Actions\GradeAttemptAction;
 use Modules\Assessments\Domain\Enums\AssessmentType;
+use Modules\Assessments\Domain\Models\Assessment;
 use Modules\Assessments\Domain\Models\AssessmentAttempt;
 use Modules\Assessments\Domain\Models\Question;
 use Shared\Support\BusinessRuleViolation;

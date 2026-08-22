@@ -54,7 +54,7 @@ final readonly class GradeAttemptAction
 
         $passed = $score >= $assessment->passing_score;
         $gradedAt = CarbonImmutable::now('UTC');
-        $graderId = (string) ($actorId ?? auth()->id());
+        $graderId = $actorId ?? auth()->id();
 
         $this->transaction->run(function () use ($attempt, $score, $passed, $gradedAt, $graderId): void {
             $attempt->forceFill([
@@ -74,7 +74,7 @@ final readonly class GradeAttemptAction
             score: $score,
             passed: $passed,
             reactivationRequestId: $attempt->reactivation_request_id,
-            actorId: $actorId,
+            actorId: $graderId,
         ));
 
         return $attempt->refresh();

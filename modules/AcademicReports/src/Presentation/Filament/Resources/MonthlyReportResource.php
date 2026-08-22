@@ -28,9 +28,12 @@ final class MonthlyReportResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-chart-bar';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التعلّم';
-
     protected static ?int $navigationSort = 52;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('academicreports::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {

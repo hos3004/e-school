@@ -8,9 +8,10 @@ use Modules\Attendance\Application\Actions\RecordAttendanceAction;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Events\AttendanceRecorded;
 use Modules\Attendance\Domain\Models\Attendance;
+use Modules\Attendance\Tests\Concerns\CreatesSessionParticipant;
 use Shared\Support\BusinessRuleViolation;
 
-uses(RefreshDatabase::class);
+uses(RefreshDatabase::class, CreatesSessionParticipant::class);
 
 beforeEach(function (): void {
     config()->set('academic.attendance.thresholds', [
@@ -24,7 +25,7 @@ beforeEach(function (): void {
 it('records attendance with the derived status and publishes the event', function (): void {
     Event::fake([AttendanceRecorded::class]);
 
-    $participantId = (string) str()->ulid();
+    $participantId = $this->createSessionParticipant();
 
     $attendance = app(RecordAttendanceAction::class)->execute(
         sessionParticipantId: $participantId,
@@ -52,7 +53,7 @@ it('records attendance with the derived status and publishes the event', functio
 
 it('rejects recording attendance twice for the same participant', function (): void {
     $action = app(RecordAttendanceAction::class);
-    $participantId = (string) str()->ulid();
+    $participantId = $this->createSessionParticipant();
 
     $action->execute($participantId, 50, 60);
 

@@ -31,7 +31,7 @@ function studentDelta(array $overrides = []): array
 it('creates the dashboard on first projection and recomputes the rate', function (): void {
     Event::fake([StudentDashboardUpdated::class]);
 
-    $delta = studentDelta();
+    $delta = studentDelta(['at' => '2026-08-22T12:00:00Z']);
     $dashboard = app(UpdateStudentDashboardAction::class)->execute($delta);
 
     expect($dashboard->exists)->toBeTrue()

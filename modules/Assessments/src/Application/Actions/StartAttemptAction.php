@@ -41,12 +41,15 @@ final readonly class StartAttemptAction
             );
         }
 
+        $startedAt = CarbonImmutable::now('UTC');
+
         /** @var AssessmentAttempt $attempt */
         $attempt = $this->transaction->run(fn (): AssessmentAttempt => $assessment->attempts()->create([
             'student_profile_id' => $studentProfileId,
             'attempt_number' => $usedAttempts + 1,
-            'started_at' => CarbonImmutable::now('UTC'),
+            'started_at' => $startedAt,
             'answers' => [],
+            'created_at' => $startedAt,
         ]));
 
         $this->events->dispatch(new AttemptStarted(

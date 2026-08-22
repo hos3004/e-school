@@ -64,7 +64,6 @@ final readonly class CorrectStudentDashboardAction
             );
         }
 
-        /** @var StudentDashboard $dashboard */
         return $this->transaction->run(function () use ($data, $column, $value): StudentDashboard {
             /** @var StudentDashboard|null $dashboard */
             $dashboard = StudentDashboard::query()

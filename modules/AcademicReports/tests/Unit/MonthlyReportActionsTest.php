@@ -25,14 +25,18 @@ use Shared\Testing\Fixtures;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
+    Event::fake([
+        MonthlyReportApproved::class,
+        MonthlyReportDrafted::class,
+        MonthlyReportSent::class,
+    ]);
+
     $this->draft = app(DraftMonthlyReportAction::class);
     $this->approve = app(ApproveMonthlyReportAction::class);
     $this->send = app(SendMonthlyReportAction::class);
 });
 
 it('drafts a monthly report and publishes the event', function (): void {
-    Event::fake([MonthlyReportDrafted::class]);
-
     $report = $this->draft->execute(
         organizationId: Fixtures::organizationId(),
         studentProfileId: Fixtures::studentProfileId(),
@@ -75,8 +79,6 @@ it('rejects a duplicate report for the same student and period', function (): vo
 });
 
 it('approves a draft and stamps approver and time', function (): void {
-    Event::fake([MonthlyReportApproved::class]);
-
     $report = createDraftReport();
 
     $approved = $this->approve->execute(
@@ -100,8 +102,6 @@ it('rejects approving a non-draft report', function (): void {
 })->throws(BusinessRuleViolation::class);
 
 it('sends an approved report and stamps the sent time', function (): void {
-    Event::fake([MonthlyReportSent::class]);
-
     $report = createDraftReport();
     $approved = $this->approve->execute($report, Fixtures::userId(), 'سبب الاعتماد');
     $sent = $this->send->execute($approved);
@@ -133,7 +133,7 @@ function resolveEnrollmentId(): string
         return $existing;
     }
 
-    return (string) MonthlyReportFactory::new()->create()->enrollment_id;
+    return (string) MonthlyReportFactory::new()->make()->enrollment_id;
 }
 
 function createDraftReport(): MonthlyReport

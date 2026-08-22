@@ -18,18 +18,20 @@ use Modules\Attendance\Presentation\Http\Controllers\ShowAttendanceController;
 | AttendancePolicy عبر FormRequest أو abort_unless داخل المتحكم.
 */
 
-Route::get('/attendances', ListAttendancesController::class)->name('attendance.index');
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::get('/attendances', ListAttendancesController::class)->name('attendance.index');
 
-Route::post('/attendances', RecordAttendanceController::class)->name('attendance.record');
+    Route::post('/attendances', RecordAttendanceController::class)->name('attendance.record');
 
-Route::get('/attendances/{attendance}', ShowAttendanceController::class)
-    ->whereUlid('attendance')
-    ->name('attendance.show');
+    Route::get('/attendances/{attendance}', ShowAttendanceController::class)
+        ->whereUlid('attendance')
+        ->name('attendance.show');
 
-Route::patch('/attendances/{attendance}', OverrideAttendanceController::class)
-    ->whereUlid('attendance')
-    ->name('attendance.override');
+    Route::patch('/attendances/{attendance}', OverrideAttendanceController::class)
+        ->whereUlid('attendance')
+        ->name('attendance.override');
 
-Route::post('/attendances/{attendance}/confirm', ConfirmAttendanceController::class)
-    ->whereUlid('attendance')
-    ->name('attendance.confirm');
+    Route::post('/attendances/{attendance}/confirm', ConfirmAttendanceController::class)
+        ->whereUlid('attendance')
+        ->name('attendance.confirm');
+});

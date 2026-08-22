@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Reporting\Application\Policies;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Reporting\Domain\Models\StudentDashboard;
 
 /**
@@ -14,36 +15,42 @@ use Modules\Reporting\Domain\Models\StudentDashboard;
  */
 final class StudentDashboardPolicy
 {
-    public function viewAny($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function viewAny(Authenticatable $user): bool
     {
         return $user->can('reporting.student.view_any');
     }
 
-    public function view($user, StudentDashboard $dashboard): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function view(Authenticatable $user, StudentDashboard $dashboard): bool
     {
         return $user->can('reporting.student.view')
             && $dashboard->organization_id === $user->organization_id;
     }
 
     /** اللوحات Read Models — تُبنى بالأحداث لا يدويًا. */
-    public function create($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function create(Authenticatable $user): bool
     {
         return false;
     }
 
     /** التحديث اليدوي الوحيد المسموح هو التصحيح الموثّق بسبب مكتوب. */
-    public function update($user, StudentDashboard $dashboard): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function update(Authenticatable $user, StudentDashboard $dashboard): bool
     {
         return $this->correct($user, $dashboard);
     }
 
-    public function delete($user, StudentDashboard $dashboard): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function delete(Authenticatable $user, StudentDashboard $dashboard): bool
     {
         return $user->can('reporting.student.delete')
             && $dashboard->organization_id === $user->organization_id;
     }
 
-    public function correct($user, StudentDashboard $dashboard): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function correct(Authenticatable $user, StudentDashboard $dashboard): bool
     {
         return $user->can('reporting.student.correct')
             && $dashboard->organization_id === $user->organization_id;

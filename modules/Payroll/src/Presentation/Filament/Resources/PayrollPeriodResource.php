@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Payroll\Presentation\Filament\Resources;
 
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -11,7 +12,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -32,9 +32,12 @@ final class PayrollPeriodResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'المال';
-
     protected static ?int $navigationSort = 80;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('payroll::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Payroll\Application\Policies;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Payroll\Domain\Models\PayrollEntry;
 
 /**
@@ -14,35 +15,35 @@ use Modules\Payroll\Domain\Models\PayrollEntry;
  */
 final class PayrollEntryPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable $user): bool
     {
         return $user->can('payroll.entries.view_any');
     }
 
-    public function view($user, PayrollEntry $entry): bool
+    public function view(Authenticatable $user, PayrollEntry $entry): bool
     {
         return $user->can('payroll.entries.view_any')
             || $user->can('payroll.entries.view');
     }
 
     /** إنشاء القيود يحدث آليًا عند إقفال الحصص، لا يدويًا. */
-    public function create($user): bool
+    public function create(Authenticatable $user): bool
     {
         return false;
     }
 
-    public function update($user, PayrollEntry $entry): bool
+    public function update(Authenticatable $user, PayrollEntry $entry): bool
     {
         return false;
     }
 
-    public function delete($user, PayrollEntry $entry): bool
+    public function delete(Authenticatable $user, PayrollEntry $entry): bool
     {
         return false;
     }
 
     /** تحرير القيود المؤجَّلة عند إقامة حصة التلافي. */
-    public function release($user): bool
+    public function release(Authenticatable $user): bool
     {
         return $user->can('payroll.entries.release');
     }

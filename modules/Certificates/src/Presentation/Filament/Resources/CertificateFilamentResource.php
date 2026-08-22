@@ -27,9 +27,12 @@ final class CertificateFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التعلّم';
-
     protected static ?int $navigationSort = 53;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('certificates::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {

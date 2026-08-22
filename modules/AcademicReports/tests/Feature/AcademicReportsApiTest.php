@@ -138,6 +138,7 @@ final class AcademicReportsApiTest extends TestCase
         Gate::define('academicreports.monthly_report.send', fn (): bool => true);
 
         $organizationId = Fixtures::organizationId();
+        $actorId = Fixtures::userId();
         $enrollmentId = $this->createEnrollment($organizationId);
 
         /** @var MonthlyReport $report */
@@ -149,13 +150,13 @@ final class AcademicReportsApiTest extends TestCase
             periodMonth: 2,
         );
 
-        $this->actingAs(new ApiUser(self::ACTOR_ID))
+        $this->actingAs(new ApiUser($actorId, $organizationId))
             ->patchJson("/api/monthly-reports/{$report->id}/approve", [
                 'reason' => 'اعتماد المشرف بعد المراجعة',
             ])->assertOk()
             ->assertJsonPath('data.status.value', 'approved');
 
-        $this->actingAs(new ApiUser(self::ACTOR_ID))
+        $this->actingAs(new ApiUser($actorId, $organizationId))
             ->patchJson("/api/monthly-reports/{$report->id}/send")
             ->assertOk()
             ->assertJsonPath('data.status.value', 'sent');
@@ -180,7 +181,7 @@ final class AcademicReportsApiTest extends TestCase
             periodMonth: 1,
         );
 
-        $this->actingAs(new ApiUser(self::ACTOR_ID))
+        $this->actingAs(new ApiUser(self::ACTOR_ID, $organizationId))
             ->patchJson("/api/monthly-reports/{$report->id}/approve", [])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['reason']);
@@ -195,7 +196,7 @@ final class AcademicReportsApiTest extends TestCase
         }
 
         return (string) MonthlyReportFactory::new()
-            ->create(['organization_id' => $organizationId])
+            ->make(['organization_id' => $organizationId])
             ->enrollment_id;
     }
 }

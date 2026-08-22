@@ -25,9 +25,12 @@ final class CourseFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-book-open';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'الأكاديمي';
-
     protected static ?int $navigationSort = 10;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('academics::filament.group');
+    }
 
     public static function canAccess(): bool
     {
@@ -136,4 +139,15 @@ final class CourseFilamentResource extends Resource
                     ->visible(fn (Course $record): bool => auth()->user()?->can('delete', $record) === true),
             ]);
     }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => CourseFilamentResource\Pages\ListCourses::route('/'),
+            'create' => CourseFilamentResource\Pages\CreateCourse::route('/create'),
+            'view' => CourseFilamentResource\Pages\ViewCourse::route('/{record}'),
+            'edit' => CourseFilamentResource\Pages\EditCourse::route('/{record}/edit'),
+        ];
+    }
 }
+

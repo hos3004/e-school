@@ -18,6 +18,7 @@ final readonly class ListPayrollEntriesQuery
         private Guard $auth,
     ) {}
 
+    /** @return Collection<int, PayrollEntry> */
     public function handle(string $payrollPeriodId = '', string $staffProfileId = ''): Collection
     {
         $organizationId = (string) $this->auth->user()?->getAttribute('organization_id');

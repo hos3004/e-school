@@ -27,11 +27,14 @@ final class SessionReportResource extends Resource
 {
     protected static ?string $model = SessionReport::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-check';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التعلّم';
+    protected static ?int $navigationSort = 51;
 
-    protected static ?int $navigationSort = 52;
+    public static function getNavigationGroup(): ?string
+    {
+        return __('academicreports::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {

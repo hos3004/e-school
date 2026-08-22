@@ -8,13 +8,14 @@ use Modules\Academics\Application\Actions\CreateCourseAction;
 use Modules\Academics\Domain\Events\CourseCreated;
 use Modules\Academics\Domain\Models\Level;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 function courseData(array $overrides = []): array
 {
     return array_merge([
-        'organization_id' => (string) str()->ulid(),
+        'organization_id' => Fixtures::organizationId(),
         'level_id' => Level::factory()->create()->getKey(),
         'code' => 'CRS-TEST',
         'name' => ['ar' => 'كورس تجريبي', 'en' => 'Demo Course'],
@@ -45,7 +46,7 @@ it('rejects a duplicate course code even across archived courses', function (): 
     $first = $action->execute($data);
     $first->delete();
 
-    $action->execute(courseData(['organization_id' => (string) str()->ulid()]));
+    $action->execute(courseData());
 })->throws(BusinessRuleViolation::class);
 
 it('rejects zero or negative total sessions', function (): void {

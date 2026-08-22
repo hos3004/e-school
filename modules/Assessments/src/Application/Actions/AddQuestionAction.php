@@ -63,6 +63,7 @@ final readonly class AddQuestionAction
             'type' => $type,
             'score' => $score,
             'sort_order' => $sortOrder,
+            'created_at' => now('UTC'),
         ]));
 
         $this->events->dispatch(new QuestionAdded(

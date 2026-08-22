@@ -19,23 +19,23 @@ final class EnrollmentPolicy
 {
     public function viewAny($user): bool
     {
-        return $user->can('enrollments.enrollment.view_any');
+        return $user->can('enrollment.view');
     }
 
     public function view($user, Enrollment $enrollment): bool
     {
-        return $user->can('enrollments.enrollment.view')
+        return $user->can('enrollment.view')
             && $enrollment->organization_id === $user->organization_id;
     }
 
     public function create($user): bool
     {
-        return $user->can('enrollments.enrollment.create');
+        return $user->can('enrollment.create');
     }
 
     public function update($user, Enrollment $enrollment): bool
     {
-        return $user->can('enrollments.enrollment.update')
+        return $user->can('enrollment.create')
             && $enrollment->organization_id === $user->organization_id;
     }
 
@@ -46,13 +46,13 @@ final class EnrollmentPolicy
 
     public function pause($user, Enrollment $enrollment): bool
     {
-        return $user->can('enrollments.enrollment.pause')
+        return $user->can('enrollment.pause')
             && $enrollment->organization_id === $user->organization_id;
     }
 
     public function freeze($user, Enrollment $enrollment): bool
     {
-        return $user->can('enrollments.enrollment.freeze')
+        return $user->can('enrollment.freeze')
             && $enrollment->organization_id === $user->organization_id;
     }
 
@@ -60,7 +60,7 @@ final class EnrollmentPolicy
     public function requestReactivation($user, Enrollment $enrollment): bool
     {
         return ($enrollment->student_profile_id === $user->profile?->id)
-            || $user->can('enrollments.enrollment.request_reactivation');
+            || $user->can('enrollment.pause');
     }
 
     /** الاعتماد النهائي لفك التجميد — بصلاحية enrollment.reactivate حصريًا. */

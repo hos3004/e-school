@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Reporting\Application\Policies;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Reporting\Domain\Models\ReportEventLog;
 
 /**
@@ -11,28 +12,33 @@ use Modules\Reporting\Domain\Models\ReportEventLog;
  */
 final class ReportEventLogPolicy
 {
-    public function viewAny($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function viewAny(Authenticatable $user): bool
     {
         return $user->can('reporting.event_log.view_any');
     }
 
-    public function view($user, ReportEventLog $log): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function view(Authenticatable $user, ReportEventLog $log): bool
     {
         return $user->can('reporting.event_log.view')
             && $log->organization_id === $user->organization_id;
     }
 
-    public function create($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function create(Authenticatable $user): bool
     {
         return false;
     }
 
-    public function update($user, ReportEventLog $log): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function update(Authenticatable $user, ReportEventLog $log): bool
     {
         return false;
     }
 
-    public function delete($user, ReportEventLog $log): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function delete(Authenticatable $user, ReportEventLog $log): bool
     {
         return $user->can('reporting.event_log.delete')
             && $log->organization_id === $user->organization_id;

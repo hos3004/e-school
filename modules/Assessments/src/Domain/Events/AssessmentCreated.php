@@ -31,7 +31,7 @@ final class AssessmentCreated extends AssessmentEvent
 
     public function payload(): array
     {
-        return [
+        return array_filter([
             'assessment_id' => $this->assessmentId,
             'organization_id' => $this->organizationId,
             'course_id' => $this->courseId,
@@ -39,6 +39,6 @@ final class AssessmentCreated extends AssessmentEvent
             'total_score' => $this->totalScore,
             'passing_score' => $this->passingScore,
             'max_attempts' => $this->maxAttempts,
-        ];
+        ], static fn (mixed $value): bool => $value !== null);
     }
 }

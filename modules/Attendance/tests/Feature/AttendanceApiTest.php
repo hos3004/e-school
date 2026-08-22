@@ -11,6 +11,7 @@ use Modules\Attendance\Domain\Events\AttendanceRecorded;
 use Modules\Attendance\Domain\Models\Attendance;
 use Modules\Attendance\Tests\Concerns\CreatesSessionParticipant;
 use Modules\Attendance\Tests\Support\ApiUser;
+use Shared\Testing\Fixtures;
 use Tests\TestCase;
 
 /**
@@ -136,13 +137,14 @@ final class AttendanceApiTest extends TestCase
         Gate::define('attendance.override', fn (): bool => true);
 
         $participantId = $this->createSessionParticipant();
+        $actorId = Fixtures::userId();
         $record = Attendance::query()->create([
             'session_participant_id' => $participantId,
             'status' => 'no_show',
             'derived_status' => 'no_show',
         ]);
 
-        $this->actingAs(new ApiUser(self::ACTOR_ID))
+        $this->actingAs(new ApiUser($actorId))
             ->patchJson('/api/attendances/'.$record->getKey(), [
                 'status' => 'excused',
                 'reason' => 'عذر طبي موثق بمستشفى معتمد',
@@ -177,17 +179,18 @@ final class AttendanceApiTest extends TestCase
         Gate::define('attendance.confirm', fn (): bool => true);
 
         $participantId = $this->createSessionParticipant();
+        $actorId = Fixtures::userId();
         $record = Attendance::query()->create([
             'session_participant_id' => $participantId,
             'status' => 'present',
             'derived_status' => 'present',
         ]);
 
-        $this->actingAs(new ApiUser(self::ACTOR_ID))
+        $this->actingAs(new ApiUser($actorId))
             ->postJson('/api/attendances/'.$record->getKey().'/confirm')
             ->assertOk()
             ->assertJsonPath('data.is_confirmed', true)
-            ->assertJsonPath('data.confirmed_by', self::ACTOR_ID);
+            ->assertJsonPath('data.confirmed_by', $actorId);
     }
 
     public function test_requires_authentication_for_all_routes(): void

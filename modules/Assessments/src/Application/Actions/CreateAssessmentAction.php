@@ -54,6 +54,7 @@ final readonly class CreateAssessmentAction
         $assessment = $this->transaction->run(fn (): Assessment => Assessment::create([
             ...$data,
             'type' => $type,
+            'instructions' => $data['instructions'] ?? [],
             'created_by' => (string) ($actorId ?? auth()->id()),
         ]));
 

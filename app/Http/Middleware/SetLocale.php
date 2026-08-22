@@ -21,7 +21,7 @@ final class SetLocale
     {
         $supported = config('app.supported_locales', ['ar']);
 
-        $locale = $request->user()?->locale
+        $locale = data_get($request->user(), 'locale')
             ?? $request->session()->get('locale')
             ?? config('app.locale');
 

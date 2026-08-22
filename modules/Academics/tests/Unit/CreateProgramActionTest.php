@@ -7,13 +7,14 @@ use Illuminate\Support\Facades\Event;
 use Modules\Academics\Application\Actions\CreateProgramAction;
 use Modules\Academics\Domain\Events\ProgramCreated;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 function programData(array $overrides = []): array
 {
     return array_merge([
-        'organization_id' => (string) str()->ulid(),
+        'organization_id' => Fixtures::organizationId(),
         'code' => 'PRG-TEST',
         'name' => ['ar' => 'برنامج تجريبي', 'en' => 'Demo Program'],
         'duration_weeks' => 16,
@@ -48,7 +49,7 @@ it('rejects a duplicate program code even across archived programs', function ()
     $first = $action->execute(programData());
     $first->delete();
 
-    $action->execute(programData(['organization_id' => (string) str()->ulid()]));
+    $action->execute(programData());
 })->throws(BusinessRuleViolation::class);
 
 it('rejects a negative default rate', function (): void {

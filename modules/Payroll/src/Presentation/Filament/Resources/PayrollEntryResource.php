@@ -10,6 +10,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Modules\Payroll\Domain\Models\PayrollEntry;
 
 /**
@@ -24,9 +25,12 @@ final class PayrollEntryResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'المال';
-
     protected static ?int $navigationSort = 80;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('payroll::navigation.group');
+    }
 
     public static function canAccess(): bool
     {
@@ -38,12 +42,12 @@ final class PayrollEntryResource extends Resource
         return false;
     }
 
-    public static function canEdit($record): bool
+    public static function canEdit(Model $record): bool
     {
         return false;
     }
 
-    public static function canDelete($record): bool
+    public static function canDelete(Model $record): bool
     {
         return false;
     }

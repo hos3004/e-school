@@ -87,6 +87,12 @@ it('projects a foreign event into the student dashboard once', function (): void
 });
 
 it('skips the projection when the ingest gate rejects duplicates', function (): void {
+    config()->set('reporting.projections', [
+        'sessions.completed' => [
+            ['board' => 'student', 'metric' => 'sessions_completed', 'keys' => ['enrollment_id', 'student_profile_id'], 'at' => 'completed_at'],
+        ],
+    ]);
+
     Event::fake();
 
     $ingest = app(IngestDomainEventAction::class);
@@ -104,7 +110,11 @@ it('skips the projection when the ingest gate rejects duplicates', function (): 
     Gate::define('reporting.student.view_any', fn (): bool => true);
 
     $listener->handle($event);
-    expect(ReportEventLog::query()->count())->toBe(1);
+    $listener->handle($event);
+
+    expect(ReportEventLog::query()->count())->toBe(1)
+        ->and(StudentDashboard::query()->count())->toBe(1)
+        ->and((int) StudentDashboard::query()->sole()->sessions_total)->toBe(1);
 });
 
 it('routes teacher metrics by the config map', function (): void {

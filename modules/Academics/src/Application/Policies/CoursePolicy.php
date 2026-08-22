@@ -15,33 +15,32 @@ final class CoursePolicy
 {
     public function viewAny($user): bool
     {
-        return $user->can('academics.courses.view_any');
+        return $user->can('course.manage');
     }
 
     public function view($user, Course $course): bool
     {
-        return $user->can('academics.courses.view_any')
-            || $user->can('academics.courses.view');
+        return $user->can('course.manage');
     }
 
     public function create($user): bool
     {
-        return $user->can('academics.courses.create');
+        return $user->can('course.manage');
     }
 
     public function update($user, Course $course): bool
     {
-        return $user->can('academics.courses.update');
+        return $user->can('course.manage');
     }
 
     /** أرشفة كورس — إجراء حسّاس يقتضي سببًا موثّقًا. */
     public function delete($user, Course $course): bool
     {
-        return $user->can('academics.courses.archive');
+        return $user->can('course.manage');
     }
 
     public function restore($user, Course $course): bool
     {
-        return $user->can('academics.courses.restore');
+        return $user->can('course.manage');
     }
 }

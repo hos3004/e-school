@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Reporting\Application\Policies;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Reporting\Domain\Models\TeacherDashboard;
 
 /**
@@ -11,29 +12,34 @@ use Modules\Reporting\Domain\Models\TeacherDashboard;
  */
 final class TeacherDashboardPolicy
 {
-    public function viewAny($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function viewAny(Authenticatable $user): bool
     {
         return $user->can('reporting.teacher.view_any');
     }
 
-    public function view($user, TeacherDashboard $dashboard): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function view(Authenticatable $user, TeacherDashboard $dashboard): bool
     {
         return $user->can('reporting.teacher.view')
             && $dashboard->organization_id === $user->organization_id;
     }
 
-    public function create($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function create(Authenticatable $user): bool
     {
         return false;
     }
 
-    public function update($user, TeacherDashboard $dashboard): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function update(Authenticatable $user, TeacherDashboard $dashboard): bool
     {
         return $user->can('reporting.teacher.correct')
             && $dashboard->organization_id === $user->organization_id;
     }
 
-    public function delete($user, TeacherDashboard $dashboard): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function delete(Authenticatable $user, TeacherDashboard $dashboard): bool
     {
         return $user->can('reporting.teacher.delete')
             && $dashboard->organization_id === $user->organization_id;

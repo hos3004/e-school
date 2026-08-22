@@ -16,33 +16,32 @@ final class ProgramPolicy
 {
     public function viewAny($user): bool
     {
-        return $user->can('academics.programs.view_any');
+        return $user->can('program.manage');
     }
 
     public function view($user, Program $program): bool
     {
-        return $user->can('academics.programs.view_any')
-            || $user->can('academics.programs.view');
+        return $user->can('program.manage');
     }
 
     public function create($user): bool
     {
-        return $user->can('academics.programs.create');
+        return $user->can('program.manage');
     }
 
     public function update($user, Program $program): bool
     {
-        return $user->can('academics.programs.update');
+        return $user->can('program.manage');
     }
 
     /** أرشفة برنامج — إجراء حسّاس يقتضي سببًا موثّقًا. */
     public function delete($user, Program $program): bool
     {
-        return $user->can('academics.programs.archive');
+        return $user->can('program.manage');
     }
 
     public function restore($user, Program $program): bool
     {
-        return $user->can('academics.programs.restore');
+        return $user->can('program.manage');
     }
 }

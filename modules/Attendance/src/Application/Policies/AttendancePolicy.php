@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Attendance\Domain\Models\Attendance;
 
 /**
@@ -18,39 +20,39 @@ use Modules\Attendance\Domain\Models\Attendance;
  */
 final class AttendancePolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('attendance.view_any');
+        return $user->can('attendance.view');
     }
 
-    public function view($user, Attendance $attendance): bool
+    public function view(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
-        return $user->can('attendance.view_any');
+        return $user->can('attendance.view');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('attendance.record');
     }
 
-    public function update($user, Attendance $attendance): bool
+    public function update(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
         return $user->can('attendance.override');
     }
 
-    public function delete($user, Attendance $attendance): bool
+    public function delete(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
-        return $user->can('attendance.delete_any');
+        return $user->can('attendance.override');
     }
 
     /** اعتماد الحالة المشتقة — للمعلم. */
-    public function confirm($user, Attendance $attendance): bool
+    public function confirm(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
-        return $user->can('attendance.confirm');
+        return $user->can('attendance.record');
     }
 
     /** تجاوز الحالة بسبب موثّق — للإدارة. */
-    public function override($user, Attendance $attendance): bool
+    public function override(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
         return $user->can('attendance.override');
     }

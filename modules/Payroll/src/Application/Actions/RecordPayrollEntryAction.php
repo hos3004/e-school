@@ -29,6 +29,9 @@ final readonly class RecordPayrollEntryAction
         private Dispatcher $events,
     ) {}
 
+    /**
+     * @param array<string, mixed>|null $description
+     */
     public function execute(
         string $organizationId,
         string $payrollPeriodId,

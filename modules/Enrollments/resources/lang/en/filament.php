@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'navigation_group' => 'Enrollments & Affairs',
     'enrollment' => [
         'label' => 'Enrollment',
         'plural' => 'Enrollments',

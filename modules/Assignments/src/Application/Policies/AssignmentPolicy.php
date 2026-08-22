@@ -19,28 +19,28 @@ final class AssignmentPolicy
     /** @param  mixed  $user */
     public function viewAny($user): bool
     {
-        return $user !== null && $user->can('assignments.view_any');
+        return $user !== null && ($user->can('assignment.manage') || $user->can('assignment.submit') || $user->can('assignment.grade'));
     }
 
     /** @param  mixed  $user */
     public function view($user, Assignment $assignment): bool
     {
         return $user !== null
-            && $user->can('assignments.view_any')
+            && ($user->can('assignment.manage') || $user->can('assignment.submit') || $user->can('assignment.grade'))
             && (string) $user->organization_id === (string) $assignment->organization_id;
     }
 
     /** @param  mixed  $user */
     public function create($user): bool
     {
-        return $user !== null && $user->can('assignments.create');
+        return $user !== null && $user->can('assignment.manage');
     }
 
     /** @param  mixed  $user */
     public function update($user, Assignment $assignment): bool
     {
         return $user !== null
-            && $user->can('assignments.update')
+            && $user->can('assignment.manage')
             && (string) $user->organization_id === (string) $assignment->organization_id;
     }
 

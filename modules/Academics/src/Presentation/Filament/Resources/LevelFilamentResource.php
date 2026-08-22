@@ -21,9 +21,12 @@ final class LevelFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'الأكاديمي';
-
     protected static ?int $navigationSort = 10;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('academics::filament.group');
+    }
 
     public static function canAccess(): bool
     {
@@ -104,4 +107,15 @@ final class LevelFilamentResource extends Resource
             ])
             ->defaultSort('sort_order');
     }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => LevelFilamentResource\Pages\ListLevels::route('/'),
+            'create' => LevelFilamentResource\Pages\CreateLevel::route('/create'),
+            'view' => LevelFilamentResource\Pages\ViewLevel::route('/{record}'),
+            'edit' => LevelFilamentResource\Pages\EditLevel::route('/{record}/edit'),
+        ];
+    }
 }
+

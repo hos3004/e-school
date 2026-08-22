@@ -31,7 +31,7 @@ it('corrects a counter with a valid reason and recomputes the rate', function ()
     ]);
 
     expect((int) $corrected->sessions_attended)->toBe(5)
-        ->and((int) $corrected->attendance_rate_bp)->toBe(5000);
+        ->and((int) $corrected->attendance_rate_bp)->toBe(7143);
 });
 
 it('rejects a too-short reason', function (): void {

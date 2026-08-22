@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
@@ -15,6 +17,19 @@ use Shared\Concerns\HasUlid;
  *
  * الحالة المشتقة derive_status تُحسب آليًا من دقائق الدخول والخروج،
  * والحالة النهائية status يعتمدها المعلم أو تجاوزها بإدارة موثّق بسبب.
+ *
+ * @property string $id
+ * @property string $session_participant_id
+ * @property AttendanceStatus $status
+ * @property AttendanceStatus $derived_status
+ * @property int $attended_minutes
+ * @property int $joined_after_minutes
+ * @property int $left_before_minutes
+ * @property string|null $confirmed_by
+ * @property CarbonImmutable|null $confirmed_at
+ * @property string|null $override_reason
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 final class Attendance extends Model
 {

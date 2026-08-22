@@ -27,9 +27,12 @@ final class GroupResource extends Resource
 
     protected static ?string $slug = 'groups';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'الأكاديمي';
-
     protected static ?int $navigationSort = 11;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('groups::filament.navigation_group');
+    }
 
     public static function getNavigationLabel(): string
     {

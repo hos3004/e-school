@@ -8,6 +8,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Modules\Reporting\Domain\Models\ReportEventLog;
 
 /**
@@ -19,9 +20,12 @@ final class ReportEventLogResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-inbox-arrow-down';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التقارير';
-
     protected static ?int $navigationSort = 90;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('reporting::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {
@@ -38,7 +42,7 @@ final class ReportEventLogResource extends Resource
         return false;
     }
 
-    public static function canEdit($record): bool
+    public static function canEdit(Model $record): bool
     {
         return false;
     }

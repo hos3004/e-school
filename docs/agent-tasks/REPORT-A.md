@@ -108,3 +108,26 @@ interface StudentAdmissionQueries
 - `modules/Organization/tests/Feature/GeographyQueriesTest.php`
 - `modules/Students/tests/Feature/RegistrationApplicationTest.php`
 - `modules/Identity/tests/Feature/UsernameSuggesterTest.php`
+
+---
+
+## 6. الشاشات الناقصة (ملحق A2)
+
+1. **الكورسات والبرامج والمستويات (`Academics`):**
+   - تم إنشاء الصفحات الأربع (`List`, `Create`, `Edit`, `View`) وإضافة `getPages()` لكل من:
+     - `CourseFilamentResource`
+     - `ProgramFilamentResource`
+     - `LevelFilamentResource`
+   - المسارات الحية: `/admin/courses` · `/admin/programs` · `/admin/levels`
+
+2. **شاشات المعلم (المورد الكامل):**
+   - تحويل `StaffProfileResource` من صفحة مفردة إلى 4 صفحات كاملة (`ListStaffProfiles`, `CreateStaffProfile`, `EditStaffProfile`, `ViewStaffProfile`).
+   - إضافة الحقول: `gender`, `country_id`, `region_id`, `date_of_birth`, `phone`.
+   - المسار الحي: `/admin/staff-profiles`
+
+3. **حقول الجغرافيا الديناميكية (الطالب والمعلم):**
+   - ربط `country_id` و`region_id` بعقد `GeographyQueries` عبر قائمة دول حية وجداول المحافظات المرتبطة بالدولة المختارة.
+
+4. **نموذج الطالب المستقل (الحساب اختياري):**
+   - تكييف `StudentProfileResource` ليصبح `user_id` اختياريًا لإنشاء الطالب دون اشتراط حساب مستخدم سابق.
+

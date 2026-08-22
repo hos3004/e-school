@@ -10,6 +10,22 @@ use Modules\Payroll\Domain\Enums\PayrollEntryStatus;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $organization_id
+ * @property string $payroll_period_id
+ * @property string $staff_profile_id
+ * @property string|null $session_id
+ * @property string|null $teacher_contract_id
+ * @property string $entry_type
+ * @property string $outcome_key
+ * @property int $amount
+ * @property string $currency
+ * @property array<string, mixed> $rate_snapshot
+ * @property PayrollEntryStatus $status
+ * @property string|null $deferred_until_session_id
+ * @property array<string, mixed>|null $description
+ */
 final class PayrollEntry extends Model
 {
     use HasModuleFactory;
@@ -45,11 +61,19 @@ final class PayrollEntry extends Model
         ];
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForStaff(Builder $query, string $staffProfileId): Builder
     {
         return $query->where('staff_profile_id', $staffProfileId);
