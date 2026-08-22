@@ -6,12 +6,21 @@ use Illuminate\Support\Facades\Gate;
 use Modules\Recordings\Application\Policies\RecordingPolicy;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Models\Recording;
+use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
 use Modules\Recordings\Tests\Support\ApiUser;
 
+uses(CreatesRecordingContext::class);
+
+beforeEach(function (): void {
+    $this->context = $this->createSessionWithClassroom();
+});
+
 it('scopes every action to the same organization', function (): void {
+    Gate::define('recordings.recording.view', fn (): bool => true);
+
     $policy = new RecordingPolicy;
 
-    $recording = Recording::factory()->ready()->create();
+    $recording = Recording::factory()->ready()->create($this->context);
 
     $owner = new ApiUser('01USEROWNER00000000000000', (string) $recording->organization_id);
     $stranger = new ApiUser('01USERSTRANGER0000000000', '01OTHERORGANIZATION000000');

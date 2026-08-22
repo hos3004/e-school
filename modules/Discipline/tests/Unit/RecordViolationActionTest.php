@@ -12,6 +12,7 @@ use Modules\Discipline\Domain\Events\ViolationRecorded;
 use Modules\Discipline\Domain\Models\DisciplineAction;
 use Modules\Discipline\Domain\Models\ViolationEvent;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
@@ -25,7 +26,7 @@ uses(RefreshDatabase::class);
 function violationData(array $overrides = []): array
 {
     return array_merge([
-        'organization_id' => disciplineOrg(),
+        'organization_id' => Fixtures::organizationId(),
         'enrollment_id' => (string) str()->ulid(),
         'student_profile_id' => (string) str()->ulid(),
         'type' => ViolationType::UnexcusedAbsence->value,
@@ -34,13 +35,14 @@ function violationData(array $overrides = []): array
 }
 
 it('records a countable violation and publishes ViolationRecorded', function (): void {
+    config()->set('discipline.counter_window', 'rolling');
     Event::fake([ViolationRecorded::class, DisciplineActionApplied::class]);
 
     $violation = app(RecordViolationAction::class)->execute(violationData());
 
     expect($violation->exists)->toBeTrue()
         ->and($violation->is_countable)->toBeTrue()
-        ->and($violation->window_key)->toBe(now()->format('Y-m'));
+        ->and($violation->window_key)->toBe('R'.config('discipline.counter_window_days'));
 
     Event::assertDispatched(
         ViolationRecorded::class,
@@ -48,7 +50,13 @@ it('records a countable violation and publishes ViolationRecorded', function ():
             && $event->payload()['count_in_window'] === 1,
     );
 
-    Event::assertNotDispatched(DisciplineActionApplied::class);
+    expect(DisciplineAction::query()->sole()->action)->toBe(DisciplineActionType::Notice);
+
+    Event::assertDispatched(
+        DisciplineActionApplied::class,
+        fn (DisciplineActionApplied $event): bool => $event->thresholdReached === 1
+            && $event->action === DisciplineActionType::Notice,
+    );
 });
 
 it('marks non-countable types from config and never escalates them', function (): void {

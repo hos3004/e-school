@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Recordings\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Recordings\Domain\Models\Recording;
 
 /**
@@ -14,45 +16,46 @@ use Modules\Recordings\Domain\Models\Recording;
  */
 final class RecordingPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('recordings.recording.view_any');
+        return $user->can('recording.view') || $user->can('recording.view.any');
     }
 
-    public function view($user, Recording $recording): bool
+    public function view(Authenticatable&Authorizable $user, Recording $recording): bool
     {
-        return $user->can('recordings.recording.view')
-            && $recording->organization_id === $user->organization_id;
+        return ($user->can('recording.view') || $user->can('recording.view.any'))
+            && $recording->organization_id === data_get($user, 'organization_id');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('recordings.recording.create');
+        return $user->can('recording.view')
+            && data_get($user, 'organization_id') !== null;
     }
 
-    public function update($user, Recording $recording): bool
+    public function update(Authenticatable&Authorizable $user, Recording $recording): bool
     {
-        return $user->can('recordings.recording.update')
-            && $recording->organization_id === $user->organization_id;
+        return $user->can('recording.delete')
+            && $recording->organization_id === data_get($user, 'organization_id');
     }
 
-    public function delete($user, Recording $recording): bool
+    public function delete(Authenticatable&Authorizable $user, Recording $recording): bool
     {
-        return $user->can('recordings.recording.delete')
-            && $recording->organization_id === $user->organization_id;
+        return $user->can('recording.delete')
+            && $recording->organization_id === data_get($user, 'organization_id');
     }
 
     /** الإعلان عن الجاهزية أو الأرشفة — عمليات دورة الحياة. */
-    public function manageLifecycle($user, Recording $recording): bool
+    public function manageLifecycle(Authenticatable&Authorizable $user, Recording $recording): bool
     {
-        return $user->can('recordings.recording.manage_lifecycle')
-            && $recording->organization_id === $user->organization_id;
+        return $user->can('recording.delete')
+            && $recording->organization_id === data_get($user, 'organization_id');
     }
 
     /** مشاهدة المحتوى نفسه (توليد رابط موقّع). */
-    public function watch($user, Recording $recording): bool
+    public function watch(Authenticatable&Authorizable $user, Recording $recording): bool
     {
-        return $user->can('recordings.recording.watch')
-            && $recording->organization_id === $user->organization_id;
+        return ($user->can('recording.view') || $user->can('recording.view.any'))
+            && $recording->organization_id === data_get($user, 'organization_id');
     }
 }

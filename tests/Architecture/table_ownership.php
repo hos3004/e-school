@@ -19,6 +19,8 @@ return [
     'organization_settings' => 'Organization',
     'academic_calendars' => 'Organization',
     'holidays' => 'Organization',
+    'countries' => 'Organization',
+    'regions' => 'Organization',
 
     // Identity
     'users' => 'Identity',
@@ -40,6 +42,7 @@ return [
 
     // Students
     'student_profiles' => 'Students',
+    'registration_applications' => 'Students',
 
     // Guardians
     'guardian_profiles' => 'Guardians',
@@ -51,6 +54,7 @@ return [
     'teacher_rates' => 'Staff',
     'teacher_availability' => 'Staff',
     'teacher_leaves' => 'Staff',
+    'teacher_courses' => 'Staff',
 
     // Academics
     'programs' => 'Academics',
@@ -76,6 +80,8 @@ return [
 
     // Sessions
     'sessions' => 'Sessions',
+    'session_substitutions' => 'Sessions',
+    'teacher_apologies' => 'Sessions',
     'session_status_history' => 'Sessions',
     'session_participants' => 'Sessions',
 
@@ -126,6 +132,7 @@ return [
     'notification_outbox' => 'Notifications',
     'notification_delivery_attempts' => 'Notifications',
     'notification_preferences' => 'Notifications',
+    'notification_templates' => 'Notifications',
 
     // Payroll
     'payroll_periods' => 'Payroll',

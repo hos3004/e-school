@@ -4,11 +4,27 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $session_id
+ * @property string $student_profile_id
+ * @property string $enrollment_id
+ * @property string|null $join_url_token
+ * @property CarbonImmutable|null $invited_at
+ * @property CarbonImmutable|null $first_joined_at
+ * @property CarbonImmutable|null $last_left_at
+ * @property int $attended_minutes
+ * @property Carbon|null $created_at
+ * @property-read Session $session
+ */
 final class SessionParticipant extends Model
 {
     use HasModuleFactory;
@@ -37,6 +53,12 @@ final class SessionParticipant extends Model
             'last_left_at' => 'immutable_datetime',
             'attended_minutes' => 'int',
         ];
+    }
+
+    /** @return BelongsTo<Session, $this> */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(Session::class);
     }
 
     /**

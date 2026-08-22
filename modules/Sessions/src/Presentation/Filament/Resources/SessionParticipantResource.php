@@ -23,9 +23,12 @@ final class SessionParticipantResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التشغيل';
-
     protected static ?int $navigationSort = 41;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('sessions::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {
@@ -103,4 +106,12 @@ final class SessionParticipantResource extends Resource
             ])
             ->defaultSort('created_at');
     }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => SessionParticipantResource\Pages\ListSessionParticipants::route('/'),
+        ];
+    }
 }
+

@@ -27,9 +27,12 @@ final class PostponementRequestResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clock';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التشغيل';
-
     protected static ?int $navigationSort = 40;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('scheduling::filament.group');
+    }
 
     public static function canAccess(): bool
     {

@@ -9,6 +9,7 @@ use Modules\Discipline\Application\Actions\WaiveViolationAction;
 use Modules\Discipline\Domain\Events\ViolationWaived;
 use Modules\Discipline\Domain\Models\ViolationEvent;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
@@ -16,7 +17,7 @@ it('waives a violation with a documented reason and publishes ViolationWaived', 
     Event::fake([ViolationWaived::class]);
 
     $violation = app(RecordViolationAction::class)->execute([
-        'organization_id' => disciplineOrg(),
+        'organization_id' => Fixtures::organizationId(),
         'enrollment_id' => (string) str()->ulid(),
         'student_profile_id' => (string) str()->ulid(),
         'type' => 'unexcused_absence',
@@ -38,7 +39,7 @@ it('waives a violation with a documented reason and publishes ViolationWaived', 
 
 it('refuses to waive the same violation twice', function (): void {
     $violation = app(RecordViolationAction::class)->execute([
-        'organization_id' => disciplineOrg(),
+        'organization_id' => Fixtures::organizationId(),
         'enrollment_id' => (string) str()->ulid(),
         'student_profile_id' => (string) str()->ulid(),
         'type' => 'unexcused_absence',
@@ -50,7 +51,7 @@ it('refuses to waive the same violation twice', function (): void {
 
 it('keeps the violation record in place after waiver — no deletion path', function (): void {
     $violation = app(RecordViolationAction::class)->execute([
-        'organization_id' => disciplineOrg(),
+        'organization_id' => Fixtures::organizationId(),
         'enrollment_id' => (string) str()->ulid(),
         'student_profile_id' => (string) str()->ulid(),
         'type' => 'unexcused_absence',

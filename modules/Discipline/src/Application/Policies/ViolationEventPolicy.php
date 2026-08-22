@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Discipline\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Discipline\Domain\Models\ViolationEvent;
 
 /**
@@ -15,36 +17,36 @@ use Modules\Discipline\Domain\Models\ViolationEvent;
  */
 final class ViolationEventPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('discipline.view_any');
     }
 
-    public function view($user, ViolationEvent $violation): bool
+    public function view(Authenticatable&Authorizable $user, ViolationEvent $violation): bool
     {
         return $user->can('discipline.view_any');
     }
 
     /** تسجيل مخالفة يدويًا — الإجراء الآلي يتحقق من نفس الصلاحية. */
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('discipline.record_violations');
     }
 
     /** السجل غير قابل للتعديل. */
-    public function update($user, ViolationEvent $violation): bool
+    public function update(Authenticatable&Authorizable $user, ViolationEvent $violation): bool
     {
         return false;
     }
 
     /** السجل غير قابل للحذف — العفو هو المسار الوحيد. */
-    public function delete($user, ViolationEvent $violation): bool
+    public function delete(Authenticatable&Authorizable $user, ViolationEvent $violation): bool
     {
         return false;
     }
 
     /** العفو عن المخالفة — قرار إداري بسببه الإلزامي. */
-    public function waive($user, ViolationEvent $violation): bool
+    public function waive(Authenticatable&Authorizable $user, ViolationEvent $violation): bool
     {
         if ($violation->isWaived()) {
             return false;

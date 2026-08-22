@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Recordings\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,15 @@ use Shared\Concerns\HasUlid;
  *
  * كل وصول يُسجَّل للتدقيق وفق config('recordings.privacy.log_every_view').
  * user_id معرّف خارجي: لا علاقة لنموذج موديول Identity.
+ *
+ * @property string $id
+ * @property string $recording_id
+ * @property string $user_id
+ * @property CarbonImmutable $viewed_at
+ * @property string|null $ip_address
+ * @property string|null $user_agent
+ * @property string $action
+ * @property-read Recording $recording
  */
 final class RecordingView extends Model
 {
@@ -49,11 +59,19 @@ final class RecordingView extends Model
         return $this->belongsTo(Recording::class);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForUser(Builder $query, string $userId): Builder
     {
         return $query->where('user_id', $userId);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForRecording(Builder $query, string $recordingId): Builder
     {
         return $query->where('recording_id', $recordingId);

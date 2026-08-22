@@ -30,5 +30,7 @@ return [
     'staff_profile' => 'المعلم',
     'status' => 'الحالة',
     'student_profile' => 'الطالب',
+    'substitute_teacher' => 'المعلم البديل',
+    'override_reason' => 'سبب التجاوز الإداري',
     'title' => 'عنوان الحصة',
 ];

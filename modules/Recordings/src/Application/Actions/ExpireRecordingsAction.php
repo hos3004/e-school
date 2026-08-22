@@ -80,10 +80,11 @@ final readonly class ExpireRecordingsAction
 
     private function markExpired(Recording $recording, CarbonImmutable $at): void
     {
-        $this->transaction->run(fn (): mixed => $this->applyTransition(
-            $recording,
-            RecordingStatus::Expired,
-        ));
+        $this->transaction->run(function () use ($recording): bool {
+            $this->applyTransition($recording, RecordingStatus::Expired);
+
+            return true;
+        });
 
         $this->events->dispatch(new RecordingExpired(
             recordingId: $recording->id,

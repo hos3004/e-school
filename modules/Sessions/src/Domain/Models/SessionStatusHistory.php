@@ -4,10 +4,23 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $session_id
+ * @property string|null $from_status
+ * @property string $to_status
+ * @property string|null $reason
+ * @property string|null $changed_by
+ * @property CarbonImmutable $changed_at
+ * @property array<string, mixed>|null $metadata
+ * @property Carbon|null $created_at
+ */
 final class SessionStatusHistory extends Model
 {
     use HasModuleFactory;

@@ -7,4 +7,6 @@ declare(strict_types=1);
 | تُستهلك عبر __('sessions::messages.key') — ولا نص ظاهر خارج ملفات الترجمة.
 */
 
-return [];
+return [
+    'substitute_assigned' => 'تم إسناد المعلم البديل للحصة بنجاح.',
+];

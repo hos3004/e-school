@@ -20,7 +20,7 @@ trait CreatesRecordingContext
     protected string $organizationId;
 
     /**
-     * @return array{session_id: string, classroom_id: string}
+     * @return array{organization_id: string, session_id: string, classroom_id: string}
      */
     protected function createSessionWithClassroom(): array
     {
@@ -39,7 +39,7 @@ trait CreatesRecordingContext
         DB::table('programs')->insert([
             'id' => $programId,
             'organization_id' => $this->organizationId,
-            'code' => 'PRG-T-'.substr(strtolower($programId), 0, 8),
+            'code' => 'PRG-T-'.substr(strtolower($programId), -8),
             'name' => json_encode(['ar' => 'برنامج اختبار', 'en' => 'Test Program'], JSON_UNESCAPED_UNICODE),
             'default_session_minutes' => 60,
             'currency' => 'EGP',
@@ -71,7 +71,7 @@ trait CreatesRecordingContext
             'id' => $staffProfileId,
             'organization_id' => $this->organizationId,
             'user_id' => $userId,
-            'staff_code' => 'STF-T-'.substr(strtolower($staffProfileId), 0, 8),
+            'staff_code' => 'STF-T-'.substr(strtolower($staffProfileId), -8),
             'employment_type' => 'full_time',
             'created_at' => $now,
             'updated_at' => $now,
@@ -82,7 +82,7 @@ trait CreatesRecordingContext
             'id' => $courseId,
             'organization_id' => $this->organizationId,
             'level_id' => $levelId,
-            'code' => 'CRS-T-'.substr(strtolower($courseId), 0, 8),
+            'code' => 'CRS-T-'.substr(strtolower($courseId), -8),
             'name' => json_encode(['ar' => 'مادة اختبار', 'en' => 'Test Course'], JSON_UNESCAPED_UNICODE),
             'created_at' => $now,
             'updated_at' => $now,
@@ -122,6 +122,10 @@ trait CreatesRecordingContext
             'updated_at' => $now,
         ]);
 
-        return ['session_id' => $sessionId, 'classroom_id' => $classroomId];
+        return [
+            'organization_id' => $this->organizationId,
+            'session_id' => $sessionId,
+            'classroom_id' => $classroomId,
+        ];
     }
 }

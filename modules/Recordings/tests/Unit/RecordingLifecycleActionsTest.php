@@ -13,12 +13,20 @@ use Modules\Recordings\Domain\Events\RecordingArchived;
 use Modules\Recordings\Domain\Events\RecordingBecameReady;
 use Modules\Recordings\Domain\Events\RecordingDeleted;
 use Modules\Recordings\Domain\Models\Recording;
+use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
+
+uses(CreatesRecordingContext::class);
+
+beforeEach(function (): void {
+    $this->context = $this->createSessionWithClassroom();
+});
 
 it('marks a processing recording ready through the state machine', function (): void {
     Event::fake([RecordingBecameReady::class]);
 
-    $recording = Recording::factory()->withStatus(RecordingStatus::Processing)->create();
+    $recording = Recording::factory()->withStatus(RecordingStatus::Processing)->create($this->context);
 
     $updated = app(MarkRecordingReadyAction::class)->execute($recording, durationSeconds: 2700);
 
@@ -30,7 +38,7 @@ it('marks a processing recording ready through the state machine', function (): 
 });
 
 it('rejects skipping the lifecycle from archived back to ready', function (): void {
-    $recording = Recording::factory()->withStatus(RecordingStatus::Archived)->create();
+    $recording = Recording::factory()->withStatus(RecordingStatus::Archived)->create($this->context);
 
     app(MarkRecordingReadyAction::class)->execute($recording);
 })->throws(BusinessRuleViolation::class);
@@ -39,7 +47,7 @@ it('archives a ready recording with the configured driver and stamps the archive
     config()->set('recordings.storage.archive_driver', 'google_drive');
     Event::fake([RecordingArchived::class]);
 
-    $recording = Recording::factory()->ready()->create();
+    $recording = Recording::factory()->ready()->create($this->context);
 
     $updated = app(ArchiveRecordingAction::class)->execute(
         $recording,
@@ -57,7 +65,7 @@ it('archives a ready recording with the configured driver and stamps the archive
 it('refuses archiving when no driver is configured', function (): void {
     config()->set('recordings.storage.archive_driver', 'none');
 
-    $recording = Recording::factory()->ready()->create();
+    $recording = Recording::factory()->ready()->create($this->context);
 
     app(ArchiveRecordingAction::class)->execute($recording);
 })->throws(BusinessRuleViolation::class);
@@ -65,8 +73,8 @@ it('refuses archiving when no driver is configured', function (): void {
 it('expires recordings past retention according to the configured policy', function (): void {
     config()->set('recordings.on_expiry', 'delete');
 
-    $pastReady = Recording::factory()->pastRetention()->create();
-    $withinRetention = Recording::factory()->ready()->create();
+    $pastReady = Recording::factory()->pastRetention()->create($this->context);
+    $withinRetention = Recording::factory()->ready()->create($this->context);
 
     $processed = app(ExpireRecordingsAction::class)->execute();
 
@@ -80,7 +88,7 @@ it('archives first when the expiry policy is archive_then_delete', function (): 
     config()->set('recordings.storage.archive_driver', 'google_drive');
     config()->set('recordings.on_expiry', 'archive_then_delete');
 
-    $pastReady = Recording::factory()->pastRetention()->create();
+    $pastReady = Recording::factory()->pastRetention()->create($this->context);
 
     app(ExpireRecordingsAction::class)->execute();
 
@@ -90,8 +98,8 @@ it('archives first when the expiry policy is archive_then_delete', function (): 
 it('soft deletes with a documented reason and records who did it', function (): void {
     Event::fake([RecordingDeleted::class]);
 
-    $recording = Recording::factory()->ready()->create();
-    $actorId = (string) str()->ulid();
+    $recording = Recording::factory()->ready()->create($this->context);
+    $actorId = Fixtures::userId();
 
     $deleted = app(DeleteRecordingAction::class)->execute($recording, 'طلب اعتراض من ولي الأمر', $actorId);
 
@@ -105,7 +113,7 @@ it('soft deletes with a documented reason and records who did it', function (): 
 });
 
 it('requires an actor for deletion', function (): void {
-    $recording = Recording::factory()->ready()->create();
+    $recording = Recording::factory()->ready()->create($this->context);
 
     app(DeleteRecordingAction::class)->execute($recording, 'بلا معرّف منفّذ', null);
 })->throws(BusinessRuleViolation::class);

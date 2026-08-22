@@ -26,9 +26,6 @@ final readonly class CancelSessionAction
         private Dispatcher $events,
     ) {}
 
-    /**
-     * @param CancelledByStudent|CancelledByTeacher|CancelledBySchool $as حالة الإلغاء المستهدفة
-     */
     public function execute(Session $session, SessionStatus $as, string $reason, ?string $actorId = null): Session
     {
         if (!in_array($as, [SessionStatus::CancelledByStudent, SessionStatus::CancelledByTeacher, SessionStatus::CancelledBySchool], true)) {

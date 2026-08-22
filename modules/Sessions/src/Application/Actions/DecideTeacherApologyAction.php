@@ -1,0 +1,150 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Sessions\Application\Actions;
+
+use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Facades\DB;
+use Modules\Sessions\Domain\Enums\ApologyStatus;
+use Modules\Sessions\Domain\Events\TeacherApologyDecided;
+use Modules\Sessions\Domain\Models\Session;
+use Modules\Sessions\Domain\Models\TeacherApology;
+use Modules\Sessions\Domain\Services\ApologyEscalationEvaluator;
+use Shared\Support\BusinessRuleViolation;
+
+/**
+ * قرار المشرف في اعتذار المعلم — اعتماد أو رفض.
+ *
+ * **القاعدة الحاكمة (docs/client-answers.md §ي):**
+ * اعتماد الاعتذار **لا يُلغي الحصة ولا يغيّر حالتها**. الحصة تبقى بموعدها
+ * وحالتها، ويبدأ البحث عن بديل. هذا الإجراء لا يلمس `sessions.status`
+ * إطلاقًا — وأي كود مستقبلي يفعل ذلك يكسر عقد العميل.
+ *
+ * **ولا يمسّ حالة المعلم (§ك):** لا تعليق ولا إنهاء ولا تغيير حالة آليًا
+ * مهما بلغت مرتبة الاعتذار في السُلَّم. أقصى الأثر إخطار وتصعيد للإدارة،
+ * والقرار النهائي يدوي.
+ *
+ * سُلَّم المتابعة يُحتسب على نافذة **متحركة** (آخر N يومًا) لا على شهر ميلادي.
+ */
+final readonly class DecideTeacherApologyAction
+{
+    public function __construct(
+        private Dispatcher $events,
+        private ApologyEscalationEvaluator $escalation,
+    ) {}
+
+    public function approve(
+        string $apologyId,
+        string $decidedBy,
+        ?string $decisionReason = null,
+        ?CarbonImmutable $now = null,
+    ): TeacherApology {
+        return $this->decide($apologyId, ApologyStatus::Approved, $decidedBy, $decisionReason, $now);
+    }
+
+    public function reject(
+        string $apologyId,
+        string $decidedBy,
+        string $decisionReason,
+        ?CarbonImmutable $now = null,
+    ): TeacherApology {
+        if (trim($decisionReason) === '') {
+            throw BusinessRuleViolation::make(
+                'sessions.apology_rejection_reason_required',
+                'sessions::errors.apology_rejection_reason_required',
+            );
+        }
+
+        return $this->decide($apologyId, ApologyStatus::Rejected, $decidedBy, $decisionReason, $now);
+    }
+
+    private function decide(
+        string $apologyId,
+        ApologyStatus $target,
+        string $decidedBy,
+        ?string $decisionReason,
+        ?CarbonImmutable $now,
+    ): TeacherApology {
+        $now ??= CarbonImmutable::now('UTC');
+
+        $apology = TeacherApology::query()->findOrFail($apologyId);
+
+        if (! $apology->status->canTransitionTo($target)) {
+            throw BusinessRuleViolation::make(
+                'sessions.apology_invalid_transition',
+                'sessions::errors.apology_invalid_transition',
+                ['from' => $apology->status->value, 'to' => $target->value],
+            );
+        }
+
+        $session = Session::query()->findOrFail($apology->session_id);
+        $statusBefore = $session->status;
+
+        /*
+         * مرتبة هذا الاعتذار في النافذة المتحركة — تُحسب وتُجمَّد لحظة الاعتماد
+         * فقط. الاعتذار المرفوض لا يدخل السُلَّم أصلًا.
+         */
+        $verdict = $target === ApologyStatus::Approved
+            ? $this->escalation->evaluate((string) $apology->staff_profile_id, $now)
+            : null;
+
+        DB::transaction(function () use ($apology, $target, $decidedBy, $decisionReason, $now, $verdict): void {
+            $apology->status = $target;
+            $apology->decided_by = $decidedBy;
+            $apology->decided_at = $now;
+            $apology->decision_reason = $decisionReason === null ? null : trim($decisionReason);
+
+            if ($verdict !== null) {
+                $apology->occurrence_in_window = $verdict['occurrence'];
+                $apology->window_days = $verdict['window_days'];
+            }
+
+            $apology->save();
+        });
+
+        /*
+         * تأكيد صريح ومقصود: حالة الحصة لم تتغيّر بأي حال.
+         * هذا ليس تعليقًا تجميليًا — هو الفرق بين تنفيذ صحيح لعقد العميل
+         * وتنفيذ يلغي حصص الطلاب كلما اعتذر معلم.
+         */
+        $session->refresh();
+
+        if ($session->status !== $statusBefore) {
+            throw BusinessRuleViolation::make(
+                'sessions.apology_must_not_change_session',
+                'sessions::errors.apology_must_not_change_session',
+            );
+        }
+
+        $this->events->dispatch(new TeacherApologyDecided(
+            sessionId: (string) $session->id,
+            organizationId: (string) $session->organization_id,
+            courseId: (string) $session->course_id,
+            staffProfileId: (string) $apology->staff_profile_id,
+            apologyId: (string) $apology->id,
+            teacherUserId: $this->teacherUserId((string) $apology->staff_profile_id),
+            decision: $target->value,
+            substituteRequired: $target === ApologyStatus::Approved,
+            occurrenceInWindow: $verdict['occurrence'] ?? null,
+            windowDays: $verdict['window_days'] ?? null,
+            escalationAction: $verdict['action'] ?? null,
+            createsEscalation: (bool) ($verdict['creates_escalation'] ?? false),
+            scheduledStart: CarbonImmutable::instance($session->scheduled_start)->toIso8601String(),
+            actorId: $decidedBy,
+        ));
+
+        return $apology;
+    }
+
+    /**
+     * نقرأ بالجدول لا بنموذج موديول Staff — الاستيراد عبر الحدود ممنوع.
+     */
+    private function teacherUserId(string $staffProfileId): ?string
+    {
+        $id = DB::table('staff_profiles')->where('id', $staffProfileId)->value('user_id');
+
+        return is_string($id) && $id !== '' ? $id : null;
+    }
+}

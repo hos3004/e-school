@@ -24,9 +24,12 @@ final class ReactivationRequestFilamentResource extends Resource
 
     protected static ?string $slug = 'discipline-reactivations';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'الانضباط';
-
     protected static ?int $navigationSort = 60;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('discipline::filament.navigation_group');
+    }
 
     public static function getNavigationLabel(): string
     {

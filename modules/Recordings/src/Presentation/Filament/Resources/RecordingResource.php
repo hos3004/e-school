@@ -25,9 +25,12 @@ final class RecordingResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-video-camera';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التشغيل';
-
     protected static ?int $navigationSort = 44;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('recordings::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {

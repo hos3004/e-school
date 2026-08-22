@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'group' => 'التشغيل',
     'postponement' => [
         'label' => 'طلب تأجيل',
         'plural' => 'طلبات التأجيل',

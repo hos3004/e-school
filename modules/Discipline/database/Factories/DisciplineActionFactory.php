@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use Modules\Discipline\Domain\Enums\DisciplineActionType;
 use Modules\Discipline\Domain\Models\DisciplineAction;
+use Modules\Discipline\Domain\Models\ViolationEvent;
 use Modules\Discipline\Domain\ValueObjects\DisciplineWindow;
+use Shared\Testing\Fixtures;
 
 /**
  * @extends Factory<DisciplineAction>
@@ -24,9 +26,9 @@ final class DisciplineActionFactory extends Factory
     public function definition(): array
     {
         return [
-            'organization_id' => (string) Str::ulid(),
+            'organization_id' => Fixtures::organizationId(),
             'enrollment_id' => (string) Str::ulid(),
-            'triggered_by_event_id' => (string) Str::ulid(),
+            'triggered_by_event_id' => ViolationEvent::factory(),
             'action' => DisciplineActionType::Notice,
             'threshold_reached' => 1,
             'window_key' => DisciplineWindow::current()->key,

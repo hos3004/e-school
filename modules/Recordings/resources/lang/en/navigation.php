@@ -8,7 +8,7 @@ declare(strict_types=1);
 */
 
 return [
-    'group' => 'Recordings',
+    'group' => 'Operations',
     'recording' => [
         'label' => 'Recording',
         'plural' => 'Recordings',

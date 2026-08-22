@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Recordings\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Recordings\Domain\Models\RecordingView;
 
 /**
@@ -11,15 +13,15 @@ use Modules\Recordings\Domain\Models\RecordingView;
  */
 final class RecordingViewPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('recordings.recording_view.view_any');
     }
 
-    public function view($user, RecordingView $view): bool
+    public function view(Authenticatable&Authorizable $user, RecordingView $view): bool
     {
         return $user->can('recordings.recording_view.view')
             && $view->recording !== null
-            && $view->recording->organization_id === $user->organization_id;
+            && $view->recording->organization_id === data_get($user, 'organization_id');
     }
 }

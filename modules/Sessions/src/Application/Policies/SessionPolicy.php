@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Application\Policies;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Sessions\Domain\Models\Session;
 
 /**
@@ -14,80 +15,93 @@ use Modules\Sessions\Domain\Models\Session;
  */
 final class SessionPolicy
 {
-    public function viewAny($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function viewAny(Authenticatable $user): bool
     {
-        return $user->can('sessions.session.view_any');
+        return $user->can('session.view');
     }
 
-    public function view($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function view(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.view')
+        return $user->can('session.view')
             && $session->organization_id === $user->organization_id;
     }
 
-    public function create($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function create(Authenticatable $user): bool
     {
-        return $user->can('sessions.session.create');
+        return $user->can('session.create');
     }
 
-    public function update($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function update(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.update')
+        return $user->can('session.create')
             && $session->organization_id === $user->organization_id;
     }
 
-    public function delete($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function delete(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.delete')
+        return $user->can('session.cancel')
             && $session->organization_id === $user->organization_id
             && !$session->status->isTerminal();
     }
 
-    public function confirm($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function confirm(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.confirm')
+        return $user->can('session.view')
             && $session->organization_id === $user->organization_id;
     }
 
-    public function start($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function start(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.start')
+        return $user->can('session.create')
             && $session->organization_id === $user->organization_id;
     }
 
-    public function end($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function end(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.end')
+        return $user->can('session.finalize')
             && $session->organization_id === $user->organization_id;
     }
 
-    public function complete($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function complete(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.complete')
+        return $user->can('session.finalize')
             && $session->organization_id === $user->organization_id;
     }
 
-    public function cancel($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function cancel(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.cancel')
+        return $user->can('session.cancel')
             && $session->organization_id === $user->organization_id;
     }
 
-    public function postpone($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function postpone(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.postpone')
+        return $user->can('session.postpone.request')
             && $session->organization_id === $user->organization_id;
     }
 
-    public function markNoShow($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function markNoShow(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.mark_no_show')
+        return $user->can('attendance.record')
             && $session->organization_id === $user->organization_id;
     }
 
-    public function excuse($user, Session $session): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function excuse(Authenticatable $user, Session $session): bool
     {
-        return $user->can('sessions.session.excuse')
+        return $user->can('session.cancel')
             && $session->organization_id === $user->organization_id;
     }
 }

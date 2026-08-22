@@ -8,13 +8,21 @@ use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Events\RecordingViewed;
 use Modules\Recordings\Domain\Models\Recording;
 use Modules\Recordings\Domain\Models\RecordingView;
+use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
+
+uses(CreatesRecordingContext::class);
+
+beforeEach(function (): void {
+    $this->context = $this->createSessionWithClassroom();
+});
 
 it('logs a view on a ready recording', function (): void {
     Event::fake([RecordingViewed::class]);
 
-    $recording = Recording::factory()->ready()->create();
-    $userId = (string) str()->ulid();
+    $recording = Recording::factory()->ready()->create($this->context);
+    $userId = Fixtures::userId();
 
     $view = app(LogRecordingViewAction::class)->execute(
         $recording,
@@ -35,13 +43,13 @@ it('logs a view on a ready recording', function (): void {
 });
 
 it('rejects viewing a recording that is not ready', function (): void {
-    $recording = Recording::factory()->withStatus(RecordingStatus::Processing)->create();
+    $recording = Recording::factory()->withStatus(RecordingStatus::Processing)->create($this->context);
 
     app(LogRecordingViewAction::class)->execute($recording, (string) str()->ulid());
 })->throws(BusinessRuleViolation::class);
 
 it('rejects viewing a deleted recording even if it was ready', function (): void {
-    $recording = Recording::factory()->ready()->create();
+    $recording = Recording::factory()->ready()->create($this->context);
     $recording->delete();
 
     app(LogRecordingViewAction::class)->execute($recording, (string) str()->ulid());
@@ -50,7 +58,7 @@ it('rejects viewing a deleted recording even if it was ready', function (): void
 it('blocks downloads while the policy forbids them without touching code', function (): void {
     config()->set('recordings.access.allow_download', false);
 
-    $recording = Recording::factory()->ready()->create();
+    $recording = Recording::factory()->ready()->create($this->context);
 
     app(LogRecordingViewAction::class)->execute($recording, (string) str()->ulid(), action: 'download');
 })->throws(BusinessRuleViolation::class);
@@ -58,9 +66,9 @@ it('blocks downloads while the policy forbids them without touching code', funct
 it('allows downloads once the policy permits them', function (): void {
     config()->set('recordings.access.allow_download', true);
 
-    $recording = Recording::factory()->ready()->create();
+    $recording = Recording::factory()->ready()->create($this->context);
 
-    $view = app(LogRecordingViewAction::class)->execute($recording, (string) str()->ulid(), action: 'download');
+    $view = app(LogRecordingViewAction::class)->execute($recording, Fixtures::userId(), action: 'download');
 
     expect($view->action)->toBe('download');
 });

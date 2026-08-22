@@ -6,6 +6,7 @@ namespace Modules\Discipline\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Discipline\Domain\Models\ViolationEvent;
 
 /**
  * طلب تسجيل مخالفة.

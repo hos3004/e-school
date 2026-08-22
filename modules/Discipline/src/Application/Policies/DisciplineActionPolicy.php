@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Discipline\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Discipline\Domain\Models\DisciplineAction;
 
 /**
@@ -14,28 +16,28 @@ use Modules\Discipline\Domain\Models\DisciplineAction;
  */
 final class DisciplineActionPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('discipline.view_any');
     }
 
-    public function view($user, DisciplineAction $action): bool
+    public function view(Authenticatable&Authorizable $user, DisciplineAction $action): bool
     {
         return $user->can('discipline.view_any');
     }
 
     /** تطبيق إجراء يدوي خارج السُلَّم الآلي. */
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('discipline.apply_actions');
     }
 
-    public function update($user, DisciplineAction $action): bool
+    public function update(Authenticatable&Authorizable $user, DisciplineAction $action): bool
     {
         return false;
     }
 
-    public function delete($user, DisciplineAction $action): bool
+    public function delete(Authenticatable&Authorizable $user, DisciplineAction $action): bool
     {
         return false;
     }

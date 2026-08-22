@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Modules\Discipline\Domain\Enums\ViolationType;
 use Modules\Discipline\Domain\Models\ViolationEvent;
 use Modules\Discipline\Domain\ValueObjects\DisciplineWindow;
+use Shared\Testing\Fixtures;
 
 /**
  * @extends Factory<ViolationEvent>
@@ -26,7 +27,7 @@ final class ViolationEventFactory extends Factory
         $occurredAt = CarbonImmutable::instance($this->faker->dateTimeBetween('-2 months', 'now'));
 
         return [
-            'organization_id' => (string) Str::ulid(),
+            'organization_id' => Fixtures::organizationId(),
             'enrollment_id' => (string) Str::ulid(),
             'student_profile_id' => (string) Str::ulid(),
             'session_id' => null,
@@ -50,7 +51,7 @@ final class ViolationEventFactory extends Factory
     public function waived(?string $waivedBy = null, ?string $reason = null): static
     {
         return $this->state(fn (): array => [
-            'waived_by' => $waivedBy ?? (string) Str::ulid(),
+            'waived_by' => $waivedBy ?? Fixtures::userId(),
             'waived_at' => CarbonImmutable::now('UTC'),
             'waiver_reason' => $reason ?? 'عفو إداري تجريبي',
         ]);

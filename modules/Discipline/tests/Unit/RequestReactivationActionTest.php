@@ -10,6 +10,7 @@ use Modules\Discipline\Domain\Enums\ReactivationStatus;
 use Modules\Discipline\Domain\Events\ReactivationRequested;
 use Modules\Identity\Domain\Models\User;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
@@ -25,7 +26,7 @@ beforeEach(function (): void {
 function reactivationData(array $overrides = []): array
 {
     return array_merge([
-        'organization_id' => disciplineOrg(),
+        'organization_id' => Fixtures::organizationId(),
         'enrollment_id' => (string) str()->ulid(),
         'student_statement' => 'أتعهد بالحضور المنتظم والتزام كامل بمواعيد الحصص القادمة.',
     ], $overrides);
@@ -48,9 +49,10 @@ it('submits a pending request as attempt one and publishes ReactivationRequested
 
 it('refuses a second request while one is still open', function (): void {
     $action = app(RequestReactivationAction::class);
+    $enrollmentId = (string) str()->ulid();
 
-    $action->execute(reactivationData());
-    $action->execute(reactivationData());
+    $action->execute(reactivationData(['enrollment_id' => $enrollmentId]));
+    $action->execute(reactivationData(['enrollment_id' => $enrollmentId]));
 })->throws(BusinessRuleViolation::class);
 
 it('counts closed attempts against the configured maximum', function (): void {

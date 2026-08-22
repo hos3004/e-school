@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Application\Policies;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Sessions\Domain\Models\SessionStatusHistory;
 
 /**
@@ -11,27 +12,27 @@ use Modules\Sessions\Domain\Models\SessionStatusHistory;
  */
 final class SessionStatusHistoryPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable $user): bool
     {
         return $user->can('sessions.history.view_any');
     }
 
-    public function view($user, SessionStatusHistory $history): bool
+    public function view(Authenticatable $user, SessionStatusHistory $history): bool
     {
         return $user->can('sessions.history.view');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable $user): bool
     {
         return false;
     }
 
-    public function update($user, SessionStatusHistory $history): bool
+    public function update(Authenticatable $user, SessionStatusHistory $history): bool
     {
         return false;
     }
 
-    public function delete($user, SessionStatusHistory $history): bool
+    public function delete(Authenticatable $user, SessionStatusHistory $history): bool
     {
         return false;
     }
