@@ -13,7 +13,7 @@ final class RetryNotificationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('notifications.outbox.retry');
+        return (bool) ($this->user()?->can('settings.manage') ?? false);
     }
 
     /**

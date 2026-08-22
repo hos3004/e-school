@@ -4,19 +4,26 @@ declare(strict_types=1);
 
 namespace Modules\Notifications\Presentation\Filament\Resources;
 
+use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Modules\Notifications\Application\Actions\MarkNotificationAsReadAction;
+use Modules\Notifications\Application\Actions\RetryNotificationAction;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
+use Modules\Notifications\Presentation\Filament\Resources\NotificationOutboxResource\Pages;
 
 /**
  * مورد صندوق الإرسال في لوحة الإدارة — قراءة وتشغيل (إلغاء/إعادة)،
@@ -27,8 +34,6 @@ final class NotificationOutboxResource extends Resource
     protected static ?string $model = NotificationOutbox::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-bell-alert';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'التواصل';
 
     protected static ?int $navigationSort = 71;
 
@@ -42,6 +47,30 @@ final class NotificationOutboxResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('notifications::navigation.outbox.plural');
+    }
+
+    public static function getNavigationGroup(): string
+    {
+        return __('notifications::navigation.group');
+    }
+
+    /** عدّاد جرس المستخدم الحالي؛ البث اللحظي له polling fallback عبر الـAPI. */
+    public static function getNavigationBadge(): ?string
+    {
+        $userId = (string) auth()->id();
+        $organizationId = (string) data_get(auth()->user(), 'organization_id');
+
+        if ($userId === '' || $organizationId === '') {
+            return null;
+        }
+
+        return (string) NotificationOutbox::query()
+            ->forOrganization($organizationId)
+            ->forUser($userId)
+            ->where('channel', Channel::InApp->value)
+            ->where('status', OutboxStatus::Sent)
+            ->whereNull('read_at')
+            ->count();
     }
 
     public static function canCreate(): bool
@@ -119,6 +148,31 @@ final class NotificationOutboxResource extends Resource
                         ->label(__('notifications::fields.sent_at'))
                         ->disabled()
                         ->dehydrated(false),
+                    TextInput::make('external_message_id')
+                        ->label(__('notifications::fields.external_message_id'))
+                        ->disabled()
+                        ->dehydrated(false),
+                    TextInput::make('provider_status')
+                        ->label(__('notifications::fields.provider_status'))
+                        ->disabled()
+                        ->dehydrated(false),
+                    DateTimePicker::make('read_at')
+                        ->label(__('notifications::fields.read_at'))
+                        ->disabled()
+                        ->dehydrated(false),
+                    TextInput::make('last_manual_retry_by')
+                        ->label(__('notifications::fields.last_manual_retry_by'))
+                        ->disabled()
+                        ->dehydrated(false),
+                    DateTimePicker::make('last_manual_retry_at')
+                        ->label(__('notifications::fields.last_manual_retry_at'))
+                        ->disabled()
+                        ->dehydrated(false),
+                    Textarea::make('failure_reason')
+                        ->label(__('notifications::fields.failure_reason'))
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->columnSpanFull(),
                     Textarea::make('last_error')
                         ->label(__('notifications::fields.last_error'))
                         ->disabled()
@@ -180,6 +234,27 @@ final class NotificationOutboxResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
+                TextColumn::make('external_message_id')
+                    ->label(__('notifications::fields.external_message_id'))
+                    ->limit(24)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('failure_reason')
+                    ->label(__('notifications::fields.failure_reason'))
+                    ->limit(40)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('read_at')
+                    ->label(__('notifications::fields.read_at'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('last_manual_retry_by')
+                    ->label(__('notifications::fields.last_manual_retry_by'))
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('last_manual_retry_at')
+                    ->label(__('notifications::fields.last_manual_retry_at'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label(__('notifications::fields.created_at'))
                     ->dateTime()
@@ -197,7 +272,84 @@ final class NotificationOutboxResource extends Resource
                     ->options(collect(Channel::cases())
                         ->mapWithKeys(fn (Channel $c): array => [$c->value => $c->label()])
                         ->all()),
+                TernaryFilter::make('read_at')
+                    ->label(__('notifications::fields.read_status'))
+                    ->nullable(),
+            ])
+            ->recordActions([
+                self::markAsReadAction(),
+                self::manualRetryAction(),
             ])
             ->defaultSort('scheduled_for');
+    }
+
+    /**
+     * نطاق مؤسسة المشرف دائمًا؛ غياب المؤسسة يغلق الاستعلام بدل كشف الجميع.
+     *
+     * @return Builder<NotificationOutbox>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        $organizationId = (string) data_get(auth()->user(), 'organization_id');
+        /** @var Builder<NotificationOutbox> $query */
+        $query = parent::getEloquentQuery();
+
+        return $organizationId === ''
+            ? $query->whereRaw('1 = 0')
+            : $query->forOrganization($organizationId);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListNotificationOutboxes::route('/'),
+        ];
+    }
+
+    private static function markAsReadAction(): Action
+    {
+        return Action::make('mark_as_read')
+            ->label(__('notifications::actions.mark_as_read'))
+            ->icon('heroicon-m-check')
+            ->authorize('markAsRead')
+            ->visible(fn (NotificationOutbox $record): bool => $record->read_at === null
+                && $record->channel === Channel::InApp->value
+                && $record->status === OutboxStatus::Sent)
+            ->action(function (NotificationOutbox $record): void {
+                app(MarkNotificationAsReadAction::class)->execute(
+                    $record,
+                    (string) auth()->id(),
+                    (string) data_get(auth()->user(), 'organization_id'),
+                );
+
+                Notification::make()
+                    ->title(__('notifications::messages.marked_as_read'))
+                    ->success()
+                    ->send();
+            });
+    }
+
+    private static function manualRetryAction(): Action
+    {
+        return Action::make('manual_retry')
+            ->label(__('notifications::actions.manual_retry'))
+            ->icon('heroicon-m-arrow-path')
+            ->color('warning')
+            ->requiresConfirmation()
+            ->modalHeading(__('notifications::actions.manual_retry_heading'))
+            ->modalDescription(__('notifications::actions.manual_retry_description'))
+            ->authorize('retry')
+            ->visible(fn (NotificationOutbox $record): bool => $record->status === OutboxStatus::Failed)
+            ->action(function (NotificationOutbox $record): void {
+                app(RetryNotificationAction::class)->executeManually(
+                    $record,
+                    (string) auth()->id(),
+                );
+
+                Notification::make()
+                    ->title(__('notifications::messages.manual_retry_queued'))
+                    ->success()
+                    ->send();
+            });
     }
 }

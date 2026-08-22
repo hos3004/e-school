@@ -26,9 +26,12 @@ final class NotificationPreferenceResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التواصل';
-
     protected static ?int $navigationSort = 71;
+
+    public static function getNavigationGroup(): string
+    {
+        return __('notifications::navigation.group');
+    }
 
     protected static ?string $recordTitleAttribute = 'id';
 

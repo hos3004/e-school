@@ -7,6 +7,7 @@ namespace Modules\Notifications\Infrastructure\Providers;
 use Modules\Integrations\Domain\Contracts\ChannelGateway;
 use Modules\Notifications\Application\Console\DispatchDueNotifications;
 use Modules\Notifications\Application\Console\RetryFailedNotifications;
+use Modules\Notifications\Application\Listeners\QueueConfiguredDomainEventNotification;
 use Modules\Notifications\Application\Policies\NotificationDeliveryAttemptPolicy;
 use Modules\Notifications\Application\Policies\NotificationOutboxPolicy;
 use Modules\Notifications\Application\Policies\NotificationPreferencePolicy;
@@ -32,9 +33,20 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
      */
     protected function listeners(): array
     {
-        // الموديول لا يستهلك حاليًا أحداثًا من موديولات أخرى؛ الإشعارات
-        // تُقيَّد عبر QueueNotificationAction من مستمعي الموديولات المالكة.
-        return [];
+        $listeners = [];
+
+        /** @var array<string, array<string, mixed>> $events */
+        $events = (array) config('notifications.events', []);
+
+        foreach ($events as $settings) {
+            foreach ((array) ($settings['source_events'] ?? []) as $eventClass) {
+                if (is_string($eventClass) && class_exists($eventClass)) {
+                    $listeners[$eventClass] = [QueueConfiguredDomainEventNotification::class];
+                }
+            }
+        }
+
+        return $listeners;
     }
 
     /**

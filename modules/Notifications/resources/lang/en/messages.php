@@ -18,6 +18,14 @@ return [
 
     'retried' => 'The notification was rescheduled for delivery.',
 
+    'marked_as_read' => 'The notification was marked as read.',
+
+    'marked_all_as_read' => 'All your notifications were marked as read.',
+
+    'marked_all_as_read_count' => ':count notifications were marked as read.',
+
+    'manual_retry_queued' => 'The manual resend was recorded and a new delivery attempt was queued.',
+
     'preference_updated' => 'Notification preference updated successfully.',
 
     'seed_provider_error' => 'Delivery provider was unreachable.',

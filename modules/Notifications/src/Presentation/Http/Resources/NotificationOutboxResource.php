@@ -40,8 +40,13 @@ final class NotificationOutboxResource extends JsonResource
             'attempts' => $this->attempts,
             'last_error' => $this->last_error,
             'last_error_retryable' => $this->last_error_retryable,
+            'external_message_id' => $this->external_message_id,
+            'provider_status' => $this->provider_status,
+            'failure_reason' => $this->failure_reason,
             'scheduled_for' => $this->scheduled_for?->toIso8601String(),
             'sent_at' => $this->sent_at?->toIso8601String(),
+            'read_at' => $this->read_at?->toIso8601String(),
+            'is_read' => $this->read_at !== null,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

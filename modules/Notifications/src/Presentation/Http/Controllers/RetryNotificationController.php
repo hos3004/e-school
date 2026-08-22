@@ -26,7 +26,10 @@ final class RetryNotificationController extends Controller
 
         Gate::authorize('retry', $notification);
 
-        $this->action->execute($notification);
+        $this->action->executeManually(
+            $notification,
+            (string) $request->user()?->getAuthIdentifier(),
+        );
 
         return new NotificationOutboxResource($notification->refresh());
     }

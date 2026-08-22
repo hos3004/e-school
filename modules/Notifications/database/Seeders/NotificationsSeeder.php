@@ -20,6 +20,8 @@ final class NotificationsSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(NotificationTemplateSeeder::class);
+
         $organizationId = Fixtures::organizationId();
         $categories = ['scheduling', 'discipline', 'billing', 'system'];
 

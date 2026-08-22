@@ -2,7 +2,9 @@
 
 ## يملك
 
-لا جداول تشغيلية في `docs/08` قسم 4 — الموديول يوفّر عقود ومزوّدي الخدمات الخارجية (الفصل المباشر، البريد، الدفع، واتساب) وفق `docs/11-provider-interfaces.md`.
+`integration_providers` · `integration_connections` · `integration_webhook_deliveries`.
+
+كما يوفّر الموديول عقود ومزوّدي الخدمات الخارجية (الفصل المباشر، البريد، الدفع، واتساب) وفق `docs/11-provider-interfaces.md`.
 
 ## ينشر
 

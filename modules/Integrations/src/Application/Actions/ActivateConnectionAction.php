@@ -36,7 +36,7 @@ final readonly class ActivateConnectionAction
             throw BusinessRuleViolation::make(
                 'integrations.provider_inactive',
                 'integrations::errors.provider_inactive',
-                ['key' => (string) ($provider?->key ?? $connection->provider_id)],
+                ['key' => (string) ($provider->key ?? $connection->provider_id)],
             );
         }
 

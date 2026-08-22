@@ -39,6 +39,12 @@ use Shared\Concerns\HasUlid;
  * @property string|null $last_error
  * @property bool|null $last_error_retryable
  * @property CarbonInterface|null $sent_at
+ * @property string|null $external_message_id
+ * @property string|null $provider_status
+ * @property string|null $failure_reason
+ * @property CarbonInterface|null $read_at
+ * @property string|null $last_manual_retry_by
+ * @property CarbonInterface|null $last_manual_retry_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  */
@@ -68,6 +74,12 @@ final class NotificationOutbox extends Model
         'last_error',
         'last_error_retryable',
         'sent_at',
+        'external_message_id',
+        'provider_status',
+        'failure_reason',
+        'read_at',
+        'last_manual_retry_by',
+        'last_manual_retry_at',
     ];
 
     protected function casts(): array
@@ -80,6 +92,8 @@ final class NotificationOutbox extends Model
             'attempts' => 'int',
             'last_error_retryable' => 'bool',
             'sent_at' => 'immutable_datetime',
+            'read_at' => 'immutable_datetime',
+            'last_manual_retry_at' => 'immutable_datetime',
             'status' => OutboxStatus::class,
         ];
     }

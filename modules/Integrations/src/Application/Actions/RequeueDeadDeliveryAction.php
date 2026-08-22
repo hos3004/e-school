@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Integrations\Application\Actions;
 
-use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Integrations\Application\Concerns\TransitionsDeliveryStatus;
 use Modules\Integrations\Domain\Enums\DeliveryStatus;
 use Modules\Integrations\Domain\Models\IntegrationWebhookDelivery;
@@ -20,7 +19,6 @@ final readonly class RequeueDeadDeliveryAction
 
     public function __construct(
         private Transaction $transaction,
-        private Dispatcher $events,
     ) {}
 
     public function execute(IntegrationWebhookDelivery $delivery, ?string $actorId = null): IntegrationWebhookDelivery

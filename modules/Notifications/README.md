@@ -2,7 +2,7 @@
 
 ## يملك
 
-`notification_outbox` · `notification_delivery_attempts` · `notification_preferences`
+`notification_outbox` · `notification_delivery_attempts` · `notification_preferences` · `notification_templates`
 
 ## ينشر
 
@@ -20,3 +20,15 @@
 - ساعات الهدوء 22:00–07:00 بتوقيت المستلم؛ غير الحرجة تُؤجَّل إلى 07:00، وتذكير العشر دقائق مستثنى.
 - منع التكرار: `idempotency_key = sha256(event_id + user_id + channel + category)` خلال 30 دقيقة.
 - قالب بلا نسخة `en` يُسقط الاختبار؛ التواريخ تُنسَّق بلغة وتوقيت المستلم عند التركيب.
+
+## الإشعارات داخل التطبيق
+
+- سطر `notification_outbox` المسلّم عبر قناة `in_app` هو سجل الجرس الدائم، و`read_at` يحفظ حالة القراءة بتوقيت UTC.
+- واجهة المستخدم تقرأ القائمة من `GET /api/notifications` والعدّاد من `GET /api/notifications/unread-count`، وتستعمل مساري `mark-as-read` و`mark-all-as-read` للكتابة.
+- التنفيذ الحالي يستخدم endpoint العدّاد كـpolling fallback، وتبقى فترة polling قرارًا في إعداد العميل لا رقمًا ثابتًا داخل الموديول. بث Reverb اللحظي غير مربوط بعد، لذلك لا يعلن الإعداد تفعيله.
+- كل استعلام قراءة أو تحديث مقيّد معًا بـ`user_id` و`organization_id`، ولا تعرض واجهة الجرس سوى إشعارات `in_app` التي وصلت إلى حالة `sent`.
+
+## إعادة الإرسال اليدوي
+
+- إجراء لوحة الإدارة يمر عبر `RetryNotificationAction`، ويحفظ `last_manual_retry_by` و`last_manual_retry_at` قبل دفع `SendQueuedNotification` إلى الـqueue.
+- سجل `notification_delivery_attempts` لا يُمسح؛ يسجّل عامل الطابور محاولة جديدة برقم تالٍ. الأخطاء الدائمة لا يعيدها المجدول آليًا، بينما تستطيع الإدارة إعادة إرسالها يدويًا بعد إصلاح السبب.

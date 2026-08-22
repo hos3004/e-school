@@ -14,8 +14,6 @@ use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Events\NotificationFailed;
 use Modules\Notifications\Domain\Models\NotificationDeliveryAttempt;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
-use RuntimeException;
-use Throwable;
 
 final class NotificationsJobGatewayStub implements ChannelGateway
 {

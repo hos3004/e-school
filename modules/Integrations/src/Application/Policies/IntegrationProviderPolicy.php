@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Integrations\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Integrations\Domain\Models\IntegrationProvider;
 
 /**
@@ -12,27 +14,27 @@ use Modules\Integrations\Domain\Models\IntegrationProvider;
  */
 final class IntegrationProviderPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('integrations.provider.view_any');
     }
 
-    public function view($user, IntegrationProvider $provider): bool
+    public function view(Authenticatable&Authorizable $user, IntegrationProvider $provider): bool
     {
         return $user->can('integrations.provider.view');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('integrations.provider.create');
     }
 
-    public function update($user, IntegrationProvider $provider): bool
+    public function update(Authenticatable&Authorizable $user, IntegrationProvider $provider): bool
     {
         return $user->can('integrations.provider.update');
     }
 
-    public function delete($user, IntegrationProvider $provider): bool
+    public function delete(Authenticatable&Authorizable $user, IntegrationProvider $provider): bool
     {
         return $user->can('integrations.provider.delete')
             && !$provider->connections()->exists();

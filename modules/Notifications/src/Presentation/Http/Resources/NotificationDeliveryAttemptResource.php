@@ -27,6 +27,7 @@ final class NotificationDeliveryAttemptResource extends JsonResource
             'attempt_number' => $this->attempt_number,
             'attempted_at' => $this->attempted_at?->toIso8601String(),
             'provider_response' => $this->provider_response,
+            'external_message_id' => $this->external_message_id,
             'succeeded' => $this->succeeded,
             'retryable' => $this->retryable,
             'error' => $this->error,

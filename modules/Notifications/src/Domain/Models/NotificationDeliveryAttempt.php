@@ -22,6 +22,7 @@ use Shared\Concerns\HasUlid;
  * @property int $attempt_number
  * @property CarbonInterface $attempted_at
  * @property array<string, mixed>|null $provider_response
+ * @property string|null $external_message_id
  * @property bool $succeeded
  * @property bool|null $retryable
  * @property string|null $error
@@ -41,6 +42,7 @@ final class NotificationDeliveryAttempt extends Model
         'attempt_number',
         'attempted_at',
         'provider_response',
+        'external_message_id',
         'succeeded',
         'retryable',
         'error',

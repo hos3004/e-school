@@ -27,9 +27,12 @@ final class IntegrationWebhookDeliveryResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrows-right-left';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'النظام';
-
     protected static ?int $navigationSort = 104;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('integrations::navigation.group');
+    }
 
     public static function canCreate(): bool
     {

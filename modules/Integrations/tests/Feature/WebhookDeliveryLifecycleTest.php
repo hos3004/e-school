@@ -85,9 +85,9 @@ it('dead-letters a delivery after exhausting the configured attempts', function 
     $delivery = $action->execute($delivery, false, 500);
     $delivery = $action->execute($delivery, false, 500);
 
-    expect($delivery->status)->toBe(DeliveryStatus::Retrying)
+    expect($delivery->status)->toBe(DeliveryStatus::Failed)
         ->and((int) $delivery->attempts)->toBe(2)
-        ->and($delivery->next_retry_at)->not->toBeNull();
+        ->and($delivery->next_retry_at)->toBeNull();
 
     $delivery = $action->execute($delivery, false, 503);
 

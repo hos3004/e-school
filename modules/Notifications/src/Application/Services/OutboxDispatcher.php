@@ -32,6 +32,7 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private TemplateRenderer $templates,
     ) {}
 
     public function dispatch(
@@ -127,6 +128,27 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
     ): bool {
         $idempotencyKey = hash('sha256', $eventId.$recipientId.$channel->value.$category);
 
+        $templatePayload = $this->localizedTemplatePayload(
+            $payload,
+            (string) ($profile['timezone'] ?? 'UTC'),
+            (string) $profile['locale'],
+        );
+        $rendered = $this->templates->renderIfAvailable(
+            eventKey: $eventName,
+            channel: $channel->value,
+            locale: (string) $profile['locale'],
+            organizationId: $organizationId,
+            payload: $templatePayload,
+        );
+        $rowLocale = $rendered['locale'] ?? (string) $profile['locale'];
+        $rowPayload = $this->gatewayPayload($payload, $templatePayload, $profile, $channel, $rendered);
+        $subject = $rendered === null
+            ? ($payload['subject'] ?? null)
+            : ($rendered['subject'] === null ? null : [$rowLocale => $rendered['subject']]);
+        $body = $rendered === null
+            ? ($payload['body'] ?? [])
+            : [$rowLocale => $rendered['body']];
+
         $scheduledFor = $this->scheduledFor(
             $critical,
             $respectsQuietHours,
@@ -138,8 +160,10 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
             $channel,
             $recipientId,
             $organizationId,
-            $profile,
-            $payload,
+            $rowPayload,
+            $rowLocale,
+            $subject,
+            $body,
             $eventName,
             $eventId,
             $correlationId,
@@ -151,13 +175,13 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
                 'user_id' => $recipientId,
                 'category' => $category,
                 'channel' => $channel->value,
-                'locale' => (string) $profile['locale'],
+                'locale' => $rowLocale,
                 'event_name' => $eventName,
                 'event_id' => $eventId,
                 'correlation_id' => $correlationId,
-                'subject' => $payload['subject'] ?? null,
-                'body' => $payload['body'] ?? [],
-                'payload' => $payload,
+                'subject' => $subject,
+                'body' => $body,
+                'payload' => $rowPayload,
                 'idempotency_key' => $idempotencyKey,
                 'scheduled_for' => $scheduledFor,
                 'status' => $rowStatus,
@@ -310,7 +334,14 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
      * اللغة والمنطقة والمؤسسة تُقرأ دفعة واحدة من users دون استيراد نموذج Identity.
      *
      * @param list<string> $recipientIds
-     * @return array<string, array{organization_id: string, locale: string, timezone: string}>
+     * @return array<string, array{
+     *     organization_id: string,
+     *     locale: string,
+     *     timezone: string,
+     *     email: string|null,
+     *     phone: string|null,
+     *     phone_country: string|null
+     * }>
      */
     private function recipientProfiles(array $recipientIds): array
     {
@@ -321,7 +352,7 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
 
         return DB::table('users')
             ->whereIn('id', array_values(array_unique($recipientIds)))
-            ->get(['id', 'organization_id', 'locale', 'timezone'])
+            ->get(['id', 'organization_id', 'locale', 'timezone', 'email', 'phone', 'phone_country'])
             ->mapWithKeys(static function (object $row) use ($fallbackLocale): array {
                 $locale = is_string($row->locale ?? null) && $row->locale !== ''
                     ? $row->locale
@@ -334,8 +365,95 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
                     'organization_id' => (string) $row->organization_id,
                     'locale' => $locale,
                     'timezone' => $timezone,
+                    'email' => is_string($row->email ?? null) ? $row->email : null,
+                    'phone' => is_string($row->phone ?? null) ? $row->phone : null,
+                    'phone_country' => is_string($row->phone_country ?? null) ? $row->phone_country : null,
                 ]];
             })
             ->all();
+    }
+
+    /**
+     * يمرر للبوابة عنوان القناة فقط، مع بيانات قالب Meta اللازمة، من دون
+     * تحميل البوابة بأي معرفة عن نماذج Identity أو Outbox.
+     *
+     * @param array<string, mixed> $payload
+     * @param array<string, mixed> $templatePayload
+     * @param array<string, mixed> $profile
+     * @param array{
+     *     subject: string|null,
+     *     body: string,
+     *     locale: string,
+     *     provider_template_name: string|null,
+     *     template_parameters: list<string>
+     * }|null $rendered
+     * @return array<string, mixed>
+     */
+    private function gatewayPayload(
+        array $payload,
+        array $templatePayload,
+        array $profile,
+        Channel $channel,
+        ?array $rendered,
+    ): array {
+        $payload['template_data'] = $templatePayload;
+
+        if ($channel === Channel::Email) {
+            $payload['email'] = $profile['email'] ?? null;
+        }
+
+        if ($channel === Channel::Whatsapp) {
+            $payload['phone'] = $profile['phone'] ?? null;
+            $payload['phone_country'] = $profile['phone_country'] ?? null;
+        }
+
+        if ($rendered !== null) {
+            $payload['template_locale'] = $rendered['locale'];
+            $payload['provider_template_name'] = $rendered['provider_template_name'];
+            $payload['template_parameters'] = $rendered['template_parameters'];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * ينسّق حقول الوقت المعلنة في config بتوقيت المستلم قبل تركيب القالب،
+     * بينما تبقى القيم الأصلية في الحدث نفسه مخزنة UTC.
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function localizedTemplatePayload(array $payload, string $timezone, string $locale): array
+    {
+        $format = (string) config('notifications.localization.datetime_format', 'Y-m-d H:i T');
+
+        foreach ((array) config('notifications.localization.datetime_parameters', []) as $parameter) {
+            if (!is_string($parameter)) {
+                continue;
+            }
+
+            $value = data_get($payload, $parameter);
+
+            if (!is_string($value) || trim($value) === '') {
+                continue;
+            }
+
+            try {
+                data_set(
+                    $payload,
+                    $parameter,
+                    CarbonImmutable::parse($value, 'UTC')
+                        ->setTimezone(new CarbonTimeZone($timezone))
+                        ->locale($locale)
+                        ->translatedFormat($format),
+                );
+            } catch (Throwable) {
+                // قيمة غير زمنية تبقى كما نشرها الحدث بدل إسقاط الإشعار كله.
+            }
+        }
+
+        $payload['recipient_timezone'] = $timezone;
+
+        return $payload;
     }
 }

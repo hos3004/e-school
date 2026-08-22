@@ -15,6 +15,12 @@ return [
 
     'not_retryable' => 'A notification in status ":status" cannot be retried — retry is only available for failed notifications.',
 
+    'failure_not_retryable' => 'This is a permanent failure and must not be retried automatically; an administrator may resend it after fixing the cause.',
+
+    'manual_retry_actor_required' => 'The administrator requesting the manual resend must be identified.',
+
+    'not_readable' => 'This record cannot be marked as read; it must be a delivered in-app notification owned by the current user.',
+
     'not_dispatchable' => 'Sending cannot start for a notification in status ":status" — dispatch starts from the queued status only.',
 
     'already_claimed' => 'The notification is already claimed by another sender.',
@@ -30,4 +36,12 @@ return [
     'gateway_unconfigured' => 'The gateway for the ":channel" channel is not configured — no implementation is bound for this channel.',
 
     'gateway_channel_mismatch' => 'This gateway cannot deliver ":actual" messages; it expects the ":expected" channel.',
+
+    'template_missing' => 'No active template exists for event ":event" on channel ":channel" in locale ":locale".',
+
+    'template_parameter_missing' => 'Template parameter ":parameter" is missing from the payload for event ":event".',
+
+    'email_recipient_invalid' => 'The recipient does not have a valid email address for delivery.',
+
+    'mail_transport_failed' => 'The email transport is temporarily unavailable.',
 ];

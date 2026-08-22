@@ -63,6 +63,12 @@ enum ConnectionStatus: string
         return in_array($target, $this->allowedTransitions(), true);
     }
 
+    /** الحالة النهائية لا تسمح بأي انتقال لاحق. */
+    public function isTerminal(): bool
+    {
+        return $this->allowedTransitions() === [];
+    }
+
     /** هل يقبل هذا الاتصال إرسال أو استقبال Webhooks؟ */
     public function acceptsDeliveries(): bool
     {

@@ -26,9 +26,12 @@ final class IntegrationProviderResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cloud';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'النظام';
-
     protected static ?int $navigationSort = 104;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('integrations::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {
