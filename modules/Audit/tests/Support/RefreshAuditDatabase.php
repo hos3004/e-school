@@ -9,13 +9,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Date;
 
 /**
- * يهيّئ قاعدة بيانات الاختبار بهجرات موديول Audit فقط.
+ * يهيّئ قاعدة بيانات الاختبار بهجرات كل الموديولات (السلوك الافتراضي لـ RefreshDatabase).
  *
- * الموديولات الأخرى تُبنى بالتوازي وقد لا تكون هجراتها قابلة للتشغيل
- * بعد؛ اختبارات هذا الموديول لا تعتمد على أي جدول خارجي.
+ * لا يحصر الهجرة في مسار هذا الموديول: علم RefreshDatabaseState::$migrated
+ * عام على مستوى العملية، فحصر المسار هنا يجعل أي كلاس اختبار لاحق في نفس
+ * العملية يتخطى migrate:fresh ويجد قاعدة ناقصة الجداول.
  *
- * كما تضمن تحميل الـ Factory يدويًا (خارج خرائط autoload الحالية)،
- * وتصحّح فئة التاريخ بعد تهيئة التطبيق حتى تعمل المساعدات الزمنية.
+ * كما يضمن تحميل الـ Factory يدويًا (خارج خرائط autoload الحالية)،
+ * ويصحّح فئة التاريخ بعد تهيئة التطبيق حتى تعمل المساعدات الزمنية.
  */
 trait RefreshAuditDatabase
 {
@@ -35,18 +36,5 @@ trait RefreshAuditDatabase
         if (empty(config('app.key'))) {
             config(['app.key' => 'base64:eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg=']);
         }
-    }
-
-    /**
-     * @return array<string, bool|int|string>
-     */
-    protected function migrateFreshUsing(): array
-    {
-        return [
-            '--drop-views' => true,
-            '--path' => 'modules/Audit/database/migrations',
-            '--realpath' => true,
-            '--force' => true,
-        ];
     }
 }

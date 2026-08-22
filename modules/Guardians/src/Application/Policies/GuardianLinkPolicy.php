@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Guardians\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Guardians\Domain\Models\GuardianLink;
 
 /**
@@ -11,40 +13,40 @@ use Modules\Guardians\Domain\Models\GuardianLink;
  */
 final class GuardianLinkPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('guardians.view_any');
     }
 
-    public function view($user, GuardianLink $link): bool
+    public function view(Authenticatable&Authorizable $user, GuardianLink $link): bool
     {
         return $user->can('guardians.view_any')
-            || $link->guardian?->user_id === $user->id;
+            || $link->guardian->user_id === (string) $user->getAuthIdentifier();
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('guardians.link_any');
     }
 
-    public function update($user, GuardianLink $link): bool
+    public function update(Authenticatable&Authorizable $user, GuardianLink $link): bool
     {
         return $user->can('guardians.link_any');
     }
 
-    public function delete($user, GuardianLink $link): bool
+    public function delete(Authenticatable&Authorizable $user, GuardianLink $link): bool
     {
         return $user->can('guardians.unlink_any');
     }
 
     /** توثيق الرابط — للإدارة فقط. */
-    public function verify($user, GuardianLink $link): bool
+    public function verify(Authenticatable&Authorizable $user, GuardianLink $link): bool
     {
         return $user->can('guardians.verify_any');
     }
 
     /** تعيين واصي أساسي — للإدارة فقط. */
-    public function setPrimary($user, GuardianLink $link): bool
+    public function setPrimary(Authenticatable&Authorizable $user, GuardianLink $link): bool
     {
         return $user->can('guardians.link_any');
     }

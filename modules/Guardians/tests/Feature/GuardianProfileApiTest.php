@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Modules\Guardians\Domain\Events\GuardianProfileCreated;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 use Modules\Guardians\Tests\Support\ApiUser;
+use Shared\Testing\Fixtures;
 
 function guardianApiUser(): ApiUser
 {
@@ -20,8 +21,8 @@ it('stores a guardian profile over the api and returns 201', function (): void {
 
     $response = $this->actingAs(guardianApiUser())
         ->postJson('/api/guardians/profiles', [
-            'organization_id' => (string) Str::ulid(),
-            'user_id' => (string) Str::ulid(),
+            'organization_id' => Fixtures::organizationId(),
+            'user_id' => Fixtures::userId(),
             'national_id_last4' => '9911',
             'occupation' => 'engineer',
             'preferred_contact_channel' => 'whatsapp',
@@ -49,21 +50,22 @@ it('validates the store payload and reports translated errors', function (): voi
 
 it('forbids storing a guardian profile without the ability', function (): void {
     Gate::define('guardians.create', fn (): bool => false);
+    $profilesBefore = GuardianProfile::query()->count();
 
     $this->actingAs(guardianApiUser())
         ->postJson('/api/guardians/profiles', [
-            'organization_id' => (string) Str::ulid(),
-            'user_id' => (string) Str::ulid(),
+            'organization_id' => Fixtures::organizationId(),
+            'user_id' => Fixtures::userId(),
         ])
         ->assertForbidden();
 
-    expect(GuardianProfile::query()->count())->toBe(0);
+    expect(GuardianProfile::query()->count())->toBe($profilesBefore);
 });
 
 it('updates a guardian profile when the caller owns it', function (): void {
     Gate::after(fn (): bool => true);
 
-    $userId = (string) Str::ulid();
+    $userId = Fixtures::userId();
     $profile = GuardianProfile::factory()->create(['user_id' => $userId]);
 
     $this->actingAs(new ApiUser($userId))

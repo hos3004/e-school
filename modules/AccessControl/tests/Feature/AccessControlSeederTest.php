@@ -3,23 +3,48 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
 use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Domain\Models\Role;
 
 it('seeds the base permission matrix and system roles idempotently', function (): void {
+    $organizationId = (string) Str::ulid();
+
+    DB::table('organizations')->insert([
+        'id' => $organizationId,
+        'name' => json_encode(['ar' => 'مدرسة الاختبار', 'en' => 'Test School'], JSON_UNESCAPED_UNICODE),
+        'slug' => 'access-control-test-school',
+        'created_at' => now()->utc(),
+        'updated_at' => now()->utc(),
+    ]);
+
     $seeder = new AccessControlSeeder;
     $seeder->run();
     $seeder->run();
 
-    $moduleCount = 7;
-    $actionCount = 5;
+    $permissionCount = 66;
+    $systemRoleNames = [
+        'platform_admin',
+        'academic_supervisor',
+        'finance_supervisor',
+        'registrar',
+        'communications_officer',
+        'teacher',
+        'student',
+        'guardian',
+        'auditor',
+    ];
 
-    expect(Permission::query()->count())->toBe($moduleCount * $actionCount)
-        ->and(Role::query()->where('is_system', true)->whereIn('name', ['super-admin', 'school-admin'])->count())->toBe(2);
+    expect(Permission::query()->count())->toBe($permissionCount)
+        ->and(Role::query()
+            ->where('organization_id', $organizationId)
+            ->where('is_system', true)
+            ->whereIn('name', $systemRoleNames)
+            ->count())->toBe(count($systemRoleNames));
 
-    $superAdminId = (string) Role::query()->where('name', 'super-admin')->value('id');
+    $platformAdminId = (string) Role::query()->where('name', 'platform_admin')->value('id');
 
-    expect(DB::table('role_has_permissions')->where('role_id', $superAdminId)->count())
-        ->toBe($moduleCount * $actionCount);
+    expect(DB::table('role_has_permissions')->where('role_id', $platformAdminId)->count())
+        ->toBe($permissionCount);
 });

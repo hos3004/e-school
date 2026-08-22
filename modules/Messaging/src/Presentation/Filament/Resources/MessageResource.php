@@ -6,6 +6,7 @@ namespace Modules\Messaging\Presentation\Filament\Resources;
 
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -24,9 +25,12 @@ final class MessageResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التواصل';
-
     protected static ?int $navigationSort = 70;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messaging::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {

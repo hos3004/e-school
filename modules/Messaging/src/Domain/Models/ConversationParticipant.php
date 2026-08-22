@@ -4,11 +4,22 @@ declare(strict_types=1);
 
 namespace Modules\Messaging\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $organization_id
+ * @property string $conversation_id
+ * @property string $user_id
+ * @property string $role
+ * @property CarbonImmutable $joined_at
+ * @property CarbonImmutable|null $last_read_at
+ * @property CarbonImmutable|null $muted_until
+ */
 final class ConversationParticipant extends Model
 {
     use HasModuleFactory;
@@ -37,11 +48,19 @@ final class ConversationParticipant extends Model
         ];
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForUser(Builder $query, string $userId): Builder
     {
         return $query->where('user_id', $userId);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);

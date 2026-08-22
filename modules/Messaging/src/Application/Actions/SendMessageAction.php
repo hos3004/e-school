@@ -22,6 +22,9 @@ final readonly class SendMessageAction
         private Dispatcher $events,
     ) {}
 
+    /**
+     * @param array<int, array<string, mixed>> $attachments
+     */
     public function execute(
         Conversation $conversation,
         string $senderUserId,

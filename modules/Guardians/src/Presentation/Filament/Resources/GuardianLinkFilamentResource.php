@@ -100,9 +100,6 @@ final class GuardianLinkFilamentResource extends Resource
             ->bulkActions([]);
     }
 
-    /**
-     * @return array<string, array<class-string>>
-     */
     public static function getPages(): array
     {
         return [

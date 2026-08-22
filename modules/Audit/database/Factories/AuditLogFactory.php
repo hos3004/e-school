@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use Modules\Audit\Domain\Enums\AuditActorType;
 use Modules\Audit\Domain\Models\AuditLog;
-use Shared\Testing\Fixtures;
 
 /**
  * @extends Factory<AuditLog>
@@ -20,7 +19,9 @@ final class AuditLogFactory extends Factory
     public function definition(): array
     {
         return [
-            'organization_id' => Fixtures::organizationId(),
+            // لا FK على organization_id ولا اعتماد على جداول موديولات أخرى —
+            // اختبارات Audit تُهجَّر بمسارها وحدها (انظر RefreshAuditDatabase).
+            'organization_id' => (string) Str::ulid(),
             'actor_id' => (string) Str::ulid(),
             'actor_type' => AuditActorType::User,
             'acting_for_user_id' => null,

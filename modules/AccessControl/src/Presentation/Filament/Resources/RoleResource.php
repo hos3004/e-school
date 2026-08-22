@@ -25,9 +25,12 @@ final class RoleResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-identification';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'النظام';
-
     protected static ?int $navigationSort = 101;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('accesscontrol::filament.group');
+    }
 
     public static function canAccess(): bool
     {

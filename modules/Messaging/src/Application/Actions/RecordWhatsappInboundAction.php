@@ -21,6 +21,9 @@ final readonly class RecordWhatsappInboundAction
         private Dispatcher $events,
     ) {}
 
+    /**
+     * @param array<int, array<string, mixed>>|null $media
+     */
     public function execute(
         string $organizationId,
         string $fromPhone,

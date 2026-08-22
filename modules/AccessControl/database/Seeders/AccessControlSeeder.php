@@ -38,9 +38,14 @@ final class AccessControlSeeder extends Seeder
         'Sessions' => [
             'session.view', 'session.create', 'session.cancel',
             'session.assign_substitute', 'session.join', 'session.finalize',
+            'classroom.observe', 'classroom.moderate',
+            'classroom.guest.invite', 'classroom.guest.revoke',
         ],
         'Attendance' => ['attendance.view', 'attendance.record', 'attendance.override'],
-        'Recordings' => ['recording.view', 'recording.download', 'recording.delete'],
+        'Recordings' => [
+            'recording.view', 'recording.view.any', 'recording.grant',
+            'recording.download', 'recording.delete',
+        ],
         'Assignments' => ['assignment.manage', 'assignment.submit', 'assignment.grade'],
         'Assessments' => ['assessment.manage', 'assessment.take', 'grade.view'],
         'AcademicReports' => [
@@ -82,8 +87,10 @@ final class AccessControlSeeder extends Seeder
             'session.view', 'session.create', 'session.cancel',
             'session.postpone.request', 'session.postpone.approve',
             'session.assign_substitute', 'session.join', 'session.finalize',
+            'classroom.observe', 'classroom.moderate',
+            'classroom.guest.invite', 'classroom.guest.revoke',
             'attendance.view', 'attendance.record', 'attendance.override',
-            'recording.view', 'recording.download',
+            'recording.view', 'recording.view.any', 'recording.grant', 'recording.download',
             'assignment.manage', 'assignment.grade',
             'assessment.manage', 'grade.view',
             'session_report.create', 'session_report.view', 'monthly_report.approve',

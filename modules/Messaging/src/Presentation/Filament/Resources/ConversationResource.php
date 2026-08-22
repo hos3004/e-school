@@ -29,9 +29,12 @@ final class ConversationResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التواصل';
-
     protected static ?int $navigationSort = 70;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messaging::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {

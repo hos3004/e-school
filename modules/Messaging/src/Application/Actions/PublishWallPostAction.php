@@ -19,6 +19,9 @@ final readonly class PublishWallPostAction
         private Dispatcher $events,
     ) {}
 
+    /**
+     * @param array<int, array<string, mixed>> $attachments
+     */
     public function execute(
         string $organizationId,
         string $groupId,

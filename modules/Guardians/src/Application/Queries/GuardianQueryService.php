@@ -57,19 +57,19 @@ final readonly class GuardianQueryService implements GuardianQuery
 
     private function toSummary(GuardianLink $link): GuardianSummary
     {
-        /** @var GuardianProfile|null $guardian */
+        /** @var GuardianProfile $guardian */
         $guardian = $link->getRelationValue('guardian');
 
         return new GuardianSummary(
             guardianLinkId: $link->id,
             guardianProfileId: $link->guardian_profile_id,
-            userId: $guardian?->user_id ?? '',
+            userId: $guardian->user_id,
             relationship: $link->relationship,
             isPrimary: $link->is_primary,
             canActFor: $link->can_act_for,
             verifiedAt: $this->format($link->verified_at),
             visibleSections: $link->visible_sections ?? [],
-            preferredContactChannel: $guardian?->preferred_contact_channel,
+            preferredContactChannel: $guardian->preferred_contact_channel,
         );
     }
 

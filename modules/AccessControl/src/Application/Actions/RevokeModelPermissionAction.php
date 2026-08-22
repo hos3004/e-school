@@ -42,8 +42,12 @@ final readonly class RevokeModelPermissionAction
             );
         }
 
-        DB::transaction(function () use ($grant): void {
-            $grant->delete();
+        DB::transaction(function () use ($grant, $modelType, $modelId): void {
+            ModelHasPermission::query()
+                ->where('permission_id', $grant->permission_id)
+                ->where('model_type', $modelType)
+                ->where('model_id', $modelId)
+                ->delete();
         });
 
         $this->events->dispatch(new ModelPermissionRevoked(

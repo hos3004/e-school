@@ -13,6 +13,11 @@ use Shared\Concerns\HasModuleFactory;
  *
  * الكتابة عليه تتم حصرًا عبر GrantModelPermissionAction /
  * RevokeModelPermissionAction.
+ *
+ * @property string $permission_id
+ * @property string $model_type
+ * @property string $model_id
+ * @property-read Permission $permission
  */
 final class ModelHasPermission extends Model
 {

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Guardians\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 
 /**
@@ -13,36 +15,36 @@ use Modules\Guardians\Domain\Models\GuardianProfile;
  */
 final class GuardianProfilePolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('guardians.view_any');
+        return $user->can('guardian.view');
     }
 
-    public function view($user, GuardianProfile $profile): bool
+    public function view(Authenticatable&Authorizable $user, GuardianProfile $profile): bool
     {
-        return $user->can('guardians.view_any')
-            || $profile->user_id === $user->id;
+        return $user->can('guardian.view')
+            || $profile->user_id === (string) $user->getAuthIdentifier();
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('guardians.create');
+        return $user->can('guardian.view');
     }
 
-    public function update($user, GuardianProfile $profile): bool
+    public function update(Authenticatable&Authorizable $user, GuardianProfile $profile): bool
     {
-        return $user->can('guardians.update_any')
-            || $profile->user_id === $user->id;
+        return $user->can('guardian.view')
+            || $profile->user_id === (string) $user->getAuthIdentifier();
     }
 
-    public function delete($user, GuardianProfile $profile): bool
+    public function delete(Authenticatable&Authorizable $user, GuardianProfile $profile): bool
     {
-        return $user->can('guardians.archive_any');
+        return $user->can('guardian.view');
     }
 
-    public function linkStudents($user, GuardianProfile $profile): bool
+    public function linkStudents(Authenticatable&Authorizable $user, GuardianProfile $profile): bool
     {
-        return $user->can('guardians.link_any')
-            || $profile->user_id === $user->id;
+        return $user->can('guardian.link')
+            || $profile->user_id === (string) $user->getAuthIdentifier();
     }
 }

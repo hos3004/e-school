@@ -25,9 +25,12 @@ final class WhatsappInboundResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-device-phone-mobile';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'التواصل';
-
     protected static ?int $navigationSort = 70;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messaging::navigation.group');
+    }
 
     public static function getModelLabel(): string
     {

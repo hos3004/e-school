@@ -28,7 +28,7 @@ final class ListGuardianLinksController
             /** @var GuardianProfile|null $own */
             $own = GuardianProfile::query()->where('user_id', (string) $request->user()?->id)->first();
 
-            $query->forGuardian($own?->id ?? 'none');
+            $query->forGuardian($own->id ?? 'none');
         }
 
         return GuardianLinkResource::collection(

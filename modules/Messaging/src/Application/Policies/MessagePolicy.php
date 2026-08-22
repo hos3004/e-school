@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Messaging\Application\Policies;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Messaging\Domain\Models\Message;
 
 /**
@@ -11,38 +12,44 @@ use Modules\Messaging\Domain\Models\Message;
  */
 final class MessagePolicy
 {
-    public function viewAny($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function viewAny(Authenticatable $user): bool
     {
-        return $user->can('messaging.message.view_any');
+        return $user->can('message.send') || $user->can('message.moderate');
     }
 
-    public function view($user, Message $message): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function view(Authenticatable $user, Message $message): bool
     {
-        return $user->can('messaging.message.view')
+        return ($user->can('message.send') || $user->can('message.moderate'))
             && $message->organization_id === $user->organization_id;
     }
 
-    public function create($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function create(Authenticatable $user): bool
     {
-        return $user->can('messaging.message.create');
+        return $user->can('message.send');
     }
 
-    public function update($user, Message $message): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function update(Authenticatable $user, Message $message): bool
     {
-        return $user->can('messaging.message.update')
+        return ($user->can('message.send') || $user->can('message.moderate'))
             && $message->organization_id === $user->organization_id
             && (string) $message->user_id === $user->getAuthIdentifier();
     }
 
-    public function delete($user, Message $message): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function delete(Authenticatable $user, Message $message): bool
     {
-        return $user->can('messaging.message.delete')
+        return $user->can('message.moderate')
             && $message->organization_id === $user->organization_id;
     }
 
-    public function flag($user, Message $message): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function flag(Authenticatable $user, Message $message): bool
     {
-        return $user->can('messaging.message.flag')
+        return $user->can('message.send')
             && $message->organization_id === $user->organization_id;
     }
 }

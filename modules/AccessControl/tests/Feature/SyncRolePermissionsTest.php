@@ -56,10 +56,10 @@ it('detaches permissions missing from the target list', function (): void {
 });
 
 it('dispatches nothing when the sync is a no-op', function (): void {
-    Event::fake([RolePermissionsSynced::class]);
-
     $role = acRoleWithPermissions('stable-role', ['keep.one']);
     $roleId = (string) $role->getKey();
+
+    Event::fake([RolePermissionsSynced::class]);
 
     app(SyncRolePermissionsAction::class)->execute($roleId, ['keep.one']);
 

@@ -13,7 +13,7 @@ it('exposes labels through translation files', function (): void {
 it('knows which conversation types allow multiple participants', function (): void {
     expect(ConversationType::Direct->allowsMultipleParticipants())->toBeFalse()
         ->and(ConversationType::Group->allowsMultipleParticipants())->toBeTrue()
-        ->and(ConversationType::class->allowsMultipleParticipants())->toBeTrue();
+        ->and(ConversationType::Classroom->allowsMultipleParticipants())->toBeTrue();
 });
 
 it('knows which participant roles can moderate', function (): void {

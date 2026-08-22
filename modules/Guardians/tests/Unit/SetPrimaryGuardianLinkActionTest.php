@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Str;
 use Modules\Guardians\Application\Actions\SetPrimaryGuardianLink;
 use Modules\Guardians\Domain\Models\GuardianLink;
+use Shared\Testing\Fixtures;
 
 it('moves primary guardianship to the chosen link', function (): void {
-    $studentId = (string) Str::ulid();
+    $studentId = Fixtures::studentProfileId();
 
     $oldPrimary = GuardianLink::factory()->primary()->create(['student_profile_id' => $studentId]);
     $newPrimary = GuardianLink::factory()->create(['student_profile_id' => $studentId]);

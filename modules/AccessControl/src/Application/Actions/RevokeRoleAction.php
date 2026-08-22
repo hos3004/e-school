@@ -41,8 +41,12 @@ final readonly class RevokeRoleAction
             );
         }
 
-        DB::transaction(function () use ($assignment): void {
-            $assignment->delete();
+        DB::transaction(function () use ($roleId, $modelType, $modelId): void {
+            ModelHasRole::query()
+                ->where('role_id', $roleId)
+                ->where('model_type', $modelType)
+                ->where('model_id', $modelId)
+                ->delete();
         });
 
         $this->events->dispatch(new RoleRevoked(

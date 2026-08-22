@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Str;
 use Modules\Guardians\Application\Actions\CreateGuardianProfile;
 use Modules\Guardians\Domain\Enums\ContactChannel;
 use Modules\Guardians\Domain\Events\GuardianProfileCreated;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 it('creates a guardian profile and dispatches GuardianProfileCreated', function (): void {
     Event::fake([GuardianProfileCreated::class]);
@@ -16,8 +16,8 @@ it('creates a guardian profile and dispatches GuardianProfileCreated', function 
     $action = app(CreateGuardianProfile::class);
 
     $profile = $action->execute([
-        'organization_id' => (string) Str::ulid(),
-        'user_id' => (string) Str::ulid(),
+        'organization_id' => Fixtures::organizationId(),
+        'user_id' => Fixtures::userId(),
         'national_id_last4' => '1234',
         'occupation' => 'engineer',
         'preferred_contact_channel' => ContactChannel::WhatsApp->value,

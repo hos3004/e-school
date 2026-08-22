@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\AccessControl\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\AccessControl\Domain\Models\Permission;
 
 /**
@@ -14,34 +16,34 @@ use Modules\AccessControl\Domain\Models\Permission;
  */
 final class PermissionPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('accesscontrol.permissions.view_any');
     }
 
-    public function view($user, Permission $permission): bool
+    public function view(Authenticatable&Authorizable $user, Permission $permission): bool
     {
         return $user->can('accesscontrol.permissions.view_any')
             || $user->can('accesscontrol.permissions.view');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('accesscontrol.permissions.create');
     }
 
-    public function update($user, Permission $permission): bool
+    public function update(Authenticatable&Authorizable $user, Permission $permission): bool
     {
         return $user->can('accesscontrol.permissions.update');
     }
 
-    public function delete($user, Permission $permission): bool
+    public function delete(Authenticatable&Authorizable $user, Permission $permission): bool
     {
         return $user->can('accesscontrol.permissions.delete');
     }
 
     /** منح الصلاحية مباشرة لنموذج دون وسيط دور. */
-    public function grant($user): bool
+    public function grant(Authenticatable&Authorizable $user): bool
     {
         return $user->can('accesscontrol.permissions.grant_direct');
     }

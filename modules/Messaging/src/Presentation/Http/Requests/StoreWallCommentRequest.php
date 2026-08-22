@@ -31,7 +31,7 @@ final class StoreWallCommentRequest extends FormRequest
         ];
     }
 
-    public function post(): ClassWallPost
+    public function wallPost(): ClassWallPost
     {
         /** @var ClassWallPost $post */
         $post = $this->route('post');

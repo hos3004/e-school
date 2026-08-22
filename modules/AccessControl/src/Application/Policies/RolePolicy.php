@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\AccessControl\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\AccessControl\Domain\Models\Role;
 
 /**
@@ -14,23 +16,23 @@ use Modules\AccessControl\Domain\Models\Role;
  */
 final class RolePolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('accesscontrol.roles.view_any');
     }
 
-    public function view($user, Role $role): bool
+    public function view(Authenticatable&Authorizable $user, Role $role): bool
     {
         return $user->can('accesscontrol.roles.view_any')
             || $user->can('accesscontrol.roles.view');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('accesscontrol.roles.create');
     }
 
-    public function update($user, Role $role): bool
+    public function update(Authenticatable&Authorizable $user, Role $role): bool
     {
         if ($role->is_system) {
             return false;
@@ -39,7 +41,7 @@ final class RolePolicy
         return $user->can('accesscontrol.roles.update');
     }
 
-    public function delete($user, Role $role): bool
+    public function delete(Authenticatable&Authorizable $user, Role $role): bool
     {
         if ($role->is_system) {
             return false;
@@ -49,7 +51,7 @@ final class RolePolicy
     }
 
     /** مزامنة صلاحيات الدور. */
-    public function syncPermissions($user, Role $role): bool
+    public function syncPermissions(Authenticatable&Authorizable $user, Role $role): bool
     {
         if ($role->is_system) {
             return false;
@@ -59,13 +61,13 @@ final class RolePolicy
     }
 
     /** إسناد الدور لنموذج. */
-    public function assign($user): bool
+    public function assign(Authenticatable&Authorizable $user): bool
     {
         return $user->can('accesscontrol.assignments.assign_role');
     }
 
     /** سحب الدور من نموذج. */
-    public function revoke($user): bool
+    public function revoke(Authenticatable&Authorizable $user): bool
     {
         return $user->can('accesscontrol.assignments.revoke_role');
     }

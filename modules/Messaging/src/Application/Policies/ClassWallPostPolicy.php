@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Messaging\Application\Policies;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Messaging\Domain\Models\ClassWallPost;
 
 /**
@@ -11,37 +12,43 @@ use Modules\Messaging\Domain\Models\ClassWallPost;
  */
 final class ClassWallPostPolicy
 {
-    public function viewAny($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function viewAny(Authenticatable $user): bool
     {
-        return $user->can('messaging.class_wall_post.view_any');
+        return $user->can('class_wall.post') || $user->can('message.send');
     }
 
-    public function view($user, ClassWallPost $post): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function view(Authenticatable $user, ClassWallPost $post): bool
     {
-        return $user->can('messaging.class_wall_post.view')
+        return ($user->can('class_wall.post') || $user->can('message.send'))
             && $post->organization_id === $user->organization_id;
     }
 
-    public function create($user): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function create(Authenticatable $user): bool
     {
-        return $user->can('messaging.class_wall_post.create');
+        return $user->can('class_wall.post');
     }
 
-    public function update($user, ClassWallPost $post): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function update(Authenticatable $user, ClassWallPost $post): bool
     {
-        return $user->can('messaging.class_wall_post.update')
+        return $user->can('class_wall.post')
             && $post->organization_id === $user->organization_id;
     }
 
-    public function delete($user, ClassWallPost $post): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function delete(Authenticatable $user, ClassWallPost $post): bool
     {
-        return $user->can('messaging.class_wall_post.delete')
+        return ($user->can('class_wall.post') || $user->can('message.moderate'))
             && $post->organization_id === $user->organization_id;
     }
 
-    public function pin($user, ClassWallPost $post): bool
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function pin(Authenticatable $user, ClassWallPost $post): bool
     {
-        return $user->can('messaging.class_wall_post.pin')
+        return $user->can('class_wall.post')
             && $post->organization_id === $user->organization_id;
     }
 }

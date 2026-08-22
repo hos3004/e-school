@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\AccessControl\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\AccessControl\Domain\Enums\GuardName;
@@ -15,6 +16,14 @@ use Shared\Concerns\HasUlid;
  *
  * الصلاحيات هي الحقيقة المركزية التي تُبنى عليها مصفوفة الأدوار؛
  * لا يفحص أي موديول اسم دور أبدًا — يفحص صلاحية عبر $user->can().
+ *
+ * @property string $id
+ * @property string $name
+ * @property GuardName $guard_name
+ * @property string|null $module
+ * @property array<string, string>|null $description
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  */
 final class Permission extends Model
 {
@@ -40,11 +49,19 @@ final class Permission extends Model
         ];
     }
 
+    /**
+     * @param Builder<Permission> $query
+     * @return Builder<Permission>
+     */
     public function scopeForModule(Builder $query, string $module): Builder
     {
         return $query->where('module', $module);
     }
 
+    /**
+     * @param Builder<Permission> $query
+     * @return Builder<Permission>
+     */
     public function scopeOfGuard(Builder $query, GuardName $guard): Builder
     {
         return $query->where('guard_name', $guard);

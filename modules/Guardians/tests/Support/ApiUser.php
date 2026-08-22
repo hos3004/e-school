@@ -14,10 +14,15 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  */
 final class ApiUser extends Authenticatable
 {
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
     public function __construct(
-        private readonly string $identifier,
+        private readonly string $identifier = '',
     ) {
         parent::__construct();
+        $this->setAttribute('id', $identifier);
     }
 
     public function getAuthIdentifierName(): string

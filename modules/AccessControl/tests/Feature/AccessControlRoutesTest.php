@@ -148,7 +148,7 @@ it('assigns then revokes a role over http', function (): void {
     $payload = [
         'role_id' => $roleId,
         'model_type' => 'users',
-        'model_id' => '01USERHTTP00000000000000000',
+        'model_id' => '01USERHTTP0000000000000000',
     ];
 
     $this->actingAs(new ApiUser(AC_ACTOR))->postJson('/api/access-control/assignments/roles', $payload)
@@ -164,7 +164,7 @@ it('grants then revokes a direct permission over http', function (): void {
     $payload = [
         'permission' => 'http.direct.grant',
         'model_type' => 'users',
-        'model_id' => '01USERHTTP00000000000000000',
+        'model_id' => '01USERHTTP0000000000000000',
     ];
 
     $this->actingAs(new ApiUser(AC_ACTOR))->postJson('/api/access-control/assignments/permissions', $payload)
