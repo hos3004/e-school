@@ -38,8 +38,8 @@ it('rejects a calendar whose end date is not after its start date', function ():
         $action->execute(
             organization: $organization,
             name: ['ar' => 'مقلوب'],
-            startsOn: '2027-05-31',
-            endsOn: '2027-09-01',
+            startsOn: '2027-09-01',
+            endsOn: '2027-05-31',
         );
         $this->fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {

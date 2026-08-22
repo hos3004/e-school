@@ -9,14 +9,15 @@ use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Domain\Events\StudentArchived;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 function createArchivableStudent(): StudentProfile
 {
     return app(RegisterStudentAction::class)->execute([
-        'organization_id' => (string) str()->ulid(),
-        'user_id' => (string) str()->ulid(),
+        'organization_id' => Fixtures::organizationId(),
+        'user_id' => Fixtures::userId(),
         'student_code' => 'STU-AR-'.str()->random(4),
     ]);
 }

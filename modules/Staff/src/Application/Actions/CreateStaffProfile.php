@@ -7,6 +7,7 @@ namespace Modules\Staff\Application\Actions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\Staff\Domain\Enums\EmploymentType;
+use Modules\Staff\Domain\Enums\StaffGender;
 use Modules\Staff\Domain\Events\StaffProfileCreated;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Shared\Support\BusinessRuleViolation;
@@ -22,6 +23,11 @@ final readonly class CreateStaffProfile
         string $userId,
         string $staffCode,
         EmploymentType $employmentType,
+        StaffGender $gender,
+        string $countryId,
+        string $regionId,
+        ?string $dateOfBirth = null,
+        ?string $phone = null,
         ?string $hiredAt = null,
         ?array $bio = null,
         ?array $specializations = null,
@@ -36,12 +42,17 @@ final readonly class CreateStaffProfile
             );
         }
 
-        $profile = DB::transaction(function () use ($organizationId, $userId, $staffCode, $employmentType, $hiredAt, $bio, $specializations): StaffProfile {
+        $profile = DB::transaction(function () use ($organizationId, $userId, $staffCode, $employmentType, $gender, $countryId, $regionId, $dateOfBirth, $phone, $hiredAt, $bio, $specializations): StaffProfile {
             return StaffProfile::query()->create([
                 'organization_id' => $organizationId,
                 'user_id' => $userId,
                 'staff_code' => $staffCode,
                 'employment_type' => $employmentType,
+                'gender' => $gender,
+                'country_id' => $countryId,
+                'region_id' => $regionId,
+                'date_of_birth' => $dateOfBirth,
+                'phone' => $phone,
                 'hired_at' => $hiredAt,
                 'bio' => $bio,
                 'specializations' => $specializations,

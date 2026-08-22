@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Organization\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,15 @@ use Shared\Concerns\HasUlid;
  *
  * الإعدادات التشغيلية الخاصة بمؤسسة بعينها تُخزَّن هنا بدلًا من
  * تثبيتها في الكود؛ القيمة نفسها jsonb فتستوعب أي بنية.
+ *
+ * @property string $id
+ * @property string $organization_id
+ * @property string $key
+ * @property array<array-key, mixed>|null $value
+ * @property string|null $updated_by
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ * @property-read Organization $organization
  */
 final class OrganizationSetting extends Model
 {
@@ -43,6 +53,7 @@ final class OrganizationSetting extends Model
         ];
     }
 
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
@@ -51,6 +62,10 @@ final class OrganizationSetting extends Model
     /**
      * إعدادات مؤسسة واحدة فقط.
      */
+    /**
+     * @param Builder<OrganizationSetting> $query
+     * @return Builder<OrganizationSetting>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);
@@ -58,6 +73,10 @@ final class OrganizationSetting extends Model
 
     /**
      * البحث بمفتاح محدد.
+     */
+    /**
+     * @param Builder<OrganizationSetting> $query
+     * @return Builder<OrganizationSetting>
      */
     public function scopeWithKey(Builder $query, string $key): Builder
     {

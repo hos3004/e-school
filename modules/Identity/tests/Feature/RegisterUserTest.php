@@ -21,6 +21,7 @@ it('registers a user and dispatches UserRegistered', function (): void {
         'organization_id' => $this->organizationId,
         'name' => 'طالب تجريبي',
         'email' => 'student@eschool.test',
+        'username' => 'eschool.student',
         'password' => 'Sup3r-Secret!',
         'locale' => 'ar',
     ]);
@@ -33,7 +34,8 @@ it('registers a user and dispatches UserRegistered', function (): void {
     $user = User::query()->where('email', 'student@eschool.test')->firstOrFail();
 
     expect(Hash::check('Sup3r-Secret!', $user->password))->toBeTrue()
-        ->and($user->organization_id)->toBe($this->organizationId);
+        ->and($user->organization_id)->toBe($this->organizationId)
+        ->and($user->username)->toBe('eschool.student');
 
     Event::assertDispatched(UserRegistered::class, fn (UserRegistered $e): bool => $e->userId === $user->id);
 });
@@ -43,6 +45,7 @@ it('rejects a duplicate email with a business rule violation', function (): void
         'organization_id' => $this->organizationId,
         'name' => 'موجود مسبقًا',
         'email' => 'taken@eschool.test',
+        'username' => 'eschool.taken',
         'password' => 'password',
     ]);
 
@@ -50,8 +53,34 @@ it('rejects a duplicate email with a business rule violation', function (): void
         'organization_id' => $this->organizationId,
         'name' => 'مكرر',
         'email' => 'TAKEN@eschool.test',
+        'username' => 'eschool.duplicate',
         'password' => 'Sup3r-Secret!',
     ]);
 
     $response->assertStatus(422);
+});
+
+it('registers with a phone when email is unavailable', function (): void {
+    $response = $this->postJson('/api/identity/register', [
+        'organization_id' => $this->organizationId,
+        'name' => 'طالب عبر الهاتف',
+        'username' => 'eschool.phone',
+        'phone' => '+201001234567',
+        'phone_country' => 'EG',
+        'password' => 'Sup3r-Secret!',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.username', 'eschool.phone')
+        ->assertJsonPath('data.phone', '+201001234567')
+        ->assertJsonPath('data.email', null);
+});
+
+it('requires a username and at least one recovery contact', function (): void {
+    $this->postJson('/api/identity/register', [
+        'organization_id' => $this->organizationId,
+        'name' => 'طلب ناقص',
+        'password' => 'Sup3r-Secret!',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['username', 'email', 'phone']);
 });

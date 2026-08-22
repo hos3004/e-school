@@ -33,9 +33,12 @@ final class UserResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'النظام';
-
     protected static ?int $navigationSort = 100;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('identity::filament.navigation_group');
+    }
 
     public static function getModelLabel(): string
     {

@@ -6,7 +6,10 @@ namespace Modules\Staff\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
+use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Staff\Domain\Enums\EmploymentType;
+use Modules\Staff\Domain\Enums\StaffGender;
 
 final class StoreStaffProfileRequest extends FormRequest
 {
@@ -25,11 +28,53 @@ final class StoreStaffProfileRequest extends FormRequest
             'user_id' => ['required', 'string', 'size:26'],
             'staff_code' => ['required', 'string', 'max:32', Rule::unique('staff_profiles', 'staff_code')],
             'employment_type' => ['required', 'string', Rule::enum(EmploymentType::class)],
+            'gender' => ['required', 'string', Rule::enum(StaffGender::class)],
+            'country_id' => ['required', 'string', 'size:26'],
+            'region_id' => ['required', 'string', 'size:26'],
+            'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
+            'phone' => ['nullable', 'string', 'max:32'],
             'hired_at' => ['nullable', 'date'],
             'bio' => ['nullable', 'array'],
             'specializations' => ['nullable', 'array'],
             'specializations.*' => ['string', 'max:120'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $countryId = $this->input('country_id');
+            $regionId = $this->input('region_id');
+
+            if (!is_string($countryId) || strlen($countryId) !== 26
+                || !is_string($regionId) || strlen($regionId) !== 26) {
+                return;
+            }
+
+            /** @var GeographyQueries $geography */
+            $geography = app(GeographyQueries::class);
+
+            $activeCountryIds = array_map(
+                static fn ($country): string => $country->id,
+                $geography->countries(),
+            );
+
+            if (!in_array($countryId, $activeCountryIds, true)) {
+                $validator->errors()->add('country_id', __('staff::validation.country_invalid'));
+
+                return;
+            }
+
+            $activeRegionIds = array_map(
+                static fn ($region): string => $region->id,
+                $geography->regionsOf($countryId),
+            );
+
+            if (!in_array($regionId, $activeRegionIds, true)
+                || !$geography->regionExistsIn($regionId, $countryId)) {
+                $validator->errors()->add('region_id', __('staff::validation.region_country_mismatch'));
+            }
+        });
     }
 
     /**
@@ -44,6 +89,12 @@ final class StoreStaffProfileRequest extends FormRequest
             'staff_code.unique' => __('staff::validation.staff_code_unique'),
             'employment_type.required' => __('staff::validation.employment_type_required'),
             'employment_type.Illuminate\\Validation\\Rules\\Enum' => __('staff::validation.employment_type_invalid'),
+            'gender.required' => __('staff::validation.gender_required'),
+            'gender.Illuminate\\Validation\\Rules\\Enum' => __('staff::validation.gender_invalid'),
+            'country_id.required' => __('staff::validation.country_required'),
+            'country_id.size' => __('staff::validation.ulid'),
+            'region_id.required' => __('staff::validation.region_required'),
+            'region_id.size' => __('staff::validation.ulid'),
         ];
     }
 
@@ -56,6 +107,11 @@ final class StoreStaffProfileRequest extends FormRequest
             'user_id' => __('staff::validation.attributes.user_id'),
             'staff_code' => __('staff::validation.attributes.staff_code'),
             'employment_type' => __('staff::validation.attributes.employment_type'),
+            'gender' => __('staff::validation.attributes.gender'),
+            'country_id' => __('staff::validation.attributes.country'),
+            'region_id' => __('staff::validation.attributes.region'),
+            'date_of_birth' => __('staff::validation.attributes.date_of_birth'),
+            'phone' => __('staff::validation.attributes.phone'),
         ];
     }
 }

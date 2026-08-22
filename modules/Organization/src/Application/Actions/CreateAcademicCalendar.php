@@ -21,6 +21,9 @@ use Shared\Support\BusinessRuleViolation;
  */
 final readonly class CreateAcademicCalendar
 {
+    /**
+     * @param array<string, string> $name
+     */
     public function execute(Organization $organization, array $name, string $startsOn, string $endsOn, bool $isActive = false): AcademicCalendar
     {
         $start = CarbonImmutable::parse($startsOn, 'UTC')->startOfDay();

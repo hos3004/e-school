@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace Modules\Students\Infrastructure\Providers;
 
 use Modules\Students\Application\Actions\ArchiveStudentAction;
+use Modules\Students\Application\Actions\CreateRegistrationApplicationAction;
 use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Application\Actions\RestoreStudentAction;
 use Modules\Students\Application\Actions\UpdateStudentProfileAction;
+use Modules\Students\Application\Policies\RegistrationApplicationPolicy;
 use Modules\Students\Application\Policies\StudentProfilePolicy;
+use Modules\Students\Application\Queries\StudentAdmissionQueryService;
+use Modules\Students\Domain\Contracts\StudentAdmissionQueries;
+use Modules\Students\Domain\Events\RegistrationAccepted;
+use Modules\Students\Domain\Events\RegistrationRejected;
+use Modules\Students\Domain\Events\RegistrationSubmitted;
 use Modules\Students\Domain\Events\StudentArchived;
 use Modules\Students\Domain\Events\StudentRegistered;
 use Modules\Students\Domain\Events\StudentRestored;
 use Modules\Students\Domain\Models\StudentProfile;
+use Modules\Students\Domain\Models\RegistrationApplication;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class StudentsServiceProvider extends BaseModuleServiceProvider
@@ -34,6 +42,9 @@ final class StudentsServiceProvider extends BaseModuleServiceProvider
             StudentRegistered::class => [],
             StudentRestored::class => [],
             StudentArchived::class => [],
+            RegistrationSubmitted::class => [],
+            RegistrationAccepted::class => [],
+            RegistrationRejected::class => [],
         ];
     }
 
@@ -44,6 +55,7 @@ final class StudentsServiceProvider extends BaseModuleServiceProvider
     {
         return [
             StudentProfile::class => StudentProfilePolicy::class,
+            RegistrationApplication::class => RegistrationApplicationPolicy::class,
         ];
     }
 
@@ -57,6 +69,8 @@ final class StudentsServiceProvider extends BaseModuleServiceProvider
             UpdateStudentProfileAction::class => UpdateStudentProfileAction::class,
             ArchiveStudentAction::class => ArchiveStudentAction::class,
             RestoreStudentAction::class => RestoreStudentAction::class,
+            CreateRegistrationApplicationAction::class => CreateRegistrationApplicationAction::class,
+            StudentAdmissionQueries::class => StudentAdmissionQueryService::class,
         ];
     }
 }

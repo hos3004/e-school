@@ -21,6 +21,9 @@ use Shared\Support\BusinessRuleViolation;
  */
 final readonly class AddHoliday
 {
+    /**
+     * @param array<string, string> $name
+     */
     public function execute(
         string $organizationId,
         array $name,

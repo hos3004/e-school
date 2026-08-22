@@ -26,8 +26,9 @@ use Shared\Concerns\RecordsDomainEvents;
  * @property string $id
  * @property string $organization_id
  * @property string $name
- * @property string $email
- * @property string|null $username
+ * @property string|null $email
+ * @property string $password
+ * @property string $username
  * @property string|null $phone
  * @property string|null $phone_country
  * @property string $locale
@@ -44,7 +45,9 @@ use Shared\Concerns\RecordsDomainEvents;
  */
 final class User extends Authenticatable implements FilamentUser
 {
+    /** @use HasFactory<UserFactory> */
     use HasFactory;
+
     use HasUlid;
     use Notifiable;
     use RecordsDomainEvents;
@@ -53,6 +56,18 @@ final class User extends Authenticatable implements FilamentUser
     protected $table = 'users';
 
     protected static string $factory = UserFactory::class;
+
+    /**
+     * Keep nullable database defaults available on newly-created instances.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'avatar_path' => null,
+        'email_verified_at' => null,
+        'last_login_at' => null,
+        'status' => UserStatus::Active->value,
+    ];
 
     /**
      * @var list<string>

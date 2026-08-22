@@ -20,12 +20,29 @@ final class RegisterUserRequest extends FormRequest
      */
     public function rules(): array
     {
+        $usernameMinLength = (int) config('admission.username.min_length');
+        $usernameMaxLength = (int) config('admission.username.max_length');
+
         return [
             'organization_id' => ['required', 'string', 'size:26'],
             'name' => ['required', 'string', 'max:191'],
-            'email' => ['required', 'string', 'email', 'max:191', Rule::unique('users', 'email')],
-            'username' => ['nullable', 'string', 'max:64', Rule::unique('users', 'username')],
-            'phone' => ['nullable', 'string', 'max:32'],
+            'email' => [
+                'nullable',
+                'required_without:phone',
+                'string',
+                'email',
+                'max:191',
+                Rule::unique('users', 'email')->whereNull('deleted_at'),
+            ],
+            'username' => [
+                'required',
+                'string',
+                'min:'.$usernameMinLength,
+                'max:'.$usernameMaxLength,
+                Rule::notIn((array) config('admission.username.reserved', [])),
+                Rule::unique('users', 'username')->whereNull('deleted_at'),
+            ],
+            'phone' => ['nullable', 'required_without:email', 'string', 'max:32'],
             'phone_country' => ['nullable', 'string', 'size:2'],
             'password' => ['required', 'string', Password::defaults()],
             'locale' => ['sometimes', 'string', 'max:8'],
@@ -42,9 +59,13 @@ final class RegisterUserRequest extends FormRequest
             'organization_id.required' => __('identity::validation.organization_id_required'),
             'name.required' => __('identity::validation.name_required'),
             'email.required' => __('identity::validation.email_required'),
+            'email.required_without' => __('identity::validation.contact_required'),
             'email.email' => __('identity::validation.email_invalid'),
             'email.unique' => __('identity::errors.email_taken'),
+            'username.required' => __('identity::validation.username_required'),
+            'username.not_in' => __('identity::validation.username_reserved'),
             'username.unique' => __('identity::errors.username_taken'),
+            'phone.required_without' => __('identity::validation.contact_required'),
             'password.required' => __('identity::validation.password_required'),
         ];
     }

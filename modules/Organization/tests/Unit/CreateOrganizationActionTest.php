@@ -13,10 +13,11 @@ it('creates an organization and dispatches OrganizationCreated', function (): vo
     Event::fake([OrganizationCreated::class]);
 
     $action = app(CreateOrganization::class);
+    $slug = 'hope-'.strtolower((string) str()->ulid());
 
     $organization = $action->execute([
         'name' => ['ar' => 'مدرسة الأمل', 'en' => 'Hope School'],
-        'slug' => 'hope-school',
+        'slug' => $slug,
         'default_timezone' => 'Africa/Cairo',
         'default_currency' => 'EGP',
         'default_locale' => 'ar',
@@ -25,22 +26,23 @@ it('creates an organization and dispatches OrganizationCreated', function (): vo
     ]);
 
     expect($organization->exists)->toBeTrue()
-        ->and(Organization::query()->where('slug', 'hope-school')->exists())->toBeTrue();
+        ->and(Organization::query()->where('slug', $slug)->exists())->toBeTrue();
 
     Event::assertDispatched(OrganizationCreated::class, static fn (OrganizationCreated $event): bool => $event->organizationId === $organization->id
-        && $event->slug === 'hope-school'
+        && $event->slug === $slug
         && $event->module() === 'organization');
 });
 
 it('rejects a duplicated slug with a business rule violation', function (): void {
-    OrganizationFactory::new()->create(['slug' => 'taken-slug']);
+    $slug = 'taken-'.strtolower((string) str()->ulid());
+    OrganizationFactory::new()->create(['slug' => $slug]);
 
     $action = app(CreateOrganization::class);
 
     try {
         $action->execute([
             'name' => ['ar' => 'مدرسة أخرى'],
-            'slug' => 'taken-slug',
+            'slug' => $slug,
             'default_timezone' => 'Africa/Cairo',
             'default_currency' => 'EGP',
             'default_locale' => 'ar',

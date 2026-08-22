@@ -16,9 +16,8 @@ beforeEach(function (): void {
     $this->owner = User::factory()->create();
     $this->stranger = User::factory()->create();
 
-    $this->student = StudentProfile::query()->create([
-        'id' => (string) str()->ulid(),
-        'organization_id' => (string) str()->ulid(),
+    $this->student = StudentProfile::factory()->create([
+        'organization_id' => (string) $this->owner->organization_id,
         'user_id' => $this->owner->getKey(),
         'student_code' => 'STU-PO-'.str()->random(4),
     ]);

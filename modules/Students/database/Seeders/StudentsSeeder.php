@@ -83,8 +83,9 @@ final class StudentsSeeder extends Seeder
 
     private function ensureDemoUser(int $index, string $name): string
     {
+        $email = $this->demoEmail($index);
         $existing = DB::table('users')
-            ->where('email', $this->demoEmail($index))
+            ->where('email', $email)
             ->value('id');
 
         if (is_string($existing) && $existing !== '') {
@@ -97,7 +98,8 @@ final class StudentsSeeder extends Seeder
             'id' => $userId,
             'organization_id' => $this->ensureOrganization(),
             'name' => $name,
-            'email' => $this->demoEmail($index),
+            'username' => Str::before($email, '@'),
+            'email' => $email,
             'email_verified_at' => now(),
             'password' => Hash::make(Str::password(16)),
             'created_at' => now(),

@@ -12,6 +12,9 @@ return [
     'name_too_long' => 'الاسم طويل جدًا (الحد 191 حرفًا).',
     'email_required' => 'البريد الإلكتروني مطلوب.',
     'email_invalid' => 'صيغة البريد الإلكتروني غير صحيحة.',
+    'contact_required' => 'أدخل بريدًا إلكترونيًا أو رقم هاتف.',
+    'username_required' => 'اسم المستخدم مطلوب.',
+    'username_reserved' => 'اسم المستخدم هذا محجوز ولا يمكن استخدامه.',
     'password_required' => 'كلمة المرور مطلوبة.',
     'current_password_required' => 'أدخل كلمة المرور الحالية للمتابعة.',
 

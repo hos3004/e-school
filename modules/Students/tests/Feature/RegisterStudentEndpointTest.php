@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Identity\Domain\Models\User;
 use Modules\Students\Domain\Models\StudentProfile;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
@@ -14,11 +15,11 @@ beforeEach(function (): void {
     Gate::define('students.view_any', fn ($user) => true);
 });
 
-function validPayload(): array
+function validPayload(array $overrides = []): array
 {
-    return [
-        'organization_id' => (string) str()->ulid(),
-        'user_id' => (string) str()->ulid(),
+    return array_merge([
+        'organization_id' => Fixtures::organizationId(),
+        'user_id' => Fixtures::userId(),
         'student_code' => 'STU-F-'.str()->random(4),
         'date_of_birth' => '2011-03-02',
         'gender' => 'female',
@@ -27,7 +28,7 @@ function validPayload(): array
         'city' => 'Cairo',
         'preferred_language' => 'ar',
         'joined_at' => '2026-02-01',
-    ];
+    ], $overrides);
 }
 
 it('creates a student through the API and returns 201', function (): void {
@@ -44,9 +45,9 @@ it('creates a student through the API and returns 201', function (): void {
 
 it('rejects duplicate user registration with a translated message', function (): void {
     $user = User::factory()->create();
-    StudentProfile::query()->create(array_merge(validPayload(), ['id' => (string) str()->ulid()]));
-
     $payload = validPayload();
+    StudentProfile::factory()->create($payload);
+
     $payload['student_code'] = 'STU-X-'.str()->random(4);
 
     $this->actingAs($user)

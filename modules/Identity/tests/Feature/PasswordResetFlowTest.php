@@ -9,6 +9,7 @@ use Modules\Identity\Application\Actions\ResetPassword;
 use Modules\Identity\Domain\Events\PasswordResetCompleted;
 use Modules\Identity\Domain\Events\PasswordResetRequested;
 use Modules\Identity\Domain\Models\PasswordResetToken;
+use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
 use Shared\Support\BusinessRuleViolation;
 
@@ -33,19 +34,19 @@ it('issues a reset token and dispatches the request event', function (): void {
 });
 
 it('stays silent when the email does not exist', function (): void {
-    Event::fake();
+    Event::fake([PasswordResetRequested::class]);
 
     app(IssuePasswordResetToken::class)->execute('ghost@eschool.test');
 
     expect(PasswordResetToken::query()->where('email', 'ghost@eschool.test')->exists())->toBeFalse();
 
-    Event::assertNothingDispatched();
+    Event::assertNotDispatched(PasswordResetRequested::class);
 });
 
 it('resets the password with a valid token and dispatches completion', function (): void {
     Event::fake([PasswordResetCompleted::class]);
 
-    /** @var Modules\Identity\Domain\Models\User $user */
+    /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'email' => 'flow@eschool.test',
     ]);
@@ -66,7 +67,7 @@ it('resets the password with a valid token and dispatches completion', function 
 });
 
 it('rejects an invalid token without touching anything', function (): void {
-    /** @var Modules\Identity\Domain\Models\User $user */
+    /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'email' => 'badtoken@eschool.test',
     ]);

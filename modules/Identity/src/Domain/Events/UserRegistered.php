@@ -14,7 +14,9 @@ final class UserRegistered extends DomainEvent
     public function __construct(
         public readonly string $userId,
         public readonly string $organizationId,
-        public readonly string $email,
+        public readonly ?string $email,
+        public readonly string $username,
+        public readonly ?string $phone,
         public readonly string $locale,
         ?string $actorId = null,
         ?string $correlationId = null,
@@ -41,6 +43,8 @@ final class UserRegistered extends DomainEvent
             'user_id' => $this->userId,
             'organization_id' => $this->organizationId,
             'email' => $this->email,
+            'username' => $this->username,
+            'phone' => $this->phone,
             'locale' => $this->locale,
         ];
     }

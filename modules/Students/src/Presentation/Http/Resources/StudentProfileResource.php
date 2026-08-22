@@ -30,6 +30,8 @@ final class StudentProfileResource extends JsonResource
             'gender_label' => $this->resource->gender?->label(),
             'nationality' => $this->resource->nationality,
             'country' => $this->resource->country,
+            'country_id' => $this->resource->country_id,
+            'region_id' => $this->resource->region_id,
             'city' => $this->resource->city,
             'preferred_language' => $this->resource->preferred_language,
             'joined_at' => $this->resource->joined_at?->toDateString(),

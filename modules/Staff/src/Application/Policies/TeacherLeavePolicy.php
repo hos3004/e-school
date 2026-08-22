@@ -11,7 +11,7 @@ final class TeacherLeavePolicy
 {
     public function viewAny($user): bool
     {
-        return $user !== null && $user->can('staff.leave.view_any');
+        return $user !== null && $user->can('staff.leave.approve');
     }
 
     public function view($user, TeacherLeave $leave): bool
@@ -20,7 +20,7 @@ final class TeacherLeavePolicy
             return false;
         }
 
-        if ($user->can('staff.leave.view')) {
+        if ($user->can('staff.view')) {
             return true;
         }
 
@@ -33,7 +33,7 @@ final class TeacherLeavePolicy
 
     public function create($user): bool
     {
-        return $user !== null && $user->can('staff.leave.create');
+        return $user !== null && $user->can('staff.leave.approve');
     }
 
     public function update($user, TeacherLeave $leave): bool
@@ -48,6 +48,6 @@ final class TeacherLeavePolicy
 
     public function decide($user, TeacherLeave $leave): bool
     {
-        return $user !== null && $user->can('staff.leave.decide');
+        return $user !== null && $user->can('staff.leave.approve');
     }
 }

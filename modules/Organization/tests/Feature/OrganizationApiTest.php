@@ -14,11 +14,12 @@ function organizationApiUser(): ApiUser
 
 it('stores an organization over the api and returns 201', function (): void {
     Gate::after(fn (): bool => true);
+    $slug = 'peace-'.strtolower((string) str()->ulid());
 
     $response = $this->actingAs(organizationApiUser())
         ->postJson('/api/organizations', [
             'name' => ['ar' => 'مدرسة السلام', 'en' => 'Peace School'],
-            'slug' => 'peace-school',
+            'slug' => $slug,
             'default_timezone' => 'Africa/Cairo',
             'default_currency' => 'EGP',
             'default_locale' => 'ar',
@@ -27,9 +28,9 @@ it('stores an organization over the api and returns 201', function (): void {
         ]);
 
     $response->assertCreated()
-        ->assertJsonPath('data.slug', 'peace-school');
+        ->assertJsonPath('data.slug', $slug);
 
-    expect(Organization::query()->where('slug', 'peace-school')->exists())->toBeTrue();
+    expect(Organization::query()->where('slug', $slug)->exists())->toBeTrue();
 });
 
 it('rejects an invalid payload with a validation error', function (): void {
@@ -65,7 +66,9 @@ it('forbids storing an organization without permission', function (): void {
 it('shows an existing organization', function (): void {
     Gate::after(fn (): bool => true);
 
-    $organization = OrganizationFactory::new()->create(['slug' => 'visible-school']);
+    $organization = OrganizationFactory::new()->create([
+        'slug' => 'visible-'.strtolower((string) str()->ulid()),
+    ]);
 
     $this->actingAs(organizationApiUser())
         ->getJson("/api/organizations/{$organization->id}")

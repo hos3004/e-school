@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Students\Presentation\Filament\Resources;
 
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -14,6 +15,10 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Modules\Organization\Domain\Contracts\GeographyQueries;
+use Modules\Organization\Domain\ValueObjects\CountryData;
+use Modules\Organization\Domain\ValueObjects\RegionData;
+use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Enums\StudentGender;
 use Modules\Students\Domain\Models\StudentProfile;
 use Modules\Students\Presentation\Filament\Resources\StudentProfileResource\Pages;
@@ -27,9 +32,12 @@ final class StudentProfileResource extends Resource
 
     protected static ?string $slug = 'students';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'الطلاب وأولياء الأمور';
-
     protected static ?int $navigationSort = 20;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('students::filament.navigation_group');
+    }
 
     public static function getNavigationLabel(): string
     {
@@ -46,6 +54,12 @@ final class StudentProfileResource extends Resource
         return __('students::filament.plural_model_label');
     }
 
+    /** ملفات الطلاب لا تُنشأ إلا من قبول طلب التسجيل. */
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
@@ -57,7 +71,7 @@ final class StudentProfileResource extends Resource
 
                 TextInput::make('user_id')
                     ->label(__('students::attributes.user_id'))
-                    ->required()
+                    ->nullable()
                     ->length(26)
                     ->unique(ignoreRecord: true),
 
@@ -84,9 +98,23 @@ final class StudentProfileResource extends Resource
                     ->length(2)
                     ->nullable(),
 
-                TextInput::make('country')
-                    ->label(__('students::attributes.country'))
-                    ->length(2)
+                Select::make('country_id')
+                    ->label(__('students::attributes.country_id'))
+                    ->options(self::countryOptions())
+                    ->searchable()
+                    ->preload()
+                    ->live()
+                    ->nullable(),
+
+                Select::make('region_id')
+                    ->label(__('students::attributes.region_id'))
+                    ->options(function (callable $get): array {
+                        $countryId = $get('country_id');
+
+                        return is_string($countryId) ? self::regionOptions($countryId) : [];
+                    })
+                    ->searchable()
+                    ->preload()
                     ->nullable(),
 
                 TextInput::make('city')
@@ -124,9 +152,14 @@ final class StudentProfileResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('user.name')
+                TextColumn::make('registrationApplication.full_name')
                     ->label(__('students::filament.student_name'))
                     ->searchable(),
+
+                TextColumn::make('registrationApplication.status')
+                    ->label(__('students::attributes.status'))
+                    ->badge()
+                    ->formatStateUsing(fn (?RegistrationStatus $state): ?string => $state?->label()),
 
                 TextColumn::make('gender')
                     ->label(__('students::attributes.gender'))
@@ -136,6 +169,16 @@ final class StudentProfileResource extends Resource
 
                 TextColumn::make('city')
                     ->label(__('students::attributes.city'))
+                    ->toggleable(),
+
+                TextColumn::make('country_id')
+                    ->label(__('students::attributes.country_id'))
+                    ->formatStateUsing(fn (?string $state): ?string => $state !== null ? self::countryOptions()[$state] ?? $state : null)
+                    ->toggleable(),
+
+                TextColumn::make('region_id')
+                    ->label(__('students::attributes.region_id'))
+                    ->formatStateUsing(fn (?string $state): ?string => $state !== null ? self::regionOptions()[$state] ?? $state : null)
                     ->toggleable(),
 
                 TextColumn::make('joined_at')
@@ -156,6 +199,31 @@ final class StudentProfileResource extends Resource
                         ->mapWithKeys(fn (StudentGender $g): array => [$g->value => $g->label()])
                         ->all()),
 
+                SelectFilter::make('country_id')
+                    ->label(__('students::registration.filters.country'))
+                    ->options(self::countryOptions())
+                    ->searchable(),
+
+                SelectFilter::make('region_id')
+                    ->label(__('students::registration.filters.region'))
+                    ->options(self::regionOptions())
+                    ->searchable(),
+
+                SelectFilter::make('registration_status')
+                    ->label(__('students::registration.filters.status'))
+                    ->options(self::statusOptions())
+                    ->query(function (Builder $query, array $data): Builder {
+                        $status = $data['value'] ?? null;
+
+                        return $query->when(
+                            is_string($status) && $status !== '',
+                            fn (Builder $studentQuery): Builder => $studentQuery->whereHas(
+                                'registrationApplication',
+                                fn (Builder $applicationQuery): Builder => $applicationQuery->where('status', $status),
+                            ),
+                        );
+                    }),
+
                 TrashedFilter::make(),
             ])
             ->actions([])
@@ -170,5 +238,61 @@ final class StudentProfileResource extends Resource
             'view' => Pages\ViewStudentProfile::route('/{record}'),
             'edit' => Pages\EditStudentProfile::route('/{record}/edit'),
         ];
+    }
+
+    /** @return array<string, string> */
+    private static function countryOptions(): array
+    {
+        /** @var GeographyQueries $geography */
+        $geography = app(GeographyQueries::class);
+
+        return collect($geography->countries())
+            ->mapWithKeys(fn (CountryData $country): array => [
+                $country->id => self::localizedName($country->name),
+            ])
+            ->all();
+    }
+
+    /** @return array<string, string> */
+    private static function regionOptions(?string $countryId = null): array
+    {
+        /** @var GeographyQueries $geography */
+        $geography = app(GeographyQueries::class);
+        $options = [];
+
+        if ($countryId !== null) {
+            foreach ($geography->regionsOf($countryId) as $region) {
+                $options[$region->id] = self::localizedName($region->name);
+            }
+
+            return $options;
+        }
+
+        foreach ($geography->countries() as $country) {
+            foreach ($geography->regionsOf($country->id) as $region) {
+                $options[$region->id] = self::localizedRegionName($country, $region);
+            }
+        }
+
+        return $options;
+    }
+
+    /** @return array<string, string> */
+    private static function statusOptions(): array
+    {
+        return collect(RegistrationStatus::cases())
+            ->mapWithKeys(fn (RegistrationStatus $status): array => [$status->value => $status->label()])
+            ->all();
+    }
+
+    /** @param array<string, string> $name */
+    private static function localizedName(array $name): string
+    {
+        return $name[app()->getLocale()] ?? $name['ar'] ?? $name['en'] ?? reset($name) ?: '';
+    }
+
+    private static function localizedRegionName(CountryData $country, RegionData $region): string
+    {
+        return self::localizedName($country->name).' — '.self::localizedName($region->name);
     }
 }

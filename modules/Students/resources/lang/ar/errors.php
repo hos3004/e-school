@@ -16,5 +16,12 @@ return [
     'archive_reason_required' => 'سبب الأرشفة إلزامي وفق سياسة التدقيق.',
     'not_archived' => 'لا يمكن استرجاع طالب غير مؤرشف.',
     'not_found' => 'ملف الطالب المطلوب غير موجود.',
+    'registration_invalid_transition' => 'لا يمكن نقل طلب التسجيل من «:from» إلى «:to».',
+    'registration_contact_required' => 'يجب إدخال البريد الإلكتروني أو رقم الهاتف.',
+    'registration_required_field_missing' => 'الحقل «:field» مطلوب قبل تقديم الطلب.',
+    'registration_duplicate_blocked' => 'يوجد طلب تسجيل سابق مطابق لهذه البيانات.',
+    'registration_user_account_required' => 'يجب ربط الطلب بحساب مستخدم قبل القبول.',
+    'registration_student_profile_exists' => 'يوجد بالفعل ملف طالب مرتبط بهذا الحساب.',
+    'registration_rejection_reason_required' => 'سبب رفض طلب التسجيل إلزامي.',
 
 ];

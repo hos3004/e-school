@@ -6,6 +6,7 @@ namespace Modules\Organization\Domain\Models;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,6 +19,17 @@ use Shared\Concerns\HasUlid;
  * مؤسسة واحدة لديها تقويم نشط واحد على الأكثر (حدّه في
  * config('organization.rules.max_active_calendars'))؛ الجدولة كلها
  * ترتبط بالتقويم النشط.
+ *
+ * @property string $id
+ * @property string $organization_id
+ * @property array<string, string> $name
+ * @property CarbonImmutable $starts_on
+ * @property CarbonImmutable $ends_on
+ * @property bool $is_active
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ * @property-read Organization $organization
+ * @property-read Collection<int, Holiday> $holidays
  */
 final class AcademicCalendar extends Model
 {
@@ -50,11 +62,13 @@ final class AcademicCalendar extends Model
         ];
     }
 
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
+    /** @return HasMany<Holiday, $this> */
     public function holidays(): HasMany
     {
         return $this->hasMany(Holiday::class);
@@ -63,6 +77,10 @@ final class AcademicCalendar extends Model
     /**
      * التقويمات النشطة فقط.
      */
+    /**
+     * @param Builder<AcademicCalendar> $query
+     * @return Builder<AcademicCalendar>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
@@ -70,6 +88,10 @@ final class AcademicCalendar extends Model
 
     /**
      * تقويمات مؤسسة واحدة.
+     */
+    /**
+     * @param Builder<AcademicCalendar> $query
+     * @return Builder<AcademicCalendar>
      */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {

@@ -22,9 +22,12 @@ final class HolidayFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-sun';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'النظام';
-
     protected static ?int $navigationSort = 102;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('organization::filament.navigation_group');
+    }
 
     public static function getModelLabel(): string
     {

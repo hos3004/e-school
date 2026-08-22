@@ -11,7 +11,7 @@ final class TeacherAvailabilityPolicy
 {
     public function viewAny($user): bool
     {
-        return $user !== null && $user->can('staff.availability.view_any');
+        return $user !== null && $user->can('staff.view');
     }
 
     public function view($user, TeacherAvailability $availability): bool
@@ -20,7 +20,7 @@ final class TeacherAvailabilityPolicy
             return false;
         }
 
-        if ($user->can('staff.availability.view')) {
+        if ($user->can('staff.view')) {
             return true;
         }
 
@@ -33,7 +33,7 @@ final class TeacherAvailabilityPolicy
 
     public function create($user): bool
     {
-        return $user !== null && $user->can('staff.availability.create');
+        return $user !== null && $user->can('staff.view');
     }
 
     public function update($user, TeacherAvailability $availability): bool
@@ -43,6 +43,6 @@ final class TeacherAvailabilityPolicy
 
     public function delete($user, TeacherAvailability $availability): bool
     {
-        return $user !== null && $user->can('staff.availability.delete');
+        return $user !== null && $user->can('staff.contract.update');
     }
 }

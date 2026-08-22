@@ -3,11 +3,17 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Modules\Students\Presentation\Http\Controllers\AcceptRegistrationApplicationController;
 use Modules\Students\Presentation\Http\Controllers\ArchiveStudentController;
+use Modules\Students\Presentation\Http\Controllers\ListRegistrationApplicationsController;
 use Modules\Students\Presentation\Http\Controllers\ListStudentProfilesController;
-use Modules\Students\Presentation\Http\Controllers\RegisterStudentController;
+use Modules\Students\Presentation\Http\Controllers\RejectRegistrationApplicationController;
+use Modules\Students\Presentation\Http\Controllers\ReviewRegistrationApplicationController;
 use Modules\Students\Presentation\Http\Controllers\RestoreStudentController;
+use Modules\Students\Presentation\Http\Controllers\ShowRegistrationApplicationController;
 use Modules\Students\Presentation\Http\Controllers\ShowStudentProfileController;
+use Modules\Students\Presentation\Http\Controllers\StoreRegistrationApplicationController;
+use Modules\Students\Presentation\Http\Controllers\SubmitRegistrationApplicationController;
 use Modules\Students\Presentation\Http\Controllers\UpdateStudentProfileController;
 
 /*
@@ -20,7 +26,6 @@ use Modules\Students\Presentation\Http\Controllers\UpdateStudentProfileControlle
 */
 
 Route::get('/students', ListStudentProfilesController::class)->name('students.index');
-Route::post('/students', RegisterStudentController::class)->name('students.store');
 
 Route::get('/students/{student}', ShowStudentProfileController::class)
     ->whereUlid('student')
@@ -37,3 +42,25 @@ Route::delete('/students/{student}', ArchiveStudentController::class)
 Route::post('/students/{student}/restore', RestoreStudentController::class)
     ->whereUlid('student')
     ->name('students.restore');
+
+Route::middleware('auth:sanctum')->prefix('registration-applications')->group(function (): void {
+    Route::get('/', ListRegistrationApplicationsController::class)
+        ->name('registration-applications.index');
+    Route::post('/', StoreRegistrationApplicationController::class)
+        ->name('registration-applications.store');
+    Route::get('/{registrationApplication}', ShowRegistrationApplicationController::class)
+        ->whereUlid('registrationApplication')
+        ->name('registration-applications.show');
+    Route::post('/{registrationApplication}/submit', SubmitRegistrationApplicationController::class)
+        ->whereUlid('registrationApplication')
+        ->name('registration-applications.submit');
+    Route::post('/{registrationApplication}/review', ReviewRegistrationApplicationController::class)
+        ->whereUlid('registrationApplication')
+        ->name('registration-applications.review');
+    Route::post('/{registrationApplication}/accept', AcceptRegistrationApplicationController::class)
+        ->whereUlid('registrationApplication')
+        ->name('registration-applications.accept');
+    Route::post('/{registrationApplication}/reject', RejectRegistrationApplicationController::class)
+        ->whereUlid('registrationApplication')
+        ->name('registration-applications.reject');
+});

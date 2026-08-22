@@ -10,14 +10,15 @@ use Modules\Students\Application\Actions\UpdateStudentProfileAction;
 use Modules\Students\Domain\Events\StudentProfileUpdated;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 function createStudent(): StudentProfile
 {
     return app(RegisterStudentAction::class)->execute([
-        'organization_id' => (string) str()->ulid(),
-        'user_id' => (string) str()->ulid(),
+        'organization_id' => Fixtures::organizationId(),
+        'user_id' => Fixtures::userId(),
         'student_code' => 'STU-UP-'.str()->random(4),
     ]);
 }
@@ -46,7 +47,7 @@ it('publishes nothing when nothing changed', function (): void {
     Event::fake([StudentProfileUpdated::class]);
 
     app(UpdateStudentProfileAction::class)->execute($student, [
-        'city' => (string) $student->city,
+        'city' => $student->city,
     ]);
 
     Event::assertNotDispatched(StudentProfileUpdated::class);

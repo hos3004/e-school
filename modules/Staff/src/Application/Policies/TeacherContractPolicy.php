@@ -11,7 +11,7 @@ final class TeacherContractPolicy
 {
     public function viewAny($user): bool
     {
-        return $user !== null && $user->can('staff.contract.view_any');
+        return $user !== null && $user->can('staff.contract.view');
     }
 
     public function view($user, TeacherContract $contract): bool
@@ -34,7 +34,7 @@ final class TeacherContractPolicy
 
     public function create($user): bool
     {
-        return $user !== null && $user->can('staff.contract.create');
+        return $user !== null && $user->can('staff.contract.update');
     }
 
     public function update($user, TeacherContract $contract): bool
@@ -49,6 +49,6 @@ final class TeacherContractPolicy
 
     public function addRate($user, TeacherContract $contract): bool
     {
-        return $user !== null && $user->can('staff.rate.create');
+        return $user !== null && $user->can('staff.contract.update');
     }
 }

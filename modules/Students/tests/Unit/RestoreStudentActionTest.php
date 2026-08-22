@@ -9,13 +9,14 @@ use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Application\Actions\RestoreStudentAction;
 use Modules\Students\Domain\Events\StudentRestored;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 it('restores an archived student and publishes the event', function (): void {
     $student = app(RegisterStudentAction::class)->execute([
-        'organization_id' => (string) str()->ulid(),
-        'user_id' => (string) str()->ulid(),
+        'organization_id' => Fixtures::organizationId(),
+        'user_id' => Fixtures::userId(),
         'student_code' => 'STU-RS-'.str()->random(4),
     ]);
 
@@ -34,8 +35,8 @@ it('restores an archived student and publishes the event', function (): void {
 
 it('refuses to restore a student who was never archived', function (): void {
     $student = app(RegisterStudentAction::class)->execute([
-        'organization_id' => (string) str()->ulid(),
-        'user_id' => (string) str()->ulid(),
+        'organization_id' => Fixtures::organizationId(),
+        'user_id' => Fixtures::userId(),
         'student_code' => 'STU-RN-'.str()->random(4),
     ]);
 

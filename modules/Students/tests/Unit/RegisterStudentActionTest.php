@@ -8,14 +8,15 @@ use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Domain\Enums\StudentGender;
 use Modules\Students\Domain\Events\StudentRegistered;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 function studentData(array $overrides = []): array
 {
     return array_merge([
-        'organization_id' => (string) str()->ulid(),
-        'user_id' => (string) str()->ulid(),
+        'organization_id' => Fixtures::organizationId(),
+        'user_id' => Fixtures::userId(),
         'student_code' => 'STU-0001',
         'date_of_birth' => '2010-05-14',
         'gender' => StudentGender::Male->value,
@@ -50,6 +51,7 @@ it('rejects registering the same user twice', function (): void {
     app(RegisterStudentAction::class)->execute($data);
 
     app(RegisterStudentAction::class)->execute(studentData([
+        'user_id' => $data['user_id'],
         'student_code' => 'STU-0002',
     ]));
 })->throws(BusinessRuleViolation::class);

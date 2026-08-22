@@ -51,7 +51,7 @@ it('rejects a holiday longer than the configured maximum', function (): void {
             ->and($violation->context['max_days'])->toBe(5);
     }
 
-    expect(Holiday::query()->count())->toBe(0);
+    expect(Holiday::query()->forOrganization($organization->id)->count())->toBe(0);
 });
 
 it('rejects a holiday overlapping an existing one for the same organization', function (): void {

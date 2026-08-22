@@ -11,7 +11,7 @@ final class CreateStudentProfile extends CreateRecord
 {
     protected static string $resource = StudentProfileResource::class;
 
-    protected function getCreatedNotificationTitle(): ?string
+    protected function getCreatedNotificationTitle(): string
     {
         return __('students::messages.student_registered');
     }

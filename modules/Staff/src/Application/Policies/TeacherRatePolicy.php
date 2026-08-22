@@ -10,17 +10,17 @@ final class TeacherRatePolicy
 {
     public function viewAny($user): bool
     {
-        return $user !== null && $user->can('staff.rate.view_any');
+        return $user !== null && $user->can('staff.contract.view');
     }
 
     public function view($user, TeacherRate $rate): bool
     {
-        return $user !== null && $user->can('staff.rate.view');
+        return $user !== null && $user->can('staff.contract.view');
     }
 
     public function create($user): bool
     {
-        return $user !== null && $user->can('staff.rate.create');
+        return $user !== null && $user->can('staff.contract.update');
     }
 
     public function update($user, TeacherRate $rate): bool

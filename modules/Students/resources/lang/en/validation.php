@@ -13,5 +13,7 @@ return [
     'birth_before_today' => 'The date of birth must be in the past.',
 
     'reason_required' => 'The archive reason is required.',
+    'country_invalid' => 'The selected country is not available.',
+    'region_not_in_country' => 'The selected region does not belong to the selected country.',
 
 ];

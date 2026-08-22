@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Students\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Students\Domain\Models\StudentProfile;
 
 /**
@@ -15,40 +17,36 @@ use Modules\Students\Domain\Models\StudentProfile;
  */
 final class StudentProfilePolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('students.view_any');
+        return $user->can('student.view');
     }
 
-    public function view($user, StudentProfile $student): bool
+    public function view(Authenticatable&Authorizable $user, StudentProfile $student): bool
     {
-        return $user->can('students.view_any')
+        return $user->can('student.view')
             || (string) $user->getAuthIdentifier() === (string) $student->user_id;
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('students.create');
+        return $user->can('student.create');
     }
 
-    public function update($user, StudentProfile $student): bool
+    public function update(Authenticatable&Authorizable $user, StudentProfile $student): bool
     {
-        if ($user->can('students.update_any')) {
-            return true;
-        }
-
-        return $user->can('students.update_own')
-            && (string) $user->getAuthIdentifier() === (string) $student->user_id;
+        return $user->can('student.update')
+            || ((string) $user->getAuthIdentifier() === (string) $student->user_id);
     }
 
     /** أرشفة الطالب — إجراء حسّاس للمؤسسة فقط. */
-    public function delete($user, StudentProfile $student): bool
+    public function delete(Authenticatable&Authorizable $user, StudentProfile $student): bool
     {
-        return $user->can('students.archive_any');
+        return $user->can('student.update');
     }
 
-    public function restore($user, StudentProfile $student): bool
+    public function restore(Authenticatable&Authorizable $user, StudentProfile $student): bool
     {
-        return $user->can('students.restore_any');
+        return $user->can('student.update');
     }
 }

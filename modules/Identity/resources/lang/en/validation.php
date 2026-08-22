@@ -12,6 +12,9 @@ return [
     'name_too_long' => 'The name is too long (max 191 characters).',
     'email_required' => 'The email address is required.',
     'email_invalid' => 'The email address format is invalid.',
+    'contact_required' => 'Provide an email address or phone number.',
+    'username_required' => 'The username is required.',
+    'username_reserved' => 'This username is reserved and cannot be used.',
     'password_required' => 'The password is required.',
     'current_password_required' => 'Enter your current password to continue.',
 

@@ -10,7 +10,7 @@ final class StaffProfilePolicy
 {
     public function viewAny($user): bool
     {
-        return $user !== null && $user->can('staff.profile.view_any');
+        return $user !== null && $user->can('staff.view');
     }
 
     public function view($user, StaffProfile $profile): bool
@@ -23,12 +23,12 @@ final class StaffProfilePolicy
             return true;
         }
 
-        return $user->can('staff.profile.view');
+        return $user->can('staff.view');
     }
 
     public function create($user): bool
     {
-        return $user !== null && $user->can('staff.profile.create');
+        return $user !== null && $user->can('staff.contract.update');
     }
 
     public function update($user, StaffProfile $profile): bool
@@ -41,16 +41,16 @@ final class StaffProfilePolicy
             return true;
         }
 
-        return $user->can('staff.profile.update');
+        return $user->can('staff.contract.update');
     }
 
     public function delete($user, StaffProfile $profile): bool
     {
-        return $user !== null && $user->can('staff.profile.delete');
+        return $user !== null && $user->can('staff.contract.update');
     }
 
     public function terminate($user, StaffProfile $profile): bool
     {
-        return $user !== null && $user->can('staff.profile.terminate');
+        return $user !== null && $user->can('staff.contract.update');
     }
 }

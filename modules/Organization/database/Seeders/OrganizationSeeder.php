@@ -19,6 +19,8 @@ final class OrganizationSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(GeographySeeder::class);
+
         $organization = Organization::query()->updateOrCreate(
             ['slug' => 'demo-school'],
             [

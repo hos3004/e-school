@@ -42,6 +42,8 @@ it('changes a user status over HTTP with reason and event', function (): void {
 });
 
 it('rejects status change without a written reason', function (): void {
+    Event::fake([UserStatusChanged::class]);
+
     /** @var User $admin */
     $admin = User::factory()->inOrganization($this->organizationId)->create();
     /** @var User $target */

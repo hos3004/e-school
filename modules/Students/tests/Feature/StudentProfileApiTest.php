@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Gate;
 use Modules\Identity\Domain\Models\User;
 use Modules\Students\Application\Actions\ArchiveStudentAction;
 use Modules\Students\Application\Actions\RegisterStudentAction;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
@@ -18,7 +19,7 @@ beforeEach(function (): void {
 
     $this->actor = User::factory()->create();
     $this->student = app(RegisterStudentAction::class)->execute([
-        'organization_id' => (string) str()->ulid(),
+        'organization_id' => Fixtures::organizationId(),
         'user_id' => User::factory()->create()->getKey(),
         'student_code' => 'STU-API-'.str()->random(4),
         'city' => 'Cairo',
