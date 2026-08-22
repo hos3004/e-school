@@ -7,15 +7,39 @@ namespace Modules\Staff\Presentation\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Modules\Identity\Domain\Contracts\UserQueryService;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Modules\Staff\Domain\Enums\StaffGender;
+use Modules\Staff\Domain\Models\StaffProfile;
 
 final class StoreStaffProfileRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('staff.profile.create') ?? false;
+        $user = $this->user();
+
+        if ($user === null || !$user->can('create', StaffProfile::class)) {
+            return false;
+        }
+
+        $userOrganizationId = data_get($user, 'organization_id');
+        $requestedOrganizationId = $this->input('organization_id');
+        $targetUserId = $this->input('user_id');
+
+        if (!is_string($userOrganizationId)
+            || !is_string($requestedOrganizationId)
+            || !is_string($targetUserId)
+            || !hash_equals($userOrganizationId, $requestedOrganizationId)) {
+            return false;
+        }
+
+        /** @var UserQueryService $users */
+        $users = app(UserQueryService::class);
+        $targetUser = $users->findSummary($targetUserId);
+
+        return $targetUser !== null
+            && hash_equals($userOrganizationId, $targetUser->organizationId);
     }
 
     /**

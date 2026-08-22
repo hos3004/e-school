@@ -104,6 +104,36 @@ final class RegistrationApplicationTest extends TestCase
         $this->assertFalse($admissionQueries->isClearedForAssignment($fakeProfileId));
     }
 
+    public function test_self_registration_rejects_an_applicant_below_the_configured_minimum_age(): void
+    {
+        config()->set('admission.self_registration.enabled', true);
+        config()->set('admission.self_registration.min_self_registration_age', 13);
+
+        $organizationId = Fixtures::organizationId();
+        $applicant = User::factory()->create(['organization_id' => $organizationId]);
+
+        /** @var GeographyQueries $geography */
+        $geography = app(GeographyQueries::class);
+        $egypt = $geography->findCountryByIso2('EG');
+        $regions = $geography->regionsOf((string) $egypt?->id);
+
+        $this->actingAs($applicant)
+            ->postJson('/api/registration-applications', [
+                'full_name' => 'Young Applicant',
+                'date_of_birth' => now()->subYears(12)->toDateString(),
+                'gender' => 'female',
+                'country_id' => $egypt?->id,
+                'region_id' => $regions[0]->id,
+                'email' => 'young.applicant@example.test',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['date_of_birth']);
+
+        $this->assertDatabaseMissing('registration_applications', [
+            'email' => 'young.applicant@example.test',
+        ]);
+    }
+
     public function test_rejected_application_does_not_create_student_profile(): void
     {
         Event::fake([RegistrationRejected::class]);

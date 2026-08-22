@@ -6,9 +6,10 @@ namespace Modules\Organization\Tests\Feature\Authorization;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
 use Modules\Identity\Domain\Models\User;
-use Modules\Students\Application\Policies\StudentProfilePolicy;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Testing\Fixtures;
 use Tests\TestCase;
@@ -20,7 +21,7 @@ final class TenantIsolationAuthorizationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(\Modules\AccessControl\Database\Seeders\AccessControlSeeder::class);
+        $this->seed(AccessControlSeeder::class);
     }
 
     public function test_user_from_org_a_cannot_access_resource_from_org_b(): void
@@ -42,6 +43,7 @@ final class TenantIsolationAuthorizationTest extends TestCase
             'id' => $userAId,
             'organization_id' => $orgA,
             'name' => 'User Org A',
+            'username' => 'user_org_a_'.strtolower(substr($userAId, -6)),
             'email' => 'user.orga@test.local',
             'password' => bcrypt('password'),
             'created_at' => now(),
@@ -53,6 +55,7 @@ final class TenantIsolationAuthorizationTest extends TestCase
             'id' => $userBId,
             'organization_id' => $orgB,
             'name' => 'User Org B',
+            'username' => 'user_org_b_'.strtolower(substr($userBId, -6)),
             'email' => 'user.orgb@test.local',
             'password' => bcrypt('password'),
             'created_at' => now(),
@@ -61,16 +64,16 @@ final class TenantIsolationAuthorizationTest extends TestCase
 
         /** @var User $userA */
         $userA = User::query()->findOrFail($userAId);
-        /** @var User $userB */
-        $userB = User::query()->findOrFail($userBId);
+        $studentProfileB = StudentProfile::factory()->create([
+            'organization_id' => $orgB,
+            'user_id' => $userBId,
+            'student_code' => 'STU-TENANT-B',
+        ]);
 
-        $studentProfileB = new StudentProfile();
-        $studentProfileB->organization_id = $orgB;
-        $studentProfileB->user_id = $userBId;
+        Gate::define('student.view.any', fn (User $user): bool => true);
 
-        $policy = new StudentProfilePolicy();
-
-        // User A (from Org A) attempting to view Student Profile from Org B must fail tenant isolation
-        $this->assertNotEquals($userA->organization_id, $studentProfileB->organization_id);
+        $this->actingAs($userA)
+            ->getJson('/api/students/'.$studentProfileB->getKey())
+            ->assertForbidden();
     }
 }

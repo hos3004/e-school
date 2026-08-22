@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Staff\Domain\Models\StaffProfile;
 
 final class StaffProfilePolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user !== null && $user->can('staff.view');
+        return $user->can('staff.view.any');
     }
 
-    public function view($user, StaffProfile $profile): bool
+    public function view(Authenticatable&Authorizable $user, StaffProfile $profile): bool
     {
-        if ($user === null) {
+        if (!$this->sameOrganization($user, $profile)) {
             return false;
         }
 
@@ -23,34 +25,37 @@ final class StaffProfilePolicy
             return true;
         }
 
-        return $user->can('staff.view');
+        return $user->can('staff.view.any');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user !== null && $user->can('staff.contract.update');
-    }
-
-    public function update($user, StaffProfile $profile): bool
-    {
-        if ($user === null) {
-            return false;
-        }
-
-        if ((string) $profile->user_id === (string) $user->getAuthIdentifier()) {
-            return true;
-        }
-
         return $user->can('staff.contract.update');
     }
 
-    public function delete($user, StaffProfile $profile): bool
+    public function update(Authenticatable&Authorizable $user, StaffProfile $profile): bool
     {
-        return $user !== null && $user->can('staff.contract.update');
+        return $this->sameOrganization($user, $profile)
+            && $user->can('staff.contract.update');
     }
 
-    public function terminate($user, StaffProfile $profile): bool
+    public function delete(Authenticatable&Authorizable $user, StaffProfile $profile): bool
     {
-        return $user !== null && $user->can('staff.contract.update');
+        return $this->sameOrganization($user, $profile)
+            && $user->can('staff.contract.update');
+    }
+
+    public function terminate(Authenticatable&Authorizable $user, StaffProfile $profile): bool
+    {
+        return $this->sameOrganization($user, $profile)
+            && $user->can('staff.contract.update');
+    }
+
+    private function sameOrganization(Authenticatable&Authorizable $user, StaffProfile $profile): bool
+    {
+        $organizationId = data_get($user, 'organization_id');
+
+        return is_string($organizationId)
+            && hash_equals($organizationId, (string) $profile->organization_id);
     }
 }

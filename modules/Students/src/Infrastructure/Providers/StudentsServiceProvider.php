@@ -6,7 +6,6 @@ namespace Modules\Students\Infrastructure\Providers;
 
 use Modules\Students\Application\Actions\ArchiveStudentAction;
 use Modules\Students\Application\Actions\CreateRegistrationApplicationAction;
-use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Application\Actions\RestoreStudentAction;
 use Modules\Students\Application\Actions\UpdateStudentProfileAction;
 use Modules\Students\Application\Policies\RegistrationApplicationPolicy;
@@ -65,7 +64,6 @@ final class StudentsServiceProvider extends BaseModuleServiceProvider
     protected function bindings(): array
     {
         return [
-            RegisterStudentAction::class => RegisterStudentAction::class,
             UpdateStudentProfileAction::class => UpdateStudentProfileAction::class,
             ArchiveStudentAction::class => ArchiveStudentAction::class,
             RestoreStudentAction::class => RestoreStudentAction::class,

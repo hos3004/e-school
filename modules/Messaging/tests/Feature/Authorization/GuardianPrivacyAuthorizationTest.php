@@ -68,6 +68,31 @@ final class GuardianPrivacyAuthorizationTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_teacher_participant_can_access_conversation_even_with_guardian_view_permission(): void
+    {
+        $orgId = Fixtures::organizationId();
+
+        $studentUserId = Fixtures::userId();
+        $teacherUserId = Fixtures::userId();
+
+        /** @var User $teacherUser */
+        $teacherUser = User::query()->findOrFail($teacherUserId);
+        $this->grantDirectPermission($teacherUser, 'message.send');
+        $this->grantDirectPermission($teacherUser, 'guardian.view');
+
+        $conversation = app(CreateConversationAction::class)->execute(
+            organizationId: $orgId,
+            creatorUserId: $studentUserId,
+            type: ConversationType::Direct,
+            subject: 'Student Teacher Direct Chat',
+            participantUserIds: [$teacherUserId],
+        );
+
+        $this->actingAs($teacherUser)
+            ->getJson("/api/messaging/conversations/{$conversation->id}")
+            ->assertOk();
+    }
+
     public function test_supervisor_with_moderate_permission_can_access_conversation(): void
     {
         $orgId = Fixtures::organizationId();

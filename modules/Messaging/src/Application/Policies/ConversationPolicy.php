@@ -39,11 +39,6 @@ final class ConversationPolicy
             return true;
         }
 
-        // ولي الأمر لا يرى محادثة الطالب والمعلم عبر معرّف مباشر.
-        if ($this->hasPermission($user, 'guardian.view')) {
-            return false;
-        }
-
         return $this->isParticipant((string) $user->getAuthIdentifier(), (string) $conversation->id);
     }
 
@@ -71,10 +66,6 @@ final class ConversationPolicy
     public function sendMessage(Authenticatable $user, Conversation $conversation): bool
     {
         if ($conversation->organization_id !== $user->organization_id) {
-            return false;
-        }
-
-        if ($user->can('guardian.view') && !$user->can('message.moderate')) {
             return false;
         }
 

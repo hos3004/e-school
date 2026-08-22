@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Infrastructure\Identity\OrganizationUsernamePrefixAdapter;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Modules\Identity\Domain\Contracts\OrganizationUsernamePrefixProvider;
 use Shared\Support\DatabaseTransaction;
 use Shared\Support\Transaction;
 
@@ -18,6 +20,7 @@ final class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(Transaction::class, DatabaseTransaction::class);
+        $this->app->bind(OrganizationUsernamePrefixProvider::class, OrganizationUsernamePrefixAdapter::class);
     }
 
     public function boot(): void

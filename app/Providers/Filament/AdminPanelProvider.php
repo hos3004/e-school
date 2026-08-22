@@ -72,6 +72,7 @@ use Modules\Scheduling\Presentation\Filament\Resources\PostponementRequestResour
 use Modules\Sessions\Presentation\Filament\Resources\SessionParticipantResource;
 use Modules\Sessions\Presentation\Filament\Resources\SessionResource;
 use Modules\Staff\Presentation\Filament\Resources\StaffProfileResource;
+use Modules\Students\Presentation\Filament\Resources\RegistrationApplicationResource;
 use Modules\Students\Presentation\Filament\Resources\StudentProfileResource;
 
 final class AdminPanelProvider extends PanelProvider
@@ -157,6 +158,7 @@ final class AdminPanelProvider extends PanelProvider
                 SessionParticipantResource::class,
                 SessionResource::class,
                 StaffProfileResource::class,
+                RegistrationApplicationResource::class,
                 StudentProfileResource::class,
             ])
             // في هذه التركيبة يبدأ Livewire محرّك Alpine قبل تنفيذ سكربتات

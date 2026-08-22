@@ -35,7 +35,7 @@ final class UserResource extends Resource
 
     protected static ?int $navigationSort = 100;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('identity::filament.navigation_group');
     }

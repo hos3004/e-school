@@ -67,7 +67,9 @@ final class UsernameSuggesterTest extends TestCase
         $suggestions = app(UsernameSuggester::class)->suggest('admin', $organizationId);
 
         $this->assertCount(3, $suggestions);
-        $this->assertContainsOnly('string', $suggestions);
+        foreach ($suggestions as $suggestion) {
+            $this->assertIsString($suggestion);
+        }
         $this->assertStringStartsWith('academy.', $suggestions[0]);
 
         foreach ((array) config('admission.username.reserved', []) as $reserved) {

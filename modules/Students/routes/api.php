@@ -25,23 +25,25 @@ use Modules\Students\Presentation\Http\Controllers\UpdateStudentProfileControlle
 | StudentProfilePolicy عبر FormRequest أو abort_unless داخل المتحكم.
 */
 
-Route::get('/students', ListStudentProfilesController::class)->name('students.index');
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::get('/students', ListStudentProfilesController::class)->name('students.index');
 
-Route::get('/students/{student}', ShowStudentProfileController::class)
-    ->whereUlid('student')
-    ->name('students.show');
+    Route::get('/students/{student}', ShowStudentProfileController::class)
+        ->whereUlid('student')
+        ->name('students.show');
 
-Route::patch('/students/{student}', UpdateStudentProfileController::class)
-    ->whereUlid('student')
-    ->name('students.update');
+    Route::patch('/students/{student}', UpdateStudentProfileController::class)
+        ->whereUlid('student')
+        ->name('students.update');
 
-Route::delete('/students/{student}', ArchiveStudentController::class)
-    ->whereUlid('student')
-    ->name('students.archive');
+    Route::delete('/students/{student}', ArchiveStudentController::class)
+        ->whereUlid('student')
+        ->name('students.archive');
 
-Route::post('/students/{student}/restore', RestoreStudentController::class)
-    ->whereUlid('student')
-    ->name('students.restore');
+    Route::post('/students/{student}/restore', RestoreStudentController::class)
+        ->whereUlid('student')
+        ->name('students.restore');
+});
 
 Route::middleware('auth:sanctum')->prefix('registration-applications')->group(function (): void {
     Route::get('/', ListRegistrationApplicationsController::class)

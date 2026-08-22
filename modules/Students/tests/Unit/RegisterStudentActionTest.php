@@ -2,65 +2,20 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Event;
 use Modules\Students\Application\Actions\RegisterStudentAction;
-use Modules\Students\Domain\Enums\StudentGender;
-use Modules\Students\Domain\Events\StudentRegistered;
 use Shared\Support\BusinessRuleViolation;
-use Shared\Testing\Fixtures;
 
-uses(RefreshDatabase::class);
+it('blocks every legacy direct student profile creation attempt', function (): void {
+    try {
+        (new RegisterStudentAction)->execute([
+            'organization_id' => '01DIRECTPROFILEBLOCK000000',
+            'user_id' => '01DIRECTPROFILEUSER0000000',
+            'student_code' => 'LEGACY-DIRECT',
+        ]);
 
-function studentData(array $overrides = []): array
-{
-    return array_merge([
-        'organization_id' => Fixtures::organizationId(),
-        'user_id' => Fixtures::userId(),
-        'student_code' => 'STU-0001',
-        'date_of_birth' => '2010-05-14',
-        'gender' => StudentGender::Male->value,
-        'nationality' => 'EG',
-        'country' => 'EG',
-        'city' => 'Cairo',
-        'preferred_language' => 'ar',
-        'joined_at' => '2026-01-10',
-    ], $overrides);
-}
-
-it('registers a student and publishes StudentRegistered', function (): void {
-    Event::fake([StudentRegistered::class]);
-
-    $student = app(RegisterStudentAction::class)->execute(studentData());
-
-    expect($student->exists)->toBeTrue()
-        ->and($student->student_code)->toBe('STU-0001')
-        ->and($student->gender)->toBeInstanceOf(StudentGender::class);
-
-    Event::assertDispatched(
-        StudentRegistered::class,
-        fn (StudentRegistered $event): bool => $event->studentId === (string) $student->getKey()
-            && $event->userId === (string) $student->user_id
-            && $event->payload()['student_code'] === 'STU-0001',
-    );
+        $this->fail('The legacy registration action did not block direct profile creation.');
+    } catch (BusinessRuleViolation $exception) {
+        expect($exception->rule)->toBe('students.direct_profile_creation_disabled')
+            ->and($exception->getMessage())->toBe(__('students::errors.direct_profile_creation_disabled'));
+    }
 });
-
-it('rejects registering the same user twice', function (): void {
-    $data = studentData();
-
-    app(RegisterStudentAction::class)->execute($data);
-
-    app(RegisterStudentAction::class)->execute(studentData([
-        'user_id' => $data['user_id'],
-        'student_code' => 'STU-0002',
-    ]));
-})->throws(BusinessRuleViolation::class);
-
-it('rejects a duplicate student code even across archived profiles', function (): void {
-    $first = app(RegisterStudentAction::class)->execute(studentData());
-    $first->delete();
-
-    app(RegisterStudentAction::class)->execute(studentData([
-        'user_id' => (string) str()->ulid(),
-    ]));
-})->throws(BusinessRuleViolation::class);

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Students\Application\Actions\ArchiveStudentAction;
-use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Application\Actions\UpdateStudentProfileAction;
 use Modules\Students\Domain\Events\StudentProfileUpdated;
 use Modules\Students\Domain\Models\StudentProfile;
@@ -16,7 +15,7 @@ uses(RefreshDatabase::class);
 
 function createStudent(): StudentProfile
 {
-    return app(RegisterStudentAction::class)->execute([
+    return StudentProfile::factory()->create([
         'organization_id' => Fixtures::organizationId(),
         'user_id' => Fixtures::userId(),
         'student_code' => 'STU-UP-'.str()->random(4),

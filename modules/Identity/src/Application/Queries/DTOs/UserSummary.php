@@ -13,7 +13,7 @@ final readonly class UserSummary
         public string $id,
         public string $organizationId,
         public string $name,
-        public string $email,
+        public ?string $email,
         public ?string $avatarPath,
         public string $status,
     ) {}

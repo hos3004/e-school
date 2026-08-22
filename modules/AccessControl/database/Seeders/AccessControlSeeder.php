@@ -21,9 +21,9 @@ final class AccessControlSeeder extends Seeder
 {
     /** @var array<string, list<string>> */
     private const PERMISSIONS = [
-        'Students' => ['student.view', 'student.create', 'student.update'],
+        'Students' => ['student.view', 'student.view.any', 'student.create', 'student.update'],
         'Guardians' => ['guardian.view', 'guardian.link'],
-        'Staff' => ['staff.view', 'staff.contract.view', 'staff.contract.update', 'staff.leave.approve'],
+        'Staff' => ['staff.view', 'staff.view.any', 'staff.contract.view', 'staff.contract.update', 'staff.leave.approve'],
         'Enrollments' => [
             'enrollment.view', 'enrollment.create', 'enrollment.pause',
             'enrollment.freeze', 'enrollment.reactivate',
@@ -77,8 +77,8 @@ final class AccessControlSeeder extends Seeder
         'platform_admin' => ['*'],
 
         'academic_supervisor' => [
-            'student.view', 'student.update', 'guardian.view',
-            'staff.view', 'staff.contract.view', 'staff.leave.approve',
+            'student.view', 'student.view.any', 'student.update', 'guardian.view',
+            'staff.view', 'staff.view.any', 'staff.contract.view', 'staff.leave.approve',
             'enrollment.view', 'enrollment.create', 'enrollment.pause',
             'enrollment.freeze', 'enrollment.reactivate',
             'program.manage', 'course.manage', 'group.view', 'group.manage',
@@ -103,7 +103,7 @@ final class AccessControlSeeder extends Seeder
         ],
 
         'finance_supervisor' => [
-            'student.view', 'staff.view', 'staff.contract.view',
+            'student.view', 'student.view.any', 'staff.view', 'staff.view.any', 'staff.contract.view',
             'enrollment.view', 'group.view', 'session.view',
             'attendance.view', 'grade.view',
             'payroll.view', 'payroll.calculate', 'payroll.review',
@@ -113,7 +113,8 @@ final class AccessControlSeeder extends Seeder
         ],
 
         'registrar' => [
-            'student.view', 'student.create', 'student.update',
+            'student.view', 'student.view.any', 'student.create', 'student.update',
+            'staff.view.any',
             'guardian.view', 'guardian.link',
             'enrollment.view', 'enrollment.create', 'enrollment.pause',
             'group.view', 'group.manage', 'content.view',
@@ -128,7 +129,7 @@ final class AccessControlSeeder extends Seeder
         ],
 
         'communications_officer' => [
-            'student.view', 'guardian.view', 'group.view', 'session.view',
+            'student.view', 'student.view.any', 'guardian.view', 'group.view', 'session.view',
             'attendance.view', 'enrollment.view',
             'message.send', 'message.moderate', 'messaging.inbound.view',
             'announcement.publish', 'report.view',
@@ -172,7 +173,8 @@ final class AccessControlSeeder extends Seeder
 
         // مراجع: قراءة شاملة بلا أي تعديل
         'auditor' => [
-            'student.view', 'guardian.view', 'staff.view', 'staff.contract.view',
+            'student.view', 'student.view.any', 'guardian.view',
+            'staff.view', 'staff.view.any', 'staff.contract.view',
             'enrollment.view', 'group.view', 'content.view',
             'program.manage', 'course.manage',
             'schedule.view', 'session.view', 'attendance.view',

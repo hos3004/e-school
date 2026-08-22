@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Students\Presentation\Http\Requests;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -42,7 +43,10 @@ final class StoreRegistrationApplicationRequest extends FormRequest
      */
     public function after(): array
     {
-        return [$this->validateGeography(...)];
+        return [
+            $this->validateGeography(...),
+            $this->validateMinimumSelfRegistrationAge(...),
+        ];
     }
 
     /**
@@ -89,6 +93,35 @@ final class StoreRegistrationApplicationRequest extends FormRequest
 
         if (!$geography->regionExistsIn($regionId, $countryId)) {
             $validator->errors()->add('region_id', __('students::validation.region_not_in_country'));
+        }
+    }
+
+    private function validateMinimumSelfRegistrationAge(Validator $validator): void
+    {
+        if ($validator->errors()->has('date_of_birth')) {
+            return;
+        }
+
+        $minimumAge = (int) config('admission.self_registration.min_self_registration_age', 0);
+        $dateOfBirth = $this->input('date_of_birth');
+
+        if ($minimumAge <= 0 || !is_string($dateOfBirth)) {
+            return;
+        }
+
+        try {
+            $eligibleFrom = CarbonImmutable::parse($dateOfBirth)
+                ->startOfDay()
+                ->addYears($minimumAge);
+        } catch (\Throwable) {
+            return;
+        }
+
+        if ($eligibleFrom->isAfter(CarbonImmutable::today())) {
+            $validator->errors()->add(
+                'date_of_birth',
+                __('students::validation.minimum_self_registration_age', ['age' => $minimumAge]),
+            );
         }
     }
 }

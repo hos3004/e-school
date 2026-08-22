@@ -17,16 +17,17 @@ final class ListStudentProfilesController extends Controller
 {
     public function __invoke(): AnonymousResourceCollection
     {
-        abort_unless(request()->user()?->can('viewAny', StudentProfile::class), 403);
+        $user = request()->user();
+        abort_unless($user?->can('viewAny', StudentProfile::class), 403);
+
+        $organizationId = (string) data_get($user, 'organization_id');
+        abort_if($organizationId === '', 403);
 
         $status = RegistrationStatus::tryFrom((string) request()->query('status'));
         $search = trim((string) request()->query('search'));
 
         $students = StudentProfile::query()
-            ->when(
-                request()->filled('organization_id'),
-                fn ($query) => $query->forOrganization((string) request()->string('organization_id')),
-            )
+            ->forOrganization($organizationId)
             ->when(request()->filled('country_id'), fn ($query) => $query->where('country_id', request()->string('country_id')->toString()))
             ->when(request()->filled('region_id'), fn ($query) => $query->where('region_id', request()->string('region_id')->toString()))
             ->when($status !== null, fn ($query) => $query->whereHas(

@@ -55,11 +55,13 @@
 | الصلاحية | admin | acad.sup | fin.sup | registrar | comms | teacher | student | guardian | auditor |
 |----------|:-----:|:--------:|:-------:|:---------:|:-----:|:-------:|:-------:|:--------:|:-------:|
 | `student.view` | ● | ● | ○ | ● | ○ | ◐ | ◐own | ◐children | ○ |
+| `student.view.any` | ● | ● | ○ | ● | ○ | — | — | — | ○ |
 | `student.create` | ● | — | — | ● | — | — | — | — | — |
 | `student.update` | ● | ◐ | — | ● | — | — | ◐own | ◐children | — |
 | `guardian.view` | ● | ● | — | ● | ○ | ◐ | — | ◐own | ○ |
 | `guardian.link` | ● | — | — | ● | — | — | — | — | — |
 | `staff.view` | ● | ● | ○ | ○ | — | ◐own | — | — | ○ |
+| `staff.view.any` | ● | ● | ○ | ○ | — | — | — | — | ○ |
 | `staff.contract.view` | ● | ○ | ● | — | — | ◐own | — | — | ○ |
 | `staff.contract.update` | ● | — | — | — | — | — | — | — | — |
 | `enrollment.view` | ● | ● | ○ | ● | ○ | ◐ | ◐own | ◐children | ○ |

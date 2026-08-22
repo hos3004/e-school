@@ -5,16 +5,16 @@ declare(strict_types=1);
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Students\Application\Actions\ArchiveStudentAction;
-use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Application\Actions\RestoreStudentAction;
 use Modules\Students\Domain\Events\StudentRestored;
+use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 it('restores an archived student and publishes the event', function (): void {
-    $student = app(RegisterStudentAction::class)->execute([
+    $student = StudentProfile::factory()->create([
         'organization_id' => Fixtures::organizationId(),
         'user_id' => Fixtures::userId(),
         'student_code' => 'STU-RS-'.str()->random(4),
@@ -34,7 +34,7 @@ it('restores an archived student and publishes the event', function (): void {
 });
 
 it('refuses to restore a student who was never archived', function (): void {
-    $student = app(RegisterStudentAction::class)->execute([
+    $student = StudentProfile::factory()->create([
         'organization_id' => Fixtures::organizationId(),
         'user_id' => Fixtures::userId(),
         'student_code' => 'STU-RN-'.str()->random(4),

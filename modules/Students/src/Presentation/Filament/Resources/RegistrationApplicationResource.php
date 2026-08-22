@@ -15,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Organization\Domain\ValueObjects\CountryData;
 use Modules\Organization\Domain\ValueObjects\RegionData;
@@ -59,6 +60,22 @@ final class RegistrationApplicationResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    /**
+     * نطاق مؤسسة المستخدم دائمًا؛ غياب المؤسسة يغلق الاستعلام بدل كشف الجميع.
+     *
+     * @return Builder<RegistrationApplication>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        $organizationId = (string) data_get(auth()->user(), 'organization_id');
+        /** @var Builder<RegistrationApplication> $query */
+        $query = parent::getEloquentQuery();
+
+        return $organizationId === ''
+            ? $query->whereRaw('1 = 0')
+            : $query->forOrganization($organizationId);
     }
 
     public static function form(Schema $schema): Schema

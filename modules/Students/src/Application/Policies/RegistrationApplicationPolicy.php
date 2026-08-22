@@ -13,13 +13,13 @@ final class RegistrationApplicationPolicy
 {
     public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('student.view');
+        return $user->can('student.create');
     }
 
     public function view(Authenticatable&Authorizable $user, RegistrationApplication $application): bool
     {
         return $this->sameOrganization($user, $application)
-            && ($user->can('student.view')
+            && ($user->can('student.create')
                 || (string) $user->getAuthIdentifier() === (string) $application->user_id);
     }
 

@@ -15,6 +15,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Organization\Domain\ValueObjects\CountryData;
 use Modules\Organization\Domain\ValueObjects\RegionData;
@@ -60,26 +61,37 @@ final class StudentProfileResource extends Resource
         return false;
     }
 
+    /** يمنع دخول الطالب صفحة Filament الحساسة اعتمادًا على الملكية وحدها. */
+    public static function canEdit(Model $record): bool
+    {
+        return (bool) auth()->user()?->can('student.update')
+            && parent::canEdit($record);
+    }
+
+    /**
+     * نطاق مؤسسة المستخدم دائمًا؛ غياب المؤسسة يغلق الاستعلام بدل كشف الجميع.
+     *
+     * @return Builder<StudentProfile>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        $organizationId = (string) data_get(auth()->user(), 'organization_id');
+        /** @var Builder<StudentProfile> $query */
+        $query = parent::getEloquentQuery();
+
+        return $organizationId === ''
+            ? $query->whereRaw('1 = 0')
+            : $query->forOrganization($organizationId);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->schema([
-                TextInput::make('organization_id')
-                    ->label(__('students::attributes.organization_id'))
-                    ->required()
-                    ->length(26),
-
-                TextInput::make('user_id')
-                    ->label(__('students::attributes.user_id'))
-                    ->nullable()
-                    ->length(26)
-                    ->unique(ignoreRecord: true),
-
                 TextInput::make('student_code')
                     ->label(__('students::attributes.student_code'))
-                    ->required()
-                    ->maxLength(32)
-                    ->unique(ignoreRecord: true),
+                    ->disabled()
+                    ->dehydrated(false),
 
                 DatePicker::make('date_of_birth')
                     ->label(__('students::attributes.date_of_birth'))

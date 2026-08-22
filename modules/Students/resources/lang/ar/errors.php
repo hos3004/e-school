@@ -23,5 +23,6 @@ return [
     'registration_user_account_required' => 'يجب ربط الطلب بحساب مستخدم قبل القبول.',
     'registration_student_profile_exists' => 'يوجد بالفعل ملف طالب مرتبط بهذا الحساب.',
     'registration_rejection_reason_required' => 'سبب رفض طلب التسجيل إلزامي.',
+    'direct_profile_creation_disabled' => 'لا يمكن إنشاء ملف طالب مباشرة؛ يجب قبول طلب التسجيل أولًا.',
 
 ];

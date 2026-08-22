@@ -23,5 +23,6 @@ return [
     'registration_user_account_required' => 'The application must be linked to a user account before acceptance.',
     'registration_student_profile_exists' => 'A student profile is already linked to this account.',
     'registration_rejection_reason_required' => 'A rejection reason is required.',
+    'direct_profile_creation_disabled' => 'A student profile cannot be created directly; accept the registration application first.',
 
 ];

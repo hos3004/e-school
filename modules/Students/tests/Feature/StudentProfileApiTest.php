@@ -3,27 +3,31 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Modules\Identity\Domain\Models\User;
 use Modules\Students\Application\Actions\ArchiveStudentAction;
-use Modules\Students\Application\Actions\RegisterStudentAction;
+use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Gate::define('students.view_any', fn ($user) => true);
-    Gate::define('students.update_any', fn ($user) => true);
-    Gate::define('students.archive_any', fn ($user) => true);
-    Gate::define('students.restore_any', fn ($user) => true);
+    Gate::define('student.view.any', fn ($user): bool => true);
+    Gate::define('student.update', fn ($user): bool => true);
 
     $this->actor = User::factory()->create();
-    $this->student = app(RegisterStudentAction::class)->execute([
+    $this->student = StudentProfile::factory()->create([
         'organization_id' => Fixtures::organizationId(),
         'user_id' => User::factory()->create()->getKey(),
         'student_code' => 'STU-API-'.str()->random(4),
         'city' => 'Cairo',
     ]);
+});
+
+it('requires authentication for student profile routes', function (): void {
+    $this->getJson('/api/students')->assertUnauthorized();
 });
 
 it('shows a student profile', function (): void {
@@ -76,10 +80,40 @@ it('restores an archived student through the API', function (): void {
 });
 
 it('forbids update without any matching ability or ownership', function (): void {
-    Gate::define('students.update_any', fn ($user) => false);
-    Gate::define('students.update_own', fn ($user) => false);
+    Gate::define('student.update', fn ($user): bool => false);
 
     $this->actingAs($this->actor)
         ->patchJson('/api/students/'.$this->student->getKey(), ['city' => 'Giza'])
         ->assertForbidden();
+});
+
+it('forbids an authorized user from another organization and excludes its records from the index', function (): void {
+    $otherOrganizationId = (string) Str::ulid();
+    DB::table('organizations')->insert([
+        'id' => $otherOrganizationId,
+        'name' => json_encode(['ar' => 'مؤسسة اختبار أخرى', 'en' => 'Other Test Organization'], JSON_UNESCAPED_UNICODE),
+        'slug' => 'other-test-'.strtolower(substr($otherOrganizationId, -8)),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $otherUser = User::factory()->inOrganization($otherOrganizationId)->create();
+    $otherStudent = StudentProfile::factory()->create([
+        'organization_id' => $otherOrganizationId,
+        'user_id' => $otherUser->getKey(),
+    ]);
+
+    $this->actingAs($this->actor)
+        ->getJson('/api/students/'.$otherStudent->getKey())
+        ->assertForbidden();
+
+    $response = $this->actingAs($this->actor)
+        ->getJson('/api/students?organization_id='.$otherOrganizationId)
+        ->assertOk();
+
+    $visibleIds = collect($response->json('data'))->pluck('id');
+
+    expect($visibleIds)
+        ->toContain((string) $this->student->getKey())
+        ->not->toContain((string) $otherStudent->getKey());
 });

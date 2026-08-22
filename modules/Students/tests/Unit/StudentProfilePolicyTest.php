@@ -24,50 +24,62 @@ beforeEach(function (): void {
 });
 
 it('lets the student view their own profile without any ability', function (): void {
-    Gate::define('students.view_any', fn ($user) => false);
+    Gate::define('student.view.any', fn ($user): bool => false);
 
-    expect($this->policy->view($this->owner, $this->student))->toBeTrue()
+    expect($this->policy->viewAny($this->owner))->toBeFalse()
+        ->and($this->policy->view($this->owner, $this->student))->toBeTrue()
         ->and($this->policy->view($this->stranger, $this->student))->toBeFalse();
 });
 
-it('lets anyone with view_any view all profiles', function (): void {
-    Gate::define('students.view_any', fn ($user) => true);
+it('lets anyone with student view any permission view profiles in their organization', function (): void {
+    Gate::define('student.view.any', fn ($user): bool => true);
 
     expect($this->policy->view($this->stranger, $this->student))->toBeTrue()
         ->and($this->policy->viewAny($this->stranger))->toBeTrue();
 });
 
-it('allows update via update_any or ownership with update_own', function (): void {
-    Gate::define('students.update_any', fn ($user) => false);
-    Gate::define('students.update_own', fn ($user) => false);
+it('allows update via student update permission or direct ownership', function (): void {
+    Gate::define('student.update', fn ($user): bool => false);
 
-    expect($this->policy->update($this->owner, $this->student))->toBeFalse();
-
-    Gate::define('students.update_own', fn ($user) => true);
     expect($this->policy->update($this->owner, $this->student))->toBeTrue()
         ->and($this->policy->update($this->stranger, $this->student))->toBeFalse();
 
-    Gate::define('students.update_any', fn ($user) => true);
+    Gate::define('student.update', fn ($user): bool => true);
     expect($this->policy->update($this->stranger, $this->student))->toBeTrue();
 });
 
 it('never grants archive or restore by ownership — abilities only', function (): void {
+    Gate::define('student.update', fn ($user): bool => false);
+
     expect($this->policy->delete($this->owner, $this->student))->toBeFalse()
         ->and($this->policy->restore($this->owner, $this->student))->toBeFalse();
 
-    Gate::define('students.archive_any', fn ($user) => true);
-    Gate::define('students.restore_any', fn ($user) => true);
+    Gate::define('student.update', fn ($user): bool => true);
 
     expect($this->policy->delete($this->owner, $this->student))->toBeTrue()
         ->and($this->policy->restore($this->owner, $this->student))->toBeTrue();
 });
 
-it('gates create behind students.create only', function (): void {
-    Gate::define('students.create', fn ($user) => false);
+it('gates create behind student create only', function (): void {
+    Gate::define('student.create', fn ($user): bool => false);
 
     expect($this->policy->create($this->owner))->toBeFalse();
 
-    Gate::define('students.create', fn ($user) => true);
+    Gate::define('student.create', fn ($user): bool => true);
 
     expect($this->policy->create($this->owner))->toBeTrue();
+});
+
+it('denies every record action across organization boundaries despite abilities', function (): void {
+    Gate::define('student.view.any', fn ($user): bool => true);
+    Gate::define('student.update', fn ($user): bool => true);
+
+    $otherOrganizationUser = User::factory()->make([
+        'organization_id' => (string) str()->ulid(),
+    ]);
+
+    expect($this->policy->view($otherOrganizationUser, $this->student))->toBeFalse()
+        ->and($this->policy->update($otherOrganizationUser, $this->student))->toBeFalse()
+        ->and($this->policy->delete($otherOrganizationUser, $this->student))->toBeFalse()
+        ->and($this->policy->restore($otherOrganizationUser, $this->student))->toBeFalse();
 });

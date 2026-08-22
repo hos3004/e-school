@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Modules\Identity\Application\Services;
 
 use Illuminate\Support\Str;
+use Modules\Identity\Domain\Contracts\OrganizationUsernamePrefixProvider;
 use Modules\Identity\Domain\Models\User;
-use Modules\Organization\Domain\Contracts\OrganizationSettingQueries;
 
 /**
  * يولّد أسماء دخول قابلة للاستخدام دون معرفة Identity بجدول إعدادات المؤسسة.
@@ -14,7 +14,7 @@ use Modules\Organization\Domain\Contracts\OrganizationSettingQueries;
 final readonly class UsernameSuggester
 {
     public function __construct(
-        private OrganizationSettingQueries $organizationSettings,
+        private OrganizationUsernamePrefixProvider $organizationUsernamePrefix,
     ) {}
 
     /**
@@ -88,10 +88,7 @@ final readonly class UsernameSuggester
     private function resolvePrefix(?string $organizationId, string $separator): string
     {
         if ($organizationId !== null) {
-            $value = $this->organizationSettings->value(
-                $organizationId,
-                (string) config('admission.username.organization_setting_key'),
-            );
+            $value = $this->organizationUsernamePrefix->forOrganization($organizationId);
 
             if (is_string($value) && trim($value) !== '') {
                 return $this->normalize($value, $separator);

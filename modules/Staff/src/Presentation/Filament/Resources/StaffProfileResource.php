@@ -15,6 +15,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Modules\Staff\Domain\Enums\StaffGender;
@@ -41,12 +42,32 @@ final class StaffProfileResource extends Resource
         return __('staff::filament.profile.plural_label');
     }
 
+    /** إنشاء الملف يظل عبر API/Action حتى يكتمل اختيار حساب المستخدم بأمان. */
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     public static function getNavigationBadge(): string
     {
         /** @var int $count */
-        $count = StaffProfile::query()->active()->count();
+        $count = self::getEloquentQuery()->active()->count();
 
         return (string) $count;
+    }
+
+    /** @return Builder<StaffProfile> */
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<StaffProfile> $query */
+        $query = parent::getEloquentQuery();
+        $organizationId = data_get(auth()->user(), 'organization_id');
+
+        if (!is_string($organizationId) || $organizationId === '') {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->forOrganization($organizationId);
     }
 
     public static function form(Schema $schema): Schema
@@ -168,7 +189,6 @@ final class StaffProfileResource extends Resource
     {
         return [
             'index' => StaffProfileResource\Pages\ListStaffProfiles::route('/'),
-            'create' => StaffProfileResource\Pages\CreateStaffProfile::route('/create'),
             'view' => StaffProfileResource\Pages\ViewStaffProfile::route('/{record}'),
             'edit' => StaffProfileResource\Pages\EditStaffProfile::route('/{record}/edit'),
         ];
