@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Identity\Database\Factories;
 
-use Shared\Testing\Fixtures;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Modules\Identity\Domain\Enums\UserStatus;
 use Modules\Identity\Domain\Models\User;
+use Shared\Testing\Fixtures;
 
 /**
  * @extends Factory<User>

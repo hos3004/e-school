@@ -25,7 +25,7 @@ final readonly class UpdateBadgeAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  الحقول المسموح تعديلها فقط
+     * @param array<string, mixed> $data الحقول المسموح تعديلها فقط
      */
     public function execute(Badge $badge, array $data, ?string $actorId = null): Badge
     {

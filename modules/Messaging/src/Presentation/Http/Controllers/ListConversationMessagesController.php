@@ -8,8 +8,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
 use Modules\Messaging\Domain\Models\Conversation;
-use Modules\Messaging\Presentation\Http\Resources\MessageResource;
 use Modules\Messaging\Domain\Models\Message;
+use Modules\Messaging\Presentation\Http\Resources\MessageResource;
 
 /**
  * عرض رسائل محادثة.

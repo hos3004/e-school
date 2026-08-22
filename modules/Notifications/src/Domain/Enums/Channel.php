@@ -18,6 +18,8 @@ enum Channel: string
 
     case Push = 'push';
 
+    case Whatsapp = 'whatsapp';
+
     case InApp = 'in_app';
 
     /**

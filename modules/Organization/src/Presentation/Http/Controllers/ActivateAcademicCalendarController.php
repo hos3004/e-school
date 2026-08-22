@@ -22,7 +22,7 @@ final class ActivateAcademicCalendarController
      */
     public function __invoke(Request $request, AcademicCalendar $calendar): JsonResponse
     {
-        if (! ($request->user()?->can('activate', $calendar) ?? false)) {
+        if (!($request->user()?->can('activate', $calendar) ?? false)) {
             throw new AuthorizationException(__('organization::errors.unauthorized'));
         }
 

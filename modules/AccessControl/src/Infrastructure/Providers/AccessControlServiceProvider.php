@@ -9,11 +9,19 @@ use Modules\AccessControl\Application\Policies\RolePolicy;
 use Modules\AccessControl\Domain\Contracts\AccessControlQuerier;
 use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Domain\Models\Role;
+use Modules\AccessControl\Infrastructure\Authorization\PermissionGateRegistrar;
 use Modules\AccessControl\Infrastructure\Persistence\AccessControlQueryService;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class AccessControlServiceProvider extends BaseModuleServiceProvider
 {
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->app->make(PermissionGateRegistrar::class)->register();
+    }
+
     protected function moduleName(): string
     {
         return 'AccessControl';

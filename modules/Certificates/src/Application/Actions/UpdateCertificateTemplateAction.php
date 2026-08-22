@@ -24,7 +24,7 @@ final readonly class UpdateCertificateTemplateAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  الحقول المسموح تعديلها فقط
+     * @param array<string, mixed> $data الحقول المسموح تعديلها فقط
      */
     public function execute(CertificateTemplate $template, array $data, ?string $actorId = null): CertificateTemplate
     {
@@ -66,7 +66,7 @@ final readonly class UpdateCertificateTemplateAction
     /**
      * حمولة الحدث قيم بدائية فقط — المصفوفات تُرمَّز JSON.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      * @return array<string, string>
      */
     private function diff(array $data): array

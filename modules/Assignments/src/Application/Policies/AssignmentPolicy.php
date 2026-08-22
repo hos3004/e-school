@@ -47,10 +47,10 @@ final class AssignmentPolicy
     /** حذف ناعم فقط — ولا يجوز بعد وجود تسليمات مرصودة. */
     public function delete($user, Assignment $assignment): bool
     {
-        if (! $this->update($user, $assignment)) {
+        if (!$this->update($user, $assignment)) {
             return false;
         }
 
-        return ! $assignment->submissions()->graded()->exists();
+        return !$assignment->submissions()->graded()->exists();
     }
 }

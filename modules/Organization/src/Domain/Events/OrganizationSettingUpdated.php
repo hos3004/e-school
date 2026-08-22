@@ -12,7 +12,7 @@ use Shared\Domain\DomainEvent;
 final class OrganizationSettingUpdated extends DomainEvent
 {
     /**
-     * @param  mixed  $value  قيمة بدائية (سلسلة/عدد/منطقية) أو بنية مصفوفية بسيطة
+     * @param mixed $value قيمة بدائية (سلسلة/عدد/منطقية) أو بنية مصفوفية بسيطة
      */
     public function __construct(
         public readonly string $organizationId,

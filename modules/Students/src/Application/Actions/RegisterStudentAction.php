@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Students\Application\Actions;
 
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Students\Domain\Events\StudentRegistered;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * تسجيل طالب جديد في مؤسسة: إنشاء ملف الطالب ونشر حدث التسجيل.
@@ -21,7 +21,7 @@ final readonly class RegisterStudentAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  بيانات الملف بعد تحقّق FormRequest
+     * @param array<string, mixed> $data بيانات الملف بعد تحقّق FormRequest
      */
     public function execute(array $data): StudentProfile
     {

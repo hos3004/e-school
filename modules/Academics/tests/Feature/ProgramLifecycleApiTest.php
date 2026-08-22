@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-use Modules\Identity\Domain\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Events\ProgramArchived;
 use Modules\Academics\Domain\Models\Program;
+use Modules\Identity\Domain\Models\User;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Gate::define('academics.programs.update', fn ($user) => true);
     Gate::define('academics.programs.archive', fn ($user) => true);
 });
 
-it('updates a program through the API', function () {
+it('updates a program through the API', function (): void {
     $user = User::factory()->create();
     $program = Program::factory()->create(['duration_weeks' => 10]);
 
@@ -30,7 +30,7 @@ it('updates a program through the API', function () {
     expect($program->fresh()->duration_weeks)->toBe(20);
 });
 
-it('archives a program with a documented reason', function () {
+it('archives a program with a documented reason', function (): void {
     Event::fake([ProgramArchived::class]);
 
     $user = User::factory()->create();
@@ -46,11 +46,11 @@ it('archives a program with a documented reason', function () {
 
     Event::assertDispatched(
         ProgramArchived::class,
-        fn (ProgramArchived $event): bool => $event->reason === 'إيقاف لانتهاء الطلب'
+        fn (ProgramArchived $event): bool => $event->reason === 'إيقاف لانتهاء الطلب',
     );
 });
 
-it('rejects archiving without a reason', function () {
+it('rejects archiving without a reason', function (): void {
     $user = User::factory()->create();
     $program = Program::factory()->create();
 

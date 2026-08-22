@@ -35,13 +35,13 @@ final class AcademicCalendarPolicy
 
     public function delete(Authenticatable $user, AcademicCalendar $calendar): bool
     {
-        return ! $calendar->is_active && $user->can('academic_calendars.delete');
+        return !$calendar->is_active && $user->can('academic_calendars.delete');
     }
 
     /** تنشيط تقويم ليكون مرجع الجدولة. */
     public function activate(Authenticatable $user, AcademicCalendar $calendar): bool
     {
-        return ! $calendar->is_active && $user->can('academic_calendars.activate');
+        return !$calendar->is_active && $user->can('academic_calendars.activate');
     }
 
     /** إغلاق تقويم نشط. */

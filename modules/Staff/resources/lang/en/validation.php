@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'amount_invalid' => 'Enter a valid amount with no more than two decimal places.',
+    'amount_required' => 'An amount is required.',
+    'availability_time_invalid' => 'The availability end time must be after its start time.',
+    'basis_required' => 'A contract basis is required.',
+    'contract_period_invalid' => 'The effective end date must be after the start date.',
+    'decision_required' => 'A leave decision is required.',
+    'employment_type_invalid' => 'The selected employment type is invalid.',
+    'employment_type_required' => 'An employment type is required.',
+    'leave_period_invalid' => 'The leave end time must be after its start time.',
+    'reason_required' => 'Provide a clear reason.',
+    'scope_required' => 'A rate scope is required.',
+    'staff_code_required' => 'A staff code is required.',
+    'staff_code_unique' => 'This staff code is already assigned to another staff member.',
+    'staff_profile_required' => 'A staff profile is required.',
+    'ulid' => 'The user ID is invalid.',
+    'user_id_required' => 'A user account is required.',
+    'weekday_invalid' => 'The selected weekday is invalid.',
+    'attributes' => [
+        'amount' => 'amount',
+        'base_amount' => 'base amount',
+        'basis' => 'contract basis',
+        'decision' => 'decision',
+        'effective_from' => 'effective start date',
+        'effective_to' => 'effective end date',
+        'employment_type' => 'employment type',
+        'end_time' => 'end time',
+        'ends_at' => 'leave end time',
+        'reason' => 'reason',
+        'scope' => 'rate scope',
+        'staff_code' => 'staff code',
+        'staff_profile' => 'staff profile',
+        'start_time' => 'start time',
+        'starts_at' => 'leave start time',
+        'user_id' => 'user account',
+        'weekday' => 'weekday',
+    ],
+];

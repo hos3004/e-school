@@ -23,7 +23,7 @@ final readonly class CancelReactivationAction
 
     public function execute(ReactivationRequest $request): ReactivationRequest
     {
-        if (! $request->status->canTransitionTo(ReactivationStatus::Cancelled)) {
+        if (!$request->status->canTransitionTo(ReactivationStatus::Cancelled)) {
             throw BusinessRuleViolation::make(
                 'discipline.reactionation_cancellation_not_allowed',
                 'discipline::errors.reactivation_cancellation_not_allowed',

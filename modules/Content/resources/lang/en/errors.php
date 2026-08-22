@@ -7,4 +7,11 @@ declare(strict_types=1);
 | Consumed via __('content::errors.key') — keys describe meaning, not wording.
 */
 
-return [];
+return [
+    'extension_not_allowed' => 'Files with the ":extension" extension are not allowed.',
+    'file_requires_storage' => 'File materials require a storage disk and file path.',
+    'file_too_large' => 'The file must not exceed :max_mb MB.',
+    'link_requires_url' => 'Link materials require a valid external URL.',
+    'removal_reason_required' => 'Provide a reason for removing this course material.',
+    'visibility_window_invalid' => 'The visibility end time must be on or after its start time.',
+];

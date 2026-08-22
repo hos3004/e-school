@@ -34,7 +34,7 @@ trait TransitionsEnrollmentStatus
 
         $from = $enrollment->status;
 
-        if (! $from->canTransitionTo($to)) {
+        if (!$from->canTransitionTo($to)) {
             throw BusinessRuleViolation::make(
                 'enrollments.invalid_transition',
                 'enrollments::errors.invalid_transition',

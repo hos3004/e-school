@@ -6,11 +6,12 @@ namespace Modules\Sessions\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Sessions\Domain\Models\SessionParticipant;
 
 /**
  * تمثيل مشارك الحصة في الـ API.
  *
- * @mixin \Modules\Sessions\Domain\Models\SessionParticipant
+ * @mixin SessionParticipant
  */
 final class SessionParticipantResource extends JsonResource
 {

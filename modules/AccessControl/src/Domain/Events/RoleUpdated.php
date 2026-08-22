@@ -9,7 +9,7 @@ use Shared\Domain\DomainEvent;
 final class RoleUpdated extends DomainEvent
 {
     /**
-     * @param  array<string, mixed>  $changed
+     * @param array<string, mixed> $changed
      */
     public function __construct(
         public readonly string $roleId,

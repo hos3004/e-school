@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-use Modules\Identity\Domain\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
+use Modules\Identity\Domain\Models\User;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Gate::define('academics.levels.reorder', fn ($user) => true);
 });
 
-it('reorders levels of a program through the API', function () {
+it('reorders levels of a program through the API', function (): void {
     $user = User::factory()->create();
     $program = Program::factory()->create();
 
@@ -35,7 +35,7 @@ it('reorders levels of a program through the API', function () {
         ->and($first->fresh()->sort_order)->toBe(2);
 });
 
-it('rejects reorder with a level from another program', function () {
+it('rejects reorder with a level from another program', function (): void {
     $user = User::factory()->create();
     $program = Program::factory()->create();
     $foreign = Level::factory()->create();
@@ -49,7 +49,7 @@ it('rejects reorder with a level from another program', function () {
         ->assertJsonValidationErrors(['level_ids.0']);
 });
 
-it('rejects reorder without the ability', function () {
+it('rejects reorder without the ability', function (): void {
     Gate::define('academics.levels.reorder', fn ($user) => false);
     $user = User::factory()->create();
     $program = Program::factory()->create();

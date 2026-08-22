@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Application\Actions;
 
-use Carbon\CarbonImmutable;
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Groups\Domain\Enums\GroupTeacherRole;
 use Modules\Groups\Domain\Events\TeacherAssignedToGroup;
-use Modules\Groups\Domain\Models\GroupTeacher;
 use Modules\Groups\Domain\Models\Group;
+use Modules\Groups\Domain\Models\GroupTeacher;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * إسناد معلم إلى مجموعة: لا إسناد لمجموعة مُختمة، ولا تكرار لنفس المعلم
@@ -25,7 +24,7 @@ final readonly class AssignTeacherAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function execute(Group $group, array $data): GroupTeacher
     {
@@ -79,7 +78,7 @@ final readonly class AssignTeacherAction
 
     private function assertGroupMutable(Group $group): void
     {
-        if (! $group->status->acceptsMembers()) {
+        if (!$group->status->acceptsMembers()) {
             throw BusinessRuleViolation::make(
                 'groups.group_not_open',
                 'groups::errors.group_not_accepting_members',

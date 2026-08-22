@@ -7,7 +7,6 @@ namespace Modules\Academics\Application\Actions;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Academics\Domain\Events\ProgramArchived;
 use Modules\Academics\Domain\Models\Course;
-use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;

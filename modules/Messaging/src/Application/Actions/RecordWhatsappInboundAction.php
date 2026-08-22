@@ -60,8 +60,8 @@ final readonly class RecordWhatsappInboundAction
                 'matched_user_id' => $matchedUserId,
                 'handled_by' => null,
                 'handled_at' => null,
+                'created_at' => now(),
             ]);
-            $record->created_at = now();
             $record->save();
 
             return $record;

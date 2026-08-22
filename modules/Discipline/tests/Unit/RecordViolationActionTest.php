@@ -11,6 +11,7 @@ use Modules\Discipline\Domain\Events\DisciplineActionApplied;
 use Modules\Discipline\Domain\Events\ViolationRecorded;
 use Modules\Discipline\Domain\Models\DisciplineAction;
 use Modules\Discipline\Domain\Models\ViolationEvent;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
@@ -18,7 +19,7 @@ uses(RefreshDatabase::class);
  * بيانات مخالفة — مؤسسة جديدة لكل استدعاء إلا إذا مُرِّر enrollment_id
  * صريحًا لتجميع عدّاد نفس الطالب.
  *
- * @param  array<string, mixed>  $overrides
+ * @param array<string, mixed> $overrides
  * @return array<string, mixed>
  */
 function violationData(array $overrides = []): array
@@ -32,7 +33,7 @@ function violationData(array $overrides = []): array
     ], $overrides);
 }
 
-it('records a countable violation and publishes ViolationRecorded', function () {
+it('records a countable violation and publishes ViolationRecorded', function (): void {
     Event::fake([ViolationRecorded::class, DisciplineActionApplied::class]);
 
     $violation = app(RecordViolationAction::class)->execute(violationData());
@@ -44,13 +45,13 @@ it('records a countable violation and publishes ViolationRecorded', function () 
     Event::assertDispatched(
         ViolationRecorded::class,
         fn (ViolationRecorded $event): bool => $event->payload()['enrollment_id'] === (string) $violation->enrollment_id
-            && $event->payload()['count_in_window'] === 1
+            && $event->payload()['count_in_window'] === 1,
     );
 
     Event::assertNotDispatched(DisciplineActionApplied::class);
 });
 
-it('marks non-countable types from config and never escalates them', function () {
+it('marks non-countable types from config and never escalates them', function (): void {
     Event::fake();
 
     expect((bool) config('discipline.countable_events.excused_absence'))->toBeFalse();
@@ -65,7 +66,7 @@ it('marks non-countable types from config and never escalates them', function ()
     Event::assertDispatched(ViolationRecorded::class);
 });
 
-it('escalates to freeze at the configured third threshold exactly once', function () {
+it('escalates to freeze at the configured third threshold exactly once', function (): void {
     config()->set('discipline.ladder', [
         ['threshold' => 3, 'action' => 'freeze_enrollment', 'automatic' => true],
     ]);
@@ -95,13 +96,13 @@ it('escalates to freeze at the configured third threshold exactly once', functio
     Event::assertDispatchedTimes(DisciplineActionApplied::class, 1);
 });
 
-it('rejects a violation type that is unknown to the enum', function () {
+it('rejects a violation type that is unknown to the enum', function (): void {
     app(RecordViolationAction::class)->execute(violationData([
         'type' => 'mystery_type',
     ]));
 })->throws(ValueError::class);
 
-it('rejects a type missing from the discipline settings map', function () {
+it('rejects a type missing from the discipline settings map', function (): void {
     config()->set([
         'discipline.countable_events' => ['unexcused_absence' => true],
         'discipline.ladder' => [['threshold' => 1, 'action' => 'notice']],
@@ -110,4 +111,4 @@ it('rejects a type missing from the discipline settings map', function () {
     app(RecordViolationAction::class)->execute(violationData([
         'type' => ViolationType::TeacherAbsence->value,
     ]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

@@ -13,7 +13,7 @@ use Modules\Guardians\Domain\Enums\GuardianRelationship;
 final readonly class GuardianSummary
 {
     /**
-     * @param  list<string>  $visibleSections
+     * @param list<string> $visibleSections
      */
     public function __construct(
         public string $guardianLinkId,

@@ -57,7 +57,7 @@ final class TeacherLeave extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForProfile(Builder $query, string $staffProfileId): Builder
@@ -68,7 +68,7 @@ final class TeacherLeave extends Model
     /**
      * الإجازات التي تتقاطع زمنيًا مع فترة معيّنة.
      *
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeOverlapping(Builder $query, CarbonImmutable $startsAt, CarbonImmutable $endsAt): Builder

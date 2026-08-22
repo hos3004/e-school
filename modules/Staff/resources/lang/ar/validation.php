@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'amount_invalid' => 'أدخل مبلغًا صالحًا بمنزلتين عشريتين كحد أقصى.',
+    'amount_required' => 'المبلغ مطلوب.',
+    'availability_time_invalid' => 'يجب أن يكون وقت انتهاء الدوام بعد وقت بدايته.',
+    'basis_required' => 'أساس التعاقد مطلوب.',
+    'contract_period_invalid' => 'يجب أن يكون تاريخ انتهاء السريان بعد تاريخ بدايته.',
+    'decision_required' => 'قرار الإجازة مطلوب.',
+    'employment_type_invalid' => 'نوع التوظيف المحدد غير صالح.',
+    'employment_type_required' => 'نوع التوظيف مطلوب.',
+    'leave_period_invalid' => 'يجب أن يكون وقت انتهاء الإجازة بعد وقت بدايتها.',
+    'reason_required' => 'يجب كتابة سبب واضح.',
+    'scope_required' => 'نطاق السعر مطلوب.',
+    'staff_code_required' => 'الرقم الوظيفي مطلوب.',
+    'staff_code_unique' => 'الرقم الوظيفي مستخدم لموظف آخر.',
+    'staff_profile_required' => 'ملف الموظف مطلوب.',
+    'ulid' => 'معرّف المستخدم غير صالح.',
+    'user_id_required' => 'حساب المستخدم مطلوب.',
+    'weekday_invalid' => 'يوم الأسبوع المحدد غير صالح.',
+    'attributes' => [
+        'amount' => 'المبلغ',
+        'base_amount' => 'المبلغ الأساسي',
+        'basis' => 'أساس التعاقد',
+        'decision' => 'القرار',
+        'effective_from' => 'بداية السريان',
+        'effective_to' => 'نهاية السريان',
+        'employment_type' => 'نوع التوظيف',
+        'end_time' => 'وقت الانتهاء',
+        'ends_at' => 'وقت انتهاء الإجازة',
+        'reason' => 'السبب',
+        'scope' => 'نطاق السعر',
+        'staff_code' => 'الرقم الوظيفي',
+        'staff_profile' => 'ملف الموظف',
+        'start_time' => 'وقت البدء',
+        'starts_at' => 'وقت بدء الإجازة',
+        'user_id' => 'حساب المستخدم',
+        'weekday' => 'يوم الأسبوع',
+    ],
+];

@@ -7,6 +7,7 @@ namespace Modules\Guardians\Application\Queries;
 use Carbon\CarbonInterface;
 use Modules\Guardians\Domain\Contracts\GuardianQuery;
 use Modules\Guardians\Domain\Models\GuardianLink;
+use Modules\Guardians\Domain\Models\GuardianProfile;
 
 /**
  * تنفيذ قراءة فقط — لا كتابة، ولا كشف لنماذج Eloquent.
@@ -56,7 +57,7 @@ final readonly class GuardianQueryService implements GuardianQuery
 
     private function toSummary(GuardianLink $link): GuardianSummary
     {
-        /** @var \Modules\Guardians\Domain\Models\GuardianProfile|null $guardian */
+        /** @var GuardianProfile|null $guardian */
         $guardian = $link->getRelationValue('guardian');
 
         return new GuardianSummary(

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Application\Policies;
 
-use Illuminate\Auth\Access\Response;
 use Modules\Staff\Domain\Models\StaffProfile;
 
 final class StaffProfilePolicy

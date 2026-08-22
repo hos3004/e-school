@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\AccessControl\Domain\Models;
 
-use Shared\Concerns\HasModuleFactory;
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Shared\Concerns\HasModuleFactory;
 
 /**
  * صلاحية مباشرة لنموذج دون وسيط دور — تُمنع إلا للاستثناءات المحدودة.

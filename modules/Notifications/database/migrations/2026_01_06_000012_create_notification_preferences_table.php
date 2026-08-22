@@ -31,7 +31,7 @@ return new class extends Migration
         DB::statement(
             'ALTER TABLE notification_preferences '
             .'ADD CONSTRAINT notification_preferences_user_category_channel_unique '
-            .'UNIQUE (user_id, category, channel)'
+            .'UNIQUE (user_id, category, channel)',
         );
     }
 

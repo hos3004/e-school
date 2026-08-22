@@ -30,7 +30,7 @@ trait RefreshAuditDatabase
     {
         parent::setUp();
 
-        Date::use(\Carbon\CarbonImmutable::class);
+        Date::use(CarbonImmutable::class);
 
         if (empty(config('app.key'))) {
             config(['app.key' => 'base64:eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg=']);

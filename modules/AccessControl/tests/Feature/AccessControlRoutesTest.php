@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Testing\TestResponse;
 use Modules\AccessControl\Domain\Enums\GuardName;
 use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Domain\Models\Role;
@@ -18,7 +19,7 @@ beforeEach(function (): void {
 
 function acCreateRoleViaApi(string $name): string
 {
-    /** @var Illuminate\Testing\TestResponse $response */
+    /** @var TestResponse $response */
     $response = test()->actingAs(new ApiUser(AC_ACTOR))
         ->postJson('/api/access-control/roles', ['name' => $name]);
 

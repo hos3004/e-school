@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Event;
 use Modules\Academics\Application\Actions\CreateLevelAction;
 use Modules\Academics\Domain\Events\LevelCreated;
 use Modules\Academics\Domain\Models\Program;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
@@ -20,7 +21,7 @@ function levelData(array $overrides = []): array
     ], $overrides);
 }
 
-it('creates a level and publishes LevelCreated', function () {
+it('creates a level and publishes LevelCreated', function (): void {
     Event::fake([LevelCreated::class]);
 
     $level = app(CreateLevelAction::class)->execute(levelData());
@@ -31,31 +32,31 @@ it('creates a level and publishes LevelCreated', function () {
     Event::assertDispatched(
         LevelCreated::class,
         fn (LevelCreated $event): bool => $event->levelId === (string) $level->getKey()
-            && $event->payload()['program_id'] === (string) $level->program_id
+            && $event->payload()['program_id'] === (string) $level->program_id,
     );
 });
 
-it('rejects a duplicate level code within the same program', function () {
+it('rejects a duplicate level code within the same program', function (): void {
     $data = levelData();
 
     app(CreateLevelAction::class)->execute($data);
     app(CreateLevelAction::class)->execute($data);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('allows the same level code in different programs', function () {
+it('allows the same level code in different programs', function (): void {
     $data = levelData();
 
     app(CreateLevelAction::class)->execute($data);
 
     $other = app(CreateLevelAction::class)->execute(
-        levelData(['program_id' => Program::factory()->create()->getKey()])
+        levelData(['program_id' => Program::factory()->create()->getKey()]),
     );
 
     expect($other->exists)->toBeTrue();
 });
 
-it('rejects a level for a missing program', function () {
+it('rejects a level for a missing program', function (): void {
     app(CreateLevelAction::class)->execute(levelData([
         'program_id' => (string) str()->ulid(),
     ]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

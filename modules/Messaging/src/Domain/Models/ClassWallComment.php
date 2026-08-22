@@ -26,6 +26,7 @@ final class ClassWallComment extends Model
         'post_id',
         'user_id',
         'body',
+        'created_at',
     ];
 
     protected function casts(): array

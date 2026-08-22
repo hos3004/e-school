@@ -7,7 +7,6 @@ namespace Modules\Groups\Presentation\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Modules\Groups\Application\Actions\CreateGroupAction;
-use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Presentation\Http\Requests\CreateGroupRequest;
 use Modules\Groups\Presentation\Http\Resources\GroupResource;
 

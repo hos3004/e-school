@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Gate;
 use Modules\Organization\Database\Factories\HolidayFactory;
 use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Models\Holiday;
-use Modules\Organization\Domain\Models\Organization;
 use Modules\Organization\Tests\Support\ApiUser;
 
 function holidayApiUser(): ApiUser

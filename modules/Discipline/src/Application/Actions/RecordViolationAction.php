@@ -30,9 +30,9 @@ final readonly class RecordViolationAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  organization_id · enrollment_id ·
-     *                                      student_profile_id · type · occurred_at؟
-     *                                      session_id؟ — بعد تحقّق FormRequest
+     * @param array<string, mixed> $data organization_id · enrollment_id ·
+     *                                   student_profile_id · type · occurred_at؟
+     *                                   session_id؟ — بعد تحقّق FormRequest
      */
     public function execute(array $data): ViolationEvent
     {
@@ -40,7 +40,7 @@ final readonly class RecordViolationAction
             ? $data['type']
             : ViolationType::from((string) $data['type']);
 
-        if (! array_key_exists($type->value, (array) config('discipline.countable_events', []))) {
+        if (!array_key_exists($type->value, (array) config('discipline.countable_events', []))) {
             throw BusinessRuleViolation::make(
                 'discipline.unknown_violation_type',
                 'discipline::errors.unknown_violation_type',
@@ -103,7 +103,7 @@ final readonly class RecordViolationAction
 
     private function escalateIfThresholdReached(ViolationEvent $violation, int $count): void
     {
-        if (! $violation->is_countable) {
+        if (!$violation->is_countable) {
             return;
         }
 

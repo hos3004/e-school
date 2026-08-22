@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Messaging\Application\Policies;
 
-use Illuminate\Auth\Access\Response;
 use Modules\Messaging\Domain\Models\Conversation;
+use Modules\Messaging\Domain\Models\ConversationParticipant;
 
 /**
  * سياسة المحادثات — لا فحص لأسماء الأدوار إطلاقًا.
@@ -56,7 +56,7 @@ final class ConversationPolicy
 
     private function isParticipant(string $userId, string $conversationId): bool
     {
-        return \Modules\Messaging\Domain\Models\ConversationParticipant::query()
+        return ConversationParticipant::query()
             ->where('conversation_id', $conversationId)
             ->where('user_id', $userId)
             ->exists();

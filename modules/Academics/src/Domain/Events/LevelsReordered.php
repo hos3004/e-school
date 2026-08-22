@@ -9,7 +9,7 @@ use Shared\Domain\DomainEvent;
 final class LevelsReordered extends DomainEvent
 {
     /**
-     * @param  array<string, int>  $ordering  level_id => sort_order الجديد
+     * @param array<string, int> $ordering level_id => sort_order الجديد
      */
     public function __construct(
         public readonly string $programId,

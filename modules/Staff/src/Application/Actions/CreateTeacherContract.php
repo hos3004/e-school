@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Staff\Application\Actions;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\Staff\Domain\Enums\ContractBasis;
@@ -20,7 +21,7 @@ final readonly class CreateTeacherContract
         StaffProfile $profile,
         ContractBasis $basis,
         CarbonImmutable|string $effectiveFrom,
-        ?CarbonImmutable|string $effectiveTo = null,
+        CarbonImmutable|string|null $effectiveTo = null,
         ?Money $baseAmount = null,
         ?int $monthlyTargetSessions = null,
         ?int $targetAdminTasks = null,
@@ -30,7 +31,7 @@ final readonly class CreateTeacherContract
         $from = $effectiveFrom instanceof CarbonImmutable ? $effectiveFrom : CarbonImmutable::parse($effectiveFrom);
         $to = $effectiveTo === null ? null : ($effectiveTo instanceof CarbonImmutable ? $effectiveTo : CarbonImmutable::parse($effectiveTo));
 
-        if ($to !== null && ! $to->gt($from)) {
+        if ($to !== null && !$to->gt($from)) {
             throw BusinessRuleViolation::make(
                 'staff.contract_period_invalid',
                 'staff::errors.contract_period_invalid',
@@ -46,7 +47,7 @@ final readonly class CreateTeacherContract
             );
         }
 
-        if (! $basis->requiresRates() && $baseAmount === null) {
+        if (!$basis->requiresRates() && $baseAmount === null) {
             throw BusinessRuleViolation::make(
                 'staff.contract_base_required',
                 'staff::errors.contract_base_required',
@@ -66,7 +67,7 @@ final readonly class CreateTeacherContract
             ->forProfile($profile->id)
             ->whereDate('effective_from', '<', $to ?? $from->addDay())
             ->where(
-                fn (\Illuminate\Database\Eloquent\Builder $q): \Illuminate\Database\Eloquent\Builder => $q
+                fn (Builder $q): Builder => $q
                     ->whereNull('effective_to')
                     ->orWhereDate('effective_to', '>', $from),
             )

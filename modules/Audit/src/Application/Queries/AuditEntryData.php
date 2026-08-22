@@ -13,8 +13,8 @@ use Modules\Audit\Domain\Enums\AuditActorType;
 final readonly class AuditEntryData
 {
     /**
-     * @param  array<string, mixed>|null  $oldValues
-     * @param  array<string, mixed>|null  $newValues
+     * @param array<string, mixed>|null $oldValues
+     * @param array<string, mixed>|null $newValues
      */
     public function __construct(
         public string $id,

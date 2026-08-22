@@ -8,9 +8,9 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Modules\Identity\Domain\Models\User;
-use Modules\Identity\Domain\Enums\UserStatus;
 use Modules\Identity\Database\Factories\UserFactory;
+use Modules\Identity\Domain\Enums\UserStatus;
+use Modules\Identity\Domain\Models\User;
 
 /**
  * بيانات تجريبية معقولة لموديول Identity.
@@ -22,7 +22,7 @@ final class IdentitySeeder extends Seeder
 {
     public function run(): void
     {
-        if (! Schema::hasTable('organizations') || ! Schema::hasTable('users')) {
+        if (!Schema::hasTable('organizations') || !Schema::hasTable('users')) {
             return;
         }
 

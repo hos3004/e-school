@@ -12,7 +12,7 @@ use Shared\Domain\DomainEvent;
 final class PayrollDeferredEntriesReleased extends DomainEvent
 {
     /**
-     * @param  list<string>  $entryIds
+     * @param list<string> $entryIds
      */
     public function __construct(
         public readonly array $entryIds,

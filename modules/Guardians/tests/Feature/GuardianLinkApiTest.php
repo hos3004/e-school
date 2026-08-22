@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Modules\Guardians\Domain\Events\GuardianLinkedToStudent;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Modules\Guardians\Domain\Models\GuardianProfile;
@@ -14,7 +15,7 @@ it('links a student over the api and returns 201', function (): void {
     Event::fake([GuardianLinkedToStudent::class]);
 
     $guardian = GuardianProfile::factory()->create();
-    $studentId = (string) Illuminate\Support\Str::ulid();
+    $studentId = (string) Str::ulid();
 
     $response = $this->actingAs(guardianApiUser())
         ->postJson("/api/guardians/profiles/{$guardian->id}/students", [
@@ -39,7 +40,7 @@ it('rejects an unknown relationship over the api', function (): void {
 
     $this->actingAs(guardianApiUser())
         ->postJson("/api/guardians/profiles/{$guardian->id}/students", [
-            'student_profile_id' => (string) Illuminate\Support\Str::ulid(),
+            'student_profile_id' => (string) Str::ulid(),
             'relationship' => 'cousin_twice_removed',
         ])
         ->assertUnprocessable()
@@ -62,7 +63,7 @@ it('verifies a link over the api', function (): void {
 it('sets a link as primary over the api and demotes the old primary', function (): void {
     Gate::after(fn (): bool => true);
 
-    $studentId = (string) Illuminate\Support\Str::ulid();
+    $studentId = (string) Str::ulid();
     $oldPrimary = GuardianLink::factory()->primary()->create(['student_profile_id' => $studentId]);
     $newPrimary = GuardianLink::factory()->create(['student_profile_id' => $studentId]);
 
@@ -89,7 +90,7 @@ it('unlinks a student over the api with a mandatory reason', function (): void {
 it('scopes the links list to the caller when lacking view_any', function (): void {
     Gate::define('guardians.view_any', fn (): bool => false);
 
-    $userId = (string) Illuminate\Support\Str::ulid();
+    $userId = (string) Str::ulid();
     $own = GuardianProfile::factory()->create(['user_id' => $userId]);
     $other = GuardianProfile::factory()->create();
 

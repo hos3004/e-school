@@ -15,7 +15,7 @@ interface UserQueryService
     public function findSummary(string $userId): ?UserSummary;
 
     /**
-     * @param  list<string>  $userIds
+     * @param list<string> $userIds
      * @return array<string, UserSummary> مفتوحة بمعرّف المستخدم
      */
     public function summariesByIds(array $userIds): array;

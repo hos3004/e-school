@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Modules\Notifications\Infrastructure\Gateways\InAppChannelGateway;
+
 /**
  * محرّك الإشعارات.
  *
@@ -21,6 +23,7 @@ return [
             'enabled' => true,
             'realtime' => true,  // يُبث فورًا عبر Reverb
             'always_on' => true, // لا يستطيع المستخدم إطفاءه
+            'gateway' => InAppChannelGateway::class,
         ],
         'email' => [
             'enabled' => true,
@@ -53,7 +56,11 @@ return [
      * ما هو critical لا يخضع لساعات الهدوء ولا يستطيع المستخدم إيقافه.
      */
     'categories' => [
-        'session_reminder' => ['channels' => ['in_app', 'push', 'whatsapp'], 'critical' => false],
+        'session_reminder' => [
+            'channels' => ['in_app', 'push', 'whatsapp'],
+            'critical' => false,
+            'respects_quiet_hours' => false,
+        ],
         'session_changed' => ['channels' => ['in_app', 'push', 'whatsapp', 'email'], 'critical' => true],
         'postponement_request' => ['channels' => ['in_app', 'push', 'whatsapp'], 'critical' => true],
         'attendance_recorded' => ['channels' => ['in_app'], 'critical' => false],
@@ -83,6 +90,9 @@ return [
     'delivery' => [
         'max_retries' => env('NOTIFY_MAX_RETRIES', 5),
         'backoff_seconds' => [60, 300, 900, 3600, 10800],
+        'queue' => env('NOTIFY_QUEUE', 'notifications'),
+        'dispatch_batch_size' => env('NOTIFY_DISPATCH_BATCH_SIZE', 100),
+        'retry_batch_size' => env('NOTIFY_RETRY_BATCH_SIZE', 50),
 
         // مفتاح التكرار: نفس الحدث لنفس المستلم على نفس القناة لا يُرسل مرتين.
         'idempotency_window_minutes' => 30,

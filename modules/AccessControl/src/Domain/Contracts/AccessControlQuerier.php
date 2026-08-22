@@ -32,4 +32,14 @@ interface AccessControlQuerier
      * هل يملك النموذج هذه الصلاحية مباشرة (دون دور)؟
      */
     public function modelHasDirectPermission(string $modelType, string $modelId, string $permissionName): bool;
+
+    /**
+     * هل يملك النموذج الصلاحية عبر دور مسند أو منحة مباشرة؟
+     */
+    public function modelHasPermission(
+        string $modelType,
+        string $modelId,
+        string $permissionName,
+        string $guardName,
+    ): bool;
 }

@@ -43,7 +43,7 @@ final readonly class LogRecordingViewAction
             );
         }
 
-        if ($action === 'download' && ! config('recordings.access.allow_download')) {
+        if ($action === 'download' && !config('recordings.access.allow_download')) {
             throw BusinessRuleViolation::make(
                 'recordings.download_not_allowed',
                 'recordings::errors.download_not_allowed',

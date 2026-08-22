@@ -28,8 +28,8 @@ final readonly class AddWallCommentAction
                 'post_id' => (string) $post->id,
                 'user_id' => $commenterUserId,
                 'body' => $body,
+                'created_at' => now(),
             ]);
-            $wallComment->created_at = now();
             $wallComment->save();
 
             return $wallComment;

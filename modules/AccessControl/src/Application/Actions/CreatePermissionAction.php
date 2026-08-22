@@ -23,7 +23,7 @@ final readonly class CreatePermissionAction
     ) {}
 
     /**
-     * @param  array<string, string>|null  $description
+     * @param array<string, string>|null $description
      */
     public function execute(
         string $name,

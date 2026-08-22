@@ -24,7 +24,7 @@ final class ListGuardianLinksController
             $query->forStudent((string) $request->string('student_profile_id'));
         }
 
-        if (! $request->user()?->can('guardians.view_any')) {
+        if (!$request->user()?->can('guardians.view_any')) {
             /** @var GuardianProfile|null $own */
             $own = GuardianProfile::query()->where('user_id', (string) $request->user()?->id)->first();
 

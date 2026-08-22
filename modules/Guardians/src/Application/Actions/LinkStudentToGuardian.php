@@ -114,7 +114,7 @@ final readonly class LinkStudentToGuardian
     }
 
     /**
-     * @param  ?list<string>  $sections
+     * @param ?list<string> $sections
      * @return list<string>
      */
     private function filterSections(?array $sections): array

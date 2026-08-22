@@ -10,7 +10,7 @@ use Modules\Groups\Domain\Models\Group;
 
 uses(RefreshDatabase::class);
 
-it('publishes GroupActivated with primitive payload only', function () {
+it('publishes GroupActivated with primitive payload only', function (): void {
     Event::fake([GroupActivated::class]);
 
     $group = app(ActivateGroupAction::class)->execute(Group::factory()->create());
@@ -25,6 +25,6 @@ it('publishes GroupActivated with primitive payload only', function () {
                 && $event->groupId === (string) $group->getKey()
                 && $event->organizationId === (string) $group->organization_id
                 && collect($payload)->every(fn ($value): bool => is_scalar($value) || $value === null);
-        }
+        },
     );
 });

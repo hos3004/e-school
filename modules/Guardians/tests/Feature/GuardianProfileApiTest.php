@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Modules\Guardians\Domain\Events\GuardianProfileCreated;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 use Modules\Guardians\Tests\Support\ApiUser;
 
 function guardianApiUser(): ApiUser
 {
-    return new ApiUser((string) Illuminate\Support\Str::ulid());
+    return new ApiUser((string) Str::ulid());
 }
 
 it('stores a guardian profile over the api and returns 201', function (): void {
@@ -19,8 +20,8 @@ it('stores a guardian profile over the api and returns 201', function (): void {
 
     $response = $this->actingAs(guardianApiUser())
         ->postJson('/api/guardians/profiles', [
-            'organization_id' => (string) Illuminate\Support\Str::ulid(),
-            'user_id' => (string) Illuminate\Support\Str::ulid(),
+            'organization_id' => (string) Str::ulid(),
+            'user_id' => (string) Str::ulid(),
             'national_id_last4' => '9911',
             'occupation' => 'engineer',
             'preferred_contact_channel' => 'whatsapp',
@@ -51,8 +52,8 @@ it('forbids storing a guardian profile without the ability', function (): void {
 
     $this->actingAs(guardianApiUser())
         ->postJson('/api/guardians/profiles', [
-            'organization_id' => (string) Illuminate\Support\Str::ulid(),
-            'user_id' => (string) Illuminate\Support\Str::ulid(),
+            'organization_id' => (string) Str::ulid(),
+            'user_id' => (string) Str::ulid(),
         ])
         ->assertForbidden();
 
@@ -62,7 +63,7 @@ it('forbids storing a guardian profile without the ability', function (): void {
 it('updates a guardian profile when the caller owns it', function (): void {
     Gate::after(fn (): bool => true);
 
-    $userId = (string) Illuminate\Support\Str::ulid();
+    $userId = (string) Str::ulid();
     $profile = GuardianProfile::factory()->create(['user_id' => $userId]);
 
     $this->actingAs(new ApiUser($userId))

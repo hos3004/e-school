@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Modules\Identity\Domain\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Modules\Identity\Domain\Models\User;
 use Modules\Students\Domain\Models\StudentProfile;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Gate::define('students.create', fn ($user) => true);
     Gate::define('students.view_any', fn ($user) => true);
 });
@@ -30,7 +30,7 @@ function validPayload(): array
     ];
 }
 
-it('creates a student through the API and returns 201', function () {
+it('creates a student through the API and returns 201', function (): void {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)
@@ -42,7 +42,7 @@ it('creates a student through the API and returns 201', function () {
     expect(StudentProfile::query()->whereKey($response->json('data.id'))->exists())->toBeTrue();
 });
 
-it('rejects duplicate user registration with a translated message', function () {
+it('rejects duplicate user registration with a translated message', function (): void {
     $user = User::factory()->create();
     StudentProfile::query()->create(array_merge(validPayload(), ['id' => (string) str()->ulid()]));
 
@@ -55,7 +55,7 @@ it('rejects duplicate user registration with a translated message', function () 
         ->assertJsonValidationErrors(['user_id']);
 });
 
-it('validates the student code format', function () {
+it('validates the student code format', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -64,7 +64,7 @@ it('validates the student code format', function () {
         ->assertJsonValidationErrors(['student_code']);
 });
 
-it('forbids creation without the students.create ability', function () {
+it('forbids creation without the students.create ability', function (): void {
     Gate::define('students.create', fn ($user) => false);
     $user = User::factory()->create();
 

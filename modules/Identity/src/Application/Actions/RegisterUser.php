@@ -19,7 +19,7 @@ use Shared\Support\BusinessRuleViolation;
 final readonly class RegisterUser
 {
     /**
-     * @param  array<string, mixed>  $attributes
+     * @param array<string, mixed> $attributes
      */
     public function execute(array $attributes): User
     {

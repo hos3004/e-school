@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Discipline\Database\Factories;
 
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 use Modules\Discipline\Domain\Enums\ReactivationStatus;
 use Modules\Discipline\Domain\Models\ReactivationRequest;
 
@@ -22,9 +22,9 @@ final class ReactivationRequestFactory extends Factory
     public function definition(): array
     {
         return [
-            'organization_id' => (string) $this(string) Str::ulid(),
+            'organization_id' => (string) Str::ulid(),
             'enrollment_id' => (string) Str::ulid(),
-            'requested_by' => (string) $this(string) Str::ulid(),
+            'requested_by' => (string) Str::ulid(),
             'status' => ReactivationStatus::Pending,
             'attempt_number' => 1,
             'assessment_attempt_id' => null,

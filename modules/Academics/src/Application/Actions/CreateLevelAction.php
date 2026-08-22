@@ -22,7 +22,7 @@ final readonly class CreateLevelAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  بيانات المستوى بعد تحقّق FormRequest
+     * @param array<string, mixed> $data بيانات المستوى بعد تحقّق FormRequest
      */
     public function execute(array $data): Level
     {
@@ -55,7 +55,7 @@ final readonly class CreateLevelAction
     {
         $exists = Program::query()->whereKey($programId)->exists();
 
-        if (! $exists) {
+        if (!$exists) {
             throw BusinessRuleViolation::make(
                 'academics.program_not_found',
                 'academics::errors.program_not_found',

@@ -8,8 +8,8 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -27,16 +27,13 @@ final class StudentProfileResource extends Resource
 
     protected static ?string $slug = 'students';
 
-    protected static \UnitEnum|string|null $navigationGroup = null;
+    protected static \UnitEnum|string|null $navigationGroup = 'الطلاب وأولياء الأمور';
+
+    protected static ?int $navigationSort = 20;
 
     public static function getNavigationLabel(): string
     {
         return __('students::filament.navigation_label');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('students::filament.navigation_group');
     }
 
     public static function getModelLabel(): string

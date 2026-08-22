@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Organization\Presentation\Http\Controllers;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Organization\Presentation\Http\Resources\OrganizationResource;
-use Illuminate\Auth\Access\AuthorizationException;
 
 final class ShowOrganizationController
 {
@@ -23,7 +23,7 @@ final class ShowOrganizationController
 
     private function authorizeView(Request $request, Organization $organization): void
     {
-        if (! ($request->user()?->can('view', $organization) ?? false)) {
+        if (!($request->user()?->can('view', $organization) ?? false)) {
             throw new AuthorizationException(__('organization::errors.unauthorized'));
         }
     }

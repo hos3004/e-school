@@ -8,6 +8,7 @@ use Modules\Students\Application\Actions\ArchiveStudentAction;
 use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Domain\Events\StudentArchived;
 use Modules\Students\Domain\Models\StudentProfile;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
@@ -20,7 +21,7 @@ function createArchivableStudent(): StudentProfile
     ]);
 }
 
-it('soft-deletes the profile and publishes the event with the reason', function () {
+it('soft-deletes the profile and publishes the event with the reason', function (): void {
     $student = createArchivableStudent();
     Event::fake([StudentArchived::class]);
 
@@ -32,19 +33,19 @@ it('soft-deletes the profile and publishes the event with the reason', function 
     Event::assertDispatched(
         StudentArchived::class,
         fn (StudentArchived $event): bool => $event->studentId === (string) $student->getKey()
-            && $event->reason === 'انتقال العائلة إلى مدينة أخرى'
+            && $event->reason === 'انتقال العائلة إلى مدينة أخرى',
     );
 });
 
-it('requires a non-empty reason', function () {
+it('requires a non-empty reason', function (): void {
     $student = createArchivableStudent();
 
     app(ArchiveStudentAction::class)->execute($student, '   ');
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects archiving an already archived student', function () {
+it('rejects archiving an already archived student', function (): void {
     $student = createArchivableStudent();
     app(ArchiveStudentAction::class)->execute($student, 'سبب أول');
 
     app(ArchiveStudentAction::class)->execute($student, 'سبب ثانٍ');
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

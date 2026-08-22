@@ -61,7 +61,6 @@ final class AssignmentSubmission extends Model
         return $query->whereHas('assignment', fn (Builder $q): Builder => $q->where('organization_id', $organizationId));
     }
 
-    /** @param  mixed  $status */
     public function scopeOfStatus(Builder $query, mixed $status): Builder
     {
         $value = $status instanceof Enums\AssignmentSubmissionStatus ? $status->value : $status;

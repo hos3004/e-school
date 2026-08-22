@@ -6,11 +6,12 @@ namespace Modules\Notifications\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Notifications\Domain\Models\NotificationDeliveryAttempt;
 
 /**
  * تمثيل محاولة تسليم في الـ API.
  *
- * @mixin \Modules\Notifications\Domain\Models\NotificationDeliveryAttempt
+ * @mixin NotificationDeliveryAttempt
  */
 final class NotificationDeliveryAttemptResource extends JsonResource
 {
@@ -27,6 +28,7 @@ final class NotificationDeliveryAttemptResource extends JsonResource
             'attempted_at' => $this->attempted_at?->toIso8601String(),
             'provider_response' => $this->provider_response,
             'succeeded' => $this->succeeded,
+            'retryable' => $this->retryable,
             'error' => $this->error,
         ];
     }

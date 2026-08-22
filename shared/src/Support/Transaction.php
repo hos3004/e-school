@@ -18,7 +18,7 @@ interface Transaction
     /**
      * @template TReturn
      *
-     * @param  Closure(): TReturn  $callback
+     * @param Closure(): TReturn $callback
      * @return TReturn
      */
     public function run(Closure $callback, int $attempts = 1): mixed;

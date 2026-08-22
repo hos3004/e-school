@@ -35,12 +35,12 @@ return new class extends Migration
 
         DB::statement(
             'ALTER TABLE teacher_contracts ADD CONSTRAINT teacher_contracts_effective_period_check '
-            .'CHECK (effective_to IS NULL OR effective_to > effective_from)'
+            .'CHECK (effective_to IS NULL OR effective_to > effective_from)',
         );
 
         DB::statement(
             'ALTER TABLE teacher_contracts ADD CONSTRAINT teacher_contracts_no_overlap_excl '
-            .'EXCLUDE USING gist (staff_profile_id WITH =, daterange(effective_from, effective_to) WITH &&)'
+            .'EXCLUDE USING gist (staff_profile_id WITH =, daterange(effective_from, effective_to) WITH &&)',
         );
     }
 

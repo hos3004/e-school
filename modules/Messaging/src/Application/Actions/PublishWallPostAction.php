@@ -42,8 +42,8 @@ final readonly class PublishWallPostAction
                 'body' => $body,
                 'attachments' => $attachments,
                 'is_pinned' => $isPinned,
+                'created_at' => now(),
             ]);
-            $wallPost->created_at = now();
             $wallPost->save();
 
             return $wallPost;

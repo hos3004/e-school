@@ -19,7 +19,7 @@ final readonly class EscalationLadder
     private array $entries;
 
     /**
-     * @param  list<array<string, mixed>>|null  $ladder  للتجاوز في الاختبارات
+     * @param list<array<string, mixed>>|null $ladder للتجاوز في الاختبارات
      */
     public function __construct(?array $ladder = null)
     {

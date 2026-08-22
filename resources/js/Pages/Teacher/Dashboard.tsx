@@ -88,7 +88,9 @@ function SessionCard({
                                     session.timezone,
                                 )}
                             </time>
-                            <span aria-hidden="true"> – </span>
+                            <span aria-hidden="true">
+                                {t('common.time_range_separator')}
+                            </span>
                             <span className="sr-only">
                                 {t('common.until')}
                             </span>
@@ -223,8 +225,11 @@ export default function TeacherDashboard({
                         label={t('teacher.dashboard.loading')}
                         rows={3}
                     />
-                ) : error ? (
-                    <ErrorState message={error} onRetry={retry} />
+                ) : error !== null && error !== undefined ? (
+                    <ErrorState
+                        message={error || t('states.error.message')}
+                        onRetry={retry}
+                    />
                 ) : isEmpty ? (
                     <EmptyState
                         description={t('teacher.dashboard.empty.description')}

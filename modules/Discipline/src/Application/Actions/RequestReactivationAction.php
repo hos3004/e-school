@@ -26,8 +26,8 @@ final readonly class RequestReactivationAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  organization_id · enrollment_id ·
-     *                                      student_statement — بعد تحقّق FormRequest
+     * @param array<string, mixed> $data organization_id · enrollment_id ·
+     *                                   student_statement — بعد تحقّق FormRequest
      */
     public function execute(array $data): ReactivationRequest
     {

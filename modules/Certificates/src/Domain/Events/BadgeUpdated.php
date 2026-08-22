@@ -10,7 +10,7 @@ namespace Modules\Certificates\Domain\Events;
 final class BadgeUpdated extends CertificateEvent
 {
     /**
-     * @param  array<string, mixed>  $changes  الحقول المتغيرة: قيمة قبلية => بعدية
+     * @param array<string, mixed> $changes الحقول المتغيرة: قيمة قبلية => بعدية
      */
     public function __construct(
         public readonly string $badgeId,

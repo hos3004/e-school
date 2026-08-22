@@ -8,10 +8,9 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -34,11 +33,6 @@ final class StaffProfileResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('staff::filament.profile.plural_label');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('staff::filament.navigation_group');
     }
 
     public static function getNavigationBadge(): ?string

@@ -9,9 +9,9 @@ use Shared\Domain\DomainEvent;
 final class RolePermissionsSynced extends DomainEvent
 {
     /**
-     * @param  list<string>  $permissionIds
-     * @param  list<string>  $attached
-     * @param  list<string>  $detached
+     * @param list<string> $permissionIds
+     * @param list<string> $attached
+     * @param list<string> $detached
      */
     public function __construct(
         public readonly string $roleId,

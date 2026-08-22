@@ -19,7 +19,7 @@ final readonly class SetTeacherAvailability
         string $endTime,
         string $timezone,
         CarbonImmutable|string $effectiveFrom,
-        ?CarbonImmutable|string $effectiveTo = null,
+        CarbonImmutable|string|null $effectiveTo = null,
     ): TeacherAvailability {
         if ($weekday < 0 || $weekday > 6) {
             throw BusinessRuleViolation::make(
@@ -37,7 +37,7 @@ final readonly class SetTeacherAvailability
             );
         }
 
-        if (! in_array($timezone, \DateTimeZone::listIdentifiers(), true)) {
+        if (!in_array($timezone, \DateTimeZone::listIdentifiers(), true)) {
             throw BusinessRuleViolation::make(
                 'staff.availability_timezone_invalid',
                 'staff::errors.availability_timezone_invalid',

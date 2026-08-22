@@ -24,7 +24,7 @@ final readonly class RequestTeacherLeave
         $starts = $startsAt instanceof CarbonImmutable ? $startsAt : CarbonImmutable::parse($startsAt);
         $ends = $endsAt instanceof CarbonImmutable ? $endsAt : CarbonImmutable::parse($endsAt);
 
-        if (! $ends->gt($starts)) {
+        if (!$ends->gt($starts)) {
             throw BusinessRuleViolation::make(
                 'staff.leave_period_invalid',
                 'staff::errors.leave_period_invalid',

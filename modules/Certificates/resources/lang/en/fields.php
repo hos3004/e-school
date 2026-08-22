@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'award' => 'Badge award details',
+    'awarded_at' => 'Awarded at',
+    'background_image' => 'Background image',
+    'code' => 'Code',
+    'created_at' => 'Created at',
+    'description' => 'Description',
+    'design' => 'Certificate design',
+    'enrollment' => 'Enrollment',
+    'expires_at' => 'Expiration date',
+    'icon' => 'Badge icon',
+    'id' => 'ID',
+    'identity' => 'Basic information',
+    'is_active' => 'Active',
+    'issue' => 'Certificate issue details',
+    'issued_at' => 'Issued at',
+    'layout' => 'Design layout',
+    'locale' => 'Language',
+    'metadata' => 'Additional data',
+    'name' => 'Name',
+    'organization' => 'Organization',
+    'program' => 'Program',
+    'reason' => 'Reason',
+    'revoked_at' => 'Revoked at',
+    'serial_number' => 'Serial number',
+    'student' => 'Student',
+    'template' => 'Certificate template',
+    'tier' => 'Tier',
+    'title' => 'Title',
+    'user' => 'Recipient',
+    'value' => 'Text',
+];

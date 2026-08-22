@@ -6,11 +6,12 @@ namespace Modules\Discipline\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Discipline\Domain\Models\ReactivationRequest;
 
 /**
  * تمثيل طلب إعادة تفعيل في الـ API.
  *
- * @property-read \Modules\Discipline\Domain\Models\ReactivationRequest $resource
+ * @property-read ReactivationRequest $resource
  */
 final class ReactivationRequestResource extends JsonResource
 {

@@ -41,7 +41,7 @@ final class TeacherAvailability extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForProfile(Builder $query, string $staffProfileId): Builder
@@ -50,7 +50,7 @@ final class TeacherAvailability extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeOnWeekday(Builder $query, int $weekday): Builder
@@ -61,7 +61,7 @@ final class TeacherAvailability extends Model
     /**
      * السجلات السارية بتاريخ معيّن.
      *
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeActiveOn(Builder $query, CarbonImmutable|string $date): Builder

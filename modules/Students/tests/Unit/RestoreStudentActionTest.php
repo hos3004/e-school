@@ -8,10 +8,11 @@ use Modules\Students\Application\Actions\ArchiveStudentAction;
 use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Application\Actions\RestoreStudentAction;
 use Modules\Students\Domain\Events\StudentRestored;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-it('restores an archived student and publishes the event', function () {
+it('restores an archived student and publishes the event', function (): void {
     $student = app(RegisterStudentAction::class)->execute([
         'organization_id' => (string) str()->ulid(),
         'user_id' => (string) str()->ulid(),
@@ -27,11 +28,11 @@ it('restores an archived student and publishes the event', function () {
 
     Event::assertDispatched(
         StudentRestored::class,
-        fn (StudentRestored $event): bool => $event->studentId === (string) $student->getKey()
+        fn (StudentRestored $event): bool => $event->studentId === (string) $student->getKey(),
     );
 });
 
-it('refuses to restore a student who was never archived', function () {
+it('refuses to restore a student who was never archived', function (): void {
     $student = app(RegisterStudentAction::class)->execute([
         'organization_id' => (string) str()->ulid(),
         'user_id' => (string) str()->ulid(),
@@ -39,8 +40,8 @@ it('refuses to restore a student who was never archived', function () {
     ]);
 
     app(RestoreStudentAction::class)->execute((string) $student->getKey());
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('fails clearly for an unknown student id', function () {
+it('fails clearly for an unknown student id', function (): void {
     app(RestoreStudentAction::class)->execute((string) str()->ulid());
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

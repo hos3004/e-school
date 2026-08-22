@@ -33,8 +33,8 @@ return new class extends Migration
             $table->index('correlation_id');
         });
 
-        DB::statement("ALTER TABLE audit_log ALTER COLUMN ip_address TYPE inet USING ip_address::inet");
-        DB::statement("CREATE INDEX audit_log_created_at_desc_index ON audit_log (created_at DESC)");
+        DB::statement('ALTER TABLE audit_log ALTER COLUMN ip_address TYPE inet USING ip_address::inet');
+        DB::statement('CREATE INDEX audit_log_created_at_desc_index ON audit_log (created_at DESC)');
     }
 
     public function down(): void

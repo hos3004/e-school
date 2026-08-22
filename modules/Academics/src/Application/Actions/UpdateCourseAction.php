@@ -21,7 +21,7 @@ final readonly class UpdateCourseAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  الحقول المسموح تحديثها بعد تحقّق FormRequest
+     * @param array<string, mixed> $data الحقول المسموح تحديثها بعد تحقّق FormRequest
      */
     public function execute(Course $course, array $data): Course
     {

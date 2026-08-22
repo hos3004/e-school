@@ -34,11 +34,6 @@ final class GuardianLinkFilamentResource extends Resource
         return __('guardians::filament.link.plural_label');
     }
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('guardians::filament.navigation_group');
-    }
-
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([

@@ -7,7 +7,6 @@ namespace Modules\Organization\Database\Factories;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Organization\Domain\Enums\HolidaySource;
-use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Models\Holiday;
 
 /**

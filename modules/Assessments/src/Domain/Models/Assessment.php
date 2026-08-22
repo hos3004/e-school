@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Assessments\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Assessments\Domain\Enums\AssessmentType;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -37,6 +38,7 @@ final class Assessment extends Model
     protected function casts(): array
     {
         return [
+            'type' => AssessmentType::class,
             'title' => 'array',
             'instructions' => 'array',
             'total_score' => 'int',

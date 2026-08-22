@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Guardians\Application\Policies;
 
-use Illuminate\Auth\Access\Response;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 
 /**

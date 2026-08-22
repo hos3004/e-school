@@ -74,6 +74,6 @@ final class ReactivationRequest extends Model
 
     public function isOpen(): bool
     {
-        return ! $this->status->isTerminal();
+        return !$this->status->isTerminal();
     }
 }

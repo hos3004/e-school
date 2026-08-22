@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Modules\Discipline\Domain\Enums\DisciplineActionType;
 use Modules\Discipline\Domain\Services\EscalationLadder;
 
-it('returns null below the first threshold', function () {
+it('returns null below the first threshold', function (): void {
     $ladder = new EscalationLadder([
         ['threshold' => 1, 'action' => 'notice'],
         ['threshold' => 2, 'action' => 'warning'],
@@ -15,7 +15,7 @@ it('returns null below the first threshold', function () {
     expect($ladder->resolveForCount(0))->toBeNull();
 });
 
-it('applies the highest reached threshold', function () {
+it('applies the highest reached threshold', function (): void {
     $ladder = new EscalationLadder([
         ['threshold' => 1, 'action' => 'notice'],
         ['threshold' => 2, 'action' => 'warning'],
@@ -29,7 +29,7 @@ it('applies the highest reached threshold', function () {
         ->and($ladder->resolveForCount(9)['threshold_reached'])->toBe(3);
 });
 
-it('reads the production ladder from config with no hardcoded numbers', function () {
+it('reads the production ladder from config with no hardcoded numbers', function (): void {
     $configured = (array) config('discipline.ladder');
 
     expect($configured)->not->toBeEmpty();
@@ -42,7 +42,7 @@ it('reads the production ladder from config with no hardcoded numbers', function
     }
 });
 
-it('ignores unknown action names instead of guessing', function () {
+it('ignores unknown action names instead of guessing', function (): void {
     $ladder = new EscalationLadder([
         ['threshold' => 5, 'action' => 'not_a_real_action'],
     ]);

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Messaging\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Shared\Concerns\HasModuleFactory;
@@ -30,6 +30,7 @@ final class Conversation extends Model
         'related_id',
         'created_by',
         'last_message_at',
+        'created_at',
     ];
 
     protected function casts(): array

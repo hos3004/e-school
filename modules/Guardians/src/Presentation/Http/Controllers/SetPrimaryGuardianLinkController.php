@@ -19,7 +19,7 @@ final class SetPrimaryGuardianLinkController
         /** @var GuardianLink $link */
         $link = GuardianLink::query()->with('guardian')->findOrFail($guardianLink);
 
-        if (! auth()->user()?->can('setPrimary', $link)) {
+        if (!auth()->user()?->can('setPrimary', $link)) {
             abort(403);
         }
 

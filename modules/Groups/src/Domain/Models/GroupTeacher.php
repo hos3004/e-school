@@ -64,7 +64,7 @@ final class GroupTeacher extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForStaff(Builder $query, string $staffProfileId): Builder
@@ -73,7 +73,7 @@ final class GroupTeacher extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeOpen(Builder $query): Builder
@@ -82,7 +82,7 @@ final class GroupTeacher extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForGroup(Builder $query, string $groupId): Builder

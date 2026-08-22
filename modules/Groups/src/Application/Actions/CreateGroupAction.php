@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Application\Actions;
 
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Events\GroupCreated;
 use Modules\Groups\Domain\Models\Group;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * إنشاء مجموعة جديدة داخل مؤسسة: تبدأ بحالة «قيد التخطيط»
@@ -23,7 +23,7 @@ final readonly class CreateGroupAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  بيانات المجموعة بعد تحقّق FormRequest
+     * @param array<string, mixed> $data بيانات المجموعة بعد تحقّق FormRequest
      */
     public function execute(array $data): Group
     {
@@ -35,7 +35,7 @@ final readonly class CreateGroupAction
         $this->assertCodeAvailable($code);
         $this->assertEndsAfterStarts($startsOn, $endsOn);
 
-        $group = $this->transaction->run(function () use ($data, $organizationId): Group {
+        $group = $this->transaction->run(function () use ($data): Group {
             $group = new Group;
             $group->fill($data);
             $group->status = GroupStatus::Planning;

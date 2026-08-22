@@ -20,8 +20,8 @@ use Shared\Support\BusinessRuleViolation;
 final readonly class RecordAuditEntryAction
 {
     /**
-     * @param  array<string, mixed>|null  $oldValues
-     * @param  array<string, mixed>|null  $newValues
+     * @param array<string, mixed>|null $oldValues
+     * @param array<string, mixed>|null $newValues
      */
     public function execute(
         ?string $organizationId,

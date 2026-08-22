@@ -7,12 +7,13 @@ namespace Modules\Identity\Presentation\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Identity\Domain\Enums\UserStatus;
+use Modules\Identity\Domain\Models\User;
 
 final class ChangeUserStatusRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        /** @var \Modules\Identity\Domain\Models\User|null $target */
+        /** @var User|null $target */
         $target = $this->route('user');
 
         return $target !== null

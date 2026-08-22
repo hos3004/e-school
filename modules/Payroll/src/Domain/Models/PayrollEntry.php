@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Payroll\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Modules\Payroll\Domain\Enums\PayrollEntryStatus;
+use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
 final class PayrollEntry extends Model

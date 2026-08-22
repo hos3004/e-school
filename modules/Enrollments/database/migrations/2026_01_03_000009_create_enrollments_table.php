@@ -42,7 +42,7 @@ return new class extends Migration
 
         DB::statement(
             'CREATE UNIQUE INDEX enrollments_student_program_active_unique '.
-            'ON enrollments (student_profile_id, program_id) WHERE deleted_at IS NULL'
+            'ON enrollments (student_profile_id, program_id) WHERE deleted_at IS NULL',
         );
     }
 

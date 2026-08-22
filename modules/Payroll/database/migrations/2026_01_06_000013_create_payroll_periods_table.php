@@ -43,7 +43,7 @@ return new class extends Migration
         DB::statement(
             'ALTER TABLE payroll_periods '
             .'ADD CONSTRAINT payroll_periods_organization_year_month_unique '
-            .'UNIQUE (organization_id, year, month)'
+            .'UNIQUE (organization_id, year, month)',
         );
     }
 

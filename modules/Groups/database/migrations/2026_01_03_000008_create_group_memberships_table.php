@@ -29,7 +29,7 @@ return new class extends Migration
 
         DB::statement(
             'CREATE UNIQUE INDEX group_memberships_group_student_active_unique '.
-            'ON group_memberships (group_id, student_profile_id) WHERE left_at IS NULL'
+            'ON group_memberships (group_id, student_profile_id) WHERE left_at IS NULL',
         );
     }
 

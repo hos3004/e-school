@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'id' => 'Identifier',
+    'basics' => 'Basics',
+    'availability' => 'Availability window',
+    'content' => 'Content',
+    'type' => 'Type',
+    'course' => 'Course',
+    'title' => 'Title',
+    'title_ar' => 'Title (Arabic)',
+    'title_en' => 'Title (English)',
+    'instructions_ar' => 'Instructions',
+    'total_score' => 'Total score',
+    'passing_score' => 'Passing score',
+    'duration' => 'Duration (minutes)',
+    'max_attempts' => 'Max attempts',
+    'available_from' => 'Available from',
+    'available_to' => 'Available until',
+    'attempt_info' => 'Attempt details',
+    'assessment' => 'Assessment',
+    'student_profile' => 'Student profile',
+    'attempt_number' => 'Attempt number',
+    'started_at' => 'Started at',
+    'submitted_at' => 'Submitted at',
+    'submitted' => 'Submitted',
+    'not_submitted' => 'Not submitted',
+    'grading' => 'Grading',
+    'score' => 'Score',
+    'passed' => 'Result',
+    'graded_by' => 'Graded by',
+    'graded_at' => 'Graded at',
+];

@@ -23,7 +23,7 @@ final readonly class MarkNotificationSendingAction
 
     public function execute(NotificationOutbox $outbox): NotificationOutbox
     {
-        if ($outbox->status !== OutboxStatus::Pending) {
+        if (!$outbox->status->canTransitionTo(OutboxStatus::Sending)) {
             throw BusinessRuleViolation::make(
                 'notifications.not_dispatchable',
                 'notifications::errors.not_dispatchable',
@@ -33,7 +33,8 @@ final readonly class MarkNotificationSendingAction
 
         $updated = $this->transaction->run(fn (): int => NotificationOutbox::query()
             ->whereKey($outbox->getKey())
-            ->where('status', OutboxStatus::Pending)
+            ->where('status', OutboxStatus::Queued)
+            ->where('scheduled_for', '<=', now('UTC'))
             ->update(['status' => OutboxStatus::Sending->value]));
 
         if ($updated === 0) {
@@ -43,6 +44,6 @@ final readonly class MarkNotificationSendingAction
             );
         }
 
-        return $outbox;
+        return $outbox->refresh();
     }
 }

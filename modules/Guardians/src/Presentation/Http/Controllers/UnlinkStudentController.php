@@ -28,7 +28,7 @@ final class UnlinkStudentController
         $link = GuardianLink::query()->find($guardianLink);
 
         if ($link !== null) {
-            if (! $request->user()->can('delete', $link)) {
+            if (!$request->user()->can('delete', $link)) {
                 abort(403);
             }
 

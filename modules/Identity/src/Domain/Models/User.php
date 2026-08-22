@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Modules\Identity\Domain\Models;
 
 use Carbon\CarbonImmutable;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
 use Modules\Identity\Database\Factories\UserFactory;
 use Modules\Identity\Domain\Enums\UserStatus;
 use Shared\Concerns\HasUlid;
@@ -105,7 +105,7 @@ final class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
@@ -114,7 +114,7 @@ final class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeActive(Builder $query): Builder

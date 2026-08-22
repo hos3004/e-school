@@ -9,10 +9,11 @@ use Modules\Academics\Application\Actions\UpdateCourseAction;
 use Modules\Academics\Domain\Events\CourseArchived;
 use Modules\Academics\Domain\Events\CourseUpdated;
 use Modules\Academics\Domain\Models\Course;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-it('updates course fields and publishes CourseUpdated', function () {
+it('updates course fields and publishes CourseUpdated', function (): void {
     Event::fake([CourseUpdated::class]);
 
     $course = Course::factory()->create();
@@ -26,19 +27,19 @@ it('updates course fields and publishes CourseUpdated', function () {
     Event::assertDispatched(
         CourseUpdated::class,
         fn (CourseUpdated $event): bool => $event->courseId === (string) $course->getKey()
-            && $event->changedFields === ['total_sessions']
+            && $event->changedFields === ['total_sessions'],
     );
 });
 
-it('rejects taking another course code', function () {
+it('rejects taking another course code', function (): void {
     Course::factory()->create(['code' => 'TAKEN']);
 
     $course = Course::factory()->create(['code' => 'MINE']);
 
     app(UpdateCourseAction::class)->execute($course, ['code' => 'TAKEN']);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('archives a course and publishes CourseArchived with the reason', function () {
+it('archives a course and publishes CourseArchived with the reason', function (): void {
     Event::fake([CourseArchived::class]);
 
     $course = Course::factory()->create();
@@ -50,6 +51,6 @@ it('archives a course and publishes CourseArchived with the reason', function ()
     Event::assertDispatched(
         CourseArchived::class,
         fn (CourseArchived $event): bool => $event->courseId === (string) $course->getKey()
-            && $event->reason === 'توقف الطلب على الكورس'
+            && $event->reason === 'توقف الطلب على الكورس',
     );
 });

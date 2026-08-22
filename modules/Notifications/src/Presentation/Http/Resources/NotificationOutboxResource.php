@@ -6,11 +6,12 @@ namespace Modules\Notifications\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Notifications\Domain\Models\NotificationOutbox;
 
 /**
  * تمثيل رسالة صندوق الإرسال في الـ API.
  *
- * @mixin \Modules\Notifications\Domain\Models\NotificationOutbox
+ * @mixin NotificationOutbox
  */
 final class NotificationOutboxResource extends JsonResource
 {
@@ -38,6 +39,7 @@ final class NotificationOutboxResource extends JsonResource
             ],
             'attempts' => $this->attempts,
             'last_error' => $this->last_error,
+            'last_error_retryable' => $this->last_error_retryable,
             'scheduled_for' => $this->scheduled_for?->toIso8601String(),
             'sent_at' => $this->sent_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),

@@ -19,7 +19,7 @@ final class VerifyGuardianLinkController
         /** @var GuardianLink $link */
         $link = GuardianLink::query()->with('guardian')->findOrFail($guardianLink);
 
-        if (! auth()->user()?->can('verify', $link)) {
+        if (!auth()->user()?->can('verify', $link)) {
             abort(403);
         }
 

@@ -105,10 +105,11 @@ interface StudentDirectory
 
 | الموديول | يملك |
 |----------|------|
-| Organization | `organizations` · `academic_calendar` · `holidays` |
+| Organization | `organizations` · `organization_settings` · `academic_calendars` · `holidays` |
 | Identity | `users` · `user_devices` · `password_reset_tokens` |
 | AccessControl | `roles` · `permissions` · `*_has_*` |
 | Audit | `audit_log` |
+| Integrations | `integration_providers` · `integration_connections` · `integration_webhook_deliveries` |
 | Students | `student_profiles` |
 | Guardians | `guardian_profiles` · `guardian_links` |
 | Staff | `staff_profiles` · `teacher_contracts` · `teacher_rates` · `teacher_availability` · `teacher_leaves` |
@@ -126,7 +127,7 @@ interface StudentDirectory
 | AcademicReports | `session_reports` · `session_report_students` · `monthly_reports` |
 | Certificates | `certificate_templates` · `certificates` · `badges` · `badge_awards` |
 | Discipline | `violation_events` · `discipline_actions` · `reactivation_requests` |
-| Messaging | `conversations` · `messages` · `class_wall_*` · `whatsapp_inbound` |
+| Messaging | `conversations` · `conversation_participants` · `messages` · `class_wall_*` · `whatsapp_inbound` |
 | Notifications | `notification_outbox` · `notification_delivery_attempts` · `notification_preferences` |
 | Payroll | `payroll_periods` · `payroll_entries` · `payroll_adjustments` · `staff_obligations` |
 | Billing | `invoices` · `payments` · `student_packages` · `coupons` · `refunds` |

@@ -24,12 +24,15 @@ final class ProgramFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
 
+    protected static \UnitEnum|string|null $navigationGroup = 'الأكاديمي';
+
+    protected static ?int $navigationSort = 10;
+
     public static function canAccess(): bool
     {
         $user = auth()->user();
 
-        return $user !== null
-            && ($user->can('academics.programs.view_any') || $user->can('academics.programs.view'));
+        return $user !== null && $user->can('program.manage');
     }
 
     public static function getModelLabel(): string
@@ -40,11 +43,6 @@ final class ProgramFilamentResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('academics::filament.program.plural');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('academics::filament.group');
     }
 
     public static function form(Schema $schema): Schema

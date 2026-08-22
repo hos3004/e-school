@@ -6,11 +6,12 @@ namespace Modules\Students\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Students\Domain\Models\StudentProfile;
 
 /**
  * تمثيل ملف الطالب في الـ API — قراءة فقط.
  *
- * @property-read \Modules\Students\Domain\Models\StudentProfile $resource
+ * @property-read StudentProfile $resource
  */
 final class StudentProfileResource extends JsonResource
 {

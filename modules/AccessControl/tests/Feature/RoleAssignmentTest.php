@@ -34,8 +34,7 @@ it('assigns a role to a model and dispatches RoleAssigned', function (): void {
         ->where('model_id', AC_USER_ID)
         ->exists())->toBeTrue();
 
-    Event::assertDispatched(RoleAssigned::class, fn (RoleAssigned $e): bool =>
-        $e->modelName === AC_USER_TYPE && $e->modelId === AC_USER_ID);
+    Event::assertDispatched(RoleAssigned::class, fn (RoleAssigned $e): bool => $e->modelName === AC_USER_TYPE && $e->modelId === AC_USER_ID);
 });
 
 it('rejects a duplicate assignment', function (): void {

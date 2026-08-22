@@ -37,7 +37,7 @@ final readonly class ChangeUserStatus
         }
 
         $from = $target->status;
-        if (! $from->canTransitionTo($to)) {
+        if (!$from->canTransitionTo($to)) {
             throw BusinessRuleViolation::make(
                 'identity.invalid_status_transition',
                 'identity::errors.invalid_status_transition',

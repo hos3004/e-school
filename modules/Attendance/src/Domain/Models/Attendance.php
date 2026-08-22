@@ -60,7 +60,7 @@ final class Attendance extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeConfirmed(Builder $query): Builder
@@ -69,7 +69,7 @@ final class Attendance extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeUnconfirmed(Builder $query): Builder
@@ -78,8 +78,8 @@ final class Attendance extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
-     * @param  list<string>  $participantIds
+     * @param Builder<self> $query
+     * @param list<string> $participantIds
      * @return Builder<self>
      */
     public function scopeForParticipants(Builder $query, array $participantIds): Builder
@@ -88,7 +88,7 @@ final class Attendance extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeWithStatus(Builder $query, AttendanceStatus $status): Builder

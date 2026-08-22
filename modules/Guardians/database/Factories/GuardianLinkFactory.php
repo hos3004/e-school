@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Guardians\Database\Factories;
 
-use Shared\Testing\Fixtures;
-use Illuminate\Support\Str;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Guardians\Domain\Enums\GuardianRelationship;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Modules\Guardians\Domain\Models\GuardianProfile;
+use Shared\Testing\Fixtures;
 
 /**
  * @extends Factory<GuardianLink>

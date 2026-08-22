@@ -14,5 +14,6 @@ foreach (glob(__DIR__.'/../../database/factories/*.php') ?: [] as $factoryFile) 
 }
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class)->in(__DIR__);
+uses(TestCase::class, RefreshDatabase::class)->in(__DIR__);

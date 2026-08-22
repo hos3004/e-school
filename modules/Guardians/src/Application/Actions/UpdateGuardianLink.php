@@ -7,7 +7,6 @@ namespace Modules\Guardians\Application\Actions;
 use Illuminate\Support\Facades\DB;
 use Modules\Guardians\Domain\Events\GuardianLinkUpdated;
 use Modules\Guardians\Domain\Models\GuardianLink;
-use Modules\Guardians\Domain\Models\GuardianProfile;
 use Shared\Support\BusinessRuleViolation;
 
 /**

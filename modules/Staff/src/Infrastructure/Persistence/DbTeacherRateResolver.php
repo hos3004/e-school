@@ -10,7 +10,6 @@ use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Modules\Staff\Domain\Enums\RateScope;
 use Modules\Staff\Domain\Models\TeacherContract;
 use Modules\Staff\Domain\Models\TeacherRate;
-use Shared\ValueObjects\Money;
 
 final readonly class DbTeacherRateResolver implements TeacherRateResolver
 {

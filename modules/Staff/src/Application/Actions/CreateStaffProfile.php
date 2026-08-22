@@ -14,8 +14,8 @@ use Shared\Support\BusinessRuleViolation;
 final readonly class CreateStaffProfile
 {
     /**
-     * @param  array<string, mixed>|null  $bio
-     * @param  list<string>|null  $specializations
+     * @param array<string, mixed>|null $bio
+     * @param list<string>|null $specializations
      */
     public function execute(
         string $organizationId,

@@ -13,7 +13,7 @@ beforeEach(function (): void {
     ]);
 });
 
-it('derives no_show when the student never joined', function () {
+it('derives no_show when the student never joined', function (): void {
     expect(AttendanceStatus::deriveFromMinutes(
         attendedMinutes: 0,
         sessionMinutes: 60,
@@ -22,7 +22,7 @@ it('derives no_show when the student never joined', function () {
     ))->toBe(AttendanceStatus::NoShow);
 });
 
-it('derives absent when attendance falls below the partial threshold', function () {
+it('derives absent when attendance falls below the partial threshold', function (): void {
     // 14 دقيقة من 60 = 23% < 25%
     expect(AttendanceStatus::deriveFromMinutes(
         attendedMinutes: 14,
@@ -32,7 +32,7 @@ it('derives absent when attendance falls below the partial threshold', function 
     ))->toBe(AttendanceStatus::Absent);
 });
 
-it('derives partial when attendance is below the present threshold', function () {
+it('derives partial when attendance is below the present threshold', function (): void {
     // 30 دقيقة من 60 = 50% — بين 25% و75%
     expect(AttendanceStatus::deriveFromMinutes(
         attendedMinutes: 30,
@@ -42,7 +42,7 @@ it('derives partial when attendance is below the present threshold', function ()
     ))->toBe(AttendanceStatus::Partial);
 });
 
-it('derives left_early when leaving before the allowed margin', function () {
+it('derives left_early when leaving before the allowed margin', function (): void {
     // حضر 85% لكن انصرف قبل النهاية بعشر دقائق أو أكثر
     expect(AttendanceStatus::deriveFromMinutes(
         attendedMinutes: 52,
@@ -52,7 +52,7 @@ it('derives left_early when leaving before the allowed margin', function () {
     ))->toBe(AttendanceStatus::LeftEarly);
 });
 
-it('derives late when joining after the allowed margin', function () {
+it('derives late when joining after the allowed margin', function (): void {
     expect(AttendanceStatus::deriveFromMinutes(
         attendedMinutes: 58,
         sessionMinutes: 60,
@@ -61,7 +61,7 @@ it('derives late when joining after the allowed margin', function () {
     ))->toBe(AttendanceStatus::Late);
 });
 
-it('derives present for a full timely attendance', function () {
+it('derives present for a full timely attendance', function (): void {
     expect(AttendanceStatus::deriveFromMinutes(
         attendedMinutes: 60,
         sessionMinutes: 60,
@@ -70,7 +70,7 @@ it('derives present for a full timely attendance', function () {
     ))->toBe(AttendanceStatus::Present);
 });
 
-it('classifies violation statuses correctly', function () {
+it('classifies violation statuses correctly', function (): void {
     expect(AttendanceStatus::Absent->isViolation())->toBeTrue()
         ->and(AttendanceStatus::NoShow->isViolation())->toBeTrue()
         ->and(AttendanceStatus::Present->isViolation())->toBeFalse()

@@ -7,7 +7,6 @@ namespace Modules\Guardians\Application\Actions;
 use Illuminate\Support\Facades\DB;
 use Modules\Guardians\Domain\Events\GuardianLinkUpdated;
 use Modules\Guardians\Domain\Models\GuardianLink;
-use Shared\Support\BusinessRuleViolation;
 
 /**
  * تعيين رابط كوصي أساسي للطالب — واصي أساسي واحد فقط في كل لحظة.

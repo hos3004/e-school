@@ -24,7 +24,7 @@ final class ListReactivationRequestsController extends Controller
         $requests = ReactivationRequest::query()
             ->forOrganization($organizationId)
             ->when(
-                ! $canViewAny,
+                !$canViewAny,
                 fn ($query) => $query->requestedBy((string) $request->user()->getAuthIdentifier()),
             )
             ->orderByDesc('created_at')

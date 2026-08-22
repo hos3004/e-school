@@ -7,11 +7,12 @@ use Modules\Groups\Application\Policies\GroupPolicy;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupMembership;
 
-it('never inspects role names and decides via declared abilities', function () {
+it('never inspects role names and decides via declared abilities', function (): void {
     $group = Group::factory()->make();
     $membership = GroupMembership::factory()->make(['group_id' => $group]);
 
-    $allowedUser = new class {
+    $allowedUser = new class
+    {
         public function can(string $ability): bool
         {
             return str_starts_with($ability, 'groups.');
@@ -23,7 +24,8 @@ it('never inspects role names and decides via declared abilities', function () {
         }
     };
 
-    $deniedUser = new class {
+    $deniedUser = new class
+    {
         public function can(string $ability): bool
         {
             return false;

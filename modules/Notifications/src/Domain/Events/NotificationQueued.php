@@ -11,6 +11,8 @@ use Carbon\CarbonInterface;
  */
 final class NotificationQueued extends NotificationEvent
 {
+    public readonly string $sourceEventId;
+
     public function __construct(
         string $outboxId,
         string $organizationId,
@@ -19,12 +21,13 @@ final class NotificationQueued extends NotificationEvent
         public readonly string $channel,
         public readonly string $locale,
         public readonly string $eventName,
-        public readonly string $eventId,
+        string $eventId,
         public readonly string $idempotencyKey,
         public readonly CarbonInterface $scheduledFor,
         ?string $actorId = null,
         ?string $correlationId = null,
     ) {
+        $this->sourceEventId = $eventId;
         parent::__construct($outboxId, $organizationId, $userId, $actorId, $correlationId);
     }
 
@@ -43,7 +46,7 @@ final class NotificationQueued extends NotificationEvent
             'channel' => $this->channel,
             'locale' => $this->locale,
             'event_name' => $this->eventName,
-            'event_id' => $this->eventId,
+            'event_id' => $this->sourceEventId,
             'idempotency_key' => $this->idempotencyKey,
             'scheduled_for' => $this->scheduledFor->toIso8601String(),
         ];

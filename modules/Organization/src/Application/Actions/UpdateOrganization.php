@@ -15,8 +15,8 @@ use Modules\Organization\Domain\Models\Organization;
 final readonly class UpdateOrganization
 {
     /**
-     * @param  array<string, mixed>  $attributes  الحقول المسموح تعديلها فقط
-     * @param  list<string>  $changedFields  تُملأ تلقائيًا من diff القيم
+     * @param array<string, mixed> $attributes الحقول المسموح تعديلها فقط
+     * @param list<string> $changedFields تُملأ تلقائيًا من diff القيم
      */
     public function execute(Organization $organization, array $attributes): Organization
     {

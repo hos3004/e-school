@@ -6,9 +6,10 @@ namespace Modules\Messaging\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Messaging\Domain\Models\Conversation;
 
 /**
- * @property-read \Modules\Messaging\Domain\Models\Conversation $resource
+ * @property-read Conversation $resource
  */
 final class ConversationResource extends JsonResource
 {

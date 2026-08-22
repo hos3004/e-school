@@ -6,11 +6,12 @@ namespace Modules\Notifications\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Notifications\Domain\Models\NotificationPreference;
 
 /**
  * تمثيل تفضيل إشعارات في الـ API.
  *
- * @mixin \Modules\Notifications\Domain\Models\NotificationPreference
+ * @mixin NotificationPreference
  */
 final class NotificationPreferenceResource extends JsonResource
 {

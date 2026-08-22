@@ -45,7 +45,7 @@ return new class extends Migration
         DB::statement(
             'CREATE INDEX violation_events_enrollment_window_countable_index '
             .'ON violation_events (enrollment_id, window_key) '
-            .'WHERE is_countable AND waived_at IS NULL'
+            .'WHERE is_countable AND waived_at IS NULL',
         );
     }
 

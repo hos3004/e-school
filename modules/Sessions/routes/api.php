@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Presentation\Http\Controllers\CancelSessionController;
 use Modules\Sessions\Presentation\Http\Controllers\CompleteSessionController;
 use Modules\Sessions\Presentation\Http\Controllers\ConfirmSessionController;
@@ -20,7 +21,7 @@ Route::get('sessions', ListSessionsController::class)->name('sessions.index');
 Route::get('sessions/{session}', ShowSessionController::class)->name('sessions.show');
 
 Route::post('sessions', ScheduleSessionController::class)
-    ->middleware('can:create,'.Modules\Sessions\Domain\Models\Session::class)
+    ->middleware('can:create,'.Session::class)
     ->name('sessions.store');
 
 Route::prefix('sessions/{session}')->group(function (): void {

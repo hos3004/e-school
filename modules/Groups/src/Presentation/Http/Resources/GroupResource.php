@@ -6,11 +6,12 @@ namespace Modules\Groups\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Groups\Domain\Models\Group;
 
 /**
  * تمثيل المجموعة في الـ API — قراءة فقط.
  *
- * @property-read \Modules\Groups\Domain\Models\Group $resource
+ * @property-read Group $resource
  */
 final class GroupResource extends JsonResource
 {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Certificates\Application\Actions;
 
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Certificates\Domain\Events\CertificateTemplateCreated;
 use Modules\Certificates\Domain\Models\CertificateTemplate;
@@ -21,7 +20,7 @@ final readonly class CreateCertificateTemplateAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function execute(array $data, ?string $actorId = null): CertificateTemplate
     {

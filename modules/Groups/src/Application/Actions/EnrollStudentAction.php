@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Modules\Groups\Application\Actions;
 
 use Carbon\CarbonImmutable;
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Groups\Domain\Events\StudentEnrolledInGroup;
-use Modules\Groups\Domain\Models\GroupMembership;
 use Modules\Groups\Domain\Models\Group;
+use Modules\Groups\Domain\Models\GroupMembership;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * تسجيل طالب في مجموعة: يتحقق من حالة المجموعة والسعة المتاحة
@@ -67,7 +67,7 @@ final readonly class EnrollStudentAction
 
     private function assertAcceptsMembers(Group $group): void
     {
-        if (! $group->status->acceptsEnrollment()) {
+        if (!$group->status->acceptsEnrollment()) {
             throw BusinessRuleViolation::make(
                 'groups.group_not_open',
                 'groups::errors.group_not_accepting_members',

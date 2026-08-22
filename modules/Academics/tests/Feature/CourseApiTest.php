@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use Modules\Identity\Domain\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Events\CourseArchived;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
+use Modules\Identity\Domain\Models\User;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Gate::define('academics.courses.create', fn ($user) => true);
     Gate::define('academics.courses.update', fn ($user) => true);
     Gate::define('academics.courses.archive', fn ($user) => true);
@@ -29,7 +29,7 @@ function coursePayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('creates a course through the API and returns 201', function () {
+it('creates a course through the API and returns 201', function (): void {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)
@@ -41,7 +41,7 @@ it('creates a course through the API and returns 201', function () {
     expect(Course::query()->whereKey($response->json('data.id'))->exists())->toBeTrue();
 });
 
-it('rejects duplicate course codes with a validation error', function () {
+it('rejects duplicate course codes with a validation error', function (): void {
     $user = User::factory()->create();
     Course::factory()->create(['code' => 'DUP-CRS']);
 
@@ -51,7 +51,7 @@ it('rejects duplicate course codes with a validation error', function () {
         ->assertJsonValidationErrors(['code']);
 });
 
-it('updates a course through the API', function () {
+it('updates a course through the API', function (): void {
     $user = User::factory()->create();
     $course = Course::factory()->create(['is_active' => true]);
 
@@ -66,7 +66,7 @@ it('updates a course through the API', function () {
     expect($course->fresh()->completion_rules)->toBe(['min_attendance_percent' => 75]);
 });
 
-it('archives a course and publishes the event with the reason', function () {
+it('archives a course and publishes the event with the reason', function (): void {
     Event::fake([CourseArchived::class]);
 
     $user = User::factory()->create();
@@ -82,11 +82,11 @@ it('archives a course and publishes the event with the reason', function () {
 
     Event::assertDispatched(
         CourseArchived::class,
-        fn (CourseArchived $event): bool => $event->reason === 'دمج الكورس مع كورس آخر'
+        fn (CourseArchived $event): bool => $event->reason === 'دمج الكورس مع كورس آخر',
     );
 });
 
-it('rejects archiving a course without a reason', function () {
+it('rejects archiving a course without a reason', function (): void {
     $user = User::factory()->create();
     $course = Course::factory()->create();
 

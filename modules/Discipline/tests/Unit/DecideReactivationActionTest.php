@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use Modules\Identity\Domain\Models\User;
 use Modules\Discipline\Application\Actions\DecideReactivationAction;
 use Modules\Discipline\Database\Factories\ReactivationRequestFactory;
 use Modules\Discipline\Domain\Enums\ReactivationStatus;
 use Modules\Discipline\Domain\Events\ReactivationReviewed;
+use Modules\Identity\Domain\Models\User;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->reviewer = User::factory()->create();
     $this->actingAs($this->reviewer);
 });
 
-it('approves a pending request when an assessment attempt is linked', function () {
+it('approves a pending request when an assessment attempt is linked', function (): void {
     config()->set('discipline.reactivation.requires_assessment', true);
     Event::fake([ReactivationReviewed::class]);
 
@@ -35,11 +36,11 @@ it('approves a pending request when an assessment attempt is linked', function (
 
     Event::assertDispatched(
         ReactivationReviewed::class,
-        fn (ReactivationReviewed $event): bool => $event->payload()['decision'] === 'approved'
+        fn (ReactivationReviewed $event): bool => $event->payload()['decision'] === 'approved',
     );
 });
 
-it('refuses approval without an assessment result when the setting requires it', function () {
+it('refuses approval without an assessment result when the setting requires it', function (): void {
     config()->set('discipline.reactivation.requires_assessment', true);
 
     $request = ReactivationRequestFactory::new()->create();
@@ -48,9 +49,9 @@ it('refuses approval without an assessment result when the setting requires it',
         'decision' => ReactivationStatus::Approved,
         'decision_note' => 'قبول بلا اختبار',
     ]);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('allows rejection without any assessment', function () {
+it('allows rejection without any assessment', function (): void {
     config()->set('discipline.reactivation.requires_assessment', true);
 
     $request = ReactivationRequestFactory::new()->create();
@@ -64,7 +65,7 @@ it('allows rejection without any assessment', function () {
         ->and($decided->assessment_attempt_id)->toBeNull();
 });
 
-it('refuses to decide an already closed request — state machine guard', function () {
+it('refuses to decide an already closed request — state machine guard', function (): void {
     $reviewerId = (string) $this->reviewer->getKey();
 
     $request = ReactivationRequestFactory::new()->rejected($reviewerId)->create();
@@ -76,13 +77,13 @@ it('refuses to decide an already closed request — state machine guard', functi
         'decision_note' => 'محاولة حسم طلب مغلق',
         'assessment_attempt_id' => (string) str()->ulid(),
     ]);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('accepts only approve or reject as decisions', function () {
+it('accepts only approve or reject as decisions', function (): void {
     $request = ReactivationRequestFactory::new()->create();
 
     app(DecideReactivationAction::class)->execute($request, [
         'decision' => ReactivationStatus::UnderReview,
         'decision_note' => 'تحويل للاختبار',
     ]);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

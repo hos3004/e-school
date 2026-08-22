@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Modules\Organization\Presentation\Filament\Resources;
 
 use Filament\Forms\Components\DatePicker;
-use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
@@ -22,10 +22,9 @@ final class HolidayFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-sun';
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('organization::filament.navigation_group');
-    }
+    protected static \UnitEnum|string|null $navigationGroup = 'النظام';
+
+    protected static ?int $navigationSort = 102;
 
     public static function getModelLabel(): string
     {

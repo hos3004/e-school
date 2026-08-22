@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Routing\Controller;
 use Modules\Notifications\Application\Actions\QueueNotificationAction;
 use Modules\Notifications\Domain\Enums\Channel;
+use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Presentation\Http\Requests\QueueNotificationRequest;
 use Modules\Notifications\Presentation\Http\Resources\NotificationOutboxResource;
 
@@ -48,11 +49,11 @@ final class QueueNotificationController extends Controller
             ], 202);
         }
 
-        if (! $outbox->wasRecentlyCreated) {
+        if ($outbox->status === OutboxStatus::Suppressed) {
             return response()->json([
                 'message' => __('notifications::messages.already_queued'),
                 'data' => new NotificationOutboxResource($outbox),
-            ], 200);
+            ], 202);
         }
 
         return new NotificationOutboxResource($outbox);

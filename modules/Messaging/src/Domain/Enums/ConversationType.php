@@ -17,7 +17,7 @@ enum ConversationType: string
 
     case Group = 'group';
 
-    case Class = 'class';
+    case Classroom = 'class';
 
     /**
      * الأنواع المسموح الانتقال إليها عند إنشاء المحادثة فقط — النوع ثابت

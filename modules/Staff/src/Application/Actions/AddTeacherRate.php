@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Staff\Application\Actions;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\Staff\Domain\Enums\RateScope;
@@ -21,7 +22,7 @@ final readonly class AddTeacherRate
         RateScope $scope,
         Money $amount,
         CarbonImmutable|string $effectiveFrom,
-        ?CarbonImmutable|string $effectiveTo = null,
+        CarbonImmutable|string|null $effectiveTo = null,
         ?string $programId = null,
         ?string $courseId = null,
         ?string $sessionType = null,
@@ -53,7 +54,7 @@ final readonly class AddTeacherRate
         $from = $effectiveFrom instanceof CarbonImmutable ? $effectiveFrom : CarbonImmutable::parse($effectiveFrom);
         $to = $effectiveTo === null ? null : ($effectiveTo instanceof CarbonImmutable ? $effectiveTo : CarbonImmutable::parse($effectiveTo));
 
-        if ($to !== null && ! $to->gt($from)) {
+        if ($to !== null && !$to->gt($from)) {
             throw BusinessRuleViolation::make(
                 'staff.rate_period_invalid',
                 'staff::errors.contract_period_invalid',
@@ -68,13 +69,13 @@ final readonly class AddTeacherRate
             ->where('scope', $scope)
             ->whereDate('effective_from', '<', $to ?? $from->addDay())
             ->where(
-                fn (\Illuminate\Database\Eloquent\Builder $q): \Illuminate\Database\Eloquent\Builder => $q
+                fn (Builder $q): Builder => $q
                     ->whereNull('effective_to')
                     ->orWhereDate('effective_to', '>', $from),
             )
-            ->when($programId !== null, fn (\Illuminate\Database\Eloquent\Builder $q): \Illuminate\Database\Eloquent\Builder => $q->where('program_id', $programId))
-            ->when($courseId !== null, fn (\Illuminate\Database\Eloquent\Builder $q): \Illuminate\Database\Eloquent\Builder => $q->where('course_id', $courseId))
-            ->when($sessionType !== null, fn (\Illuminate\Database\Eloquent\Builder $q): \Illuminate\Database\Eloquent\Builder => $q->where('session_type', $sessionType))
+            ->when($programId !== null, fn (Builder $q): Builder => $q->where('program_id', $programId))
+            ->when($courseId !== null, fn (Builder $q): Builder => $q->where('course_id', $courseId))
+            ->when($sessionType !== null, fn (Builder $q): Builder => $q->where('session_type', $sessionType))
             ->exists();
 
         if ($overlaps) {

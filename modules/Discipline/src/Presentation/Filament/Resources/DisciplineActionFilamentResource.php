@@ -26,16 +26,13 @@ final class DisciplineActionFilamentResource extends Resource
 
     protected static ?string $slug = 'discipline-actions';
 
-    protected static \UnitEnum|string|null $navigationGroup = null;
+    protected static \UnitEnum|string|null $navigationGroup = 'الانضباط';
+
+    protected static ?int $navigationSort = 60;
 
     public static function getNavigationLabel(): string
     {
         return __('discipline::filament.actions.navigation_label');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('discipline::filament.navigation_group');
     }
 
     public static function getModelLabel(): string

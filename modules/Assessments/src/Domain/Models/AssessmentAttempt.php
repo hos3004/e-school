@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Assessments\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -43,6 +44,11 @@ final class AssessmentAttempt extends Model
             'graded_at' => 'immutable_datetime',
             'answers' => 'array',
         ];
+    }
+
+    public function assessment(): BelongsTo
+    {
+        return $this->belongsTo(Assessment::class, 'assessment_id');
     }
 
     public function scopePassed(Builder $query): Builder

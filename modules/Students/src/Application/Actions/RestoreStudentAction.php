@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Students\Application\Actions;
 
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Students\Domain\Events\StudentRestored;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * استرجاع طالب مؤرشف — إلغاء الأرشفة دون مسّ تاريخه.
@@ -33,7 +33,7 @@ final readonly class RestoreStudentAction
             );
         }
 
-        if (! $student->trashed()) {
+        if (!$student->trashed()) {
             throw BusinessRuleViolation::make(
                 'students.not_archived',
                 'students::errors.not_archived',

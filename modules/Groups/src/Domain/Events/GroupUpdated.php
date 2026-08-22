@@ -9,7 +9,7 @@ use Shared\Domain\DomainEvent;
 final class GroupUpdated extends DomainEvent
 {
     /**
-     * @param  list<string>  $updatedFields
+     * @param list<string> $updatedFields
      */
     public function __construct(
         public readonly string $groupId,

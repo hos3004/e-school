@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Application\Actions;
 
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Events\GroupCompleted;
 use Modules\Groups\Domain\Models\Group;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * إتمام مجموعة نشطة: حالة نهائية تُغلق التسجيل والإسناد نهائيًا.
@@ -54,7 +54,7 @@ final readonly class CompleteGroupAction
 
     private function assertTransitionAllowed(Group $group): void
     {
-        if (! $group->status->canTransitionTo(GroupStatus::Completed)) {
+        if (!$group->status->canTransitionTo(GroupStatus::Completed)) {
             throw BusinessRuleViolation::make(
                 'groups.invalid_status_transition',
                 'groups::errors.invalid_status_transition',

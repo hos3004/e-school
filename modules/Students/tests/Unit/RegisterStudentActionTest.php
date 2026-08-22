@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Event;
 use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Domain\Enums\StudentGender;
 use Modules\Students\Domain\Events\StudentRegistered;
-use Modules\Students\Domain\Models\StudentProfile;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
@@ -27,7 +27,7 @@ function studentData(array $overrides = []): array
     ], $overrides);
 }
 
-it('registers a student and publishes StudentRegistered', function () {
+it('registers a student and publishes StudentRegistered', function (): void {
     Event::fake([StudentRegistered::class]);
 
     $student = app(RegisterStudentAction::class)->execute(studentData());
@@ -40,11 +40,11 @@ it('registers a student and publishes StudentRegistered', function () {
         StudentRegistered::class,
         fn (StudentRegistered $event): bool => $event->studentId === (string) $student->getKey()
             && $event->userId === (string) $student->user_id
-            && $event->payload()['student_code'] === 'STU-0001'
+            && $event->payload()['student_code'] === 'STU-0001',
     );
 });
 
-it('rejects registering the same user twice', function () {
+it('rejects registering the same user twice', function (): void {
     $data = studentData();
 
     app(RegisterStudentAction::class)->execute($data);
@@ -52,13 +52,13 @@ it('rejects registering the same user twice', function () {
     app(RegisterStudentAction::class)->execute(studentData([
         'student_code' => 'STU-0002',
     ]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects a duplicate student code even across archived profiles', function () {
+it('rejects a duplicate student code even across archived profiles', function (): void {
     $first = app(RegisterStudentAction::class)->execute(studentData());
     $first->delete();
 
     app(RegisterStudentAction::class)->execute(studentData([
         'user_id' => (string) str()->ulid(),
     ]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

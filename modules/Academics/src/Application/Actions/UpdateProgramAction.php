@@ -22,7 +22,7 @@ final readonly class UpdateProgramAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  الحقول المسموح تحديثها بعد تحقّق FormRequest
+     * @param array<string, mixed> $data الحقول المسموح تحديثها بعد تحقّق FormRequest
      */
     public function execute(Program $program, array $data): Program
     {

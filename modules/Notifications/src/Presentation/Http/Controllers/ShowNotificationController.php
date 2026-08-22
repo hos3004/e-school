@@ -19,7 +19,7 @@ final class ShowNotificationController extends Controller
 
         $user = auth()->user();
 
-        if (! $user->can('view', $notification) && ! $user->can('viewOwn', $notification)) {
+        if (!$user->can('view', $notification) && !$user->can('viewOwn', $notification)) {
             abort(403);
         }
 

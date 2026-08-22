@@ -28,14 +28,14 @@ final readonly class SubmitAssignmentAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  content و attachments اختيارية
+     * @param array<string, mixed> $data content و attachments اختيارية
      */
     public function execute(AssignmentSubmission $submission, array $data): AssignmentSubmission
     {
         $status = $submission->status;
 
-        if (! $status->canTransitionTo(AssignmentSubmissionStatus::Submitted)
-            && ! $status->canTransitionTo(AssignmentSubmissionStatus::Late)) {
+        if (!$status->canTransitionTo(AssignmentSubmissionStatus::Submitted)
+            && !$status->canTransitionTo(AssignmentSubmissionStatus::Late)) {
             throw BusinessRuleViolation::make(
                 'assignments.submission_not_pending',
                 'assignments::errors.submission_not_pending',
@@ -47,7 +47,7 @@ final readonly class SubmitAssignmentAction
         $now = CarbonImmutable::now('UTC');
         $isLate = $assignment->isPastDue();
 
-        if ($isLate && ! $assignment->allows_late) {
+        if ($isLate && !$assignment->allows_late) {
             throw BusinessRuleViolation::make(
                 'assignments.late_not_allowed',
                 'assignments::errors.late_not_allowed',

@@ -28,8 +28,8 @@ use Shared\Concerns\HasUlid;
  */
 final class UserDevice extends Model
 {
-    use HasTimestamps;
     use HasModuleFactory;
+    use HasTimestamps;
     use HasUlid;
 
     public const UPDATED_AT = null;
@@ -63,7 +63,7 @@ final class UserDevice extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeActive(Builder $query): Builder
@@ -72,7 +72,7 @@ final class UserDevice extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForUser(Builder $query, string $userId): Builder
@@ -88,6 +88,6 @@ final class UserDevice extends Model
     /** هل يصلح هذا الجهاز لاستقبال إشعارات فورية؟ */
     public function canReceivePush(): bool
     {
-        return ! $this->isRevoked() && $this->push_token !== null;
+        return !$this->isRevoked() && $this->push_token !== null;
     }
 }

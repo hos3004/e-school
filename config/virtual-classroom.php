@@ -3,10 +3,7 @@
 declare(strict_types=1);
 
 use Modules\VirtualClassroom\Infrastructure\Providers\BigBlueButtonProvider;
-use Modules\VirtualClassroom\Infrastructure\Providers\LiveKitProvider;
 use Modules\VirtualClassroom\Infrastructure\Providers\NullProvider;
-use Modules\VirtualClassroom\Infrastructure\Providers\WherebyProvider;
-use Modules\VirtualClassroom\Infrastructure\Providers\ZoomVideoProvider;
 
 /**
  * الفصل المباشر.
@@ -31,6 +28,14 @@ return [
             'base_url' => env('BBB_BASE_URL'),
             'secret' => env('BBB_SECRET'),
             'webhook_secret' => env('BBB_WEBHOOK_SECRET'),
+            'webhook_callback_url' => env('BBB_WEBHOOK_CALLBACK_URL'),
+            'timeout_seconds' => env('BBB_TIMEOUT_SECONDS', 10),
+            'connect_timeout_seconds' => env('BBB_CONNECT_TIMEOUT_SECONDS', 5),
+            'retry_delays_milliseconds' => [1000, 4000, 15000],
+            'circuit_breaker' => [
+                'failure_threshold' => 5,
+                'open_seconds' => 120,
+            ],
             'supports' => [
                 'whiteboard' => true,
                 'breakout_rooms' => true,
@@ -41,29 +46,16 @@ return [
                 'moderator_controls' => true,
                 'raise_hand' => true,
                 'private_chat' => true,
+                'runtime_recording_control' => false,
             ],
-        ],
-
-        'zoom' => [
-            'driver' => ZoomVideoProvider::class,
-            'sdk_key' => env('ZOOM_SDK_KEY'),
-            'sdk_secret' => env('ZOOM_SDK_SECRET'),
-        ],
-
-        'whereby' => [
-            'driver' => WherebyProvider::class,
-            'api_key' => env('WHEREBY_API_KEY'),
-        ],
-
-        'livekit' => [
-            'driver' => LiveKitProvider::class,
-            'url' => env('LIVEKIT_URL'),
-            'api_key' => env('LIVEKIT_API_KEY'),
-            'api_secret' => env('LIVEKIT_API_SECRET'),
         ],
 
         'null' => [
             'driver' => NullProvider::class,
+            'supports' => [
+                'recording' => true,
+                'runtime_recording_control' => true,
+            ],
         ],
     ],
 

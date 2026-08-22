@@ -7,11 +7,12 @@ namespace Modules\Sessions\Presentation\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Modules\Sessions\Domain\Enums\SessionStatus;
+use Modules\Sessions\Domain\Models\SessionStatusHistory;
 
 /**
  * تمثيل قيد سجل حالات الحصة في الـ API.
  *
- * @mixin \Modules\Sessions\Domain\Models\SessionStatusHistory
+ * @mixin SessionStatusHistory
  */
 final class SessionStatusHistoryResource extends JsonResource
 {

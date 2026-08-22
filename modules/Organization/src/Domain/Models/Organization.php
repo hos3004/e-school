@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Organization\Domain\Models;
 
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -90,6 +89,6 @@ final class Organization extends Model
      */
     public static function findBySlug(string $slug): ?self
     {
-        return static::query()->where('slug', $slug)->first();
+        return self::query()->where('slug', $slug)->first();
     }
 }

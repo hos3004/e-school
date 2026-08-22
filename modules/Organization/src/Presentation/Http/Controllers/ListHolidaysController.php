@@ -18,7 +18,7 @@ final class ListHolidaysController
      */
     public function __invoke(Request $request, Organization $organization): AnonymousResourceCollection
     {
-        if (! ($request->user()?->can('viewAny', Holiday::class) ?? false)) {
+        if (!($request->user()?->can('viewAny', Holiday::class) ?? false)) {
             throw new AuthorizationException(__('organization::errors.unauthorized'));
         }
 

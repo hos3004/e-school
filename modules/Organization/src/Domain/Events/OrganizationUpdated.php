@@ -12,7 +12,7 @@ use Shared\Domain\DomainEvent;
 final class OrganizationUpdated extends DomainEvent
 {
     /**
-     * @param  list<string>  $changedFields
+     * @param list<string> $changedFields
      */
     public function __construct(
         public readonly string $organizationId,

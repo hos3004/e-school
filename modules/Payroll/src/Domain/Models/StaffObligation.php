@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Payroll\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 

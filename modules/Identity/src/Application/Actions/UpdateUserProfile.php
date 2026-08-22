@@ -18,7 +18,7 @@ use Modules\Identity\Domain\Models\User;
 final readonly class UpdateUserProfile
 {
     /**
-     * @param  array<string, mixed>  $attributes  حقول مسموحة فقط
+     * @param array<string, mixed> $attributes حقول مسموحة فقط
      */
     public function execute(User $user, array $attributes): User
     {
@@ -26,7 +26,7 @@ final readonly class UpdateUserProfile
 
         $changes = [];
         foreach ($allowed as $field) {
-            if (! array_key_exists($field, $attributes)) {
+            if (!array_key_exists($field, $attributes)) {
                 continue;
             }
 

@@ -7,7 +7,6 @@ namespace Modules\Students\Presentation\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Modules\Students\Application\Actions\RegisterStudentAction;
-use Modules\Students\Domain\Models\StudentProfile;
 use Modules\Students\Presentation\Http\Requests\RegisterStudentRequest;
 use Modules\Students\Presentation\Http\Resources\StudentProfileResource;
 

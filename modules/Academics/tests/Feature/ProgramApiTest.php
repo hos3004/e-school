@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Modules\Identity\Domain\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Models\Program;
+use Modules\Identity\Domain\Models\User;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Gate::define('academics.programs.create', fn ($user) => true);
 });
 
@@ -25,7 +25,7 @@ function programPayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('creates a program through the API and returns 201', function () {
+it('creates a program through the API and returns 201', function (): void {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)
@@ -37,7 +37,7 @@ it('creates a program through the API and returns 201', function () {
     expect(Program::query()->whereKey($response->json('data.id'))->exists())->toBeTrue();
 });
 
-it('rejects duplicate program codes with a validation error', function () {
+it('rejects duplicate program codes with a validation error', function (): void {
     $user = User::factory()->create();
     Program::factory()->create(['code' => 'DUP-CODE']);
 
@@ -47,7 +47,7 @@ it('rejects duplicate program codes with a validation error', function () {
         ->assertJsonValidationErrors(['code']);
 });
 
-it('validates the currency size on program creation', function () {
+it('validates the currency size on program creation', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -56,7 +56,7 @@ it('validates the currency size on program creation', function () {
         ->assertJsonValidationErrors(['currency']);
 });
 
-it('forbids program creation without the create ability', function () {
+it('forbids program creation without the create ability', function (): void {
     Gate::define('academics.programs.create', fn ($user) => false);
     $user = User::factory()->create();
 

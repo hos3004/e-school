@@ -38,7 +38,7 @@ final readonly class ApprovePayrollAdjustmentAction
         /** @var PayrollPeriod|null $period */
         $period = PayrollPeriod::query()->find($adjustment->payroll_period_id);
 
-        if ($period === null || ! $period->status->acceptsAdjustments()) {
+        if ($period === null || !$period->status->acceptsAdjustments()) {
             throw BusinessRuleViolation::make(
                 'payroll.period.frozen',
                 'payroll::actions.approve_adjustment.period_frozen',

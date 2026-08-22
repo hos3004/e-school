@@ -12,6 +12,7 @@ use Modules\Groups\Domain\Enums\GroupTeacherRole;
 use Modules\Groups\Domain\Events\TeacherAssignedToGroup;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupTeacher;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
@@ -26,12 +27,12 @@ function assignmentData(array $overrides = []): array
     ], $overrides);
 }
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->action = app(AssignTeacherAction::class);
     $this->group = Group::factory()->active()->create();
 });
 
-it('assigns a teacher to an open group and publishes the event', function () {
+it('assigns a teacher to an open group and publishes the event', function (): void {
     Event::fake([TeacherAssignedToGroup::class]);
 
     $data = assignmentData(['role' => GroupTeacherRole::Assistant]);
@@ -46,18 +47,18 @@ it('assigns a teacher to an open group and publishes the event', function () {
         TeacherAssignedToGroup::class,
         fn (TeacherAssignedToGroup $event): bool => $event->groupId === (string) $this->group->getKey()
             && $event->role === GroupTeacherRole::Assistant->value
-            && $event->courseId === null
+            && $event->courseId === null,
     );
 });
 
-it('rejects assigning the same teacher twice for the same course', function () {
+it('rejects assigning the same teacher twice for the same course', function (): void {
     $data = assignmentData();
 
     $this->action->execute($this->group, $data);
     $this->action->execute($this->group, $data);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('allows two different teachers without a course', function () {
+it('allows two different teachers without a course', function (): void {
     $first = $this->action->execute($this->group, assignmentData());
     $second = $this->action->execute($this->group, assignmentData());
 
@@ -65,13 +66,13 @@ it('allows two different teachers without a course', function () {
         ->and((string) $first->getKey())->not->toBe((string) $second->getKey());
 });
 
-it('rejects assignments on a completed group', function () {
+it('rejects assignments on a completed group', function (): void {
     $completed = Group::factory()->completed()->create();
 
     $this->action->execute($completed, assignmentData());
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('unassigns by closing the record instead of deleting it', function () {
+it('unassigns by closing the record instead of deleting it', function (): void {
     $assignment = $this->action->execute($this->group, assignmentData());
 
     $closed = app(UnassignTeacherAction::class)->execute($assignment);
@@ -81,14 +82,14 @@ it('unassigns by closing the record instead of deleting it', function () {
         ->and(GroupTeacher::query()->find($assignment->getKey()))->not->toBeNull();
 });
 
-it('rejects unassigning an already closed assignment', function () {
+it('rejects unassigning an already closed assignment', function (): void {
     $assignment = $this->action->execute($this->group, assignmentData());
 
     app(UnassignTeacherAction::class)->execute($assignment);
     app(UnassignTeacherAction::class)->execute($assignment->refresh());
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('keeps planning groups mutable but completed ones frozen', function () {
+it('keeps planning groups mutable but completed ones frozen', function (): void {
     expect($this->group->status)->toBe(GroupStatus::Active)
         ->and(GroupStatus::Completed->acceptsMembers())->toBeFalse()
         ->and(GroupStatus::Planning->acceptsMembers())->toBeTrue();

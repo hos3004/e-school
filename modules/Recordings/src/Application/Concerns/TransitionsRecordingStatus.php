@@ -18,7 +18,7 @@ trait TransitionsRecordingStatus
     /**
      * يُستدعى داخل معاملة قاعدة البيانات فقط.
      *
-     * @param  array<string, mixed>  $attributes
+     * @param array<string, mixed> $attributes
      */
     protected function applyTransition(
         Recording $recording,
@@ -27,7 +27,7 @@ trait TransitionsRecordingStatus
     ): void {
         $from = $recording->status;
 
-        if (! $from->canTransitionTo($to)) {
+        if (!$from->canTransitionTo($to)) {
             throw BusinessRuleViolation::make(
                 'recordings.invalid_status_transition',
                 'recordings::errors.invalid_transition',

@@ -2,12 +2,41 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Route;
+use Modules\Recordings\Presentation\Http\Controllers\DeleteRecordingController;
+use Modules\Recordings\Presentation\Http\Controllers\ListRecordingsController;
+use Modules\Recordings\Presentation\Http\Controllers\LogRecordingViewController;
+use Modules\Recordings\Presentation\Http\Controllers\MarkRecordingReadyController;
+use Modules\Recordings\Presentation\Http\Controllers\ShowRecordingController;
+use Modules\Recordings\Presentation\Http\Controllers\StoreRecordingController;
+
 /*
 |--------------------------------------------------------------------------
 | مسارات موديول Recordings — الـ API
 |--------------------------------------------------------------------------
 |
-| يُحمَّل هذا الملف تلقائيًا من ModuleRegistry::loadRoutes() ضمن مجموعة
-| middleware «api» وبالبادئة api/ عند إقلاع التطبيق. لا مسارات معرّفة
-| بعد؛ ستُضاف هنا مسارات طبقة Presentation للموديول عند بنائها.
+| تُحمَّل تلقائيًا ضمن مجموعة «api» بالبادئة api/. كل مسار يمر بسياسة
+| RecordingPolicy عبر FormRequest أو Gate::authorize داخل المتحكم.
 */
+
+Route::get('/recordings', ListRecordingsController::class)->name('recordings.index');
+
+Route::post('/recordings', StoreRecordingController::class)
+    ->middleware('can:recordings.recording.create')
+    ->name('recordings.store');
+
+Route::get('/recordings/{recording}', ShowRecordingController::class)
+    ->whereUlid('recording')
+    ->name('recordings.show');
+
+Route::patch('/recordings/{recording}/ready', MarkRecordingReadyController::class)
+    ->whereUlid('recording')
+    ->name('recordings.ready');
+
+Route::post('/recordings/{recording}/views', LogRecordingViewController::class)
+    ->whereUlid('recording')
+    ->name('recordings.views.log');
+
+Route::delete('/recordings/{recording}', DeleteRecordingController::class)
+    ->whereUlid('recording')
+    ->name('recordings.delete');

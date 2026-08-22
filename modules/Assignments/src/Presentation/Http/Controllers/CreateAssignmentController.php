@@ -7,7 +7,6 @@ namespace Modules\Assignments\Presentation\Http\Controllers;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Modules\Assignments\Application\Actions\CreateAssignmentAction;
-use Modules\Assignments\Domain\Models\Assignment;
 use Modules\Assignments\Presentation\Http\Requests\CreateAssignmentRequest;
 use Modules\Assignments\Presentation\Http\Resources\AssignmentResource;
 

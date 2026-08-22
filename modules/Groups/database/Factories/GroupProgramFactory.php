@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Database\Factories;
 
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupProgram;
 

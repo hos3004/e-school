@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Organization\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Models\OrganizationSetting;
 
 /**

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\VirtualClassroom\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\VirtualClassroom\Domain\Enums\ClassroomEventType;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -31,6 +32,7 @@ final class ClassroomEvent extends Model
     protected function casts(): array
     {
         return [
+            'event_type' => ClassroomEventType::class,
             'occurred_at' => 'immutable_datetime',
             'payload' => 'array',
         ];
@@ -45,11 +47,20 @@ final class ClassroomEvent extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
-    public function scopeOfType(Builder $query, string $eventType): Builder
+    public function scopeOfType(Builder $query, ClassroomEventType $eventType): Builder
     {
         return $query->where('event_type', $eventType);
+    }
+
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
+    public function scopeForParticipant(Builder $query, string $externalUserId): Builder
+    {
+        return $query->where('external_user_id', $externalUserId);
     }
 }

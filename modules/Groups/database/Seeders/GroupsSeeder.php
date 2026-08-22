@@ -8,6 +8,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Enums\GroupTeacherRole;
+use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupMembership;
 use Modules\Groups\Domain\Models\GroupTeacher;
@@ -56,7 +57,7 @@ final class GroupsSeeder extends Seeder
                 ]),
             );
 
-            if (! $group->wasRecentlyCreated) {
+            if (!$group->wasRecentlyCreated) {
                 continue;
             }
 
@@ -68,12 +69,12 @@ final class GroupsSeeder extends Seeder
                 'assigned_from' => now()->toDateString(),
             ]);
 
-            for ($seat = 0; $seat < min(5, (int) $group->capacity); ++$seat) {
+            for ($seat = 0; $seat < min(5, (int) $group->capacity); $seat++) {
                 GroupMembership::query()->create([
                     'group_id' => (string) $group->getKey(),
                     'student_profile_id' => (string) str()->ulid(),
                     'joined_at' => now()->subDays($seat + 1),
-                    'status' => \Modules\Groups\Domain\Enums\MembershipStatus::Active,
+                    'status' => MembershipStatus::Active,
                 ]);
             }
         }

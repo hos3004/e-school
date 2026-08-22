@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Database\Factories;
 
-use Shared\Testing\Fixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
-use Shared\Support\Ulid;
+use Shared\Testing\Fixtures;
 
 /**
  * @extends Factory<Session>

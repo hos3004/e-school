@@ -6,7 +6,6 @@ namespace Modules\Guardians\Presentation\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Modules\Guardians\Application\Actions\ArchiveGuardianProfile;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 
@@ -29,7 +28,7 @@ final class ArchiveGuardianProfileController
         $profile = GuardianProfile::query()->find($guardianProfile);
 
         if ($profile !== null) {
-            if (! $request->user()->can('delete', $profile)) {
+            if (!$request->user()->can('delete', $profile)) {
                 abort(403);
             }
 

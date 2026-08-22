@@ -6,10 +6,10 @@ namespace Modules\AccessControl\Presentation\Filament\Resources;
 
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -23,12 +23,15 @@ final class PermissionResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-key';
 
+    protected static \UnitEnum|string|null $navigationGroup = 'النظام';
+
+    protected static ?int $navigationSort = 101;
+
     public static function canAccess(): bool
     {
         $user = auth()->user();
 
-        return $user !== null
-            && ($user->can('accesscontrol.permissions.view_any') || $user->can('accesscontrol.permissions.view'));
+        return $user !== null && $user->can('settings.manage');
     }
 
     public static function getModelLabel(): string
@@ -39,11 +42,6 @@ final class PermissionResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('accesscontrol::filament.permission.plural');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('accesscontrol::filament.group');
     }
 
     public static function form(Schema $schema): Schema
@@ -115,9 +113,9 @@ final class PermissionResource extends Resource
             ])
             ->actions([
                 EditAction::make()
-                    ->visible(fn (): bool => (bool) (auth()->user()?->can('update', new Permission()))),
+                    ->visible(fn (): bool => (bool) (auth()->user()?->can('update', new Permission))),
                 DeleteAction::make()
-                    ->visible(fn (): bool => (bool) (auth()->user()?->can('delete', new Permission()))),
+                    ->visible(fn (): bool => (bool) (auth()->user()?->can('delete', new Permission))),
             ])
             ->paginated([25, 50, 100]);
     }

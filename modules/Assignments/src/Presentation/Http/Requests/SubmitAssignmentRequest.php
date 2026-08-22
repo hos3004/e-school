@@ -34,12 +34,12 @@ final class SubmitAssignmentRequest extends FormRequest
     }
 
     /**
-     * @param  mixed  $validator
+     * @param mixed $validator
      */
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
-            if (! $this->has('content') && ! $this->has('attachments')) {
+            if (!$this->has('content') && !$this->has('attachments')) {
                 $validator->errors()->add(
                     'content',
                     __('assignments::validation.submission_empty'),

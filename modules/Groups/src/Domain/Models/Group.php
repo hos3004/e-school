@@ -68,7 +68,7 @@ final class Group extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
@@ -77,7 +77,7 @@ final class Group extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeWithStatus(Builder $query, GroupStatus $status): Builder

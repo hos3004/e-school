@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Academics\Database\Factories;
 
-use Shared\Testing\Fixtures;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
+use Shared\Testing\Fixtures;
 
 /**
  * @extends Factory<Course>

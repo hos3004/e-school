@@ -6,11 +6,12 @@ namespace Modules\Discipline\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Discipline\Domain\Models\DisciplineAction;
 
 /**
  * تمثيل قيدة إجراء انضباط في الـ API — قراءة فقط.
  *
- * @property-read \Modules\Discipline\Domain\Models\DisciplineAction $resource
+ * @property-read DisciplineAction $resource
  */
 final class DisciplineActionResource extends JsonResource
 {

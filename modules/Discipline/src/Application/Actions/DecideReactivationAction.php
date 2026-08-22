@@ -40,7 +40,7 @@ final readonly class DecideReactivationAction
             );
         }
 
-        if (! $request->status->canTransitionTo($decision)) {
+        if (!$request->status->canTransitionTo($decision)) {
             throw BusinessRuleViolation::make(
                 'discipline.reactivation_invalid_transition',
                 'discipline::errors.reactivation_invalid_transition',

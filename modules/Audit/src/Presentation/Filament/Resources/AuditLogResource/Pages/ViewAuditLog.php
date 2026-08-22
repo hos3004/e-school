@@ -6,9 +6,9 @@ namespace Modules\Audit\Presentation\Filament\Resources\AuditLogResource\Pages;
 
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Resources\Pages\ViewRecord;
 use Modules\Audit\Presentation\Filament\Resources\AuditLogResource;
 
 /**

@@ -34,10 +34,9 @@ final class AttendanceFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('attendance::filament.navigation_group');
-    }
+    protected static \UnitEnum|string|null $navigationGroup = 'التشغيل';
+
+    protected static ?int $navigationSort = 42;
 
     public static function getModelLabel(): string
     {
@@ -153,7 +152,7 @@ final class AttendanceFilamentResource extends Resource
             ->color('success')
             ->requiresConfirmation()
             ->modalDescription(__('attendance::filament.actions.confirm_description'))
-            ->visible(fn (Attendance $record): bool => ! $record->isConfirmed()
+            ->visible(fn (Attendance $record): bool => !$record->isConfirmed()
                 && (bool) (auth()->user()?->can('confirm', $record) ?? false))
             ->action(function (Attendance $record): void {
                 app(ConfirmAttendanceAction::class)->execute(
@@ -169,8 +168,7 @@ final class AttendanceFilamentResource extends Resource
             ->label(__('attendance::filament.actions.override'))
             ->icon('heroicon-m-pencil-square')
             ->color('warning')
-            ->visible(fn (Attendance $record): bool =>
-                (bool) (auth()->user()?->can('override', $record) ?? false))
+            ->visible(fn (Attendance $record): bool => (bool) (auth()->user()?->can('override', $record) ?? false))
             ->form([
                 Select::make('status')
                     ->label(__('attendance::fields.new_status'))

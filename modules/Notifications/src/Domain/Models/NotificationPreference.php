@@ -52,6 +52,9 @@ final class NotificationPreference extends Model
 
     /**
      * التفضيلات المفعّلة فقط — قائمة من يُرسل إليه.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
      */
     public function scopeEnabled(Builder $query): Builder
     {
@@ -60,6 +63,9 @@ final class NotificationPreference extends Model
 
     /**
      * تفضيلات مستخدم بعينه.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
      */
     public function scopeForUser(Builder $query, string $userId): Builder
     {
@@ -68,12 +74,19 @@ final class NotificationPreference extends Model
 
     /**
      * تفضيلات فئة وقناة محددتين.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
      */
     public function scopeForCategoryChannel(Builder $query, string $category, string $channel): Builder
     {
         return $query->where('category', $category)->where('channel', $channel);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);

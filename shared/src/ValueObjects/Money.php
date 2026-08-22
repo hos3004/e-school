@@ -33,7 +33,7 @@ final readonly class Money implements JsonSerializable, Stringable
     {
         $value = (string) $major;
 
-        if (! preg_match('/^-?\d+(\.\d{1,2})?$/', $value)) {
+        if (!preg_match('/^-?\d+(\.\d{1,2})?$/', $value)) {
             throw new InvalidArgumentException("قيمة مالية غير صالحة: {$value}");
         }
 
@@ -116,7 +116,7 @@ final readonly class Money implements JsonSerializable, Stringable
     {
         if ($this->currency !== $other->currency) {
             throw new InvalidArgumentException(
-                "لا يمكن الجمع بين عملتين مختلفتين: {$this->currency} و {$other->currency}"
+                "لا يمكن الجمع بين عملتين مختلفتين: {$this->currency} و {$other->currency}",
             );
         }
     }

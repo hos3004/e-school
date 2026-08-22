@@ -23,6 +23,7 @@ use Shared\Concerns\HasUlid;
  * @property CarbonInterface $attempted_at
  * @property array<string, mixed>|null $provider_response
  * @property bool $succeeded
+ * @property bool|null $retryable
  * @property string|null $error
  */
 final class NotificationDeliveryAttempt extends Model
@@ -41,6 +42,7 @@ final class NotificationDeliveryAttempt extends Model
         'attempted_at',
         'provider_response',
         'succeeded',
+        'retryable',
         'error',
     ];
 
@@ -51,11 +53,15 @@ final class NotificationDeliveryAttempt extends Model
             'attempted_at' => 'immutable_datetime',
             'provider_response' => 'array',
             'succeeded' => 'bool',
+            'retryable' => 'bool',
         ];
     }
 
     /**
      * المحاولات الناجحة فقط.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
      */
     public function scopeSuccessful(Builder $query): Builder
     {
@@ -64,12 +70,19 @@ final class NotificationDeliveryAttempt extends Model
 
     /**
      * محاولات رسالة بعينها بترتيب زمني.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
      */
     public function scopeForOutbox(Builder $query, string $outboxId): Builder
     {
         return $query->where('outbox_id', $outboxId)->orderBy('attempt_number');
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);

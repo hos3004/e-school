@@ -6,9 +6,10 @@ namespace Modules\Staff\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Staff\Domain\Models\TeacherAvailability;
 
 /**
- * @property-read \Modules\Staff\Domain\Models\TeacherAvailability $resource
+ * @property-read TeacherAvailability $resource
  */
 final class TeacherAvailabilityResource extends JsonResource
 {

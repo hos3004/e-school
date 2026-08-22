@@ -16,7 +16,7 @@ final readonly class TerminateStaffProfile
 {
     public function execute(StaffProfile $profile, ?string $reason = null): StaffProfile
     {
-        if (! $profile->isActive()) {
+        if (!$profile->isActive()) {
             throw BusinessRuleViolation::make(
                 'staff.profile_already_terminated',
                 'staff::errors.profile_already_terminated',

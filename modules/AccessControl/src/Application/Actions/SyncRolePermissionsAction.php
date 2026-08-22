@@ -27,7 +27,7 @@ final readonly class SyncRolePermissionsAction
     ) {}
 
     /**
-     * @param  list<string>  $permissionNames
+     * @param list<string> $permissionNames
      */
     public function execute(
         string $roleId,
@@ -103,8 +103,8 @@ final readonly class SyncRolePermissionsAction
     }
 
     /**
-     * @param  list<string>  $permissionNames
-     * @param  Collection<int, Permission>  $permissions
+     * @param list<string> $permissionNames
+     * @param Collection<int, Permission> $permissions
      */
     private function guard(Role $role, array $permissionNames, Collection $permissions): void
     {

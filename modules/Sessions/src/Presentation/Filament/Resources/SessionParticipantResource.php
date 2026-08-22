@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Modules\Sessions\Presentation\Filament\Resources;
 
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
-use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Modules\Sessions\Domain\Models\SessionParticipant;
@@ -23,10 +23,9 @@ final class SessionParticipantResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('sessions::navigation.group');
-    }
+    protected static \UnitEnum|string|null $navigationGroup = 'التشغيل';
+
+    protected static ?int $navigationSort = 41;
 
     public static function getModelLabel(): string
     {

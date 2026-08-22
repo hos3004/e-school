@@ -6,7 +6,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Modules\Groups\Application\Actions\ActivateGroupAction;
-use Modules\Groups\Application\Actions\EnrollStudentAction;
 use Modules\Groups\Database\Factories\GroupMembershipFactory;
 use Modules\Groups\Domain\Events\GroupCreated;
 use Modules\Groups\Domain\Models\Group;
@@ -14,7 +13,7 @@ use Modules\Identity\Domain\Models\User;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Gate::define('groups.view_any', fn ($user) => true);
     Gate::define('groups.create', fn ($user) => true);
     Gate::define('groups.update_any', fn ($user) => true);
@@ -24,7 +23,8 @@ beforeEach(function () {
     Gate::define('groups.enroll_student', fn ($user) => true);
     Gate::define('groups.withdraw_student', fn ($user) => true);
 
-    $this->actor = User::factory()->create();});
+    $this->actor = User::factory()->create();
+});
 
 function groupPayload(array $overrides = []): array
 {
@@ -39,7 +39,7 @@ function groupPayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('creates a group through the API', function () {
+it('creates a group through the API', function (): void {
     Event::fake([GroupCreated::class]);
 
     $this->actingAs($this->actor)
@@ -50,14 +50,14 @@ it('creates a group through the API', function () {
     Event::assertDispatched(GroupCreated::class);
 });
 
-it('validates the create payload', function () {
+it('validates the create payload', function (): void {
     $this->actingAs($this->actor)
         ->postJson('/api/groups', groupPayload(['capacity' => 0, 'code' => 'bad code!']))
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['capacity', 'code']);
 });
 
-it('lists groups with active member counts', function () {
+it('lists groups with active member counts', function (): void {
     Group::factory()->count(2)->create();
 
     $this->actingAs($this->actor)
@@ -66,7 +66,7 @@ it('lists groups with active member counts', function () {
         ->assertJsonCount(2, 'data');
 });
 
-it('shows one group and hides archived ones', function () {
+it('shows one group and hides archived ones', function (): void {
     $group = Group::factory()->create();
 
     $this->actingAs($this->actor)
@@ -81,7 +81,7 @@ it('shows one group and hides archived ones', function () {
         ->assertNotFound();
 });
 
-it('updates a group through the API without touching status', function () {
+it('updates a group through the API without touching status', function (): void {
     $group = Group::factory()->create();
 
     $this->actingAs($this->actor)
@@ -91,7 +91,7 @@ it('updates a group through the API without touching status', function () {
         ->assertJsonPath('data.status', 'planning');
 });
 
-it('archives with a reason through the API', function () {
+it('archives with a reason through the API', function (): void {
     $group = Group::factory()->create();
 
     $this->actingAs($this->actor)
@@ -101,7 +101,7 @@ it('archives with a reason through the API', function () {
     expect($group->refresh()->trashed())->toBeTrue();
 });
 
-it('rejects archiving without a reason', function () {
+it('rejects archiving without a reason', function (): void {
     $group = Group::factory()->create();
 
     $this->actingAs($this->actor)
@@ -110,7 +110,7 @@ it('rejects archiving without a reason', function () {
         ->assertJsonValidationErrors(['reason']);
 });
 
-it('activates then completes a group through dedicated endpoints', function () {
+it('activates then completes a group through dedicated endpoints', function (): void {
     $group = Group::factory()->create();
 
     $this->actingAs($this->actor)
@@ -124,7 +124,7 @@ it('activates then completes a group through dedicated endpoints', function () {
         ->assertJsonPath('data.status', 'completed');
 });
 
-it('enrolls and withdraws students through the API', function () {
+it('enrolls and withdraws students through the API', function (): void {
     $group = app(ActivateGroupAction::class)->execute(Group::factory()->create());
     $studentId = GroupMembershipFactory::ensureStudentProfile();
 

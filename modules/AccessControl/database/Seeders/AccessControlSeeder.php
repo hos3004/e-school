@@ -238,7 +238,7 @@ final class AccessControlSeeder extends Seeder
     }
 
     /**
-     * @param  array<string, string>  $permissionIds
+     * @param array<string, string> $permissionIds
      */
     private function seedRoles(string $organizationId, array $permissionIds): void
     {
@@ -277,7 +277,7 @@ final class AccessControlSeeder extends Seeder
 
             $rows = [];
             foreach ($names as $name) {
-                if (! isset($permissionIds[$name])) {
+                if (!isset($permissionIds[$name])) {
                     $this->command?->warn("صلاحية غير معرّفة في المصفوفة: {$name}");
 
                     continue;

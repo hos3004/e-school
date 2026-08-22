@@ -22,7 +22,7 @@ final readonly class CreateCourseAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  بيانات الكورس بعد تحقّق FormRequest
+     * @param array<string, mixed> $data بيانات الكورس بعد تحقّق FormRequest
      */
     public function execute(array $data): Course
     {
@@ -57,7 +57,7 @@ final readonly class CreateCourseAction
     {
         $exists = Level::query()->whereKey($levelId)->exists();
 
-        if (! $exists) {
+        if (!$exists) {
             throw BusinessRuleViolation::make(
                 'academics.level_not_found',
                 'academics::errors.level_not_found',
@@ -83,7 +83,7 @@ final readonly class CreateCourseAction
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     private function assertTotalSessionsValid(array $data): void
     {

@@ -30,7 +30,7 @@ return new class extends Migration
 
             $table->index(
                 ['payroll_period_id', 'staff_profile_id'],
-                'payroll_entries_period_staff_idx'
+                'payroll_entries_period_staff_idx',
             );
 
             $table->foreign('organization_id')
@@ -44,7 +44,7 @@ return new class extends Migration
         DB::statement(
             'ALTER TABLE payroll_entries '
             .'ADD CONSTRAINT payroll_entries_session_staff_type_unique '
-            .'UNIQUE (session_id, staff_profile_id, entry_type)'
+            .'UNIQUE (session_id, staff_profile_id, entry_type)',
         );
     }
 

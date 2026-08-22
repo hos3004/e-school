@@ -50,7 +50,7 @@ return new class extends Migration
 
         DB::statement(
             'CREATE INDEX messages_conversation_created_at_index '
-            .'ON messages (conversation_id, created_at DESC)'
+            .'ON messages (conversation_id, created_at DESC)',
         );
     }
 

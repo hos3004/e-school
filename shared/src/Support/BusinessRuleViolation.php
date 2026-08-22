@@ -14,7 +14,7 @@ use RuntimeException;
 class BusinessRuleViolation extends RuntimeException
 {
     /**
-     * @param  array<string, mixed>  $context
+     * @param array<string, mixed> $context
      */
     public function __construct(
         public readonly string $rule,
@@ -25,7 +25,7 @@ class BusinessRuleViolation extends RuntimeException
     }
 
     /**
-     * @param  array<string, mixed>  $replace
+     * @param array<string, mixed> $replace
      */
     public static function make(string $rule, string $translationKey, array $replace = []): self
     {

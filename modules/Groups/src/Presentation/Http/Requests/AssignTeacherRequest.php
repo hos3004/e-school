@@ -7,7 +7,6 @@ namespace Modules\Groups\Presentation\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Groups\Domain\Enums\GroupTeacherRole;
-use Modules\Groups\Domain\Models\Group;
 
 /**
  * طلب إسناد معلم إلى مجموعة.

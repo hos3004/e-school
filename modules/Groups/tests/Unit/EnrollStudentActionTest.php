@@ -11,14 +11,15 @@ use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Groups\Domain\Events\StudentEnrolledInGroup;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupMembership;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->action = app(EnrollStudentAction::class);
 });
 
-it('enrolls a student into an active group and publishes the event', function () {
+it('enrolls a student into an active group and publishes the event', function (): void {
     Event::fake([StudentEnrolledInGroup::class]);
 
     $group = Group::factory()->active()->create(['capacity' => 10]);
@@ -34,31 +35,31 @@ it('enrolls a student into an active group and publishes the event', function ()
     Event::assertDispatched(
         StudentEnrolledInGroup::class,
         fn (StudentEnrolledInGroup $event): bool => $event->studentProfileId === $studentId
-            && $event->groupId === (string) $group->getKey()
+            && $event->groupId === (string) $group->getKey(),
     );
 });
 
-it('rejects enrolling into a planning group', function () {
+it('rejects enrolling into a planning group', function (): void {
     $group = Group::factory()->create();
 
     $this->action->execute($group, GroupMembershipFactory::ensureStudentProfile());
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects enrolling into a completed group', function () {
+it('rejects enrolling into a completed group', function (): void {
     $group = Group::factory()->completed()->create();
 
     $this->action->execute($group, GroupMembershipFactory::ensureStudentProfile());
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects enrolling beyond capacity', function () {
+it('rejects enrolling beyond capacity', function (): void {
     $group = Group::factory()->active()->create(['capacity' => 2]);
 
     $this->action->execute($group, GroupMembershipFactory::ensureStudentProfile());
     $this->action->execute($group, GroupMembershipFactory::ensureStudentProfile());
     $this->action->execute($group, GroupMembershipFactory::ensureStudentProfile());
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('counts only active memberships against capacity', function () {
+it('counts only active memberships against capacity', function (): void {
     $group = Group::factory()->active()->create(['capacity' => 1]);
 
     $first = $this->action->execute($group, GroupMembershipFactory::ensureStudentProfile());
@@ -69,15 +70,15 @@ it('counts only active memberships against capacity', function () {
     expect($second->status)->toBe(MembershipStatus::Active);
 });
 
-it('rejects a duplicate active enrollment for the same student', function () {
+it('rejects a duplicate active enrollment for the same student', function (): void {
     $group = Group::factory()->active()->create();
     $studentId = GroupMembershipFactory::ensureStudentProfile();
 
     $this->action->execute($group, $studentId);
     $this->action->execute($group, $studentId);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('allows re-enrollment after leaving', function () {
+it('allows re-enrollment after leaving', function (): void {
     $group = Group::factory()->active()->create();
     $studentId = GroupMembershipFactory::ensureStudentProfile();
 
@@ -90,14 +91,14 @@ it('allows re-enrollment after leaving', function () {
         ->and(GroupMembership::query()->forStudent($studentId)->count())->toBe(2);
 });
 
-it('requires a reason to withdraw and transitions status via canTransitionTo', function () {
+it('requires a reason to withdraw and transitions status via canTransitionTo', function (): void {
     $group = Group::factory()->active()->create();
     $membership = $this->action->execute($group, GroupMembershipFactory::ensureStudentProfile());
 
     app(WithdrawStudentAction::class)->execute($membership, '  ');
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('withdraws with a reason without deleting the record', function () {
+it('withdraws with a reason without deleting the record', function (): void {
     $group = Group::factory()->active()->create();
     $membership = $this->action->execute($group, GroupMembershipFactory::ensureStudentProfile());
 
@@ -108,10 +109,10 @@ it('withdraws with a reason without deleting the record', function () {
         ->and(GroupMembership::query()->find($membership->getKey()))->not->toBeNull();
 });
 
-it('rejects withdrawing an already left membership', function () {
+it('rejects withdrawing an already left membership', function (): void {
     $group = Group::factory()->active()->create();
     $membership = $this->action->execute($group, GroupMembershipFactory::ensureStudentProfile());
 
     app(WithdrawStudentAction::class)->execute($membership, 'أول مرة');
     app(WithdrawStudentAction::class)->execute($membership->refresh(), 'ثانية');
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

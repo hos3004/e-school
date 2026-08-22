@@ -7,7 +7,6 @@ namespace Modules\Sessions\Application\Actions;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
-use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\SessionAttendanceRecorded;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\SessionParticipant;
@@ -24,7 +23,7 @@ final readonly class RecordParticipantAttendanceAction
 
     public function execute(Session $session, SessionParticipant $participant, string $type, ?string $actorId = null): SessionParticipant
     {
-        if (! in_array($type, ['join', 'leave'], true)) {
+        if (!in_array($type, ['join', 'leave'], true)) {
             throw BusinessRuleViolation::make(
                 'sessions.attendance_type_invalid',
                 'sessions::errors.attendance_type_invalid',
@@ -36,7 +35,7 @@ final readonly class RecordParticipantAttendanceAction
             $now = CarbonImmutable::now('UTC');
 
             if ($type === 'join') {
-                if (! $session->status->allowsJoining()) {
+                if (!$session->status->allowsJoining()) {
                     throw BusinessRuleViolation::make(
                         'sessions.not_joinable',
                         'sessions::errors.not_joinable',

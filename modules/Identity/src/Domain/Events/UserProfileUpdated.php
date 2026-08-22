@@ -12,7 +12,7 @@ use Shared\Domain\DomainEvent;
 final class UserProfileUpdated extends DomainEvent
 {
     /**
-     * @param  array<string, mixed>  $changed  الحقول المتغيرة: القيمة القديمة ← الجديدة
+     * @param array<string, mixed> $changed الحقول المتغيرة: القيمة القديمة ← الجديدة
      */
     public function __construct(
         public readonly string $userId,

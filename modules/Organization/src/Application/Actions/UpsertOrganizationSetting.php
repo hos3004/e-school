@@ -21,7 +21,7 @@ use Shared\Support\BusinessRuleViolation;
 final readonly class UpsertOrganizationSetting
 {
     /**
-     * @param  string|int|float|bool|array<string, mixed>|null  $value
+     * @param string|int|float|bool|array<string, mixed>|null $value
      */
     public function execute(Organization $organization, string $key, mixed $value): OrganizationSetting
     {

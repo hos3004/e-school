@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { ChangeEvent } from 'react';
 
 import Card, {
@@ -70,7 +70,7 @@ export default function GuardianDashboard({
     const t = useI18n();
     const locale = useLocale();
     const page = usePage();
-    const retry = () => router.reload({ preserveScroll: true });
+    const retry = () => router.reload();
 
     const changeChild = (event: ChangeEvent<HTMLSelectElement>) => {
         const childId = event.target.value;
@@ -133,6 +133,21 @@ export default function GuardianDashboard({
                                     : formatPercent(attendanceRate, locale)}
                             </CardTitle>
                         </CardHeader>
+                        <CardContent className="mt-3">
+                            <Link
+                                className={[
+                                    'inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-[var(--brand)] hover:bg-[var(--surface-muted)]',
+                                    focusRing,
+                                ].join(' ')}
+                                href={
+                                    '/guardian/children/' +
+                                    selectedChild.id +
+                                    '/attendance'
+                                }
+                            >
+                                {t('navigation.attendance')}
+                            </Link>
+                        </CardContent>
                     </Card>
 
                     <Card as="section" variant="outlined">
@@ -186,6 +201,21 @@ export default function GuardianDashboard({
                                 />
                             </CardContent>
                         ) : null}
+                        <CardContent className="mt-3">
+                            <Link
+                                className={[
+                                    'inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-[var(--brand)] hover:bg-[var(--surface-muted)]',
+                                    focusRing,
+                                ].join(' ')}
+                                href={
+                                    '/guardian/children/' +
+                                    selectedChild.id +
+                                    '/reports'
+                                }
+                            >
+                                {t('navigation.reports')}
+                            </Link>
+                        </CardContent>
                     </Card>
 
                     <Card as="section" variant="outlined">

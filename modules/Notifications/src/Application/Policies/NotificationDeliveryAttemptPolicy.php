@@ -11,12 +11,12 @@ use Modules\Notifications\Domain\Models\NotificationDeliveryAttempt;
  */
 final class NotificationDeliveryAttemptPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
         return $user->can('notifications.attempt.view_any');
     }
 
-    public function view($user, NotificationDeliveryAttempt $attempt): bool
+    public function view(mixed $user, NotificationDeliveryAttempt $attempt): bool
     {
         return $user->can('notifications.attempt.view')
             && $attempt->organization_id === $user->organization_id;

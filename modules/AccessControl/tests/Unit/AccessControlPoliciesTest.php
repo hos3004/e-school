@@ -29,7 +29,7 @@ it('locks system roles from update and delete at policy level', function (): voi
     Gate::define('accesscontrol.roles.delete', fn (): bool => true);
     Gate::define('accesscontrol.roles.sync_permissions', fn (): bool => true);
 
-    $policy = new RolePolicy();
+    $policy = new RolePolicy;
 
     expect($policy->update(acPolicyUser(), acSystemRole()))->toBeFalse()
         ->and($policy->delete(acPolicyUser(), acSystemRole()))->toBeFalse()
@@ -41,7 +41,7 @@ it('allows update, delete and sync on non-system roles for permitted users', fun
     Gate::define('accesscontrol.roles.delete', fn (): bool => true);
     Gate::define('accesscontrol.roles.sync_permissions', fn (): bool => true);
 
-    $policy = new RolePolicy();
+    $policy = new RolePolicy;
 
     expect($policy->update(acPolicyUser(), acPlainRole()))->toBeTrue()
         ->and($policy->delete(acPolicyUser(), acPlainRole()))->toBeTrue()
@@ -49,7 +49,7 @@ it('allows update, delete and sync on non-system roles for permitted users', fun
 });
 
 it('denies everything when the user lacks the underlying ability', function (): void {
-    $policy = new RolePolicy();
+    $policy = new RolePolicy;
     $user = acPolicyUser();
 
     expect($policy->viewAny($user))->toBeFalse()
@@ -64,7 +64,7 @@ it('gates permission management behind permission abilities only', function (): 
     Gate::define('accesscontrol.permissions.create', fn (): bool => false);
     Gate::define('accesscontrol.permissions.grant_direct', fn (): bool => true);
 
-    $policy = new PermissionPolicy();
+    $policy = new PermissionPolicy;
     $permission = Permission::make(['name' => 'students.view_any']);
 
     expect($policy->viewAny(acPolicyUser()))->toBeTrue()

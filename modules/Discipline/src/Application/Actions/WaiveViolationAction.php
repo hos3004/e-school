@@ -25,7 +25,7 @@ final readonly class WaiveViolationAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  reason إلزامي — قاعدة التدقيق
+     * @param array<string, mixed> $data reason إلزامي — قاعدة التدقيق
      */
     public function execute(ViolationEvent $violation, array $data): ViolationEvent
     {

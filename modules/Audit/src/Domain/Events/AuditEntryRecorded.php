@@ -18,8 +18,8 @@ use Shared\Domain\DomainEvent;
 final class AuditEntryRecorded extends DomainEvent
 {
     /**
-     * @param  array<string, mixed>|null  $oldValues
-     * @param  array<string, mixed>|null  $newValues
+     * @param array<string, mixed>|null $oldValues
+     * @param array<string, mixed>|null $newValues
      */
     public function __construct(
         public readonly string $auditLogId,

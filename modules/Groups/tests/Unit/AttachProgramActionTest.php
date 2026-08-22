@@ -10,10 +10,11 @@ use Modules\Groups\Database\Factories\GroupFactory;
 use Modules\Groups\Domain\Events\ProgramAttachedToGroup;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupProgram;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->action = app(AttachProgramAction::class);
     $this->group = Group::factory()->create();
 });
@@ -23,7 +24,7 @@ function programId(): string
     return GroupFactory::ensureProgram();
 }
 
-it('attaches a program to a group and publishes the event', function () {
+it('attaches a program to a group and publishes the event', function (): void {
     Event::fake([ProgramAttachedToGroup::class]);
 
     $programId = programId();
@@ -36,18 +37,18 @@ it('attaches a program to a group and publishes the event', function () {
     Event::assertDispatched(
         ProgramAttachedToGroup::class,
         fn (ProgramAttachedToGroup $event): bool => $event->groupId === (string) $this->group->getKey()
-            && $event->programId === $programId
+            && $event->programId === $programId,
     );
 });
 
-it('rejects attaching the same program twice', function () {
+it('rejects attaching the same program twice', function (): void {
     $programId = programId();
 
     $this->action->execute($this->group, $programId);
     $this->action->execute($this->group, $programId);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('detaches without deleting group data', function () {
+it('detaches without deleting group data', function (): void {
     $programId = programId();
 
     $link = $this->action->execute($this->group, $programId);

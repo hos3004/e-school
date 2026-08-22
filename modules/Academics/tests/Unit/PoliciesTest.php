@@ -9,7 +9,7 @@ use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
 
-it('grants program access through declared abilities only', function () {
+it('grants program access through declared abilities only', function (): void {
     $allowed = new class
     {
         public function can(string $ability): bool
@@ -41,7 +41,7 @@ it('grants program access through declared abilities only', function () {
         ->and($policy->delete($denied, $program))->toBeFalse();
 });
 
-it('gates level reorder behind its own ability', function () {
+it('gates level reorder behind its own ability', function (): void {
     $allowed = new class
     {
         public function can(string $ability): bool
@@ -67,7 +67,7 @@ it('gates level reorder behind its own ability', function () {
         ->and($policy->update($allowed, $level))->toBeFalse();
 });
 
-it('separates course archive from update abilities', function () {
+it('separates course archive from update abilities', function (): void {
     $archiverOnly = new class
     {
         public function can(string $ability): bool

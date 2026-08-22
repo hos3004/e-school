@@ -33,7 +33,7 @@ final readonly class SendMessageAction
             ->where('user_id', $senderUserId)
             ->exists();
 
-        if (! $isParticipant) {
+        if (!$isParticipant) {
             throw BusinessRuleViolation::make(
                 'messaging.not_participant',
                 'messaging::errors.not_participant',
@@ -52,8 +52,8 @@ final readonly class SendMessageAction
                 'moderated_by' => null,
                 'moderated_at' => null,
                 'edited_at' => null,
+                'created_at' => now(),
             ]);
-            $message->created_at = now();
             $message->save();
 
             $conversation->forceFill(['last_message_at' => now()])->save();

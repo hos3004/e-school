@@ -6,11 +6,12 @@ namespace Modules\Academics\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Academics\Domain\Models\Level;
 
 /**
  * تمثيل مستوى في الـ API — قراءة فقط.
  *
- * @property-read \Modules\Academics\Domain\Models\Level $resource
+ * @property-read Level $resource
  */
 final class LevelResource extends JsonResource
 {

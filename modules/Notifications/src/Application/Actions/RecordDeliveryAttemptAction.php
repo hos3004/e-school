@@ -17,7 +17,7 @@ use Shared\Support\Transaction;
 /**
  * تسجيل محاولة تسليم — يستدعيه المرسِل (worker) بعد كل استدعاء للمزوّد.
  *
- * النجاح يقفل الرسالة بحالة sent. الفشل يعيدها pending إن لم يُستنفد
+ * النجاح يقفل الرسالة بحالة sent. الفشل يعيدها queued إن لم يُستنفد
  * الحد الأقصى للمحاولات من config('notifications.dispatch.max_attempts')،
  * وإلا فتُعلَم failed نهائيًا. لا رقم سياسة داخل هذا الكود.
  */
@@ -28,14 +28,18 @@ final readonly class RecordDeliveryAttemptAction
         private Dispatcher $events,
     ) {}
 
+    /**
+     * @param array<string, mixed>|null $providerResponse
+     */
     public function execute(
         NotificationOutbox $outbox,
         bool $succeeded,
         ?string $error = null,
         ?array $providerResponse = null,
         ?string $actorId = null,
+        bool $retryable = true,
     ): NotificationDeliveryAttempt {
-        if (! in_array($outbox->status, [OutboxStatus::Pending, OutboxStatus::Sending, OutboxStatus::Failed], true)) {
+        if ($outbox->status !== OutboxStatus::Sending) {
             throw BusinessRuleViolation::make(
                 'notifications.attempt_not_recordable',
                 'notifications::errors.attempt_not_recordable',
@@ -43,43 +47,70 @@ final readonly class RecordDeliveryAttemptAction
             );
         }
 
-        $maxAttempts = max(1, (int) config('notifications.dispatch.max_attempts', 3));
+        $maxRetries = max(0, (int) config('notifications.delivery.max_retries'));
 
         [$attempt, $outbox] = $this->transaction->run(function () use (
             $outbox,
             $succeeded,
             $error,
             $providerResponse,
-            $maxAttempts,
+            $maxRetries,
+            $retryable,
         ): array {
-            $nextNumber = $outbox->attempts + 1;
+            /** @var NotificationOutbox $current */
+            $current = NotificationOutbox::query()->lockForUpdate()->findOrFail($outbox->getKey());
+
+            if ($current->status !== OutboxStatus::Sending) {
+                throw BusinessRuleViolation::make(
+                    'notifications.attempt_not_recordable',
+                    'notifications::errors.attempt_not_recordable',
+                    ['status' => $current->status->label()],
+                );
+            }
+
+            $nextNumber = $current->attempts + 1;
+            $attemptNumber = (int) NotificationDeliveryAttempt::query()
+                ->where('outbox_id', $current->id)
+                ->max('attempt_number') + 1;
 
             $attempt = NotificationDeliveryAttempt::query()->create([
-                'organization_id' => $outbox->organization_id,
-                'outbox_id' => $outbox->id,
-                'attempt_number' => $nextNumber,
+                'organization_id' => $current->organization_id,
+                'outbox_id' => $current->id,
+                'attempt_number' => $attemptNumber,
                 'attempted_at' => CarbonImmutable::now('UTC'),
                 'provider_response' => $providerResponse,
                 'succeeded' => $succeeded,
+                'retryable' => $succeeded ? null : $retryable,
                 'error' => $error,
             ]);
 
+            $current->forceFill([
+                'attempts' => $nextNumber,
+                'last_error' => $succeeded ? null : $error,
+                'last_error_retryable' => $succeeded ? null : $retryable,
+            ])->save();
+
             if ($succeeded) {
-                $this->transition($outbox, OutboxStatus::Sent);
-                $outbox->forceFill(['sent_at' => CarbonImmutable::now('UTC')])->save();
+                $this->transition($current, OutboxStatus::Sent);
+                $current->forceFill(['sent_at' => CarbonImmutable::now('UTC')])->save();
 
-                return [$attempt, $outbox];
+                return [$attempt, $current];
             }
 
-            if ($nextNumber >= $maxAttempts) {
-                $this->transition($outbox, OutboxStatus::Failed);
+            if (!$retryable || $nextNumber > $maxRetries) {
+                $this->transition($current, OutboxStatus::Failed);
 
-                return [$attempt, $outbox];
+                return [$attempt, $current];
             }
 
-            $this->transition($outbox, OutboxStatus::Pending);
+            $current->forceFill([
+                'scheduled_for' => CarbonImmutable::now('UTC')->addSeconds(
+                    $this->retryDelaySeconds($nextNumber),
+                ),
+            ])->save();
+            $this->transition($current, OutboxStatus::Queued);
 
-            return [$attempt, $outbox];
+            return [$attempt, $current];
         });
 
         if ($succeeded) {
@@ -88,7 +119,7 @@ final readonly class RecordDeliveryAttemptAction
                 organizationId: $outbox->organization_id,
                 userId: $outbox->user_id,
                 category: $outbox->category,
-                channel: $outbox->channel,
+                channel: $this->channelValue($outbox),
                 attempts: $outbox->attempts,
                 sentAt: CarbonImmutable::instance($outbox->sent_at),
                 actorId: $actorId,
@@ -100,7 +131,7 @@ final readonly class RecordDeliveryAttemptAction
                 organizationId: $outbox->organization_id,
                 userId: $outbox->user_id,
                 category: $outbox->category,
-                channel: $outbox->channel,
+                channel: $this->channelValue($outbox),
                 attempts: $outbox->attempts,
                 error: $error,
                 actorId: $actorId,
@@ -115,7 +146,7 @@ final readonly class RecordDeliveryAttemptAction
     {
         $current = $outbox->status;
 
-        if (! $current->canTransitionTo($target)) {
+        if (!$current->canTransitionTo($target)) {
             throw BusinessRuleViolation::make(
                 'notifications.invalid_status_transition',
                 'notifications::errors.invalid_status_transition',
@@ -124,5 +155,20 @@ final readonly class RecordDeliveryAttemptAction
         }
 
         $outbox->forceFill(['status' => $target])->save();
+    }
+
+    private function channelValue(NotificationOutbox $outbox): string
+    {
+        return $outbox->channel instanceof \BackedEnum
+            ? (string) $outbox->channel->value
+            : (string) $outbox->channel;
+    }
+
+    private function retryDelaySeconds(int $attemptNumber): int
+    {
+        $backoff = array_values((array) config('notifications.delivery.backoff_seconds', []));
+        $index = max(0, min($attemptNumber - 1, count($backoff) - 1));
+
+        return max(0, (int) ($backoff[$index] ?? 0));
     }
 }

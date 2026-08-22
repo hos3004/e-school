@@ -53,7 +53,7 @@ return new class extends Migration
         DB::statement(
             'ALTER TABLE payroll_adjustments '
             .'ADD CONSTRAINT payroll_adjustments_approval_separation_check '
-            .'CHECK (approved_by IS NULL OR approved_by <> proposed_by)'
+            .'CHECK (approved_by IS NULL OR approved_by <> proposed_by)',
         );
     }
 

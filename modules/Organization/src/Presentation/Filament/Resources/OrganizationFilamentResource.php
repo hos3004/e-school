@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Organization\Presentation\Filament\Resources;
 
-use Filament\Resources\Resource;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -21,12 +22,9 @@ final class OrganizationFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
 
-    protected static \UnitEnum|string|null $navigationGroup = null;
+    protected static \UnitEnum|string|null $navigationGroup = 'النظام';
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('organization::filament.navigation_group');
-    }
+    protected static ?int $navigationSort = 102;
 
     public static function getModelLabel(): string
     {
@@ -44,7 +42,7 @@ final class OrganizationFilamentResource extends Resource
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     public static function form(Schema $schema): Schema
     {

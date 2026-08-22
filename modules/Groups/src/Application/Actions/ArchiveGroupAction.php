@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Application\Actions;
 
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Groups\Domain\Events\GroupArchived;
 use Modules\Groups\Domain\Models\Group;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * أرشفة مجموعة: تعليق وصولها دون حذف بياناتها (SoftDeletes) مع تسجيل السبب.

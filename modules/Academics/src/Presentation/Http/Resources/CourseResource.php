@@ -6,11 +6,12 @@ namespace Modules\Academics\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Academics\Domain\Models\Course;
 
 /**
  * تمثيل كورس في الـ API — قراءة فقط.
  *
- * @property-read \Modules\Academics\Domain\Models\Course $resource
+ * @property-read Course $resource
  */
 final class CourseResource extends JsonResource
 {

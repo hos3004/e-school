@@ -1,6 +1,8 @@
 <?php
 
 declare(strict_types=1);
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /*
 | دوال مساعدة عامة للاختبارات.
@@ -16,8 +18,8 @@ function disciplineOrg(): string
     static $id = null;
 
     if ($id === null) {
-        $id = (string) \Illuminate\Support\Str::ulid();
-        \Illuminate\Support\Facades\DB::table('organizations')->insert([
+        $id = (string) Str::ulid();
+        DB::table('organizations')->insert([
             'id' => $id,
             'name' => json_encode(['ar' => 'مؤسسة الاختبار', 'en' => 'Test Org'], JSON_UNESCAPED_UNICODE),
             'slug' => 'test-'.strtolower(substr($id, -8)),
@@ -28,6 +30,3 @@ function disciplineOrg(): string
 
     return $id;
 }
-
-
-

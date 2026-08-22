@@ -23,7 +23,7 @@ final readonly class CancelNotificationAction
 
     public function execute(NotificationOutbox $outbox, string $reason, ?string $actorId = null): NotificationOutbox
     {
-        if ($outbox->status !== OutboxStatus::Pending) {
+        if (!$outbox->status->canTransitionTo(OutboxStatus::Cancelled)) {
             throw BusinessRuleViolation::make(
                 'notifications.not_cancellable',
                 'notifications::errors.not_cancellable',
@@ -40,7 +40,9 @@ final readonly class CancelNotificationAction
             organizationId: $outbox->organization_id,
             userId: $outbox->user_id,
             category: $outbox->category,
-            channel: $outbox->channel,
+            channel: $outbox->channel instanceof \BackedEnum
+                ? (string) $outbox->channel->value
+                : (string) $outbox->channel,
             reason: $reason,
             actorId: $actorId,
             correlationId: $outbox->correlation_id,

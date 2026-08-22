@@ -9,9 +9,7 @@ use Modules\Organization\Database\Factories\HolidayFactory;
 use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Enums\HolidaySource;
 use Modules\Organization\Domain\Events\AcademicCalendarActivated;
-use Modules\Organization\Domain\Models\AcademicCalendar;
 use Modules\Organization\Domain\Models\Holiday;
-use Modules\Organization\Domain\Models\Organization;
 
 it('activates a calendar and deactivates the previously active one', function (): void {
     Event::fake([AcademicCalendarActivated::class]);

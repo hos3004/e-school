@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Application\Actions;
 
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Groups\Domain\Events\ProgramDetachedFromGroup;
+use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupProgram;
-use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * فك ربط برنامج عن مجموعة: إزالة رابط الجدول الوسيط فقط،
@@ -26,7 +26,7 @@ final readonly class DetachProgramAction
         $groupId = (string) $link->group_id;
         $programId = (string) $link->program_id;
 
-        /** @var \Modules\Groups\Domain\Models\Group $group */
+        /** @var Group $group */
         $group = $link->group()->firstOrFail();
 
         $this->transaction->run(function () use ($link): void {

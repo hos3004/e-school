@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -27,7 +26,7 @@ return new class extends Migration
             $table->index('organization_id', 'conversations_organization_id_index');
             $table->index(
                 ['related_type', 'related_id'],
-                'conversations_related_type_related_id_index'
+                'conversations_related_type_related_id_index',
             );
             $table->index('created_by', 'conversations_created_by_index');
             $table->index('last_message_at', 'conversations_last_message_at_index');

@@ -45,7 +45,7 @@ it('stays silent when the email does not exist', function (): void {
 it('resets the password with a valid token and dispatches completion', function (): void {
     Event::fake([PasswordResetCompleted::class]);
 
-    /** @var \Modules\Identity\Domain\Models\User $user */
+    /** @var Modules\Identity\Domain\Models\User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'email' => 'flow@eschool.test',
     ]);
@@ -62,12 +62,11 @@ it('resets the password with a valid token and dispatches completion', function 
         ->and(Hash::check('N3w-Secret!', (string) $updated->fresh()->password))->toBeTrue()
         ->and(PasswordResetToken::query()->find('flow@eschool.test'))->toBeNull();
 
-    Event::assertDispatched(PasswordResetCompleted::class, fn (PasswordResetCompleted $e): bool =>
-        $e->userId === $user->id);
+    Event::assertDispatched(PasswordResetCompleted::class, fn (PasswordResetCompleted $e): bool => $e->userId === $user->id);
 });
 
 it('rejects an invalid token without touching anything', function (): void {
-    /** @var \Modules\Identity\Domain\Models\User $user */
+    /** @var Modules\Identity\Domain\Models\User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'email' => 'badtoken@eschool.test',
     ]);

@@ -6,10 +6,10 @@ namespace Modules\Staff\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Shared\ValueObjects\Money;
+use Modules\Staff\Domain\Models\TeacherContract;
 
 /**
- * @property-read \Modules\Staff\Domain\Models\TeacherContract $resource
+ * @property-read TeacherContract $resource
  */
 final class TeacherContractResource extends JsonResource
 {

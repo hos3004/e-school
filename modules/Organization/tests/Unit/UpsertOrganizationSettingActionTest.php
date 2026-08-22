@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Event;
 use Modules\Organization\Application\Actions\UpsertOrganizationSetting;
 use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Events\OrganizationSettingUpdated;
-use Modules\Organization\Domain\Models\Organization;
 use Modules\Organization\Domain\Models\OrganizationSetting;
 use Shared\Support\BusinessRuleViolation;
 

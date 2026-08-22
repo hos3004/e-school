@@ -34,7 +34,7 @@ return new class extends Migration
         });
 
         DB::statement(
-            'CREATE INDEX student_profiles_name_search_idx ON users USING gin (to_tsvector(\'simple\', (name)::text))'
+            'CREATE INDEX student_profiles_name_search_idx ON users USING gin (to_tsvector(\'simple\', (name)::text))',
         );
     }
 

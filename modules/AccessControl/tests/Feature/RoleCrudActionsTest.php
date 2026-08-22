@@ -26,8 +26,7 @@ it('creates a role and dispatches RoleCreated', function (): void {
         ->and($role->is_system)->toBeFalse()
         ->and(strlen((string) $role->getKey()))->toBe(26);
 
-    Event::assertDispatched(RoleCreated::class, fn (RoleCreated $e): bool =>
-        $e->roleId === (string) $role->getKey() && $e->isSystem === false);
+    Event::assertDispatched(RoleCreated::class, fn (RoleCreated $e): bool => $e->roleId === (string) $role->getKey() && $e->isSystem === false);
 });
 
 it('rejects a duplicate role name within the same organization and guard', function (): void {

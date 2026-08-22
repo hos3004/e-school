@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Audit\Tests\Unit;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Modules\Audit\Domain\Enums\AuditActorType;
 use Modules\Audit\Domain\Models\AuditLog;

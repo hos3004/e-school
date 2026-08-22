@@ -37,7 +37,10 @@ use Shared\Concerns\HasUlid;
  * @property OutboxStatus $status
  * @property int $attempts
  * @property string|null $last_error
+ * @property bool|null $last_error_retryable
  * @property CarbonInterface|null $sent_at
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
  */
 final class NotificationOutbox extends Model
 {
@@ -63,6 +66,7 @@ final class NotificationOutbox extends Model
         'status',
         'attempts',
         'last_error',
+        'last_error_retryable',
         'sent_at',
     ];
 
@@ -74,6 +78,7 @@ final class NotificationOutbox extends Model
             'payload' => 'array',
             'scheduled_for' => 'immutable_datetime',
             'attempts' => 'int',
+            'last_error_retryable' => 'bool',
             'sent_at' => 'immutable_datetime',
             'status' => OutboxStatus::class,
         ];
@@ -81,30 +86,43 @@ final class NotificationOutbox extends Model
 
     /**
      * رسائل بصدد الانتظار في مؤسسة معينة.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
      */
-    public function scopePending(Builder $query): Builder
+    public function scopeQueued(Builder $query): Builder
     {
-        return $query->where('status', OutboxStatus::Pending);
+        return $query->where('status', OutboxStatus::Queued);
     }
 
     /**
      * رسانات حان موعد إرسالها الآن — استعلام المجدول.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
      */
     public function scopeDue(Builder $query): Builder
     {
         return $query
-            ->where('status', OutboxStatus::Pending)
+            ->where('status', OutboxStatus::Queued)
             ->where('scheduled_for', '<=', now());
     }
 
     /**
      * رسائل مستخدم بعينه — قائمة "إشعاراتي".
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
      */
     public function scopeForUser(Builder $query, string $userId): Builder
     {
         return $query->where('user_id', $userId);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);

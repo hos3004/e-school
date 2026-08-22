@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Academics\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Support\Facades\DB;
 use Modules\Academics\Domain\Events\LevelsReordered;
 use Modules\Academics\Domain\Models\Level;
 use Shared\Support\BusinessRuleViolation;
@@ -24,8 +23,8 @@ final readonly class ReorderLevelsAction
     ) {}
 
     /**
-     * @param  string  $programId  معرّف البرنامج
-     * @param  list<string>  $levelIds  معرّفات المستويات بالترتيب الجديد
+     * @param string $programId معرّف البرنامج
+     * @param list<string> $levelIds معرّفات المستويات بالترتيب الجديد
      */
     public function execute(string $programId, array $levelIds): void
     {
@@ -50,7 +49,7 @@ final readonly class ReorderLevelsAction
     }
 
     /**
-     * @param  list<string>  $levelIds
+     * @param list<string> $levelIds
      */
     private function assertAllBelongToProgram(string $programId, array $levelIds): void
     {

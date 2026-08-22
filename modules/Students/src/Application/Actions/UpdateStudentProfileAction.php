@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Students\Application\Actions;
 
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Students\Domain\Enums\StudentGender;
 use Modules\Students\Domain\Events\StudentProfileUpdated;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * تحديث بيانات ملف طالب قائم — لا يُنشر حدث إن لم يتغيّر شيء.
@@ -33,7 +33,7 @@ final readonly class UpdateStudentProfileAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $changes
+     * @param array<string, mixed> $changes
      */
     public function execute(StudentProfile $student, array $changes): StudentProfile
     {
@@ -71,7 +71,7 @@ final readonly class UpdateStudentProfileAction
     /**
      * الحمولة قيَم بدائية فقط — الـ enums تتحول إلى قيمتها النصية.
      *
-     * @param  array<string, mixed>  $changes
+     * @param array<string, mixed> $changes
      * @return array<string, mixed>
      */
     private function toPrimitives(array $changes): array

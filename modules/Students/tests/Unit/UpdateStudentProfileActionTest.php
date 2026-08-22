@@ -8,10 +8,12 @@ use Modules\Students\Application\Actions\ArchiveStudentAction;
 use Modules\Students\Application\Actions\RegisterStudentAction;
 use Modules\Students\Application\Actions\UpdateStudentProfileAction;
 use Modules\Students\Domain\Events\StudentProfileUpdated;
+use Modules\Students\Domain\Models\StudentProfile;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-function createStudent(): Modules\Students\Domain\Models\StudentProfile
+function createStudent(): StudentProfile
 {
     return app(RegisterStudentAction::class)->execute([
         'organization_id' => (string) str()->ulid(),
@@ -20,7 +22,7 @@ function createStudent(): Modules\Students\Domain\Models\StudentProfile
     ]);
 }
 
-it('updates changed fields only and publishes the event with primitives', function () {
+it('updates changed fields only and publishes the event with primitives', function (): void {
     $student = createStudent();
     Event::fake([StudentProfileUpdated::class]);
 
@@ -35,11 +37,11 @@ it('updates changed fields only and publishes the event with primitives', functi
         StudentProfileUpdated::class,
         fn (StudentProfileUpdated $event): bool => count($event->changes) === 2
             && isset($event->changes['city'], $event->changes['notes'])
-            && ! isset($event->changes['student_code'])
+            && !isset($event->changes['student_code']),
     );
 });
 
-it('publishes nothing when nothing changed', function () {
+it('publishes nothing when nothing changed', function (): void {
     $student = createStudent();
     Event::fake([StudentProfileUpdated::class]);
 
@@ -50,7 +52,7 @@ it('publishes nothing when nothing changed', function () {
     Event::assertNotDispatched(StudentProfileUpdated::class);
 });
 
-it('ignores non-editable fields such as student_code', function () {
+it('ignores non-editable fields such as student_code', function (): void {
     $student = createStudent();
 
     app(UpdateStudentProfileAction::class)->execute($student, [
@@ -61,9 +63,9 @@ it('ignores non-editable fields such as student_code', function () {
     expect($student->refresh()->student_code)->not->toBe('HACKED-1');
 });
 
-it('refuses to update an archived student', function () {
+it('refuses to update an archived student', function (): void {
     $student = createStudent();
     app(ArchiveStudentAction::class)->execute($student, 'انتقال العائلة');
 
     app(UpdateStudentProfileAction::class)->execute($student, ['city' => 'Luxor']);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

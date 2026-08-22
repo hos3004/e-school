@@ -40,4 +40,10 @@ final class PayrollEntryPolicy
     {
         return false;
     }
+
+    /** تحرير القيود المؤجَّلة عند إقامة حصة التلافي. */
+    public function release($user): bool
+    {
+        return $user->can('payroll.entries.release');
+    }
 }

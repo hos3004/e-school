@@ -67,7 +67,7 @@ final class TeacherRate extends Model
     /**
      * السعر الساري بتاريخ الحصة — لا السعر الحالي.
      *
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeActiveOn(Builder $query, CarbonImmutable|string $date): Builder
@@ -84,7 +84,7 @@ final class TeacherRate extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForContract(Builder $query, string $contractId): Builder

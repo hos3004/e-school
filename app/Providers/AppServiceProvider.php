@@ -26,11 +26,11 @@ final class AppServiceProvider extends ServiceProvider
         Date::use(CarbonImmutable::class);
 
         // منع الوصول الكسول للعلاقات وتمرير خصائص غير موجودة خارج الإنتاج.
-        Model::shouldBeStrict(! $this->app->isProduction());
+        Model::shouldBeStrict(!$this->app->isProduction());
         Model::unguard(false);
 
         // تحذير من الاستعلامات البطيئة في التطوير.
-        if (! $this->app->isProduction()) {
+        if (!$this->app->isProduction()) {
             DB::whenQueryingForLongerThan(500, function ($connection, $event): void {
                 logger()->warning('Slow query detected', [
                     'sql' => $event->sql,

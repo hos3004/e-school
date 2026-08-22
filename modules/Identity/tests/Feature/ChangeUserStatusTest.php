@@ -43,8 +43,7 @@ it('suspends an active user and records the reason', function (): void {
     expect($updated->status)->toBe(UserStatus::Suspended)
         ->and($updated->fresh()->status)->toBe(UserStatus::Suspended);
 
-    Event::assertDispatched(UserStatusChanged::class, fn (UserStatusChanged $e): bool =>
-        $e->userId === $target->id
+    Event::assertDispatched(UserStatusChanged::class, fn (UserStatusChanged $e): bool => $e->userId === $target->id
         && $e->from === 'active'
         && $e->to === 'suspended'
         && $e->reason === 'تكرار المخالفات');

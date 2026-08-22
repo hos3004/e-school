@@ -9,10 +9,11 @@ use Modules\Academics\Domain\Events\ProgramArchived;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-it('archives a program and publishes ProgramArchived with the reason', function () {
+it('archives a program and publishes ProgramArchived with the reason', function (): void {
     Event::fake([ProgramArchived::class]);
 
     $program = Program::factory()->create();
@@ -24,11 +25,11 @@ it('archives a program and publishes ProgramArchived with the reason', function 
     Event::assertDispatched(
         ProgramArchived::class,
         fn (ProgramArchived $event): bool => $event->programId === (string) $program->getKey()
-            && $event->reason === 'إيقاف البرنامج نهائيًا'
+            && $event->reason === 'إيقاف البرنامج نهائيًا',
     );
 });
 
-it('refuses to archive a program that still has active courses', function () {
+it('refuses to archive a program that still has active courses', function (): void {
     $program = Program::factory()->create();
     Level::factory()->for($program, 'program')->create();
     Course::factory()->create([
@@ -37,4 +38,4 @@ it('refuses to archive a program that still has active courses', function () {
     ]);
 
     app(ArchiveProgramAction::class)->execute($program, 'محاولة مرفوضة');
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

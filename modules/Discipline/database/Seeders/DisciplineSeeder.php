@@ -49,7 +49,7 @@ final class DisciplineSeeder extends Seeder
                 $resolved = (new EscalationLadder)->resolveForCount($i + 1);
 
                 if ($resolved !== null
-                    && ! DisciplineAction::query()
+                    && !DisciplineAction::query()
                         ->where('enrollment_id', $enrollmentId)
                         ->where('window_key', $violation->window_key)
                         ->where('action', $resolved['action']->value)

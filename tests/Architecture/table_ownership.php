@@ -16,7 +16,8 @@ declare(strict_types=1);
 return [
     // Organization
     'organizations' => 'Organization',
-    'academic_calendar' => 'Organization',
+    'organization_settings' => 'Organization',
+    'academic_calendars' => 'Organization',
     'holidays' => 'Organization',
 
     // Identity
@@ -31,6 +32,11 @@ return [
 
     // Audit
     'audit_log' => 'Audit',
+
+    // Integrations
+    'integration_providers' => 'Integrations',
+    'integration_connections' => 'Integrations',
+    'integration_webhook_deliveries' => 'Integrations',
 
     // Students
     'student_profiles' => 'Students',
@@ -111,6 +117,7 @@ return [
 
     // Messaging
     'conversations' => 'Messaging',
+    'conversation_participants' => 'Messaging',
     'messages' => 'Messaging',
     'class_wall_*' => 'Messaging',
     'whatsapp_inbound' => 'Messaging',

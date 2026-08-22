@@ -4,21 +4,22 @@ declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use Modules\Identity\Domain\Models\User;
 use Modules\Discipline\Application\Actions\DecideReactivationAction;
 use Modules\Discipline\Application\Actions\RequestReactivationAction;
 use Modules\Discipline\Domain\Enums\ReactivationStatus;
 use Modules\Discipline\Domain\Events\ReactivationRequested;
+use Modules\Identity\Domain\Models\User;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::factory()->create();
     $this->actingAs($this->user);
 });
 
 /**
- * @param  array<string, mixed>  $overrides
+ * @param array<string, mixed> $overrides
  * @return array<string, mixed>
  */
 function reactivationData(array $overrides = []): array
@@ -30,7 +31,7 @@ function reactivationData(array $overrides = []): array
     ], $overrides);
 }
 
-it('submits a pending request as attempt one and publishes ReactivationRequested', function () {
+it('submits a pending request as attempt one and publishes ReactivationRequested', function (): void {
     Event::fake([ReactivationRequested::class]);
 
     $request = app(RequestReactivationAction::class)->execute(reactivationData());
@@ -41,18 +42,18 @@ it('submits a pending request as attempt one and publishes ReactivationRequested
 
     Event::assertDispatched(
         ReactivationRequested::class,
-        fn (ReactivationRequested $event): bool => $event->payload()['attempt_number'] === 1
+        fn (ReactivationRequested $event): bool => $event->payload()['attempt_number'] === 1,
     );
 });
 
-it('refuses a second request while one is still open', function () {
+it('refuses a second request while one is still open', function (): void {
     $action = app(RequestReactivationAction::class);
 
     $action->execute(reactivationData());
     $action->execute(reactivationData());
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('counts closed attempts against the configured maximum', function () {
+it('counts closed attempts against the configured maximum', function (): void {
     config()->set('discipline.reactivation.max_attempts', 1);
 
     $enrollmentId = (string) str()->ulid();
@@ -70,9 +71,9 @@ it('counts closed attempts against the configured maximum', function () {
         ->and($first->reviewed_at)->not->toBeNull();
 
     $action->execute(reactivationData(['enrollment_id' => $enrollmentId]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('enforces the configured cooldown between attempts', function () {
+it('enforces the configured cooldown between attempts', function (): void {
     config()->set([
         'discipline.reactivation.max_attempts' => 3,
         'discipline.reactivation.cooldown_days_between_attempts' => 7,
@@ -90,4 +91,4 @@ it('enforces the configured cooldown between attempts', function () {
 
     // تقديم فوري بعد القرار — داخل فترة التهدئة.
     $action->execute(reactivationData(['enrollment_id' => $enrollmentId]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

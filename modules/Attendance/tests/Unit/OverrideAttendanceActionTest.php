@@ -9,6 +9,7 @@ use Modules\Attendance\Application\Actions\RecordAttendanceAction;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Events\AttendanceOverridden;
 use Modules\Attendance\Domain\Models\Attendance;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
@@ -31,7 +32,7 @@ function createOverridableAttendance(): Attendance
     );
 }
 
-it('overrides the derived status with a documented reason and seals the record', function () {
+it('overrides the derived status with a documented reason and seals the record', function (): void {
     Event::fake([AttendanceOverridden::class]);
 
     $attendance = createOverridableAttendance();
@@ -55,24 +56,24 @@ it('overrides the derived status with a documented reason and seals the record',
         fn (AttendanceOverridden $event): bool => $event->attendanceId === (string) $attendance->getKey()
             && $event->fromStatus === AttendanceStatus::NoShow->value
             && $event->toStatus === AttendanceStatus::Excused->value
-            && $event->reason === 'عذر طبي موثق بمستشفى معتمد'
+            && $event->reason === 'عذر طبي موثق بمستشفى معتمد',
     );
 });
 
-it('rejects an override without a sufficient reason', function () {
+it('rejects an override without a sufficient reason', function (): void {
     $attendance = createOverridableAttendance();
 
     app(OverrideAttendanceAction::class)->execute($attendance, AttendanceStatus::Excused, '   ');
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects an override with a reason shorter than the configured minimum', function () {
+it('rejects an override with a reason shorter than the configured minimum', function (): void {
     $attendance = createOverridableAttendance();
 
     // أقل من config('attendance.override.reason_min_chars') = 5
     app(OverrideAttendanceAction::class)->execute($attendance, AttendanceStatus::Excused, 'نعم');
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects an override that does not change the status', function () {
+it('rejects an override that does not change the status', function (): void {
     $attendance = createOverridableAttendance();
 
     app(OverrideAttendanceAction::class)->execute(
@@ -80,4 +81,4 @@ it('rejects an override that does not change the status', function () {
         AttendanceStatus::NoShow,
         'لا تغيير فعلي في الحالة هنا',
     );
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

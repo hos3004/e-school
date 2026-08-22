@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Identity\Domain\Models;
 
-use Shared\Concerns\HasModuleFactory;
-
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasTimestamps;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Identity\Database\Factories\PasswordResetTokenFactory;
+use Shared\Concerns\HasModuleFactory;
 
 /**
  * رمز إعادة تعيين كلمة المرور — سجل مؤقت بلا معرّف ULID.

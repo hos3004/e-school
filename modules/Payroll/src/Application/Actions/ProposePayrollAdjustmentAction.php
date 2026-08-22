@@ -39,7 +39,7 @@ final readonly class ProposePayrollAdjustmentAction
         /** @var list<string>|null $allowedTypes */
         $allowedTypes = config('payroll.adjustments.types');
 
-        if (! is_array($allowedTypes) || ! in_array($type, $allowedTypes, true)) {
+        if (!is_array($allowedTypes) || !in_array($type, $allowedTypes, true)) {
             throw BusinessRuleViolation::make(
                 'payroll.adjustment.unknown_type',
                 'payroll::actions.propose_adjustment.unknown_type',
@@ -74,7 +74,7 @@ final readonly class ProposePayrollAdjustmentAction
             );
         }
 
-        if (! $period->status->acceptsAdjustments()) {
+        if (!$period->status->acceptsAdjustments()) {
             throw BusinessRuleViolation::make(
                 'payroll.period.frozen',
                 'payroll::actions.propose_adjustment.period_frozen',

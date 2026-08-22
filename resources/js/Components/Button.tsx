@@ -26,7 +26,7 @@ type InertiaLinkProps = ComponentPropsWithoutRef<typeof Link>;
 export type ButtonLinkProps = ButtonSharedProps &
     Omit<
         InertiaLinkProps,
-        'as' | 'children' | 'className' | 'disabled'
+        'as' | 'children' | 'className' | 'disabled' | 'size'
     > & {
         as: 'link';
         disabled?: boolean;

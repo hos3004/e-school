@@ -34,11 +34,6 @@ final class AuditLogResource extends Resource
         return 'heroicon-o-shield-check';
     }
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('audit::labels.nav_group');
-    }
-
     public static function getModelLabel(): string
     {
         return __('audit::labels.audit_log.label');

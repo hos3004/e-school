@@ -6,11 +6,12 @@ namespace Modules\Discipline\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Discipline\Domain\Models\ViolationEvent;
 
 /**
  * تمثيل حدث مخالفة في الـ API — قراءة فقط.
  *
- * @property-read \Modules\Discipline\Domain\Models\ViolationEvent $resource
+ * @property-read ViolationEvent $resource
  */
 final class ViolationEventResource extends JsonResource
 {

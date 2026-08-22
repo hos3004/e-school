@@ -47,7 +47,7 @@ final class StaffProfile extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
@@ -58,7 +58,7 @@ final class StaffProfile extends Model
     /**
      * الموظفون غير المنتهية خدماتهم.
      *
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeActive(Builder $query): Builder
@@ -67,7 +67,7 @@ final class StaffProfile extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForUser(Builder $query, string $userId): Builder

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Academics\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Academics\Domain\Models\Course;
 
 /**
  * طلب أرشفة كورس — السبب إلزامي وفق عقد التدقيق.

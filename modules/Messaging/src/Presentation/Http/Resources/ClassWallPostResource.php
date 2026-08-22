@@ -6,9 +6,10 @@ namespace Modules\Messaging\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Messaging\Domain\Models\ClassWallPost;
 
 /**
- * @property-read \Modules\Messaging\Domain\Models\ClassWallPost $resource
+ * @property-read ClassWallPost $resource
  */
 final class ClassWallPostResource extends JsonResource
 {

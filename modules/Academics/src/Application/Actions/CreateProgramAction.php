@@ -22,7 +22,7 @@ final readonly class CreateProgramAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  بيانات البرنامج بعد تحقّق FormRequest
+     * @param array<string, mixed> $data بيانات البرنامج بعد تحقّق FormRequest
      */
     public function execute(array $data): Program
     {

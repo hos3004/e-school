@@ -24,7 +24,7 @@ final readonly class CreateConversationAction
     ) {}
 
     /**
-     * @param  list<string>  $participantUserIds
+     * @param list<string> $participantUserIds
      */
     public function execute(
         string $organizationId,
@@ -38,7 +38,7 @@ final readonly class CreateConversationAction
     ): Conversation {
         $participants = array_values(array_unique($participantUserIds));
 
-        if (! in_array($creatorUserId, $participants, true)) {
+        if (!in_array($creatorUserId, $participants, true)) {
             $participants[] = $creatorUserId;
         }
 
@@ -78,8 +78,8 @@ final readonly class CreateConversationAction
                 'related_id' => $relatedId,
                 'created_by' => $creatorUserId,
                 'last_message_at' => null,
+                'created_at' => now(),
             ]);
-            $conversation->created_at = now();
             $conversation->save();
 
             foreach ($participants as $userId) {

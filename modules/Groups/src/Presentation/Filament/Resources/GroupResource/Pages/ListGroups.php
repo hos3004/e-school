@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Presentation\Filament\Resources\GroupResource\Pages;
 
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Modules\Groups\Presentation\Filament\Resources\GroupResource;
 
@@ -14,7 +15,7 @@ final class ListGroups extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

@@ -21,7 +21,7 @@ final readonly class UpdateLevelAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  الحقول المسموح تحديثها بعد تحقّق FormRequest
+     * @param array<string, mixed> $data الحقول المسموح تحديثها بعد تحقّق FormRequest
      */
     public function execute(Level $level, array $data): Level
     {

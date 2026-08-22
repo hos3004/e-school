@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Str;
 use Modules\Guardians\Application\Queries\GuardianQueryService;
 use Modules\Guardians\Domain\Enums\ContactChannel;
 use Modules\Guardians\Domain\Models\GuardianLink;
@@ -11,7 +12,7 @@ it('returns the verified primary guardian summary for a student', function (): v
     $guardian = GuardianProfile::factory()->create([
         'preferred_contact_channel' => ContactChannel::WhatsApp,
     ]);
-    $studentId = (string) Illuminate\Support\Str::ulid();
+    $studentId = (string) Str::ulid();
 
     GuardianLink::factory()->primary()->acting()->verified()->create([
         'guardian_profile_id' => $guardian->id,
@@ -33,7 +34,7 @@ it('returns the verified primary guardian summary for a student', function (): v
 });
 
 it('returns null when the student has no primary guardian', function (): void {
-    $summary = app(GuardianQuery::class)->primaryGuardianForStudent((string) Illuminate\Support\Str::ulid());
+    $summary = app(GuardianQuery::class)->primaryGuardianForStudent((string) Str::ulid());
 
     expect($summary)->toBeNull();
 });
@@ -42,7 +43,7 @@ it('denies acting for a student when verification is required and missing', func
     config()->set('guardians.links.require_verification_for_acting', true);
 
     $guardian = GuardianProfile::factory()->create();
-    $studentId = (string) Illuminate\Support\Str::ulid();
+    $studentId = (string) Str::ulid();
     GuardianLink::factory()->acting()->create([
         'guardian_profile_id' => $guardian->id,
         'student_profile_id' => $studentId,
@@ -55,7 +56,7 @@ it('allows acting for a student once verified', function (): void {
     config()->set('guardians.links.require_verification_for_acting', true);
 
     $guardian = GuardianProfile::factory()->create();
-    $studentId = (string) Illuminate\Support\Str::ulid();
+    $studentId = (string) Str::ulid();
     GuardianLink::factory()->acting()->verified()->create([
         'guardian_profile_id' => $guardian->id,
         'student_profile_id' => $studentId,
@@ -68,7 +69,7 @@ it('ignores verification requirement when configured off', function (): void {
     config()->set('guardians.links.require_verification_for_acting', false);
 
     $guardian = GuardianProfile::factory()->create();
-    $studentId = (string) Illuminate\Support\Str::ulid();
+    $studentId = (string) Str::ulid();
     GuardianLink::factory()->acting()->create([
         'guardian_profile_id' => $guardian->id,
         'student_profile_id' => $studentId,

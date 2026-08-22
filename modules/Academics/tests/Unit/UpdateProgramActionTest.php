@@ -7,10 +7,11 @@ use Illuminate\Support\Facades\Event;
 use Modules\Academics\Application\Actions\UpdateProgramAction;
 use Modules\Academics\Domain\Events\ProgramUpdated;
 use Modules\Academics\Domain\Models\Program;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-it('updates program fields and publishes ProgramUpdated with changed fields', function () {
+it('updates program fields and publishes ProgramUpdated with changed fields', function (): void {
     Event::fake([ProgramUpdated::class]);
 
     $program = Program::factory()->create();
@@ -26,11 +27,11 @@ it('updates program fields and publishes ProgramUpdated with changed fields', fu
     Event::assertDispatched(
         ProgramUpdated::class,
         fn (ProgramUpdated $event): bool => $event->programId === (string) $program->getKey()
-            && $event->changedFields === ['duration_weeks', 'default_rate']
+            && $event->changedFields === ['duration_weeks', 'default_rate'],
     );
 });
 
-it('does not publish an event when nothing changed', function () {
+it('does not publish an event when nothing changed', function (): void {
     Event::fake([ProgramUpdated::class]);
 
     $program = Program::factory()->create(['currency' => 'EGP']);
@@ -40,10 +41,10 @@ it('does not publish an event when nothing changed', function () {
     Event::assertNotDispatched(ProgramUpdated::class);
 });
 
-it('rejects taking another program code', function () {
+it('rejects taking another program code', function (): void {
     Program::factory()->create(['code' => 'TAKEN']);
 
     $program = Program::factory()->create(['code' => 'MINE']);
 
     app(UpdateProgramAction::class)->execute($program, ['code' => 'TAKEN']);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

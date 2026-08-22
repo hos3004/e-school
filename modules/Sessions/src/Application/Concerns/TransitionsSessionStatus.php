@@ -22,8 +22,8 @@ trait TransitionsSessionStatus
     /**
      * يُستدعى داخل DB::transaction فقط.
      *
-     * @param  array<string, mixed>  $attributes
-     * @param  array<string, mixed>  $metadata
+     * @param array<string, mixed> $attributes
+     * @param array<string, mixed> $metadata
      */
     protected function applyTransition(
         Session $session,
@@ -35,7 +35,7 @@ trait TransitionsSessionStatus
     ): void {
         $from = $session->status;
 
-        if (! $from->canTransitionTo($to)) {
+        if (!$from->canTransitionTo($to)) {
             throw BusinessRuleViolation::make(
                 'sessions.invalid_status_transition',
                 'sessions::errors.invalid_transition',

@@ -9,7 +9,7 @@ use Shared\Domain\DomainEvent;
 final class StudentProfileUpdated extends DomainEvent
 {
     /**
-     * @param  array<string, mixed>  $changes  أسماء الأعمدة والقيم الجديدة فقط — قيَم بدائية
+     * @param array<string, mixed> $changes أسماء الأعمدة والقيم الجديدة فقط — قيَم بدائية
      */
     public function __construct(
         public readonly string $studentId,

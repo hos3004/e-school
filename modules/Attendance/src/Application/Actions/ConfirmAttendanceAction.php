@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Attendance\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Events\AttendanceConfirmed;
 use Modules\Attendance\Domain\Models\Attendance;
 use Shared\Support\BusinessRuleViolation;
@@ -35,7 +36,7 @@ final readonly class ConfirmAttendanceAction
             ])->save();
         });
 
-        /** @var \Modules\Attendance\Domain\Enums\AttendanceStatus $status */
+        /** @var AttendanceStatus $status */
         $status = $attendance->status;
 
         $this->events->dispatch(new AttendanceConfirmed(

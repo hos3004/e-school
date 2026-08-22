@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Event;
 use Modules\Academics\Application\Actions\CreateCourseAction;
 use Modules\Academics\Domain\Events\CourseCreated;
 use Modules\Academics\Domain\Models\Level;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
@@ -22,7 +23,7 @@ function courseData(array $overrides = []): array
     ], $overrides);
 }
 
-it('creates a course and publishes CourseCreated', function () {
+it('creates a course and publishes CourseCreated', function (): void {
     Event::fake([CourseCreated::class]);
 
     $course = app(CreateCourseAction::class)->execute(courseData());
@@ -33,11 +34,11 @@ it('creates a course and publishes CourseCreated', function () {
     Event::assertDispatched(
         CourseCreated::class,
         fn (CourseCreated $event): bool => $event->courseId === (string) $course->getKey()
-            && $event->payload()['total_sessions'] === 12
+            && $event->payload()['total_sessions'] === 12,
     );
 });
 
-it('rejects a duplicate course code even across archived courses', function () {
+it('rejects a duplicate course code even across archived courses', function (): void {
     $action = app(CreateCourseAction::class);
     $data = courseData();
 
@@ -45,14 +46,14 @@ it('rejects a duplicate course code even across archived courses', function () {
     $first->delete();
 
     $action->execute(courseData(['organization_id' => (string) str()->ulid()]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects zero or negative total sessions', function () {
+it('rejects zero or negative total sessions', function (): void {
     app(CreateCourseAction::class)->execute(courseData(['total_sessions' => 0]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects a course for a missing level', function () {
+it('rejects a course for a missing level', function (): void {
     app(CreateCourseAction::class)->execute(courseData([
         'level_id' => (string) str()->ulid(),
     ]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

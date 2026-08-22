@@ -8,7 +8,7 @@ use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Domain\Models\Role;
 
 it('seeds the base permission matrix and system roles idempotently', function (): void {
-    $seeder = new AccessControlSeeder();
+    $seeder = new AccessControlSeeder;
     $seeder->run();
     $seeder->run();
 

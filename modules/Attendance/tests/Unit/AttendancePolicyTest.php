@@ -16,7 +16,7 @@ function attendancePolicyUser(bool $granted): ApiUser
 }
 
 it('delegates every ability to declared permissions', function (): void {
-    $policy = new AttendancePolicy();
+    $policy = new AttendancePolicy;
     /** @var Attendance $record */
     $record = AttendanceFactory::new()->make();
 
@@ -41,5 +41,5 @@ it('never inspects role names', function (): void {
     $source = (string) file_get_contents((new ReflectionClass(AttendancePolicy::class))->getFileName());
 
     expect(str_contains($source, 'hasRole'))->toBeFalse()
-        ->and(str_contains($source, "role ==="))->toBeFalse();
+        ->and(str_contains($source, 'role ==='))->toBeFalse();
 });

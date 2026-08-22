@@ -20,9 +20,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Hash;
 use Modules\Identity\Domain\Enums\UserStatus;
 use Modules\Identity\Domain\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Modules\Identity\Presentation\Filament\Resources\Users\Pages\CreateUser;
 use Modules\Identity\Presentation\Filament\Resources\Users\Pages\EditUser;
 use Modules\Identity\Presentation\Filament\Resources\Users\Pages\ListUsers;
@@ -33,7 +33,9 @@ final class UserResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
-    protected static ?int $navigationSort = 10;
+    protected static \UnitEnum|string|null $navigationGroup = 'النظام';
+
+    protected static ?int $navigationSort = 100;
 
     public static function getModelLabel(): string
     {
@@ -43,11 +45,6 @@ final class UserResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('identity::filament.user.label_plural');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('identity::filament.navigation_group');
     }
 
     public static function form(Schema $schema): Schema
@@ -148,11 +145,9 @@ final class UserResource extends Resource
             ->actions([
                 ViewAction::make(),
                 EditAction::make()
-                    ->visible(fn (User $record, mixed $livewire = null): bool =>
-                        auth()->user()?->can('update', $record) ?? false),
+                    ->visible(fn (User $record, mixed $livewire = null): bool => auth()->user()?->can('update', $record) ?? false),
                 DeleteAction::make()
-                    ->visible(fn (User $record): bool =>
-                        auth()->user()?->can('delete', $record) ?? false),
+                    ->visible(fn (User $record): bool => auth()->user()?->can('delete', $record) ?? false),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

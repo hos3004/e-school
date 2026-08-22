@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Identity\Application\Actions;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Modules\Identity\Domain\Models\User;
 use Shared\Support\BusinessRuleViolation;
@@ -17,7 +16,7 @@ final readonly class UpdatePassword
 {
     public function execute(User $user, string $currentPassword, string $newPassword): User
     {
-        if (! Hash::check($currentPassword, $user->password)) {
+        if (!Hash::check($currentPassword, $user->password)) {
             throw BusinessRuleViolation::make(
                 'identity.current_password_wrong',
                 'identity::errors.current_password_wrong',

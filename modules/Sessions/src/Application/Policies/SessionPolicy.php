@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Application\Policies;
 
-use Illuminate\Auth\Access\Response;
 use Modules\Sessions\Domain\Models\Session;
 
 /**
@@ -41,7 +40,7 @@ final class SessionPolicy
     {
         return $user->can('sessions.session.delete')
             && $session->organization_id === $user->organization_id
-            && ! $session->status->isTerminal();
+            && !$session->status->isTerminal();
     }
 
     public function confirm($user, Session $session): bool

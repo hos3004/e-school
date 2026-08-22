@@ -27,11 +27,11 @@ final readonly class CancelSessionAction
     ) {}
 
     /**
-     * @param  CancelledByStudent|CancelledByTeacher|CancelledBySchool  $as  حالة الإلغاء المستهدفة
+     * @param CancelledByStudent|CancelledByTeacher|CancelledBySchool $as حالة الإلغاء المستهدفة
      */
     public function execute(Session $session, SessionStatus $as, string $reason, ?string $actorId = null): Session
     {
-        if (! in_array($as, [SessionStatus::CancelledByStudent, SessionStatus::CancelledByTeacher, SessionStatus::CancelledBySchool], true)) {
+        if (!in_array($as, [SessionStatus::CancelledByStudent, SessionStatus::CancelledByTeacher, SessionStatus::CancelledBySchool], true)) {
             throw BusinessRuleViolation::make(
                 'sessions.cancel_target_invalid',
                 'sessions::errors.cancel_target_invalid',

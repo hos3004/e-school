@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Modules\Groups\Application\Actions;
 
 use Carbon\CarbonImmutable;
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Groups\Domain\Events\TeacherUnassignedFromGroup;
+use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupTeacher;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * إلغاء إسناد معلم عن مجموعة: تثبيت تاريخ نهاية الإسناد دون حذف السجل.
@@ -32,7 +33,7 @@ final readonly class UnassignTeacherAction
             return $assignment;
         });
 
-        /** @var \Modules\Groups\Domain\Models\Group $group */
+        /** @var Group $group */
         $group = $assignment->group()->firstOrFail();
 
         $this->events->dispatch(new TeacherUnassignedFromGroup(
@@ -47,7 +48,7 @@ final readonly class UnassignTeacherAction
 
     private function assertStillOpen(GroupTeacher $assignment): void
     {
-        if (! $assignment->isOpen()) {
+        if (!$assignment->isOpen()) {
             throw BusinessRuleViolation::make(
                 'groups.assignment_already_closed',
                 'groups::errors.assignment_already_closed',

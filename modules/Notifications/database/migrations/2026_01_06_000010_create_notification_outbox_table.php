@@ -42,15 +42,15 @@ return new class extends Migration
 
         DB::statement(
             'ALTER TABLE notification_outbox '
-            .'ADD CONSTRAINT notification_outbox_idempotency_key_unique UNIQUE (idempotency_key)'
+            .'ADD CONSTRAINT notification_outbox_idempotency_key_unique UNIQUE (idempotency_key)',
         );
         DB::statement(
             'CREATE INDEX notification_outbox_status_scheduled_for_idx '
-            .'ON notification_outbox (status, scheduled_for)'
+            .'ON notification_outbox (status, scheduled_for)',
         );
         DB::statement(
             'CREATE INDEX notification_outbox_user_created_at_desc_idx '
-            .'ON notification_outbox (user_id, created_at DESC)'
+            .'ON notification_outbox (user_id, created_at DESC)',
         );
     }
 

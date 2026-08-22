@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Groups\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Groups\Domain\Models\Group;
 
 /**
  * طلب أرشفة مجموعة — السبب إلزامي للتدقيق.

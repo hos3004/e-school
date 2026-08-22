@@ -9,7 +9,7 @@ use Shared\Domain\DomainEvent;
 final class PermissionUpdated extends DomainEvent
 {
     /**
-     * @param  array<string, mixed>  $changed
+     * @param array<string, mixed> $changed
      */
     public function __construct(
         public readonly string $permissionId,

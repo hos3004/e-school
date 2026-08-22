@@ -46,7 +46,7 @@ final readonly class RecordPayrollEntryAction
     ): PayrollEntry {
         $outcomes = config('payroll.outcomes');
 
-        if (! is_array($outcomes) || ! array_key_exists($outcomeKey, $outcomes)) {
+        if (!is_array($outcomes) || !array_key_exists($outcomeKey, $outcomes)) {
             throw BusinessRuleViolation::make(
                 'payroll.entry.unknown_outcome',
                 'payroll::actions.record_entry.unknown_outcome',
@@ -75,7 +75,7 @@ final readonly class RecordPayrollEntryAction
             );
         }
 
-        if (! $period->status->acceptsEntries()) {
+        if (!$period->status->acceptsEntries()) {
             throw BusinessRuleViolation::make(
                 'payroll.period.closed',
                 'payroll::actions.record_entry.period_closed',

@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Academics\Application\Actions\CreateProgramAction;
 use Modules\Academics\Domain\Events\ProgramCreated;
-use Modules\Academics\Domain\Models\Program;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
@@ -24,7 +24,7 @@ function programData(array $overrides = []): array
     ], $overrides);
 }
 
-it('creates a program and publishes ProgramCreated', function () {
+it('creates a program and publishes ProgramCreated', function (): void {
     Event::fake([ProgramCreated::class]);
 
     $program = app(CreateProgramAction::class)->execute(programData());
@@ -38,21 +38,21 @@ it('creates a program and publishes ProgramCreated', function () {
         ProgramCreated::class,
         fn (ProgramCreated $event): bool => $event->programId === (string) $program->getKey()
             && $event->payload()['default_rate'] === 7500
-            && $event->payload()['currency'] === 'EGP'
+            && $event->payload()['currency'] === 'EGP',
     );
 });
 
-it('rejects a duplicate program code even across archived programs', function () {
+it('rejects a duplicate program code even across archived programs', function (): void {
     $action = app(CreateProgramAction::class);
 
     $first = $action->execute(programData());
     $first->delete();
 
     $action->execute(programData(['organization_id' => (string) str()->ulid()]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects a negative default rate', function () {
+it('rejects a negative default rate', function (): void {
     Event::fake([ProgramCreated::class]);
 
     app(CreateProgramAction::class)->execute(programData(['default_rate' => -1]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

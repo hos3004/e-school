@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,9 +20,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 | اختبارات المعمارية فحوص نصية على المستودع ولا تلمس قاعدة البيانات.
 */
 
-pest()->extend(Tests\TestCase::class)->in('Feature', 'Unit', 'Architecture');
+pest()->extend(TestCase::class)->in('Feature', 'Unit', 'Architecture');
 
-pest()->extend(Tests\TestCase::class)->in('../modules');
+pest()->extend(TestCase::class)->in('../modules');
 
 /*
 | اختبارات Feature وحدها هي التي تحتاج قاعدة بيانات نظيفة لكل اختبار.

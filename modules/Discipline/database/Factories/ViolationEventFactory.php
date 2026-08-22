@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Discipline\Database\Factories;
 
-use Illuminate\Support\Str;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 use Modules\Discipline\Domain\Enums\ViolationType;
 use Modules\Discipline\Domain\Models\ViolationEvent;
 use Modules\Discipline\Domain\ValueObjects\DisciplineWindow;
@@ -26,9 +26,9 @@ final class ViolationEventFactory extends Factory
         $occurredAt = CarbonImmutable::instance($this->faker->dateTimeBetween('-2 months', 'now'));
 
         return [
-            'organization_id' => (string) $this(string) Str::ulid(),
+            'organization_id' => (string) Str::ulid(),
             'enrollment_id' => (string) Str::ulid(),
-            'student_profile_id' => (string) $this(string) Str::ulid(),
+            'student_profile_id' => (string) Str::ulid(),
             'session_id' => null,
             'type' => ViolationType::UnexcusedAbsence,
             'occurred_at' => $occurredAt,
@@ -50,7 +50,7 @@ final class ViolationEventFactory extends Factory
     public function waived(?string $waivedBy = null, ?string $reason = null): static
     {
         return $this->state(fn (): array => [
-            'waived_by' => $waivedBy ?? (string) $this(string) Str::ulid(),
+            'waived_by' => $waivedBy ?? (string) Str::ulid(),
             'waived_at' => CarbonImmutable::now('UTC'),
             'waiver_reason' => $reason ?? 'عفو إداري تجريبي',
         ]);

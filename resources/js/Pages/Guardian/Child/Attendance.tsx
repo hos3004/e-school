@@ -43,7 +43,7 @@ export default function GuardianChildAttendance({
 }: GuardianAttendanceProps) {
     const t = useI18n();
     const locale = useLocale();
-    const retry = () => router.reload({ preserveScroll: true });
+    const retry = () => router.reload();
 
     const columns: readonly DataTableColumn<ChildAttendance>[] = [
         {

@@ -41,7 +41,7 @@ final class CreateAdminUser extends Command
             ],
         );
 
-        if (! $user->wasRecentlyCreated) {
+        if (!$user->wasRecentlyCreated) {
             $this->warn('المستخدم موجود مسبقًا — سيُستخدم الحساب الحالي.');
         }
 

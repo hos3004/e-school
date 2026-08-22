@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Scheduling\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;

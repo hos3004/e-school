@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Database\Factories;
 
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Models\Attendance;
 
@@ -40,7 +40,7 @@ final class AttendanceFactory extends Factory
     public function confirmed(): static
     {
         return $this->state(fn (): array => [
-            'confirmed_by' => (string) $this(string) Str::ulid(),
+            'confirmed_by' => (string) Str::ulid(),
             'confirmed_at' => $this->faker->dateTimeThisMonth(),
         ]);
     }
@@ -58,7 +58,7 @@ final class AttendanceFactory extends Factory
             return [
                 'status' => $target,
                 'override_reason' => __('attendance::messages.demo_override_reason'),
-                'confirmed_by' => (string) $this(string) Str::ulid(),
+                'confirmed_by' => (string) Str::ulid(),
                 'confirmed_at' => $this->faker->dateTimeThisMonth(),
             ];
         });

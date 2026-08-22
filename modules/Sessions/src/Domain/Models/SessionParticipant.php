@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -40,7 +40,7 @@ final class SessionParticipant extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForStudent(Builder $query, string $studentProfileId): Builder

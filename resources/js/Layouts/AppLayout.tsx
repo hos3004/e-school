@@ -60,14 +60,6 @@ const navigationByRole: Record<AppRole, readonly NavigationItem[]> = {
     ],
     guardian: [
         { href: '/guardian', labelKey: 'navigation.dashboard' },
-        {
-            href: '/guardian/child/attendance',
-            labelKey: 'navigation.attendance',
-        },
-        {
-            href: '/guardian/child/reports',
-            labelKey: 'navigation.reports',
-        },
     ],
 };
 
@@ -155,7 +147,7 @@ export default function AppLayout({
     const activeRole = role ?? roleFromUser;
     const navigationItems = activeRole ? navigationByRole[activeRole] : [];
     const homeHref = navigationItems[0]?.href ?? '/';
-    const currentPath = page.url.split(/[?#]/, 1)[0];
+    const currentPath = page.url.split(/[?#]/, 1)[0] ?? page.url;
 
     useEffect(() => {
         document.documentElement.lang = locale;

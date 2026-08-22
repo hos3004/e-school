@@ -6,11 +6,12 @@ namespace Modules\Recordings\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Recordings\Domain\Models\Recording;
 
 /**
  * تمثيل التسجيل في الـ API.
  *
- * @mixin \Modules\Recordings\Domain\Models\Recording
+ * @mixin Recording
  */
 final class RecordingResource extends JsonResource
 {

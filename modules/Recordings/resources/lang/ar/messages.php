@@ -3,8 +3,12 @@
 declare(strict_types=1);
 
 /*
-| رسائل موديول Recordings العامة.
-| تُستهلك عبر __('recordings::messages.key') — ولا نص ظاهر خارج ملفات الترجمة.
+| الرسائل العامة في موديول Recordings.
+| تُستهلك عبر __('recordings::messages.key') — لا نص ظاهر خارج ملفات الترجمة.
 */
 
-return [];
+return [
+    'duration_minutes' => ':minutes دقيقة',
+    'seeder_no_organization' => 'بذر التسجيلات: لا توجد مؤسسة — تم التخطي.',
+    'seeder_no_sessions' => 'بذر التسجيلات: لا توجد حصص (يملكها موديول آخر) — تم التخطي.',
+];

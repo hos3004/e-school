@@ -8,7 +8,6 @@ use Modules\Organization\Database\Factories\AcademicCalendarFactory;
 use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Events\AcademicCalendarCreated;
 use Modules\Organization\Domain\Models\AcademicCalendar;
-use Modules\Organization\Domain\Models\Organization;
 use Shared\Support\BusinessRuleViolation;
 
 it('creates an academic calendar and dispatches the event', function (): void {

@@ -22,7 +22,7 @@ final class CloseAcademicCalendarController
      */
     public function __invoke(Request $request, AcademicCalendar $calendar): JsonResponse
     {
-        if (! ($request->user()?->can('close', $calendar) ?? false)) {
+        if (!($request->user()?->can('close', $calendar) ?? false)) {
             throw new AuthorizationException(__('organization::errors.unauthorized'));
         }
 

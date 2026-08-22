@@ -55,7 +55,7 @@ final readonly class ReleaseDeferredEntriesAction
                 /** @var PayrollEntryStatus $status */
                 $status = $entry->status;
 
-                if (! $status->canTransitionTo(PayrollEntryStatus::Released)) {
+                if (!$status->canTransitionTo(PayrollEntryStatus::Released)) {
                     throw BusinessRuleViolation::make(
                         'payroll.deferred.invalid_transition',
                         'payroll::actions.release_deferred.invalid_transition',

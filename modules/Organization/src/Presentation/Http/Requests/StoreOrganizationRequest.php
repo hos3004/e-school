@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Modules\Organization\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Organization\Domain\Models\Organization;
 use Modules\Organization\Domain\Enums\Weekday;
+use Modules\Organization\Domain\Models\Organization;
 
 /**
  * @property-read array{name?: string}|mixed $name

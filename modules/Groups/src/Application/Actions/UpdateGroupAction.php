@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Application\Actions;
 
-use Illuminate\Support\Arr;
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Arr;
 use Modules\Groups\Domain\Events\GroupUpdated;
 use Modules\Groups\Domain\Models\Group;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * تحديث بيانات مجموعة قائمة: الحالة والهوية التنظيمية لا تُعدَّل من هنا —
@@ -26,7 +26,7 @@ final readonly class UpdateGroupAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  بيانات التعديل بعد تحقّق FormRequest
+     * @param array<string, mixed> $data بيانات التعديل بعد تحقّق FormRequest
      */
     public function execute(Group $group, array $data): Group
     {
@@ -66,10 +66,10 @@ final readonly class UpdateGroupAction
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     private function assertEndsAfterStarts(Group $group, array $data): void
     {

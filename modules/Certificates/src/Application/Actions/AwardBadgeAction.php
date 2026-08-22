@@ -7,8 +7,8 @@ namespace Modules\Certificates\Application\Actions;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Certificates\Domain\Events\BadgeAwarded;
-use Modules\Certificates\Domain\Models\BadgeAward;
 use Modules\Certificates\Domain\Models\Badge;
+use Modules\Certificates\Domain\Models\BadgeAward;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -29,7 +29,7 @@ final readonly class AwardBadgeAction
 
     public function execute(Badge $badge, string $userId, ?string $reason = null, ?string $actorId = null): BadgeAward
     {
-        if (! $badge->is_active) {
+        if (!$badge->is_active) {
             throw BusinessRuleViolation::make(
                 'certificates.badge_inactive',
                 'certificates::errors.badge_inactive',

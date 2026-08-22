@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Groups\Database\Factories\Concerns;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * يضمن وجود الصفوف الأب التي تشير إليها جداول المجموعات عبر مفاتيح خارجية
@@ -119,6 +120,6 @@ trait EnsuresReferencedRecords
      */
     public static function newUlid(): string
     {
-        return (string) \Illuminate\Support\Str::ulid();
+        return (string) Str::ulid();
     }
 }

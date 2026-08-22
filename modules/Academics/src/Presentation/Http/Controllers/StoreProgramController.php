@@ -7,7 +7,6 @@ namespace Modules\Academics\Presentation\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Modules\Academics\Application\Actions\CreateProgramAction;
-use Modules\Academics\Domain\Models\Program;
 use Modules\Academics\Presentation\Http\Requests\StoreProgramRequest;
 use Modules\Academics\Presentation\Http\Resources\ProgramResource;
 

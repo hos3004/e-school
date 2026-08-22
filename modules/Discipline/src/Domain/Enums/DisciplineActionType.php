@@ -25,7 +25,7 @@ enum DisciplineActionType: string
     /**
      * قراءة الإجراء من سطر السُلَّم في الإعدادات.
      *
-     * @param  array<string, mixed>  $ladderEntry
+     * @param array<string, mixed> $ladderEntry
      */
     public static function fromLadderEntry(array $ladderEntry): ?self
     {

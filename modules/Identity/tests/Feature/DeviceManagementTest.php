@@ -34,8 +34,7 @@ it('registers a device for a user', function (): void {
         ->and($device->isRevoked())->toBeFalse()
         ->and($device->canReceivePush())->toBeTrue();
 
-    Event::assertDispatched(DeviceRegistered::class, fn (DeviceRegistered $e): bool =>
-        $e->deviceId === $device->id);
+    Event::assertDispatched(DeviceRegistered::class, fn (DeviceRegistered $e): bool => $e->deviceId === $device->id);
 });
 
 it('rejects a push token already bound to another active device', function (): void {

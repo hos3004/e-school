@@ -9,7 +9,7 @@ use Shared\Domain\DomainEvent;
 final class ProgramUpdated extends DomainEvent
 {
     /**
-     * @param  list<string>  $changedFields
+     * @param list<string> $changedFields
      */
     public function __construct(
         public readonly string $programId,

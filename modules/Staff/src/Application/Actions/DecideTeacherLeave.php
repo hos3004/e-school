@@ -19,7 +19,7 @@ final readonly class DecideTeacherLeave
         TeacherLeaveStatus $decision,
         ?string $approverId = null,
     ): TeacherLeave {
-        if (! $leave->status->canTransitionTo($decision)) {
+        if (!$leave->status->canTransitionTo($decision)) {
             throw BusinessRuleViolation::make(
                 'staff.leave_transition_forbidden',
                 'staff::errors.leave_transition_forbidden',

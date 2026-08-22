@@ -19,7 +19,7 @@ final readonly class CloseAcademicCalendar
 {
     public function execute(AcademicCalendar $calendar): AcademicCalendar
     {
-        if (! $calendar->is_active) {
+        if (!$calendar->is_active) {
             return $calendar;
         }
 

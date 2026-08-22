@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Discipline\Database\Factories;
 
-use Illuminate\Support\Str;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 use Modules\Discipline\Domain\Enums\DisciplineActionType;
 use Modules\Discipline\Domain\Models\DisciplineAction;
 use Modules\Discipline\Domain\ValueObjects\DisciplineWindow;
@@ -24,9 +24,9 @@ final class DisciplineActionFactory extends Factory
     public function definition(): array
     {
         return [
-            'organization_id' => (string) $this(string) Str::ulid(),
+            'organization_id' => (string) Str::ulid(),
             'enrollment_id' => (string) Str::ulid(),
-            'triggered_by_event_id' => (string) $this(string) Str::ulid(),
+            'triggered_by_event_id' => (string) Str::ulid(),
             'action' => DisciplineActionType::Notice,
             'threshold_reached' => 1,
             'window_key' => DisciplineWindow::current()->key,

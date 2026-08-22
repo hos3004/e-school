@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Audit\Database\Factories;
 
-use Shared\Testing\Fixtures;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use Modules\Audit\Domain\Enums\AuditActorType;
 use Modules\Audit\Domain\Models\AuditLog;
+use Shared\Testing\Fixtures;
 
 /**
  * @extends Factory<AuditLog>

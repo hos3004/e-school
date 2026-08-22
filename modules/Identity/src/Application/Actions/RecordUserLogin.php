@@ -18,7 +18,7 @@ final readonly class RecordUserLogin
 {
     public function execute(User $user, ?string $ipAddress = null, ?string $userAgent = null): void
     {
-        if (! $user->canLogIn()) {
+        if (!$user->canLogIn()) {
             return;
         }
 

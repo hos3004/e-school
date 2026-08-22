@@ -38,10 +38,10 @@ return new class extends Migration
             $table->index(['organization_id', 'status']);
         });
 
-        DB::statement("ALTER TABLE users ALTER COLUMN email TYPE citext");
-        DB::statement("ALTER TABLE users ALTER COLUMN username TYPE citext");
-        DB::statement("CREATE UNIQUE INDEX users_email_unique ON users (email) WHERE deleted_at IS NULL");
-        DB::statement("CREATE UNIQUE INDEX users_username_unique ON users (username) WHERE username IS NOT NULL AND deleted_at IS NULL");
+        DB::statement('ALTER TABLE users ALTER COLUMN email TYPE citext');
+        DB::statement('ALTER TABLE users ALTER COLUMN username TYPE citext');
+        DB::statement('CREATE UNIQUE INDEX users_email_unique ON users (email) WHERE deleted_at IS NULL');
+        DB::statement('CREATE UNIQUE INDEX users_username_unique ON users (username) WHERE username IS NOT NULL AND deleted_at IS NULL');
     }
 
     public function down(): void

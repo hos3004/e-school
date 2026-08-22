@@ -34,7 +34,7 @@ final class PayrollPeriodPolicy
     public function update($user, PayrollPeriod $period): bool
     {
         return $user->can('payroll.periods.update')
-            && ! $period->status->isFrozen();
+            && !$period->status->isFrozen();
     }
 
     /** لا حذف للفترات المالية أبدًا. */
@@ -46,30 +46,30 @@ final class PayrollPeriodPolicy
     public function calculate($user, PayrollPeriod $period): bool
     {
         return $user->can('payroll.calculate')
-            && $period->status->canTransitionTo(\Modules\Payroll\Domain\Enums\PayrollPeriodStatus::Calculating);
+            && $period->status->canTransitionTo(PayrollPeriodStatus::Calculating);
     }
 
     public function review($user, PayrollPeriod $period): bool
     {
         return $user->can(config('payroll.period.review_permission'))
-            && $period->status->canTransitionTo(\Modules\Payroll\Domain\Enums\PayrollPeriodStatus::UnderReview);
+            && $period->status->canTransitionTo(PayrollPeriodStatus::UnderReview);
     }
 
     public function approve($user, PayrollPeriod $period): bool
     {
         return $user->can(config('payroll.period.approve_permission'))
-            && $period->status->canTransitionTo(\Modules\Payroll\Domain\Enums\PayrollPeriodStatus::Approved);
+            && $period->status->canTransitionTo(PayrollPeriodStatus::Approved);
     }
 
     public function pay($user, PayrollPeriod $period): bool
     {
         return $user->can(config('payroll.period.pay_permission'))
-            && $period->status->canTransitionTo(\Modules\Payroll\Domain\Enums\PayrollPeriodStatus::Paid);
+            && $period->status->canTransitionTo(PayrollPeriodStatus::Paid);
     }
 
     public function lock($user, PayrollPeriod $period): bool
     {
         return $user->can('payroll.lock')
-            && $period->status->canTransitionTo(\Modules\Payroll\Domain\Enums\PayrollPeriodStatus::Locked);
+            && $period->status->canTransitionTo(PayrollPeriodStatus::Locked);
     }
 }

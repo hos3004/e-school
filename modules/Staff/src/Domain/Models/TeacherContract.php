@@ -75,7 +75,7 @@ final class TeacherContract extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
@@ -86,7 +86,7 @@ final class TeacherContract extends Model
     /**
      * العقود السارية بتاريخ معيّن.
      *
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeActiveOn(Builder $query, CarbonImmutable|string $date): Builder
@@ -103,7 +103,7 @@ final class TeacherContract extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForProfile(Builder $query, string $staffProfileId): Builder

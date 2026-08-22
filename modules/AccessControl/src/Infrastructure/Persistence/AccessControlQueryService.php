@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\AccessControl\Infrastructure\Persistence;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Application\Queries\RoleData;
 use Modules\AccessControl\Domain\Contracts\AccessControlQuerier;
@@ -54,6 +55,40 @@ final readonly class AccessControlQueryService implements AccessControlQuerier
             ->where('model_has_permissions.model_type', $modelType)
             ->where('model_has_permissions.model_id', $modelId)
             ->where('permissions.name', $permissionName)
+            ->exists();
+    }
+
+    public function modelHasPermission(
+        string $modelType,
+        string $modelId,
+        string $permissionName,
+        string $guardName,
+    ): bool {
+        return DB::table('permissions')
+            ->where('permissions.name', $permissionName)
+            ->where('permissions.guard_name', $guardName)
+            ->where(function (Builder $permissions) use ($modelType, $modelId, $guardName): void {
+                $permissions
+                    ->whereExists(function (Builder $direct) use ($modelType, $modelId): void {
+                        $direct
+                            ->selectRaw('1')
+                            ->from('model_has_permissions')
+                            ->whereColumn('model_has_permissions.permission_id', 'permissions.id')
+                            ->where('model_has_permissions.model_type', $modelType)
+                            ->where('model_has_permissions.model_id', $modelId);
+                    })
+                    ->orWhereExists(function (Builder $throughRole) use ($modelType, $modelId, $guardName): void {
+                        $throughRole
+                            ->selectRaw('1')
+                            ->from('role_has_permissions')
+                            ->join('model_has_roles', 'model_has_roles.role_id', '=', 'role_has_permissions.role_id')
+                            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+                            ->whereColumn('role_has_permissions.permission_id', 'permissions.id')
+                            ->where('model_has_roles.model_type', $modelType)
+                            ->where('model_has_roles.model_id', $modelId)
+                            ->where('roles.guard_name', $guardName);
+                    });
+            })
             ->exists();
     }
 }

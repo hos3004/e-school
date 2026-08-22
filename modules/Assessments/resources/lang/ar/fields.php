@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'id' => 'المعرّف',
+    'basics' => 'بيانات أساسية',
+    'availability' => 'نافذة التوفر',
+    'content' => 'المحتوى',
+    'type' => 'النوع',
+    'course' => 'المادة',
+    'title' => 'العنوان',
+    'title_ar' => 'العنوان (عربي)',
+    'title_en' => 'العنوان (إنجليزي)',
+    'instructions_ar' => 'التعليمات',
+    'total_score' => 'الدرجة الكلية',
+    'passing_score' => 'علامة النجاح',
+    'duration' => 'مدة الاختبار (دقيقة)',
+    'max_attempts' => 'أقصى عدد محاولات',
+    'available_from' => 'متاح من',
+    'available_to' => 'متاح حتى',
+    'attempt_info' => 'بيانات المحاولة',
+    'assessment' => 'الاختبار',
+    'student_profile' => 'ملف الطالب',
+    'attempt_number' => 'رقم المحاولة',
+    'started_at' => 'بدأت في',
+    'submitted_at' => 'سُلّمت في',
+    'submitted' => 'مُسلَّمة',
+    'not_submitted' => 'لم تُسلَّم',
+    'grading' => 'التصحيح',
+    'score' => 'الدرجة',
+    'passed' => 'النتيجة',
+    'graded_by' => 'صحّحها',
+    'graded_at' => 'وقت التصحيح',
+];

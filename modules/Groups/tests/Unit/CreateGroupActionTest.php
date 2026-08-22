@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Event;
 use Modules\Groups\Application\Actions\CreateGroupAction;
 use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Events\GroupCreated;
-use Modules\Groups\Domain\Models\Group;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
@@ -40,7 +40,7 @@ function groupData(array $overrides = []): array
     ], $overrides);
 }
 
-it('creates a group in planning status and publishes GroupCreated', function () {
+it('creates a group in planning status and publishes GroupCreated', function (): void {
     Event::fake([GroupCreated::class]);
 
     $group = app(CreateGroupAction::class)->execute(groupData());
@@ -54,26 +54,26 @@ it('creates a group in planning status and publishes GroupCreated', function () 
         GroupCreated::class,
         fn (GroupCreated $event): bool => $event->groupId === (string) $group->getKey()
             && $event->status === GroupStatus::Planning->value
-            && $event->payload()['code'] === 'GRP-0001'
+            && $event->payload()['code'] === 'GRP-0001',
     );
 });
 
-it('rejects a duplicate group code even across archived groups', function () {
+it('rejects a duplicate group code even across archived groups', function (): void {
     $action = app(CreateGroupAction::class);
 
     $first = $action->execute(groupData());
     $first->delete();
 
     $action->execute(groupData(['organization_id' => createTestOrganization()]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects an end date before the start date', function () {
+it('rejects an end date before the start date', function (): void {
     app(CreateGroupAction::class)->execute(groupData([
         'ends_on' => '2026-01-01',
     ]));
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('accepts an end date equal to or after the start date', function () {
+it('accepts an end date equal to or after the start date', function (): void {
     $group = app(CreateGroupAction::class)->execute(groupData([
         'ends_on' => '2026-06-30',
     ]));

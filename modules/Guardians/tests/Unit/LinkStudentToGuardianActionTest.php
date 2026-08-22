@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Modules\Guardians\Application\Actions\LinkStudentToGuardian;
 use Modules\Guardians\Domain\Enums\GuardianRelationship;
 use Modules\Guardians\Domain\Events\GuardianLinkedToStudent;
@@ -14,7 +15,7 @@ it('links a student to a guardian and dispatches GuardianLinkedToStudent', funct
     Event::fake([GuardianLinkedToStudent::class]);
 
     $guardian = GuardianProfile::factory()->create();
-    $studentId = (string) Illuminate\Support\Str::ulid();
+    $studentId = (string) Str::ulid();
 
     $link = app(LinkStudentToGuardian::class)->execute($guardian->id, $studentId, [
         'relationship' => GuardianRelationship::Father,
@@ -41,7 +42,7 @@ it('defaults visible sections to the configured defaults', function (): void {
 
     $link = app(LinkStudentToGuardian::class)->execute(
         $guardian->id,
-        (string) Illuminate\Support\Str::ulid(),
+        (string) Str::ulid(),
         ['relationship' => GuardianRelationship::Mother],
     );
 
@@ -50,7 +51,7 @@ it('defaults visible sections to the configured defaults', function (): void {
 
 it('rejects linking the same student twice to the same guardian', function (): void {
     $guardian = GuardianProfile::factory()->create();
-    $studentId = (string) Illuminate\Support\Str::ulid();
+    $studentId = (string) Str::ulid();
 
     $action = app(LinkStudentToGuardian::class);
     $action->execute($guardian->id, $studentId, ['relationship' => GuardianRelationship::Father]);
@@ -68,7 +69,7 @@ it('rejects linking the same student twice to the same guardian', function (): v
 it('enforces the configured maximum of guardians per student', function (): void {
     config()->set('guardians.limits.max_links_per_student', 2);
 
-    $studentId = (string) Illuminate\Support\Str::ulid();
+    $studentId = (string) Str::ulid();
     $action = app(LinkStudentToGuardian::class);
 
     GuardianLink::factory()->create(['student_profile_id' => $studentId]);
@@ -98,7 +99,7 @@ it('enforces the configured maximum of students per guardian', function (): void
     try {
         $action->execute(
             $guardian->id,
-            (string) Illuminate\Support\Str::ulid(),
+            (string) Str::ulid(),
             ['relationship' => GuardianRelationship::Uncle],
         );
         $this->fail('Expected BusinessRuleViolation was not thrown.');
@@ -108,7 +109,7 @@ it('enforces the configured maximum of students per guardian', function (): void
 });
 
 it('keeps only one primary guardian per student', function (): void {
-    $studentId = (string) Illuminate\Support\Str::ulid();
+    $studentId = (string) Str::ulid();
 
     $firstPrimary = GuardianLink::factory()->primary()->create(['student_profile_id' => $studentId]);
 

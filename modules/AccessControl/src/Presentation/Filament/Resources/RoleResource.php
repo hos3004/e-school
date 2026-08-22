@@ -6,10 +6,10 @@ namespace Modules\AccessControl\Presentation\Filament\Resources;
 
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -25,12 +25,15 @@ final class RoleResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-identification';
 
+    protected static \UnitEnum|string|null $navigationGroup = 'النظام';
+
+    protected static ?int $navigationSort = 101;
+
     public static function canAccess(): bool
     {
         $user = auth()->user();
 
-        return $user !== null
-            && ($user->can('accesscontrol.roles.view_any') || $user->can('accesscontrol.roles.view'));
+        return $user !== null && $user->can('settings.manage');
     }
 
     public static function getModelLabel(): string
@@ -41,11 +44,6 @@ final class RoleResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('accesscontrol::filament.role.plural');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('accesscontrol::filament.group');
     }
 
     public static function form(Schema $schema): Schema
@@ -115,10 +113,10 @@ final class RoleResource extends Resource
             ])
             ->actions([
                 EditAction::make()
-                    ->visible(fn (Role $record): bool => ! $record->is_system
+                    ->visible(fn (Role $record): bool => !$record->is_system
                         && auth()->user()?->can('update', $record) === true),
                 DeleteAction::make()
-                    ->visible(fn (Role $record): bool => ! $record->is_system
+                    ->visible(fn (Role $record): bool => !$record->is_system
                         && auth()->user()?->can('delete', $record) === true),
             ]);
     }

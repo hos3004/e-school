@@ -8,10 +8,11 @@ use Modules\Discipline\Application\Actions\RecordViolationAction;
 use Modules\Discipline\Application\Actions\WaiveViolationAction;
 use Modules\Discipline\Domain\Events\ViolationWaived;
 use Modules\Discipline\Domain\Models\ViolationEvent;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-it('waives a violation with a documented reason and publishes ViolationWaived', function () {
+it('waives a violation with a documented reason and publishes ViolationWaived', function (): void {
     Event::fake([ViolationWaived::class]);
 
     $violation = app(RecordViolationAction::class)->execute([
@@ -31,11 +32,11 @@ it('waives a violation with a documented reason and publishes ViolationWaived', 
 
     Event::assertDispatched(
         ViolationWaived::class,
-        fn (ViolationWaived $event): bool => $event->payload()['count_in_window_after_waiver'] === 0
+        fn (ViolationWaived $event): bool => $event->payload()['count_in_window_after_waiver'] === 0,
     );
 });
 
-it('refuses to waive the same violation twice', function () {
+it('refuses to waive the same violation twice', function (): void {
     $violation = app(RecordViolationAction::class)->execute([
         'organization_id' => disciplineOrg(),
         'enrollment_id' => (string) str()->ulid(),
@@ -45,9 +46,9 @@ it('refuses to waive the same violation twice', function () {
 
     app(WaiveViolationAction::class)->execute($violation, ['reason' => 'عذر مقبول']);
     app(WaiveViolationAction::class)->execute($violation, ['reason' => 'عذر آخر']);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('keeps the violation record in place after waiver — no deletion path', function () {
+it('keeps the violation record in place after waiver — no deletion path', function (): void {
     $violation = app(RecordViolationAction::class)->execute([
         'organization_id' => disciplineOrg(),
         'enrollment_id' => (string) str()->ulid(),

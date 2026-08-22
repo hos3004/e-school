@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Application\Actions;
 
-use Shared\Support\Transaction;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Groups\Domain\Events\ProgramAttachedToGroup;
-use Modules\Groups\Domain\Models\GroupProgram;
 use Modules\Groups\Domain\Models\Group;
+use Modules\Groups\Domain\Models\GroupProgram;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * إرفاق برنامج بمجموعة: لا تكرار لربط نفس البرنامج بنفس المجموعة.

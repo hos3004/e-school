@@ -34,7 +34,7 @@ final readonly class FreezeEnrollmentAction
         $allowedTypes = array_values((array) config('enrollments.freeze_types', ['automatic', 'manual']));
         $type = $freezeType ?? $allowedTypes[0];
 
-        if (! in_array($type, $allowedTypes, true)) {
+        if (!in_array($type, $allowedTypes, true)) {
             throw BusinessRuleViolation::make(
                 'enrollments.invalid_freeze_type',
                 'enrollments::errors.invalid_freeze_type',

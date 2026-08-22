@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Application\Policies;
 
+use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Domain\Models\TeacherContract;
 
 final class TeacherContractPolicy
@@ -24,8 +25,8 @@ final class TeacherContractPolicy
         }
 
         // صاحب العقد يرى عقده دون صلاحية إدارية.
-        /** @var \Modules\Staff\Domain\Models\StaffProfile|null $profile */
-        $profile = \Modules\Staff\Domain\Models\StaffProfile::query()->find($contract->staff_profile_id);
+        /** @var StaffProfile|null $profile */
+        $profile = StaffProfile::query()->find($contract->staff_profile_id);
 
         return $profile !== null
             && (string) $profile->user_id === (string) $user->getAuthIdentifier();

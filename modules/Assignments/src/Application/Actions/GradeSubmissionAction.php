@@ -28,13 +28,13 @@ final readonly class GradeSubmissionAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  score إلزامي، feedback اختياري
+     * @param array<string, mixed> $data score إلزامي، feedback اختياري
      */
     public function execute(AssignmentSubmission $submission, array $data): AssignmentSubmission
     {
         $status = $submission->status;
 
-        if (! $status->hasContent()) {
+        if (!$status->hasContent()) {
             throw BusinessRuleViolation::make(
                 'assignments.grade_before_submission',
                 'assignments::errors.grade_before_submission',
@@ -48,7 +48,7 @@ final readonly class GradeSubmissionAction
             );
         }
 
-        if (! $status->canTransitionTo(AssignmentSubmissionStatus::Graded)) {
+        if (!$status->canTransitionTo(AssignmentSubmissionStatus::Graded)) {
             throw BusinessRuleViolation::make(
                 'assignments.invalid_status_transition',
                 'assignments::errors.invalid_status_transition',

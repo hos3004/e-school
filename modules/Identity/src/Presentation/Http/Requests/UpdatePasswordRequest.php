@@ -6,12 +6,13 @@ namespace Modules\Identity\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
+use Modules\Identity\Domain\Models\User;
 
 final class UpdatePasswordRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        /** @var \Modules\Identity\Domain\Models\User $user */
+        /** @var User $user */
         $user = $this->user();
 
         return $user !== null && $this->user()->can('update', $user);

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Messaging\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -28,6 +28,7 @@ final class WhatsappInbound extends Model
         'matched_user_id',
         'handled_by',
         'handled_at',
+        'created_at',
     ];
 
     protected function casts(): array

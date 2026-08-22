@@ -6,16 +6,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Modules\Groups\Application\Actions\ActivateGroupAction;
-use Modules\Groups\Application\Actions\AssignTeacherAction;
 use Modules\Groups\Database\Factories\GroupFactory;
 use Modules\Groups\Database\Factories\GroupTeacherFactory;
 use Modules\Groups\Domain\Events\TeacherAssignedToGroup;
 use Modules\Groups\Domain\Models\Group;
+use Modules\Groups\Domain\Models\GroupProgram;
 use Modules\Identity\Domain\Models\User;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Gate::define('groups.view_any', fn ($user) => true);
     Gate::define('groups.assign_teacher', fn ($user) => true);
     Gate::define('groups.unassign_teacher', fn ($user) => true);
@@ -25,7 +25,7 @@ beforeEach(function () {
     $this->actor = User::factory()->create();
 });
 
-it('assigns a teacher through the API and unassigns later', function () {
+it('assigns a teacher through the API and unassigns later', function (): void {
     Event::fake([TeacherAssignedToGroup::class]);
 
     $group = app(ActivateGroupAction::class)->execute(Group::factory()->create());
@@ -48,7 +48,7 @@ it('assigns a teacher through the API and unassigns later', function () {
         ->assertJsonPath('data.role', 'lead');
 });
 
-it('attaches and detaches programs through the API', function () {
+it('attaches and detaches programs through the API', function (): void {
     $group = Group::factory()->create();
     $programId = GroupFactory::ensureProgram();
 
@@ -57,7 +57,7 @@ it('attaches and detaches programs through the API', function () {
         ->assertOk()
         ->assertJsonPath('data.id', (string) $group->getKey());
 
-    $linkId = \Modules\Groups\Domain\Models\GroupProgram::query()
+    $linkId = GroupProgram::query()
         ->forGroup((string) $group->getKey())
         ->firstOrFail()
         ->getKey();
@@ -67,7 +67,7 @@ it('attaches and detaches programs through the API', function () {
         ->assertNoContent();
 });
 
-it('rejects duplicate program attachment through the API', function () {
+it('rejects duplicate program attachment through the API', function (): void {
     $group = Group::factory()->create();
     $programId = GroupFactory::ensureProgram();
 

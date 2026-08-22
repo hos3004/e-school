@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use Modules\Identity\Domain\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
+use Modules\Identity\Domain\Models\User;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Gate::define('academics.levels.create', fn ($user) => true);
     Gate::define('academics.levels.update', fn ($user) => true);
     Gate::define('academics.levels.reorder', fn ($user) => true);
@@ -26,7 +26,7 @@ function levelPayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('creates a level through the API and returns 201', function () {
+it('creates a level through the API and returns 201', function (): void {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)
@@ -38,7 +38,7 @@ it('creates a level through the API and returns 201', function () {
     expect(Level::query()->whereKey($response->json('data.id'))->exists())->toBeTrue();
 });
 
-it('rejects a duplicate level code inside the same program', function () {
+it('rejects a duplicate level code inside the same program', function (): void {
     $user = User::factory()->create();
     $payload = levelPayload();
     Level::factory()->create(['program_id' => $payload['program_id'], 'code' => $payload['code']]);
@@ -49,7 +49,7 @@ it('rejects a duplicate level code inside the same program', function () {
         ->assertJsonValidationErrors(['code']);
 });
 
-it('updates a level through the API', function () {
+it('updates a level through the API', function (): void {
     $user = User::factory()->create();
     $level = Level::factory()->create();
 

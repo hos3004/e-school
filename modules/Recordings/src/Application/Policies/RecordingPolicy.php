@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Recordings\Application\Policies;
 
-use Illuminate\Auth\Access\Response;
 use Modules\Recordings\Domain\Models\Recording;
 
 /**

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Assessments\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Assessments\Domain\Enums\QuestionType;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -32,6 +33,7 @@ final class Question extends Model
     protected function casts(): array
     {
         return [
+            'type' => QuestionType::class,
             'body' => 'array',
             'options' => 'array',
             'correct_answer' => 'array',

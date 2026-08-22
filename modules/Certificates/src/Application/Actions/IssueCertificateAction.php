@@ -8,8 +8,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
 use Modules\Certificates\Domain\Events\CertificateIssued;
-use Modules\Certificates\Domain\Models\CertificateTemplate;
 use Modules\Certificates\Domain\Models\Certificate;
+use Modules\Certificates\Domain\Models\CertificateTemplate;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -29,7 +29,7 @@ final readonly class IssueCertificateAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function execute(array $data, ?string $actorId = null): Certificate
     {
@@ -68,7 +68,7 @@ final readonly class IssueCertificateAction
                 );
             }
 
-            if (! $template->is_active) {
+            if (!$template->is_active) {
                 throw BusinessRuleViolation::make(
                     'certificates.template_inactive',
                     'certificates::errors.template_inactive',

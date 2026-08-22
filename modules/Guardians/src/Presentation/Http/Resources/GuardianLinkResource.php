@@ -6,9 +6,10 @@ namespace Modules\Guardians\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Guardians\Domain\Models\GuardianLink;
 
 /**
- * @mixin \Modules\Guardians\Domain\Models\GuardianLink
+ * @mixin GuardianLink
  */
 final class GuardianLinkResource extends JsonResource
 {

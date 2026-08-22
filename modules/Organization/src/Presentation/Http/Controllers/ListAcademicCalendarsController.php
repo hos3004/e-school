@@ -18,7 +18,7 @@ final class ListAcademicCalendarsController
      */
     public function __invoke(Request $request, Organization $organization): AnonymousResourceCollection
     {
-        if (! ($request->user()?->can('viewAny', AcademicCalendar::class) ?? false)) {
+        if (!($request->user()?->can('viewAny', AcademicCalendar::class) ?? false)) {
             throw new AuthorizationException(__('organization::errors.unauthorized'));
         }
 

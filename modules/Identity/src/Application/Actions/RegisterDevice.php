@@ -18,7 +18,7 @@ use Shared\Support\BusinessRuleViolation;
 final readonly class RegisterDevice
 {
     /**
-     * @param  array<string, mixed>  $attributes
+     * @param array<string, mixed> $attributes
      */
     public function execute(string $userId, array $attributes): UserDevice
     {

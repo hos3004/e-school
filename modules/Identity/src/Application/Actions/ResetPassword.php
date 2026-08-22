@@ -25,14 +25,14 @@ final readonly class ResetPassword
         /** @var PasswordResetToken|null $record */
         $record = PasswordResetToken::query()->find($email);
 
-        if ($record === null || ! Hash::check($token, $record->token)) {
+        if ($record === null || !Hash::check($token, $record->token)) {
             throw BusinessRuleViolation::make(
                 'identity.reset_token_invalid',
                 'identity::errors.reset_token_invalid',
             );
         }
 
-        if (! $record->isFresh()) {
+        if (!$record->isFresh()) {
             throw BusinessRuleViolation::make(
                 'identity.reset_token_expired',
                 'identity::errors.reset_token_expired',

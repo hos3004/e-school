@@ -8,6 +8,7 @@ use Modules\Attendance\Application\Actions\ConfirmAttendanceAction;
 use Modules\Attendance\Application\Actions\RecordAttendanceAction;
 use Modules\Attendance\Domain\Events\AttendanceConfirmed;
 use Modules\Attendance\Domain\Models\Attendance;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
@@ -29,7 +30,7 @@ function createUnconfirmedAttendance(): Attendance
     );
 }
 
-it('confirms attendance and stamps the confirmer and time', function () {
+it('confirms attendance and stamps the confirmer and time', function (): void {
     Event::fake([AttendanceConfirmed::class]);
 
     $attendance = createUnconfirmedAttendance();
@@ -47,20 +48,20 @@ it('confirms attendance and stamps the confirmer and time', function () {
         AttendanceConfirmed::class,
         fn (AttendanceConfirmed $event): bool => $event->attendanceId === (string) $attendance->getKey()
             && $event->confirmedBy === $confirmerId
-            && $event->status === $attendance->status->value
+            && $event->status === $attendance->status->value,
     );
 });
 
-it('rejects confirming an already confirmed record', function () {
+it('rejects confirming an already confirmed record', function (): void {
     $attendance = createUnconfirmedAttendance();
     $action = app(ConfirmAttendanceAction::class);
 
     $action->execute($attendance, (string) str()->ulid());
     $action->execute($attendance, (string) str()->ulid());
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);
 
-it('rejects confirming without a confirmer identifier', function () {
+it('rejects confirming without a confirmer identifier', function (): void {
     $attendance = createUnconfirmedAttendance();
 
     app(ConfirmAttendanceAction::class)->execute($attendance, ' ');
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

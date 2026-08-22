@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Modules\Guardians\Application\Actions\CreateGuardianProfile;
 use Modules\Guardians\Domain\Enums\ContactChannel;
 use Modules\Guardians\Domain\Events\GuardianProfileCreated;
@@ -15,8 +16,8 @@ it('creates a guardian profile and dispatches GuardianProfileCreated', function 
     $action = app(CreateGuardianProfile::class);
 
     $profile = $action->execute([
-        'organization_id' => (string) Illuminate\Support\Str::ulid(),
-        'user_id' => (string) Illuminate\Support\Str::ulid(),
+        'organization_id' => (string) Str::ulid(),
+        'user_id' => (string) Str::ulid(),
         'national_id_last4' => '1234',
         'occupation' => 'engineer',
         'preferred_contact_channel' => ContactChannel::WhatsApp->value,

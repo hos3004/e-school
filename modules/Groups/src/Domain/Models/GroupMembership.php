@@ -46,7 +46,7 @@ final class GroupMembership extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeActive(Builder $query): Builder
@@ -55,7 +55,7 @@ final class GroupMembership extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForStudent(Builder $query, string $studentProfileId): Builder
@@ -64,7 +64,7 @@ final class GroupMembership extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForGroup(Builder $query, string $groupId): Builder

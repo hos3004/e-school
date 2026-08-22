@@ -9,7 +9,7 @@ use Shared\Domain\DomainEvent;
 final class GuardianProfileUpdated extends DomainEvent
 {
     /**
-     * @param  array<string, mixed>  $changes
+     * @param array<string, mixed> $changes
      */
     public function __construct(
         public readonly string $guardianProfileId,

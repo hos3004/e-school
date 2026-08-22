@@ -27,7 +27,7 @@ $ownerOfTable = static function (string $table) use ($tableOwnership): ?string {
     }
 
     foreach ($tableOwnership as $pattern => $module) {
-        if (! str_contains((string) $pattern, '*')) {
+        if (!str_contains((string) $pattern, '*')) {
             continue;
         }
 
@@ -96,6 +96,7 @@ $violationsForVerb = static function (string $verb) use ($migrationFiles, $repoR
 
             if ($owner === null) {
                 $violations[] = "{$relative}:{$line} — جدول «{$tableName}» غير مسجل في خريطة الملكية table_ownership.php";
+
                 continue;
             }
 

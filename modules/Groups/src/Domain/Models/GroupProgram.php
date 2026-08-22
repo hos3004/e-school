@@ -33,7 +33,7 @@ final class GroupProgram extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForGroup(Builder $query, string $groupId): Builder
@@ -42,7 +42,7 @@ final class GroupProgram extends Model
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param Builder<self> $query
      * @return Builder<self>
      */
     public function scopeForProgram(Builder $query, string $programId): Builder

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Messaging\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Shared\Concerns\HasModuleFactory;
@@ -32,6 +32,7 @@ final class Message extends Model
         'moderated_by',
         'moderated_at',
         'edited_at',
+        'created_at',
     ];
 
     protected function casts(): array

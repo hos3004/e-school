@@ -14,48 +14,48 @@ use Modules\Notifications\Domain\Models\NotificationOutbox;
  */
 final class NotificationOutboxPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
         return $user->can('notifications.outbox.view_any');
     }
 
-    public function view($user, NotificationOutbox $outbox): bool
+    public function view(mixed $user, NotificationOutbox $outbox): bool
     {
         return $user->can('notifications.outbox.view')
             && $outbox->organization_id === $user->organization_id;
     }
 
-    public function viewOwn($user, NotificationOutbox $outbox): bool
+    public function viewOwn(mixed $user, NotificationOutbox $outbox): bool
     {
         return $outbox->user_id === $user->id;
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
         return $user->can('notifications.outbox.create');
     }
 
-    public function update($user, NotificationOutbox $outbox): bool
+    public function update(mixed $user, NotificationOutbox $outbox): bool
     {
         return $user->can('notifications.outbox.update')
             && $outbox->organization_id === $user->organization_id;
     }
 
-    public function delete($user, NotificationOutbox $outbox): bool
+    public function delete(mixed $user, NotificationOutbox $outbox): bool
     {
         return $user->can('notifications.outbox.delete')
             && $outbox->organization_id === $user->organization_id;
     }
 
     /** إلغاء رسالة في الانتظار. */
-    public function cancel($user, NotificationOutbox $outbox): bool
+    public function cancel(mixed $user, NotificationOutbox $outbox): bool
     {
         return $user->can('notifications.outbox.cancel')
             && $outbox->organization_id === $user->organization_id;
     }
 
     /** إعادة محاولة رسالة فاشلة. */
-    public function retry($user, NotificationOutbox $outbox): bool
+    public function retry(mixed $user, NotificationOutbox $outbox): bool
     {
         return $user->can('notifications.outbox.retry')
             && $outbox->organization_id === $user->organization_id;

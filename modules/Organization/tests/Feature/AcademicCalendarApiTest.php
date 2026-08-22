@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Gate;
 use Modules\Organization\Database\Factories\AcademicCalendarFactory;
 use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Models\AcademicCalendar;
-use Modules\Organization\Domain\Models\Organization;
 use Modules\Organization\Tests\Support\ApiUser;
 
 function calendarApiUser(): ApiUser

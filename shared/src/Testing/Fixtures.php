@@ -68,7 +68,6 @@ final class Fixtures
         return $id;
     }
 
-
     /**
      * معرّف ملف طالب موجود فعلًا.
      */
@@ -107,6 +106,7 @@ final class Fixtures
 
         return $id;
     }
+
     /**
      * يُستدعى بين الاختبارات لأن RefreshDatabase يمسح الجداول.
      */

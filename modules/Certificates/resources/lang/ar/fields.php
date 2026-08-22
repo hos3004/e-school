@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'award' => 'بيانات منح الشارة',
+    'awarded_at' => 'تاريخ المنح',
+    'background_image' => 'صورة الخلفية',
+    'code' => 'الرمز',
+    'created_at' => 'تاريخ الإنشاء',
+    'description' => 'الوصف',
+    'design' => 'تصميم الشهادة',
+    'enrollment' => 'التسجيل',
+    'expires_at' => 'تاريخ الانتهاء',
+    'icon' => 'أيقونة الشارة',
+    'id' => 'المعرّف',
+    'identity' => 'البيانات الأساسية',
+    'is_active' => 'نشط',
+    'issue' => 'بيانات إصدار الشهادة',
+    'issued_at' => 'تاريخ الإصدار',
+    'layout' => 'قالب التصميم',
+    'locale' => 'اللغة',
+    'metadata' => 'بيانات إضافية',
+    'name' => 'الاسم',
+    'organization' => 'المؤسسة',
+    'program' => 'البرنامج',
+    'reason' => 'السبب',
+    'revoked_at' => 'تاريخ الإلغاء',
+    'serial_number' => 'الرقم التسلسلي',
+    'student' => 'الطالب',
+    'template' => 'قالب الشهادة',
+    'tier' => 'الفئة',
+    'title' => 'العنوان',
+    'user' => 'المستفيد',
+    'value' => 'النص',
+];

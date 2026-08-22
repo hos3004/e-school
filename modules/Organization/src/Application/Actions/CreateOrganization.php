@@ -18,7 +18,7 @@ use Shared\Support\BusinessRuleViolation;
 final readonly class CreateOrganization
 {
     /**
-     * @param  array<string, mixed>  $attributes  قيم مطابقة لـ $fillable في النموذج
+     * @param array<string, mixed> $attributes قيم مطابقة لـ $fillable في النموذج
      */
     public function execute(array $attributes): Organization
     {

@@ -47,8 +47,8 @@ final class ReactivationRequestPolicy
     /** حسم الطلب (قبول/رفض) — بصلاحية المُعتمِد من الإعدادات وعلى طلب مفتوح. */
     public function decide($user, ReactivationRequest $request): bool
     {
-        if (! $request->status->canTransitionTo(ReactivationStatus::Approved)
-            && ! $request->status->canTransitionTo(ReactivationStatus::Rejected)
+        if (!$request->status->canTransitionTo(ReactivationStatus::Approved)
+            && !$request->status->canTransitionTo(ReactivationStatus::Rejected)
         ) {
             return false;
         }

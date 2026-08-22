@@ -9,7 +9,7 @@ use Shared\Domain\DomainEvent;
 final class ProgramCreated extends DomainEvent
 {
     /**
-     * @param  array<string, string>  $name
+     * @param array<string, string> $name
      */
     public function __construct(
         public readonly string $programId,

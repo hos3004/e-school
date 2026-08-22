@@ -6,10 +6,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Academics\Application\Actions\ReorderLevelsAction;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
+use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
-it('reorders levels of a program', function () {
+it('reorders levels of a program', function (): void {
     $program = Program::factory()->create();
 
     $first = Level::factory()->for($program, 'program')->create(['sort_order' => 5]);
@@ -24,11 +25,11 @@ it('reorders levels of a program', function () {
         ->and($first->fresh()->sort_order)->toBe(2);
 });
 
-it('rejects levels that do not belong to the program', function () {
+it('rejects levels that do not belong to the program', function (): void {
     $program = Program::factory()->create();
     $foreign = Level::factory()->create();
 
     app(ReorderLevelsAction::class)->execute((string) $program->getKey(), [
         (string) $foreign->getKey(),
     ]);
-})->throws(Shared\Support\BusinessRuleViolation::class);
+})->throws(BusinessRuleViolation::class);

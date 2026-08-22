@@ -23,12 +23,14 @@ final class DatabaseSeeder extends Seeder
                 .chr(92).'Seeders'
                 .chr(92).$module.'Seeder';
 
-            if (! class_exists($seeder)) {
+            if (!class_exists($seeder)) {
                 continue;
             }
 
             $this->command?->info("Seeding: {$module}");
             $this->call($seeder);
         }
+
+        $this->call(DemoPortalRoleSeeder::class);
     }
 }

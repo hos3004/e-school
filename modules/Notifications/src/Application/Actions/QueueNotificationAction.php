@@ -6,6 +6,7 @@ namespace Modules\Notifications\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
@@ -21,8 +22,8 @@ use Shared\Support\Transaction;
  * الترتيب داخل execute إلزامي: حراس ← معاملة ← نشر الأحداث بعد النجاح.
  *
  * القواعد:
- *  - القناة يجب أن تكون مفعّلة في config('notifications.channels.enabled').
- *  - لو عطّل المستخدم هذه الفئة×القناة صراحةً فلا تُقيَّد الرسالة (skip وليس خطأ).
+ *  - القناة يجب أن تكون مفعّلة في config('notifications.channels').
+ *  - in_app والفئات الحرجة تتجاهل إيقاف المستلم؛ غير الحرجة تحترمه.
  *  - idempotency_key يضمن ألا تُقيَّد نفس الرسالة مرتين؛ التكرار يعيد القيدة الأصلية.
  */
 final readonly class QueueNotificationAction
@@ -33,9 +34,9 @@ final readonly class QueueNotificationAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $subject
-     * @param  array<string, mixed>  $body
-     * @param  array<string, mixed>  $payload
+     * @param array<string, mixed> $subject
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $payload
      */
     public function execute(
         string $organizationId,
@@ -52,9 +53,9 @@ final readonly class QueueNotificationAction
         ?string $correlationId = null,
         ?string $actorId = null,
     ): ?NotificationOutbox {
-        $enabledChannels = (array) config('notifications.channels.enabled', Channel::values());
+        $enabledChannels = $this->enabledChannels();
 
-        if (! in_array($channel->value, $enabledChannels, true)) {
+        if (!in_array($channel->value, $enabledChannels, true)) {
             throw BusinessRuleViolation::make(
                 'notifications.channel_disabled',
                 'notifications::errors.channel_disabled',
@@ -62,11 +63,14 @@ final readonly class QueueNotificationAction
             );
         }
 
-        $optedOut = NotificationPreference::query()
-            ->forUser($userId)
-            ->forCategoryChannel($category, $channel->value)
-            ->where('enabled', false)
-            ->exists();
+        $critical = (bool) config('notifications.categories.'.$category.'.critical', false);
+        $optedOut = !$critical
+            && $channel !== Channel::InApp
+            && NotificationPreference::query()
+                ->forUser($userId)
+                ->forCategoryChannel($category, $channel->value)
+                ->where('enabled', false)
+                ->exists();
 
         if ($optedOut) {
             return null;
@@ -74,9 +78,9 @@ final readonly class QueueNotificationAction
 
         $scheduledFor ??= CarbonImmutable::now('UTC');
         $locale ??= (string) config('notifications.locale.fallback', config('app.fallback_locale'));
-        $idempotencyKey = $this->buildIdempotencyKey($eventId, $category, $channel);
+        $idempotencyKey = $this->buildIdempotencyKey($eventId, $userId, $category, $channel);
 
-        /** @var NotificationOutbox|null $outbox */
+        /** @var NotificationOutbox $outbox */
         $outbox = $this->transaction->run(function () use (
             $organizationId,
             $userId,
@@ -91,14 +95,15 @@ final readonly class QueueNotificationAction
             $locale,
             $idempotencyKey,
             $correlationId,
-        ): ?NotificationOutbox {
-            $existing = NotificationOutbox::query()
-                ->where('idempotency_key', $idempotencyKey)
-                ->first();
+        ): NotificationOutbox {
+            DB::select('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [$idempotencyKey]);
 
-            if ($existing !== null) {
-                return $existing;
-            }
+            $duplicate = NotificationOutbox::query()
+                ->where('idempotency_key', $idempotencyKey)
+                ->where('created_at', '>=', now()->subMinutes(
+                    max(0, (int) config('notifications.delivery.idempotency_window_minutes')),
+                ))
+                ->exists();
 
             return NotificationOutbox::query()->create([
                 'organization_id' => $organizationId,
@@ -114,12 +119,12 @@ final readonly class QueueNotificationAction
                 'payload' => $payload,
                 'idempotency_key' => $idempotencyKey,
                 'scheduled_for' => $scheduledFor,
-                'status' => OutboxStatus::Pending,
+                'status' => $duplicate ? OutboxStatus::Suppressed : OutboxStatus::Queued,
                 'attempts' => 0,
             ]);
         });
 
-        if ($outbox !== null && $outbox->wasRecentlyCreated) {
+        if ($outbox !== null && $outbox->status === OutboxStatus::Queued) {
             $this->events->dispatch(new NotificationQueued(
                 outboxId: $outbox->id,
                 organizationId: $outbox->organization_id,
@@ -140,11 +145,41 @@ final readonly class QueueNotificationAction
     }
 
     /**
-     * مفتاح عدم التكرار: حدث المصدر + الفئة + القناة — نفس الحدث عبر
-     * قناتين يقود قيدين مختلفين، وإعادة نشر نفس الحدث لا تكرر شيئًا.
+     * مفتاح عدم التكرار الموحّد: الحدث + المستلم + القناة + الفئة.
      */
-    private function buildIdempotencyKey(string $eventId, string $category, Channel $channel): string
+    private function buildIdempotencyKey(
+        string $eventId,
+        string $userId,
+        string $category,
+        Channel $channel,
+    ): string {
+        return hash('sha256', $eventId.$userId.$channel->value.$category);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function enabledChannels(): array
     {
-        return implode(':', [$eventId, $category, $channel->value]);
+        /** @var array<string, mixed> $configured */
+        $configured = (array) config('notifications.channels', []);
+        $explicit = $configured['enabled'] ?? null;
+
+        if (is_array($explicit)) {
+            return array_values(array_filter(
+                $explicit,
+                static fn (mixed $channel): bool => is_string($channel) && $channel !== '',
+            ));
+        }
+
+        $enabled = [];
+
+        foreach ($configured as $channel => $settings) {
+            if (is_string($channel) && is_array($settings) && (bool) ($settings['enabled'] ?? false)) {
+                $enabled[] = $channel;
+            }
+        }
+
+        return $enabled;
     }
 }

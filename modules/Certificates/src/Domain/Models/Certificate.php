@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Certificates\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
@@ -50,5 +50,10 @@ final class Certificate extends Model
     public function scopeExpired(Builder $query): Builder
     {
         return $query->whereNotNull('expires_at')->where('expires_at', '<=', now());
+    }
+
+    public function expired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->lessThanOrEqualTo(now());
     }
 }
