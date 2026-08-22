@@ -25,8 +25,18 @@ return new class extends Migration
 
             $table->foreign('organization_id')->references('id')->on('organizations')->restrictOnDelete();
             $table->foreign('program_id')->references('id')->on('programs')->nullOnDelete();
-            $table->foreign('parent_id')->references('id')->on('program_categories')->nullOnDelete();
             $table->unique(['organization_id', 'code']);
+        });
+
+        /*
+         * المفتاح الذاتي يُضاف بعد إنشاء الجدول لا داخله.
+         * PostgreSQL يحتاج المفتاح الأساسي قائمًا قبل الإشارة إليه، وLaravel
+         * يصدر PRIMARY KEY في عبارة ALTER منفصلة — فإضافة FK ذاتي داخل
+         * Schema::create تسبق إنشاء القيد وتفشل. نفس النمط المتبع في
+         * sessions.makeup_for_session_id.
+         */
+        Schema::table('program_categories', function (Blueprint $table): void {
+            $table->foreign('parent_id')->references('id')->on('program_categories')->nullOnDelete();
         });
 
         Schema::create('course_category', function (Blueprint $table): void {

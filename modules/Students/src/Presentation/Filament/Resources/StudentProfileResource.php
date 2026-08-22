@@ -34,7 +34,7 @@ final class StudentProfileResource extends Resource
 
     protected static ?int $navigationSort = 20;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('students::filament.navigation_group');
     }

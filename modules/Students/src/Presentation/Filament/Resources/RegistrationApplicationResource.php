@@ -36,7 +36,7 @@ final class RegistrationApplicationResource extends Resource
 
     protected static ?int $navigationSort = 19;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('students::filament.navigation_group');
     }

@@ -66,10 +66,10 @@ final readonly class AcceptRegistrationApplicationAction
             $profile->user_id = $locked->user_id;
             $profile->student_code = (string) $locked->getKey();
             $profile->date_of_birth = $locked->date_of_birth;
-            $profile->gender = $locked->gender->value;
+            $profile->gender = $locked->gender;
             $profile->country_id = $locked->country_id;
             $profile->region_id = $locked->region_id;
-            $profile->joined_at = now()->utc()->toDateString();
+            $profile->joined_at = now()->utc()->toImmutable();
             $profile->save();
 
             $locked->student_profile_id = (string) $profile->getKey();
