@@ -86,20 +86,20 @@ C = `2026_08_22_13*` · D = `2026_08_22_14*` · Claude = `2026_08_22_15*`.
 
 | # | المتطلب | الحالة | ملفات | آلي | يدوي |
 |---|---------|--------|-------|-----|------|
-| A1 | جدولا `countries` و`regions` + بذرة الدول العربية ومحافظات مصر | Missing | — | — | — |
-| A2 | عقد قراءة عام للجغرافيا (`GeographyQueries`) يعيد DTOs | Missing | — | — | — |
-| A3 | `registration_applications` + `RegistrationStatus` enum بحالاته السبع | Missing | — | — | — |
-| A4 | تدفق التقديم: draft → submitted → under_review → accepted/rejected → waiting_assignment | Missing | — | — | — |
-| A5 | **منع التوزيع قبل القبول** — فحص في Action وقيد في القاعدة | Missing | — | — | — |
-| A6 | إنشاء `StudentProfile` عند القبول فقط | Missing | — | — | — |
-| A7 | `users.username` إلزامي + فريد + بريد أو هاتف | Missing | — | — | — |
-| A8 | مولّد اقتراحات اسم المستخدم ببادئة من `organization_settings` | Missing | — | — | — |
-| A9 | كشف الطلبات المكررة لنفس الشخص | Missing | — | — | — |
-| A10 | الدولة والمنطقة على `student_profiles` و`staff_profiles` | Missing | — | — | — |
-| A11 | جنس المعلم على `staff_profiles` (شرط المطابقة) | Missing | — | — | — |
-| A12 | **تأهيل المعلم للمواد** (`teacher_courses`) — Dependency لاختيار البديل | Missing | — | — | — |
-| A13 | بحث وفلترة بالدولة والمنطقة والحالة | Missing | — | — | — |
-| A14 | استعادة الحساب عبر القناة المتاحة | Partial | `modules/Identity` | — | — |
+| A1 | جدولا `countries` و`regions` + بذرة الدول العربية ومحافظات مصر | Implemented | `modules/Organization` | GeographyData + migrate/rollback | لم يُفتح في المتصفح |
+| A2 | عقد قراءة عام للجغرافيا (`GeographyQueries`) يعيد DTOs | Implemented | `GeographyQueries` + DTOs | GeographyQueriesTest | — |
+| A3 | `registration_applications` + `RegistrationStatus` enum بحالاته السبع | Implemented | `modules/Students` | RegistrationApplicationTest | — |
+| A4 | تدفق التقديم: draft → submitted → under_review → accepted/rejected → waiting_assignment | Implemented | Actions + API + Filament | Students: 32/70 ضمن المجموعة | لم تُنفّذ رحلة متصفح كاملة |
+| A5 | **منع التوزيع قبل القبول** — فحص في Action وقيد في القاعدة | Partial | `StudentAdmissionQueries` + Enrollments Action | الرفض قبل الكتابة مثبت؛ fixture B يحجب الاختبار الكامل | — |
+| A6 | إنشاء `StudentProfile` عند القبول فقط | Implemented | `AcceptRegistrationApplicationAction` | قبول/رفض + تعطيل المسار القديم | — |
+| A7 | `users.username` إلزامي + فريد + بريد أو هاتف | Partial | Identity migration/request/action | RegisterUserTest | دخول Filament ما زال بالبريد |
+| A8 | مولّد اقتراحات اسم المستخدم ببادئة من `organization_settings` | Implemented | `UsernameSuggester` + `OrganizationSettingQueries` | UsernameSuggesterTest | — |
+| A9 | كشف الطلبات المكررة لنفس الشخص | Implemented | Registration Actions | اختبار البريد/الهاتف والـflag | — |
+| A10 | الدولة والمنطقة على `student_profiles` و`staff_profiles` | Implemented | Students + Staff + Filament | اختبارات موجهة + migration | لم يُفتح في المتصفح |
+| A11 | جنس المعلم على `staff_profiles` (شرط المطابقة) | Implemented | Staff profile/request/action/query | Staff: 5/13 ضمن المجموعة | — |
+| A12 | **تأهيل المعلم للمواد** (`teacher_courses`) — Dependency لاختيار البديل | Implemented | `TeacherQualificationQueries` | TeacherQualificationQueriesTest | — |
+| A13 | بحث وفلترة بالدولة والمنطقة والحالة | Partial | Students/Staff Filament | فلاتر منفذة | بحث الأسماء القديمة يحتاج Identity Query |
+| A14 | استعادة الحساب عبر القناة المتاحة | Partial | `modules/Identity` | البريد فقط | الهاتف/WhatsApp غير منفّذ |
 
 ## 2. الأكاديمي — الوكيل B
 
@@ -260,11 +260,13 @@ Livewire، أو حل جذري يمنع البدء المزدوج لـAlpine.
 | E3/E4 مسارات الحصص | Antigravity | `route:list --path=admin` | `admin/sessions` و`admin/sessions/{record}` و`admin/session-participants` مسجَّلة وترد 302 | **Implemented** |
 | F6 توحيد أسماء الصلاحيات | Antigravity | فتح `/admin/students` | الصفحة تفتح وتعرض 5 طلاب بجدول وبحث — **الـ403 الذي كان يقفل المشروع زال** | **Tested** |
 | F1/F2 خصوصية ولي الأمر | Antigravity | تشغيل الاختبار | ولي أمر يملك `guardian.view` يطلب المحادثة عبر HTTP → **403** · مشرف بـ`message.moderate` → مسموح | **Tested** |
-| F7 عزل المؤسسات | Antigravity | تشغيل الاختبار | اختبار واحد ناجح — **تغطية رفيعة**، مورد واحد من ستة مطلوبة | **Partial** |
+| F7 عزل المؤسسات | جولة الاعتماد | اختبارات HTTP موجهة | Students وStaff يمنعان cross-tenant وتفلتر القوائم؛ ما زالت بقية الموارد غير مغطاة | **Partial** |
 | D الإشعارات كاملة | Codex | تقرير + تحقق يدوي عبر Mailpit | 86 اختبارًا · 433 توكيدًا · Pint نظيف · PHPStan صفر على ملفاته | **Tested** (WhatsApp بـHttp::fake لا بحساب Meta حقيقي) |
 | S1 المعلم الأصلي | Claude | psql بعد الهجرة | العمود موجود · صفر صف فارغ · التعبئة الرجعية صحيحة | **Tested** |
 | S5/S6/S7 اعتذار المعلم | Claude | تشغيل الاختبار | 7 اختبارات · 23 توكيدًا — **الاعتماد لا يُلغي الحصة** · اعتذار عمره 31 يومًا لا يُحتسب · التصعيد بلا عقوبة آلية | **Tested** |
-| ملكية الجداول | Claude | اختبارات المعمارية | session_substitutions و teacher_apologies مسجَّلان · 85 ناجح · 2 فاشل | **Implemented** |
+| جولة Codex/OpenCode المستهدفة | مدير المشروع | Docker + PostgreSQL معزول | 186 ناجحًا وفشل عداد Seeder واحد، ثم نجح الاختبار المصحح بـ21 توكيدًا · Audit/Attendance/AcademicReports 78/227 | **Verified with limits** |
+| الجولة الكاملة | مدير المشروع | `pest --configuration=phpunit.agent-pm.xml --compact` | **686 ناجحًا · 75 فاشلًا · 4502 توكيدًا** | **Blocked for merge** |
+| ملكية الجداول | مدير المشروع | الجولة الكاملة | جدولان من Sessions مسجلان؛ ثلاثة جداول Academics الجديدة ما زالت خارج الخريطة | **Partial** |
 
 ### عوائق مفتوحة مُثبتة
 
@@ -272,7 +274,9 @@ Livewire، أو حل جذري يمنع البدء المزدوج لـAlpine.
 |--------|-------|--------|
 | موديول Notifications يستورد موديول Integrations | خرق حدود — اختبار معمارية فاشل | يحتاج قرارًا: نقل ChannelGateway إلى shared أو استثناء موثَّق |
 | موديول Reporting يستورد موديول Payroll | خرق حدود — اختبار معمارية فاشل | سابق لهذه الدفعة |
-| RefreshAuditDatabase يحصر الهجرة في مسار Audit | علم RefreshDatabaseState::migrated عام على العملية، فكل كلاس بعده يتخطى الهجرة ويجد قاعدة بلا جداول | الوكيل H — **أُثبت أن migrate:fresh الكامل ينجح بـ80 جدولًا، فالافتراض القديم بطل** |
+| Enrollments يستورد Group model/action مباشرة | خرق نموذج وحدود طبقات — إخفاقان معماريان | يحتاج Contract/DTO يملكه Groups بدل Eloquent/action عابر الموديولات |
+| Attendance بلا tenant/object scope كامل | قد يكشف أو يعدّل سجلات حضور خارج النطاق عند منح الصلاحيات الرسمية | يلزم query scope + policy scope واختبارات أدوار حقيقية |
+| Assessments يفشل 6 مسارات بـ403 بعد إزالة Gates الوهمية | أسماء الصلاحيات وobject-level ownership غير موحدين | قرار تصنيف صلاحيات ثم تفويض attempt/submit/grade |
 | أحداث الحصة لا تحمل معرّفات المستلمين | يمنع تشغيل إشعارات الحصة الحقيقية | Claude — بدأ بإضافة teacherUserId في أحداث الاعتذار |
 
 
@@ -283,3 +287,4 @@ Livewire، أو حل جذري يمنع البدء المزدوج لـAlpine.
 | 12:05 | إنشاء المصفوفة · توزيع المسؤوليات · توثيق تشخيص Alpine |
 | 16:10 | سجل التحقق — الـ403 زال واللوحة تعمل · F1/F2 مثبتتان · D مكتملة · اعتذار المعلم مختبَر |
 | 13:20 | **CLIENT UPDATE 2026-08-22** — إعادة بناء المصفوفة على المتطلبات الجديدة · تحديث أربعة ملفات إعداد وإنشاء `config/admission.php` · دعم النافذة المتحركة · توزيع سبعة وكلاء بأسماء هجرات مخصصة |
+| 18:45 | جولة اعتماد مستقلة — إصلاح تفويض Codex/OpenCode · migrate/rollback ناجحان · 686/75 في الجولة الكاملة · منع الدمج للإنتاج |
