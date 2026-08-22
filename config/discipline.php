@@ -17,10 +17,13 @@ return [
 
     /*
      * نافذة احتساب المخالفات.
-     * monthly = العدّاد يُصفَّر أول كل شهر ميلادي (قرار العميل).
+     *
+     * rolling = آخر N يومًا من لحظة الاحتساب. هذا هو الصحيح بعد تحديث
+     * العميل 2026-08-22: لا تصفير أول الشهر الميلادي.
+     * القيمة القديمة 'monthly' بطلت — انظر docs/client-answers.md §CLIENT UPDATE §ل.
      */
-    'counter_window' => env('DISCIPLINE_WINDOW', 'monthly'),
-    'counter_reset_day' => 1,
+    'counter_window' => env('DISCIPLINE_WINDOW', 'rolling'),
+    'counter_window_days' => (int) env('DISCIPLINE_WINDOW_DAYS', 30),
 
     /*
      * ما الذي يُحتسب مخالفة أصلًا.
@@ -113,19 +116,75 @@ return [
     ],
 
     /*
-     * انضباط المعلمين — نفس المحرّك، سُلَّم منفصل ونافذة أطول.
+     * متابعة اعتذارات المعلم — مراقبة وتصعيد، لا عقاب آلي.
+     *
+     * قاعدة العميل 2026-08-22 (docs/client-answers.md §CLIENT UPDATE §ك):
+     * لا فصل ولا إقصاء ولا تغيير حالة المعلم آليًا مهما تكرر الاعتذار.
+     * كل ما يفعله النظام: تنبيه، تحذير، ثم إنشاء تصعيد للإدارة.
+     * القرار النهائي يدوي دائمًا.
      */
     'teacher' => [
-        'counter_window' => 'quarterly',
+        // نافذة متحركة بالأيام — ليست شهرًا ميلاديًا ولا ربعًا.
+        'counter_window' => 'rolling',
+        'counter_window_days' => (int) env('TEACHER_APOLOGY_WINDOW_DAYS', 30),
+
         'countable_events' => [
+            'apology' => true,              // اعتذار عن حصة تمت الموافقة عليه
             'teacher_absence' => true,
             'late_session_report' => true,
             'late_start' => true,
         ],
+
+        /*
+         * ما الذي يُحتسب في سُلَّم الاعتذارات تحديدًا.
+         * الاعتذار المرفوض لا يُحتسب — لم يقع أثر تشغيلي.
+         */
+        'apology' => [
+            'counts_only_when_approved' => true,
+            'requires_reason' => true,
+            'approver_permission' => 'session.apology.approve',
+
+            // اعتذار المعلم لا يُلغي الحصة أبدًا — يبدأ البحث عن بديل.
+            'cancels_session' => false,
+            'triggers_substitute_search' => true,
+        ],
+
+        /*
+         * سُلَّم التصعيد — الإجراءات إخطارية بحتة.
+         * ممنوع إضافة suspend أو terminate هنا.
+         */
         'ladder' => [
-            ['threshold' => 2, 'action' => 'notice', 'notify' => ['teacher', 'supervisor']],
-            ['threshold' => 4, 'action' => 'warning', 'notify' => ['teacher', 'supervisor', 'admin']],
-            ['threshold' => 6, 'action' => 'contract_review', 'notify' => ['supervisor', 'admin']],
+            [
+                'threshold' => 1,
+                'action' => 'record',
+                'severity' => 'info',
+                'notify' => [],
+            ],
+            [
+                'threshold' => 2,
+                'action' => 'warning',
+                'severity' => 'warning',
+                'translation_key' => 'discipline.teacher.apology.second',
+                'notify' => ['teacher', 'admin'],
+            ],
+            [
+                'threshold' => 3,
+                'action' => 'escalation',
+                'severity' => 'critical',
+                'translation_key' => 'discipline.teacher.apology.third',
+                'notify' => ['teacher', 'supervisor', 'admin'],
+                'creates_escalation' => true,
+            ],
+        ],
+
+        /*
+         * أقفال أمان صريحة — لا يغيّرها أي كود.
+         */
+        'never_automatic' => [
+            'suspend' => false,
+            'terminate' => false,
+            'change_status' => false,
+            'remove_from_groups' => false,
         ],
     ],
 ];

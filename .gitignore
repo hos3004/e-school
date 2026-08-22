@@ -29,3 +29,5 @@ Thumbs.db
 /.php-cs-fixer.cache
 /docker/postgres/data
 /docker/redis/data
+storage/logs/*.log
+phpunit.agent-*.xml

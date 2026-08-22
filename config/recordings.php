@@ -29,20 +29,53 @@ return [
     ],
 
     /**
-     * من يرى التسجيل.
-     * الروابط موقّعة ومؤقتة دائمًا — لا رابط عام أبدًا.
+     * من يرى التسجيل — **الرؤية الافتراضية مغلقة**.
+     *
+     * تحديث العميل 2026-08-22 (docs/client-answers.md §CLIENT UPDATE §ف):
+     * الطالب وولي الأمر لا يريان التسجيل تلقائيًا مهما كانت علاقتهما بالحصة.
+     * الإتاحة تتم يدويًا بمنحة صريحة (recording_access_grants) لها انتهاء
+     * وقابلة للإلغاء. القيم القديمة (student_enrolled/guardian/other_students
+     * = true) بطلت.
+     *
+     * الروابط موقّعة ومؤقتة دائمًا — لا رابط عام أبدًا، ومعرفة الـURL ليست صلاحية.
      */
     'access' => [
-        'student_enrolled' => true,      // الطالب المقيَّد في الحصة فقط
-        'guardian_of_student' => true,
+        // الافتراضي: ممنوع. المنحة اليدوية هي الطريق الوحيد للطالب والمجموعة.
+        'student_enrolled' => false,
+        'guardian_of_student' => false,
+        'other_students_in_group' => false,
+
+        // المعلم يرى تسجيل حصته هو فقط — ولا يُنزّله افتراضيًا.
         'teacher_of_session' => true,
-        'supervisor' => true,
+        'teacher_can_download' => env('RECORDING_ALLOW_TEACHER_DOWNLOAD', false),
+
+        // المشرف يحتاج صلاحية صريحة؛ وجوده مشرفًا لا يكفي.
+        'supervisor' => 'requires_permission',
+        'supervisor_permission' => 'recording.view.any',
+
         'admin' => true,
-        'other_students_in_group' => true,
+
         'signed_url_ttl_minutes' => 120,
         'allow_download' => env('RECORDING_ALLOW_STUDENT_DOWNLOAD', false),
-        // الطالب الموقوف أو المجمّد لا يصل للتسجيلات.
+
+        // الطالب الموقوف أو المجمّد لا يصل للتسجيلات حتى لو مُنح وصولًا.
         'blocked_for_frozen_enrollment' => true,
+    ],
+
+    /**
+     * منح الوصول اليدوية — الطريق الوحيد لإتاحة تسجيل لطالب أو مجموعة.
+     */
+    'grants' => [
+        'enabled' => true,
+        'granter_permission' => 'recording.grant',
+        'revoker_permission' => 'recording.grant',
+
+        // انتهاء افتراضي للمنحة (بالأيام) — 0 يعني بلا انتهاء ما لم يُحدَّد.
+        'default_expires_days' => (int) env('RECORDING_GRANT_DEFAULT_DAYS', 30),
+
+        // المنحة لا تتجاوز عمر التسجيل نفسه.
+        'capped_by_recording_expiry' => true,
+        'allow_download_by_default' => false,
     ],
 
     /**

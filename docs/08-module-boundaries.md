@@ -105,14 +105,14 @@ interface StudentDirectory
 
 | الموديول | يملك |
 |----------|------|
-| Organization | `organizations` · `organization_settings` · `academic_calendars` · `holidays` |
+| Organization | `organizations` · `organization_settings` · `academic_calendars` · `holidays` · `countries` · `regions` |
 | Identity | `users` · `user_devices` · `password_reset_tokens` |
 | AccessControl | `roles` · `permissions` · `*_has_*` |
 | Audit | `audit_log` |
 | Integrations | `integration_providers` · `integration_connections` · `integration_webhook_deliveries` |
-| Students | `student_profiles` |
+| Students | `student_profiles` · `registration_applications` |
 | Guardians | `guardian_profiles` · `guardian_links` |
-| Staff | `staff_profiles` · `teacher_contracts` · `teacher_rates` · `teacher_availability` · `teacher_leaves` |
+| Staff | `staff_profiles` · `teacher_contracts` · `teacher_rates` · `teacher_availability` · `teacher_leaves` · `teacher_courses` |
 | Academics | `programs` · `levels` · `courses` |
 | Groups | `groups` · `group_programs` · `group_teachers` · `group_memberships` |
 | Enrollments | `enrollments` · `enrollment_status_history` |
@@ -128,7 +128,7 @@ interface StudentDirectory
 | Certificates | `certificate_templates` · `certificates` · `badges` · `badge_awards` |
 | Discipline | `violation_events` · `discipline_actions` · `reactivation_requests` |
 | Messaging | `conversations` · `conversation_participants` · `messages` · `class_wall_*` · `whatsapp_inbound` |
-| Notifications | `notification_outbox` · `notification_delivery_attempts` · `notification_preferences` |
+| Notifications | `notification_outbox` · `notification_delivery_attempts` · `notification_preferences` · `notification_templates` |
 | Payroll | `payroll_periods` · `payroll_entries` · `payroll_adjustments` · `staff_obligations` |
 | Billing | `invoices` · `payments` · `student_packages` · `coupons` · `refunds` |
 | Reporting | `report_*` (Read Models فقط) |
