@@ -1,0 +1,23 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+
+    paths:
+        - app
+        - shared/src
+        - modules
+        - database
+        - config
+        - routes
+
+    excludePaths:
+        - modules/*/database/migrations/*
+        - vendor
+
+    checkMissingIterableValueType: false
+    treatPhpDocTypesAsCertain: false
+
+    ignoreErrors:
+        - identifier: missingType.generics

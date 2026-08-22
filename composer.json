@@ -1,0 +1,172 @@
+{
+    "name": "eschool/platform",
+    "type": "project",
+    "description": "Online School Management & Learning Platform - Laravel Modular Monolith",
+    "keywords": [
+        "laravel",
+        "lms",
+        "online-school",
+        "modular-monolith"
+    ],
+    "license": "proprietary",
+    "require": {
+        "php": "^8.4",
+        "laravel/framework": "^13.0",
+        "laravel/fortify": "^1.38",
+        "laravel/horizon": "^5.48",
+        "laravel/reverb": "^1.11",
+        "laravel/sanctum": "^4.3",
+        "filament/filament": "^5.7",
+        "inertiajs/inertia-laravel": "^3.3",
+        "tightenco/ziggy": "^2.4",
+        "spatie/laravel-permission": "^8.3",
+        "spatie/laravel-activitylog": "^4.9",
+        "spatie/laravel-data": "^4.23",
+        "spatie/laravel-medialibrary": "^11.0",
+        "spatie/browsershot": "^5.0",
+        "league/flysystem-aws-s3-v3": "^3.0",
+        "predis/predis": "^2.2",
+        "guzzlehttp/guzzle": "^7.9",
+        "maatwebsite/excel": "^3.1",
+        "sentry/sentry-laravel": "^4.10"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.0",
+        "laravel/pail": "^1.2",
+        "laravel/pint": "^1.18",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.5",
+        "pestphp/pest": "^5.1",
+        "rector/rector": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Shared\\": "shared/src/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/",
+            "Modules\\Identity\\": "modules/Identity/src/",
+            "Modules\\AccessControl\\": "modules/AccessControl/src/",
+            "Modules\\Organization\\": "modules/Organization/src/",
+            "Modules\\Audit\\": "modules/Audit/src/",
+            "Modules\\Integrations\\": "modules/Integrations/src/",
+            "Modules\\Notifications\\": "modules/Notifications/src/",
+            "Modules\\Students\\": "modules/Students/src/",
+            "Modules\\Guardians\\": "modules/Guardians/src/",
+            "Modules\\Staff\\": "modules/Staff/src/",
+            "Modules\\Academics\\": "modules/Academics/src/",
+            "Modules\\Groups\\": "modules/Groups/src/",
+            "Modules\\Enrollments\\": "modules/Enrollments/src/",
+            "Modules\\Content\\": "modules/Content/src/",
+            "Modules\\Scheduling\\": "modules/Scheduling/src/",
+            "Modules\\Sessions\\": "modules/Sessions/src/",
+            "Modules\\Attendance\\": "modules/Attendance/src/",
+            "Modules\\VirtualClassroom\\": "modules/VirtualClassroom/src/",
+            "Modules\\Recordings\\": "modules/Recordings/src/",
+            "Modules\\Assignments\\": "modules/Assignments/src/",
+            "Modules\\Assessments\\": "modules/Assessments/src/",
+            "Modules\\AcademicReports\\": "modules/AcademicReports/src/",
+            "Modules\\Certificates\\": "modules/Certificates/src/",
+            "Modules\\Discipline\\": "modules/Discipline/src/",
+            "Modules\\Messaging\\": "modules/Messaging/src/",
+            "Modules\\Billing\\": "modules/Billing/src/",
+            "Modules\\Payroll\\": "modules/Payroll/src/",
+            "Modules\\Reporting\\": "modules/Reporting/src/",
+            "Modules\\Identity\\Database\\": "modules/Identity/database/",
+            "Modules\\AccessControl\\Database\\": "modules/AccessControl/database/",
+            "Modules\\Organization\\Database\\": "modules/Organization/database/",
+            "Modules\\Audit\\Database\\": "modules/Audit/database/",
+            "Modules\\Integrations\\Database\\": "modules/Integrations/database/",
+            "Modules\\Notifications\\Database\\": "modules/Notifications/database/",
+            "Modules\\Students\\Database\\": "modules/Students/database/",
+            "Modules\\Guardians\\Database\\": "modules/Guardians/database/",
+            "Modules\\Staff\\Database\\": "modules/Staff/database/",
+            "Modules\\Academics\\Database\\": "modules/Academics/database/",
+            "Modules\\Groups\\Database\\": "modules/Groups/database/",
+            "Modules\\Enrollments\\Database\\": "modules/Enrollments/database/",
+            "Modules\\Content\\Database\\": "modules/Content/database/",
+            "Modules\\Scheduling\\Database\\": "modules/Scheduling/database/",
+            "Modules\\Sessions\\Database\\": "modules/Sessions/database/",
+            "Modules\\Attendance\\Database\\": "modules/Attendance/database/",
+            "Modules\\VirtualClassroom\\Database\\": "modules/VirtualClassroom/database/",
+            "Modules\\Recordings\\Database\\": "modules/Recordings/database/",
+            "Modules\\Assignments\\Database\\": "modules/Assignments/database/",
+            "Modules\\Assessments\\Database\\": "modules/Assessments/database/",
+            "Modules\\AcademicReports\\Database\\": "modules/AcademicReports/database/",
+            "Modules\\Certificates\\Database\\": "modules/Certificates/database/",
+            "Modules\\Discipline\\Database\\": "modules/Discipline/database/",
+            "Modules\\Messaging\\Database\\": "modules/Messaging/database/",
+            "Modules\\Billing\\Database\\": "modules/Billing/database/",
+            "Modules\\Payroll\\Database\\": "modules/Payroll/database/",
+            "Modules\\Reporting\\Database\\": "modules/Reporting/database/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/",
+            "Shared\\Tests\\": "shared/tests/",
+            "Modules\\Identity\\Tests\\": "modules/Identity/tests/",
+            "Modules\\AccessControl\\Tests\\": "modules/AccessControl/tests/",
+            "Modules\\Organization\\Tests\\": "modules/Organization/tests/",
+            "Modules\\Audit\\Tests\\": "modules/Audit/tests/",
+            "Modules\\Integrations\\Tests\\": "modules/Integrations/tests/",
+            "Modules\\Notifications\\Tests\\": "modules/Notifications/tests/",
+            "Modules\\Students\\Tests\\": "modules/Students/tests/",
+            "Modules\\Guardians\\Tests\\": "modules/Guardians/tests/",
+            "Modules\\Staff\\Tests\\": "modules/Staff/tests/",
+            "Modules\\Academics\\Tests\\": "modules/Academics/tests/",
+            "Modules\\Groups\\Tests\\": "modules/Groups/tests/",
+            "Modules\\Enrollments\\Tests\\": "modules/Enrollments/tests/",
+            "Modules\\Content\\Tests\\": "modules/Content/tests/",
+            "Modules\\Scheduling\\Tests\\": "modules/Scheduling/tests/",
+            "Modules\\Sessions\\Tests\\": "modules/Sessions/tests/",
+            "Modules\\Attendance\\Tests\\": "modules/Attendance/tests/",
+            "Modules\\VirtualClassroom\\Tests\\": "modules/VirtualClassroom/tests/",
+            "Modules\\Recordings\\Tests\\": "modules/Recordings/tests/",
+            "Modules\\Assignments\\Tests\\": "modules/Assignments/tests/",
+            "Modules\\Assessments\\Tests\\": "modules/Assessments/tests/",
+            "Modules\\AcademicReports\\Tests\\": "modules/AcademicReports/tests/",
+            "Modules\\Certificates\\Tests\\": "modules/Certificates/tests/",
+            "Modules\\Discipline\\Tests\\": "modules/Discipline/tests/",
+            "Modules\\Messaging\\Tests\\": "modules/Messaging/tests/",
+            "Modules\\Billing\\Tests\\": "modules/Billing/tests/",
+            "Modules\\Payroll\\Tests\\": "modules/Payroll/tests/",
+            "Modules\\Reporting\\Tests\\": "modules/Reporting/tests/"
+        },
+        "files": [
+            "tests/Helpers.php"
+        ]
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@php artisan package:discover --ansi"
+        ],
+        "lint": "pint --test",
+        "fix": "pint",
+        "stan": "phpstan analyse --memory-limit=1G",
+        "test": "pest",
+        "test:arch": "pest --group=arch",
+        "check": [
+            "@lint",
+            "@stan",
+            "@test"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

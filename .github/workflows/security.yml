@@ -1,0 +1,24 @@
+name: Security
+
+on:
+  schedule:
+    - cron: '17 4 * * 1'
+  pull_request:
+    paths: ['composer.lock', 'package-lock.json']
+
+jobs:
+  audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Composer audit
+        run: composer audit --format=plain
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm audit --audit-level=high

@@ -1,0 +1,113 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
+use Modules\Discipline\Application\Actions\RecordViolationAction;
+use Modules\Discipline\Domain\Enums\DisciplineActionType;
+use Modules\Discipline\Domain\Enums\ViolationType;
+use Modules\Discipline\Domain\Events\DisciplineActionApplied;
+use Modules\Discipline\Domain\Events\ViolationRecorded;
+use Modules\Discipline\Domain\Models\DisciplineAction;
+use Modules\Discipline\Domain\Models\ViolationEvent;
+
+uses(RefreshDatabase::class);
+
+/**
+ * بيانات مخالفة — مؤسسة جديدة لكل استدعاء إلا إذا مُرِّر enrollment_id
+ * صريحًا لتجميع عدّاد نفس الطالب.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function violationData(array $overrides = []): array
+{
+    return array_merge([
+        'organization_id' => disciplineOrg(),
+        'enrollment_id' => (string) str()->ulid(),
+        'student_profile_id' => (string) str()->ulid(),
+        'type' => ViolationType::UnexcusedAbsence->value,
+        'occurred_at' => now()->toIso8601String(),
+    ], $overrides);
+}
+
+it('records a countable violation and publishes ViolationRecorded', function () {
+    Event::fake([ViolationRecorded::class, DisciplineActionApplied::class]);
+
+    $violation = app(RecordViolationAction::class)->execute(violationData());
+
+    expect($violation->exists)->toBeTrue()
+        ->and($violation->is_countable)->toBeTrue()
+        ->and($violation->window_key)->toBe(now()->format('Y-m'));
+
+    Event::assertDispatched(
+        ViolationRecorded::class,
+        fn (ViolationRecorded $event): bool => $event->payload()['enrollment_id'] === (string) $violation->enrollment_id
+            && $event->payload()['count_in_window'] === 1
+    );
+
+    Event::assertNotDispatched(DisciplineActionApplied::class);
+});
+
+it('marks non-countable types from config and never escalates them', function () {
+    Event::fake();
+
+    expect((bool) config('discipline.countable_events.excused_absence'))->toBeFalse();
+
+    app(RecordViolationAction::class)->execute(violationData([
+        'type' => ViolationType::ExcusedAbsence->value,
+    ]));
+
+    expect(ViolationEvent::query()->latest('id')->first()->is_countable)->toBeFalse()
+        ->and(DisciplineAction::query()->count())->toBe(0);
+
+    Event::assertDispatched(ViolationRecorded::class);
+});
+
+it('escalates to freeze at the configured third threshold exactly once', function () {
+    config()->set('discipline.ladder', [
+        ['threshold' => 3, 'action' => 'freeze_enrollment', 'automatic' => true],
+    ]);
+
+    Event::fake([DisciplineActionApplied::class]);
+
+    $enrollmentId = (string) str()->ulid();
+    $action = app(RecordViolationAction::class);
+
+    $action->execute(violationData(['enrollment_id' => $enrollmentId, 'occurred_at' => now()->subDays(3)->toIso8601String()]));
+    $action->execute(violationData(['enrollment_id' => $enrollmentId, 'occurred_at' => now()->subDays(2)->toIso8601String()]));
+
+    expect(DisciplineAction::query()->count())->toBe(0);
+
+    $action->execute(violationData(['enrollment_id' => $enrollmentId, 'occurred_at' => now()->subDay()->toIso8601String()]));
+    $action->execute(violationData(['enrollment_id' => $enrollmentId, 'occurred_at' => now()->toIso8601String()]));
+
+    expect(DisciplineAction::query()->count())->toBe(1);
+
+    $applied = DisciplineAction::query()->sole();
+
+    expect($applied->action)->toBe(DisciplineActionType::FreezeEnrollment)
+        ->and((int) $applied->threshold_reached)->toBe(3)
+        ->and((string) $applied->enrollment_id)->toBe($enrollmentId)
+        ->and($applied->is_automatic)->toBeTrue();
+
+    Event::assertDispatchedTimes(DisciplineActionApplied::class, 1);
+});
+
+it('rejects a violation type that is unknown to the enum', function () {
+    app(RecordViolationAction::class)->execute(violationData([
+        'type' => 'mystery_type',
+    ]));
+})->throws(ValueError::class);
+
+it('rejects a type missing from the discipline settings map', function () {
+    config()->set([
+        'discipline.countable_events' => ['unexcused_absence' => true],
+        'discipline.ladder' => [['threshold' => 1, 'action' => 'notice']],
+    ]);
+
+    app(RecordViolationAction::class)->execute(violationData([
+        'type' => ViolationType::TeacherAbsence->value,
+    ]));
+})->throws(Shared\Support\BusinessRuleViolation::class);

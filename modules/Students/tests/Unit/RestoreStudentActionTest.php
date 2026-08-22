@@ -1,0 +1,46 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
+use Modules\Students\Application\Actions\ArchiveStudentAction;
+use Modules\Students\Application\Actions\RegisterStudentAction;
+use Modules\Students\Application\Actions\RestoreStudentAction;
+use Modules\Students\Domain\Events\StudentRestored;
+
+uses(RefreshDatabase::class);
+
+it('restores an archived student and publishes the event', function () {
+    $student = app(RegisterStudentAction::class)->execute([
+        'organization_id' => (string) str()->ulid(),
+        'user_id' => (string) str()->ulid(),
+        'student_code' => 'STU-RS-'.str()->random(4),
+    ]);
+
+    app(ArchiveStudentAction::class)->execute($student, 'خطأ إداري');
+    Event::fake([StudentRestored::class]);
+
+    $restored = app(RestoreStudentAction::class)->execute((string) $student->getKey());
+
+    expect($restored->trashed())->toBeFalse();
+
+    Event::assertDispatched(
+        StudentRestored::class,
+        fn (StudentRestored $event): bool => $event->studentId === (string) $student->getKey()
+    );
+});
+
+it('refuses to restore a student who was never archived', function () {
+    $student = app(RegisterStudentAction::class)->execute([
+        'organization_id' => (string) str()->ulid(),
+        'user_id' => (string) str()->ulid(),
+        'student_code' => 'STU-RN-'.str()->random(4),
+    ]);
+
+    app(RestoreStudentAction::class)->execute((string) $student->getKey());
+})->throws(Shared\Support\BusinessRuleViolation::class);
+
+it('fails clearly for an unknown student id', function () {
+    app(RestoreStudentAction::class)->execute((string) str()->ulid());
+})->throws(Shared\Support\BusinessRuleViolation::class);

@@ -1,0 +1,76 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   نظام التصميم — يدعم RTL (عربي) و LTR (إنجليزي/فرنسي) من نفس الملف.
+   التبديل يتم عبر السمة dir على عنصر html.
+--------------------------------------------------------------------------- */
+
+@theme {
+    --font-sans-ar: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', system-ui, sans-serif;
+    --font-sans-latin: 'Inter', system-ui, sans-serif;
+}
+
+:root {
+    color-scheme: light;
+
+    --surface: #ffffff;
+    --surface-muted: #f6f7f9;
+    --ink: #12151a;
+    --ink-muted: #5b6472;
+    --brand: #1f6f5c;
+    --danger: #b3261e;
+    --warning: #a06800;
+    --success: #1f6f3f;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+        color-scheme: dark;
+
+        --surface: #11141a;
+        --surface-muted: #181c24;
+        --ink: #e8ebf0;
+        --ink-muted: #9aa4b2;
+        --brand: #79d4bb;
+        --danger: #ff8f87;
+        --warning: #f2bd64;
+        --success: #7bd9a2;
+    }
+}
+
+html[dir='rtl'] body {
+    font-family: var(--font-sans-ar);
+}
+
+html[dir='ltr'] body {
+    font-family: var(--font-sans-latin);
+}
+
+body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    background: var(--surface);
+    color: var(--ink);
+}
+
+
+::selection {
+    background: color-mix(in srgb, var(--brand) 28%, transparent);
+    color: var(--ink);
+}
+
+:focus-visible {
+    outline-color: var(--brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
