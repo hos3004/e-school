@@ -24,7 +24,7 @@ final class AssignStudentToGroupAction
         ?string $overrideReason = null,
     ): void {
         // 1. Must be cleared for assignment by Students module
-        if (! $this->studentQueries->isClearedForAssignment($studentProfileId)) {
+        if (!$this->studentQueries->isClearedForAssignment($studentProfileId)) {
             throw new \InvalidArgumentException(__('enrollments::errors.student_not_cleared'));
         }
 

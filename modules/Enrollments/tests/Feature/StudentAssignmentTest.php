@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Modules\Enrollments\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Modules\Academics\Domain\Enums\ProgramType;
 use Modules\Academics\Domain\Models\Program;
 use Modules\Academics\Domain\Models\ProgramEligibility;
 use Modules\Academics\Domain\ValueObjects\ApplicantFacts;
 use Modules\Enrollments\Application\Actions\AssignStudentToProgramAction;
+use Modules\Identity\Domain\Models\User;
 use Modules\Students\Domain\Contracts\StudentAdmissionQueries;
 use Tests\TestCase;
 
@@ -110,13 +111,13 @@ final class StudentAssignmentTest extends TestCase
         $this->app->instance(StudentAdmissionQueries::class, $mockQueries);
 
         // Authenticate user with permission
-        $user = \Modules\Identity\Domain\Models\User::factory()->create();
+        $user = User::factory()->create();
         $this->actingAs($user);
 
         // Grant permission
-        \Illuminate\Support\Facades\Gate::define(
+        Gate::define(
             (string) config('admission.eligibility.override_permission', 'enrollment.override_eligibility'),
-            fn () => true
+            fn () => true,
         );
 
         /** @var AssignStudentToProgramAction $action */

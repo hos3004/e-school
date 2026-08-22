@@ -114,4 +114,3 @@ final class SessionParticipantResource extends Resource
         ];
     }
 }
-

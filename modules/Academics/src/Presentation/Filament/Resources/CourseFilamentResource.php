@@ -150,4 +150,3 @@ final class CourseFilamentResource extends Resource
         ];
     }
 }
-

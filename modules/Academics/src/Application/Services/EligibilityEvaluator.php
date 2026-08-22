@@ -32,13 +32,13 @@ final class EligibilityEvaluator
 
         // 1. Country Check (Empty list = no restriction)
         $countries = is_array($eligibility->countries) ? array_values($eligibility->countries) : [];
-        if (! empty($countries) && ($facts->countryId === null || ! in_array($facts->countryId, $countries, true))) {
+        if (!empty($countries) && ($facts->countryId === null || !in_array($facts->countryId, $countries, true))) {
             $violations[] = 'eligibility.country_not_allowed';
         }
 
         // 2. Region Check (Empty list = no restriction)
         $regions = is_array($eligibility->regions) ? array_values($eligibility->regions) : [];
-        if (! empty($regions) && ($facts->regionId === null || ! in_array($facts->regionId, $regions, true))) {
+        if (!empty($regions) && ($facts->regionId === null || !in_array($facts->regionId, $regions, true))) {
             $violations[] = 'eligibility.region_not_allowed';
         }
 

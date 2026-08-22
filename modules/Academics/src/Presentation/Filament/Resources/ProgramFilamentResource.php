@@ -160,4 +160,3 @@ final class ProgramFilamentResource extends Resource
         ];
     }
 }
-

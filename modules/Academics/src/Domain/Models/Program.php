@@ -7,8 +7,11 @@ namespace Modules\Academics\Domain\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Academics\Database\Factories\ProgramFactory;
+use Modules\Academics\Domain\Enums\ProgramType;
+use Modules\Academics\Domain\Enums\TargetGender;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -53,8 +56,8 @@ final class Program extends Model
             'default_rate' => 'int',
             'is_active' => 'bool',
             'sort_order' => 'int',
-            'program_type' => \Modules\Academics\Domain\Enums\ProgramType::class,
-            'target_gender' => \Modules\Academics\Domain\Enums\TargetGender::class,
+            'program_type' => ProgramType::class,
+            'target_gender' => TargetGender::class,
             'start_date' => 'date',
             'end_date' => 'date',
             'age_from' => 'int',
@@ -86,7 +89,7 @@ final class Program extends Model
         return $this->hasMany(Level::class);
     }
 
-    public function eligibility(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function eligibility(): HasOne
     {
         return $this->hasOne(ProgramEligibility::class, 'program_id');
     }

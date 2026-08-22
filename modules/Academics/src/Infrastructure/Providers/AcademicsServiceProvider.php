@@ -7,6 +7,8 @@ namespace Modules\Academics\Infrastructure\Providers;
 use Modules\Academics\Application\Policies\CoursePolicy;
 use Modules\Academics\Application\Policies\LevelPolicy;
 use Modules\Academics\Application\Policies\ProgramPolicy;
+use Modules\Academics\Application\Queries\ProgramRulesQueryService;
+use Modules\Academics\Domain\Contracts\ProgramRulesQueries;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
@@ -50,7 +52,7 @@ final class AcademicsServiceProvider extends BaseModuleServiceProvider
     protected function bindings(): array
     {
         return [
-            \Modules\Academics\Domain\Contracts\ProgramRulesQueries::class => \Modules\Academics\Application\Queries\ProgramRulesQueryService::class,
+            ProgramRulesQueries::class => ProgramRulesQueryService::class,
         ];
     }
 }

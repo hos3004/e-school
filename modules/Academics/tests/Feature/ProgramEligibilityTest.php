@@ -10,7 +10,6 @@ use Illuminate\Support\Str;
 use Modules\Academics\Application\Services\EligibilityEvaluator;
 use Modules\Academics\Domain\Contracts\ProgramRulesQueries;
 use Modules\Academics\Domain\Enums\ProgramType;
-use Modules\Academics\Domain\Enums\TargetGender;
 use Modules\Academics\Domain\Models\Program;
 use Modules\Academics\Domain\Models\ProgramEligibility;
 use Modules\Academics\Domain\ValueObjects\ApplicantFacts;

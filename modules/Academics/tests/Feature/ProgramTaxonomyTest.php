@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Academics\Tests\Feature;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\Academics\Domain\Enums\ProgramType;
@@ -62,7 +63,7 @@ final class ProgramTaxonomyTest extends TestCase
 
     public function test_fixed_duration_program_without_end_date_fails(): void
     {
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         Program::create([
             'organization_id' => (string) Str::ulid(),

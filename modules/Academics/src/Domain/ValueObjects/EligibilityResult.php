@@ -7,9 +7,9 @@ namespace Modules\Academics\Domain\ValueObjects;
 final readonly class EligibilityResult
 {
     /**
-     * @param  list<string>  $violations
-     * @param  list<string>  $blocking
-     * @param  list<string>  $warnings
+     * @param list<string> $violations
+     * @param list<string> $blocking
+     * @param list<string> $warnings
      */
     public function __construct(
         public bool $eligible,

@@ -15,7 +15,7 @@ final readonly class ApplicantFacts
         public ?string $regionId = null,
     ) {}
 
-    public function age(CarbonImmutable $at = new CarbonImmutable()): ?int
+    public function age(CarbonImmutable $at = new CarbonImmutable): ?int
     {
         return $this->dateOfBirth?->diffInYears($at);
     }

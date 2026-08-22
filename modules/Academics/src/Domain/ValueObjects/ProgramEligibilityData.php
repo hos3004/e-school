@@ -7,8 +7,8 @@ namespace Modules\Academics\Domain\ValueObjects;
 final readonly class ProgramEligibilityData
 {
     /**
-     * @param  list<string>  $countries
-     * @param  list<string>  $regions
+     * @param list<string> $countries
+     * @param list<string> $regions
      */
     public function __construct(
         public string $programId,

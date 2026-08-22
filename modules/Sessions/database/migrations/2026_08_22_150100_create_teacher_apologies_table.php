@@ -91,14 +91,14 @@ return new class extends Migration
              CHECK (
                  status IN ('submitted', 'withdrawn')
                  OR (decided_by IS NOT NULL AND decided_at IS NOT NULL)
-             )"
+             )",
         );
 
         // معلم واحد لا يقدّم اعتذارين معلّقين لنفس الحصة.
         Schema::getConnection()->statement(
             "CREATE UNIQUE INDEX teacher_apologies_one_open_per_session
              ON teacher_apologies (session_id, staff_profile_id)
-             WHERE status = 'submitted' AND deleted_at IS NULL"
+             WHERE status = 'submitted' AND deleted_at IS NULL",
         );
     }
 

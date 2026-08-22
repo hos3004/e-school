@@ -238,4 +238,3 @@ final class SessionResource extends Resource
         ];
     }
 }
-

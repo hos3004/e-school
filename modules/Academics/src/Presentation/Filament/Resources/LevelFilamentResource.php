@@ -118,4 +118,3 @@ final class LevelFilamentResource extends Resource
         ];
     }
 }
-

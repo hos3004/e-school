@@ -98,7 +98,7 @@ final class Session extends Model
          * — جدولة، حصة تلافي، بذرة، اختبار — يجب أن يخرج بحصة تعرف معلمها
          * الأصلي. الاعتماد على تذكّر كل مُستدعٍ كان سيترك ثغرة صامتة.
          */
-        static::creating(function (self $session): void {
+        self::creating(function (self $session): void {
             if ($session->original_teacher_id === null) {
                 $session->original_teacher_id = $session->staff_profile_id;
             }
@@ -108,7 +108,7 @@ final class Session extends Model
          * ولا يتغيّر بعدها أبدًا (client-answers §كط: «لا تحدث original»).
          * الاستبدال يغيّر staff_profile_id — المعلم الفعلي — لا هذا العمود.
          */
-        static::updating(function (self $session): void {
+        self::updating(function (self $session): void {
             if ($session->isDirty('original_teacher_id')) {
                 $session->original_teacher_id = $session->getOriginal('original_teacher_id');
             }

@@ -71,7 +71,7 @@ final readonly class DecideTeacherApologyAction
 
         $apology = TeacherApology::query()->findOrFail($apologyId);
 
-        if (! $apology->status->canTransitionTo($target)) {
+        if (!$apology->status->canTransitionTo($target)) {
             throw BusinessRuleViolation::make(
                 'sessions.apology_invalid_transition',
                 'sessions::errors.apology_invalid_transition',

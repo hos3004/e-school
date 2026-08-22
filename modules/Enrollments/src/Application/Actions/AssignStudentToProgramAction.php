@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Enrollments\Application\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Modules\Academics\Application\Services\EligibilityEvaluator;
 use Modules\Academics\Domain\ValueObjects\ApplicantFacts;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
@@ -26,21 +27,21 @@ final class AssignStudentToProgramAction
         ?string $overrideReason = null,
     ): Enrollment {
         // 1. Must be cleared for assignment by Students module
-        if (! $this->studentQueries->isClearedForAssignment($studentProfileId)) {
+        if (!$this->studentQueries->isClearedForAssignment($studentProfileId)) {
             throw new \InvalidArgumentException(__('enrollments::errors.student_not_cleared'));
         }
 
         // 2. Evaluate Program Eligibility
         $eligibilityResult = $this->eligibilityEvaluator->evaluate($programId, $facts);
 
-        if (! $eligibilityResult->eligible) {
+        if (!$eligibilityResult->eligible) {
             $overridePermission = (string) config('admission.eligibility.override_permission', 'enrollment.override_eligibility');
             $user = auth()->user();
 
             $canOverride = $user !== null && $user->can($overridePermission);
             $hasReason = is_string($overrideReason) && trim($overrideReason) !== '';
 
-            if (! $canOverride || ! $hasReason) {
+            if (!$canOverride || !$hasReason) {
                 throw new \InvalidArgumentException(__('enrollments::errors.eligibility_blocked'));
             }
         }
@@ -56,9 +57,9 @@ final class AssignStudentToProgramAction
                 'activated_at' => $eligibilityResult->requiresManualApproval ? null : now(),
             ]);
 
-            if (! $eligibilityResult->eligible && is_string($overrideReason) && trim($overrideReason) !== '') {
+            if (!$eligibilityResult->eligible && is_string($overrideReason) && trim($overrideReason) !== '') {
                 DB::table('audit_log')->insert([
-                    'id' => (string) \Illuminate\Support\Str::ulid(),
+                    'id' => (string) Str::ulid(),
                     'user_id' => auth()->id(),
                     'action' => 'enrollment.eligibility_override',
                     'auditable_type' => Enrollment::class,

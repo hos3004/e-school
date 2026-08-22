@@ -10,7 +10,6 @@ use Modules\Sessions\Application\Actions\SubmitTeacherApologyAction;
 use Modules\Sessions\Domain\Enums\ApologyStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
-use Modules\Sessions\Domain\Models\TeacherApology;
 use Modules\Sessions\Domain\Services\ApologyEscalationEvaluator;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;

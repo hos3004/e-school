@@ -30,4 +30,5 @@ Thumbs.db
 /docker/postgres/data
 /docker/redis/data
 storage/logs/*.log
+/storage/framework/views/*.php
 phpunit.agent-*.xml
