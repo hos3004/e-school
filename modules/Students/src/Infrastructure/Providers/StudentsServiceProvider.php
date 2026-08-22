@@ -19,8 +19,8 @@ use Modules\Students\Domain\Events\RegistrationSubmitted;
 use Modules\Students\Domain\Events\StudentArchived;
 use Modules\Students\Domain\Events\StudentRegistered;
 use Modules\Students\Domain\Events\StudentRestored;
-use Modules\Students\Domain\Models\StudentProfile;
 use Modules\Students\Domain\Models\RegistrationApplication;
+use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class StudentsServiceProvider extends BaseModuleServiceProvider

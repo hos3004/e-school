@@ -31,6 +31,13 @@ final class Course extends Model
         'total_sessions',
         'completion_rules',
         'is_active',
+        'session_mode',
+        'age_from',
+        'age_to',
+        'target_gender',
+        'default_duration_minutes',
+        'sessions_per_week',
+        'prerequisites',
     ];
 
     protected function casts(): array
@@ -39,8 +46,15 @@ final class Course extends Model
             'name' => 'array',
             'description' => 'array',
             'completion_rules' => 'array',
+            'prerequisites' => 'array',
             'total_sessions' => 'int',
             'is_active' => 'bool',
+            'session_mode' => \Modules\Academics\Domain\Enums\SessionMode::class,
+            'target_gender' => \Modules\Academics\Domain\Enums\TargetGender::class,
+            'age_from' => 'int',
+            'age_to' => 'int',
+            'default_duration_minutes' => 'int',
+            'sessions_per_week' => 'int',
         ];
     }
 
@@ -55,6 +69,12 @@ final class Course extends Model
     public function level(): BelongsTo
     {
         return $this->belongsTo(Level::class);
+    }
+
+    public function categories(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(ProgramCategory::class, 'course_category', 'course_id', 'category_id')
+            ->withTimestamps();
     }
 
     public function scopeActive(Builder $query): Builder

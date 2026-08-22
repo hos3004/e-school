@@ -63,15 +63,19 @@ final class UserResource extends Resource
                         TextInput::make('email')
                             ->label(__('identity::labels.email'))
                             ->email()
-                            ->required()
+                            ->requiredWithout('phone')
                             ->maxLength(191)
                             ->unique(ignoreRecord: true),
                         TextInput::make('username')
                             ->label(__('identity::labels.username'))
-                            ->maxLength(64)
+                            ->required()
+                            ->minLength((int) config('admission.username.min_length'))
+                            ->maxLength((int) config('admission.username.max_length'))
+                            ->notIn((array) config('admission.username.reserved', []))
                             ->unique(ignoreRecord: true),
                         TextInput::make('phone')
                             ->label(__('identity::labels.phone'))
+                            ->requiredWithout('email')
                             ->maxLength(32),
                         TextInput::make('password')
                             ->label(__('identity::labels.password'))

@@ -33,6 +33,14 @@ final class Program extends Model
         'currency',
         'is_active',
         'sort_order',
+        'program_type',
+        'start_date',
+        'end_date',
+        'target_gender',
+        'age_from',
+        'age_to',
+        'objectives',
+        'language',
     ];
 
     protected function casts(): array
@@ -45,6 +53,13 @@ final class Program extends Model
             'default_rate' => 'int',
             'is_active' => 'bool',
             'sort_order' => 'int',
+            'program_type' => \Modules\Academics\Domain\Enums\ProgramType::class,
+            'target_gender' => \Modules\Academics\Domain\Enums\TargetGender::class,
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'age_from' => 'int',
+            'age_to' => 'int',
+            'objectives' => 'array',
         ];
     }
 
@@ -69,5 +84,10 @@ final class Program extends Model
     public function levels(): HasMany
     {
         return $this->hasMany(Level::class);
+    }
+
+    public function eligibility(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ProgramEligibility::class, 'program_id');
     }
 }

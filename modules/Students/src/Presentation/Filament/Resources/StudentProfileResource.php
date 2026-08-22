@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Students\Presentation\Filament\Resources;
 
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -15,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Organization\Domain\ValueObjects\CountryData;
 use Modules\Organization\Domain\ValueObjects\RegionData;

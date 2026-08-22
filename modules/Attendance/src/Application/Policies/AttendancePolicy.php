@@ -22,12 +22,13 @@ final class AttendancePolicy
 {
     public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('attendance.view');
+        return $user->can('attendance.view_any');
     }
 
     public function view(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
-        return $user->can('attendance.view');
+        // عرض القيود المجمّعة يتطلب view_any؛ القيد المفرد يكفيه attendance.view.
+        return $user->can('attendance.view_any') || $user->can('attendance.view');
     }
 
     public function create(Authenticatable&Authorizable $user): bool

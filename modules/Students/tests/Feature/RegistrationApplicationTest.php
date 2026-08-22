@@ -53,10 +53,10 @@ final class RegistrationApplicationTest extends TestCase
             'email' => 'ahmad.student@test.local',
         ]);
 
-        app(SubmitRegistrationApplicationAction::class)->execute($application);
+        $application = app(SubmitRegistrationApplicationAction::class)->execute($application);
         $this->assertSame(RegistrationStatus::Submitted, $application->status);
 
-        app(AcceptRegistrationApplicationAction::class)->execute($application, Fixtures::userId());
+        $application = app(AcceptRegistrationApplicationAction::class)->execute($application, Fixtures::userId());
         $this->assertSame(RegistrationStatus::WaitingAssignment, $application->status);
         $this->assertNotNull($application->student_profile_id);
 

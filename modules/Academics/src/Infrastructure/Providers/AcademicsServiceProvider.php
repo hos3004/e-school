@@ -49,6 +49,8 @@ final class AcademicsServiceProvider extends BaseModuleServiceProvider
      */
     protected function bindings(): array
     {
-        return [];
+        return [
+            \Modules\Academics\Domain\Contracts\ProgramRulesQueries::class => \Modules\Academics\Application\Queries\ProgramRulesQueryService::class,
+        ];
     }
 }

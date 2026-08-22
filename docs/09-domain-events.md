@@ -18,6 +18,20 @@
 
 ---
 
+## 0. التسجيل على مستوى المؤسسة
+
+| الحدث | الحمولة | المستمعون |
+|-------|---------|-----------|
+| `registration.submitted` | applicationId, organizationId, fullName, studentUserId | Notifications · Audit |
+| `registration.approved` (`RegistrationAccepted`) | applicationId, organizationId, studentProfileId, studentUserId | Notifications · Audit |
+| `registration.rejected` | applicationId, organizationId, reason, studentUserId | Notifications · Audit |
+
+القبول هنا يخلق ملف الطالب وينقله إلى `waiting_assignment` فقط؛ لا ينشئ قيد
+برنامج أو عضوية مجموعة، ويبقى التوزيع مسؤولية الموديول المالك بعد التحقق من
+`StudentAdmissionQueries`.
+
+---
+
 ## 1. القيد والانضباط
 
 | الحدث | الحمولة | المستمعون |

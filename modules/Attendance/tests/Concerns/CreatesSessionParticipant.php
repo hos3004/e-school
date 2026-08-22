@@ -104,6 +104,9 @@ trait CreatesSessionParticipant
             'organization_id' => $this->organizationId,
             'course_id' => $courseId,
             'staff_profile_id' => $staffProfileId,
+            // original_teacher_id NOT NULL منذ 2026_08_22_150000: لم تُستبدل
+            // الحصة بعد فالأصلي هو الفعلي نفسه.
+            'original_teacher_id' => $staffProfileId,
             'session_type' => 'regular',
             'status' => 'awaiting_review',
             'scheduled_start' => $now->copy()->subHour(),

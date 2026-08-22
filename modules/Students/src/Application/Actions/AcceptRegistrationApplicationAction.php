@@ -61,7 +61,7 @@ final readonly class AcceptRegistrationApplicationAction
             $locked->reviewed_at = now()->utc();
             $locked->save();
 
-            $profile = new StudentProfile();
+            $profile = new StudentProfile;
             $profile->organization_id = (string) $locked->organization_id;
             $profile->user_id = $locked->user_id;
             $profile->student_code = (string) $locked->getKey();

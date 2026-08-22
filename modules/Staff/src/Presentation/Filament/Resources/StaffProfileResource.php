@@ -9,7 +9,6 @@ use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
-use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -20,7 +19,6 @@ use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Modules\Staff\Domain\Enums\StaffGender;
 use Modules\Staff\Domain\Models\StaffProfile;
-use Modules\Staff\Presentation\Filament\Resources\StaffProfileResource\Pages\ManageStaffProfiles;
 
 final class StaffProfileResource extends Resource
 {
