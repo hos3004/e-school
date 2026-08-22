@@ -12,23 +12,20 @@ use Modules\Attendance\Domain\Models\Attendance;
  * سياسة قيود الحضور.
  *
  * لا فحص لأسماء الأدوار — القرار عبر صلاحيات معلنة:
- *  - attendance.view_any   : رؤية سجل الحضور
- *  - attendance.record     : الرصد الأولي من أحداث الفصل
- *  - attendance.confirm    : اعتماد المعلم للحالة المشتقة
+ *  - attendance.view       : رؤية سجل الحضور
+ *  - attendance.record     : الرصد الأولي واعتماد المعلم للحالة المشتقة
  *  - attendance.override   : تجاوز الحالة بسبب موثّق (إدارة)
- *  - attendance.delete_any : حذف القيد (تصحيح خطأ إدخال جسيم فقط)
  */
 final class AttendancePolicy
 {
     public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('attendance.view_any');
+        return $user->can('attendance.view');
     }
 
     public function view(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
-        // عرض القيود المجمّعة يتطلب view_any؛ القيد المفرد يكفيه attendance.view.
-        return $user->can('attendance.view_any') || $user->can('attendance.view');
+        return $user->can('attendance.view');
     }
 
     public function create(Authenticatable&Authorizable $user): bool

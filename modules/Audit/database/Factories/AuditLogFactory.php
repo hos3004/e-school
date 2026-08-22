@@ -19,8 +19,7 @@ final class AuditLogFactory extends Factory
     public function definition(): array
     {
         return [
-            // لا FK على organization_id ولا اعتماد على جداول موديولات أخرى —
-            // اختبارات Audit تُهجَّر بمسارها وحدها (انظر RefreshAuditDatabase).
+            // لا FK على organization_id ولا اعتماد على جداول موديولات أخرى.
             'organization_id' => (string) Str::ulid(),
             'actor_id' => (string) Str::ulid(),
             'actor_type' => AuditActorType::User,

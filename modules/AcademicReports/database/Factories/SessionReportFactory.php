@@ -100,6 +100,9 @@ final class SessionReportFactory extends Factory
             'organization_id' => $organizationId,
             'course_id' => $courseId,
             'staff_profile_id' => $staffProfileId,
+            // original_teacher_id NOT NULL منذ 2026_08_22_150000: لم تُستبدل
+            // الحصة بعد فالأصلي هو الفعلي نفسه.
+            'original_teacher_id' => $staffProfileId,
             'session_type' => 'regular',
             'status' => 'completed',
             'scheduled_start' => $now->copy()->subHour(),

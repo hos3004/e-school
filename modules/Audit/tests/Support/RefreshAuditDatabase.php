@@ -24,7 +24,7 @@ trait RefreshAuditDatabase
 
     public static function setUpBeforeClass(): void
     {
-        require_once dirname(__DIR__, 2).'/database/factories/AuditLogFactory.php';
+        require_once dirname(__DIR__, 2).'/database/Factories/AuditLogFactory.php';
     }
 
     protected function setUp(): void

@@ -33,7 +33,7 @@ final class AttendanceApiTest extends TestCase
     {
         Event::fake([AttendanceRecorded::class]);
         Gate::define('attendance.record', fn (): bool => true);
-        Gate::define('attendance.view_any', fn (): bool => true);
+        Gate::define('attendance.view', fn (): bool => true);
 
         $participantId = $this->createSessionParticipant();
 
@@ -104,7 +104,7 @@ final class AttendanceApiTest extends TestCase
 
     public function test_lists_and_shows_attendances_with_view_ability(): void
     {
-        Gate::define('attendance.view_any', fn (): bool => true);
+        Gate::define('attendance.view', fn (): bool => true);
         Gate::define('attendance.record', fn (): bool => false);
 
         $participantId = $this->createSessionParticipant();
@@ -176,7 +176,7 @@ final class AttendanceApiTest extends TestCase
 
     public function test_confirms_attendance_through_the_api(): void
     {
-        Gate::define('attendance.confirm', fn (): bool => true);
+        Gate::define('attendance.record', fn (): bool => true);
 
         $participantId = $this->createSessionParticipant();
         $actorId = Fixtures::userId();
