@@ -8,14 +8,20 @@ use Modules\Integrations\Domain\Contracts\ChannelGateway;
 use Modules\Notifications\Application\Console\DispatchDueNotifications;
 use Modules\Notifications\Application\Console\RetryFailedNotifications;
 use Modules\Notifications\Application\Listeners\QueueConfiguredDomainEventNotification;
+use Modules\Notifications\Application\Policies\NotificationCategorySettingPolicy;
 use Modules\Notifications\Application\Policies\NotificationDeliveryAttemptPolicy;
 use Modules\Notifications\Application\Policies\NotificationOutboxPolicy;
 use Modules\Notifications\Application\Policies\NotificationPreferencePolicy;
+use Modules\Notifications\Application\Policies\NotificationTemplatePolicy;
 use Modules\Notifications\Application\Services\OutboxDispatcher;
+use Modules\Notifications\Application\Services\PayloadDomainEventRecipientResolver;
+use Modules\Notifications\Domain\Contracts\DomainEventRecipientResolver;
 use Modules\Notifications\Domain\Contracts\NotificationDispatcher;
+use Modules\Notifications\Domain\Models\NotificationCategorySetting;
 use Modules\Notifications\Domain\Models\NotificationDeliveryAttempt;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Domain\Models\NotificationPreference;
+use Modules\Notifications\Domain\Models\NotificationTemplate;
 use Modules\Notifications\Infrastructure\Persistence\ConfiguredChannelGateway;
 use Shared\Module\BaseModuleServiceProvider;
 
@@ -60,6 +66,8 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
             NotificationOutbox::class => NotificationOutboxPolicy::class,
             NotificationPreference::class => NotificationPreferencePolicy::class,
             NotificationDeliveryAttempt::class => NotificationDeliveryAttemptPolicy::class,
+            NotificationTemplate::class => NotificationTemplatePolicy::class,
+            NotificationCategorySetting::class => NotificationCategorySettingPolicy::class,
         ];
     }
 
@@ -73,6 +81,7 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
         return [
             // محرّك الإشعارات — ما تعتمده بقية الموديولات عبر العقد.
             NotificationDispatcher::class => OutboxDispatcher::class,
+            DomainEventRecipientResolver::class => PayloadDomainEventRecipientResolver::class,
 
             // بوابة القنوات: موجّه يقرأ تنفيذ القناة من config، وتنفيذاته
             // الحقيقية (SES · FCM · Meta) تُعلَّم في الإعداد دون استيراد عابر للحدود.

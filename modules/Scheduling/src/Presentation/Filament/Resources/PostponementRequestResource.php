@@ -6,6 +6,7 @@ namespace Modules\Scheduling\Presentation\Filament\Resources;
 
 use BackedEnum;
 use Carbon\CarbonImmutable;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -117,7 +118,7 @@ final class PostponementRequestResource extends Resource
                     // المهلة المتبقية للمعلم — بعدها يُصعَّد الطلب للإدارة.
                     ->state(function (PostponementRequest $record): string {
                         if (!$record->status->isPending() || $record->expires_at === null) {
-                            return '—';
+                            return __('scheduling::filament.postponement.not_available');
                         }
 
                         $minutes = (int) CarbonImmutable::now('UTC')
@@ -143,6 +144,7 @@ final class PostponementRequestResource extends Resource
                         ])
                         ->all()),
             ])
+            ->recordActions([ViewAction::make()])
             ->defaultSort('created_at', 'desc');
     }
 
@@ -153,6 +155,7 @@ final class PostponementRequestResource extends Resource
     {
         return [
             'index' => PostponementRequestResource\Pages\ListPostponementRequests::route('/'),
+            'view' => PostponementRequestResource\Pages\ViewPostponementRequest::route('/{record}'),
         ];
     }
 }

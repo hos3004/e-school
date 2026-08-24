@@ -12,6 +12,10 @@ use Modules\Payroll\Presentation\Http\Controllers\RejectPayrollAdjustmentControl
 use Modules\Payroll\Presentation\Http\Controllers\ReleaseDeferredEntriesController;
 use Modules\Payroll\Presentation\Http\Controllers\ShowPayrollPeriodController;
 
+if (!(bool) config('features.payroll')) {
+    return;
+}
+
 Route::get('payroll/periods', ListPayrollPeriodsController::class)
     ->name('payroll.periods.index');
 

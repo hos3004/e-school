@@ -83,6 +83,8 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
                     'money' => $rate->money(),
                     'scope' => $rate->scope,
                     'rate_id' => $rate->id,
+                    'contract_id' => $contract->id,
+                    'contract_basis' => $contract->basis->value,
                 ];
             }
         }

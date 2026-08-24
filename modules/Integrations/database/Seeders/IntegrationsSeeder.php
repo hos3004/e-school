@@ -20,14 +20,16 @@ final class IntegrationsSeeder extends Seeder
     {
         $organizationId = $this->ensureOrganizationId();
 
+        $this->retireLegacyZoomProviders();
+
         $providers = [
             ['key' => 'whatsapp_gateway', 'category' => 'messaging', 'driver' => 'whatsapp_cloud_api'],
-            ['key' => 'video_conferencing', 'category' => 'video', 'driver' => 'zoom'],
+            ['key' => 'video_conferencing', 'category' => 'video', 'driver' => 'bigbluebutton'],
             ['key' => 'payment_gateway', 'category' => 'payment', 'driver' => null],
         ];
 
         foreach ($providers as $index => $data) {
-            $provider = IntegrationProvider::query()->firstOrCreate(
+            $provider = IntegrationProvider::query()->updateOrCreate(
                 ['key' => $data['key']],
                 [
                     'name' => [
@@ -42,7 +44,7 @@ final class IntegrationsSeeder extends Seeder
                 ],
             );
 
-            if ($index === 0 && $provider->wasRecentlyCreated) {
+            if ($index === 0) {
                 IntegrationConnection::query()->firstOrCreate([
                     'organization_id' => $organizationId,
                     'provider_id' => (string) $provider->getKey(),
@@ -51,6 +53,39 @@ final class IntegrationsSeeder extends Seeder
                     'settings' => ['default_locale' => 'ar'],
                     'activated_at' => now(),
                 ]);
+            }
+        }
+    }
+
+    /**
+     * اتصالات Zoom القديمة لا تُعاد تسميتها إلى BBB وهي ما زالت فعّالة؛
+     * تُعطّل أولًا وتُمحى أسرار demo، ثم يعاد استخدام سجل الفيديو العام لـBBB.
+     */
+    private function retireLegacyZoomProviders(): void
+    {
+        $legacyProviders = IntegrationProvider::query()
+            ->where('driver', 'zoom')
+            ->orWhere('key', 'zoom')
+            ->get();
+
+        foreach ($legacyProviders as $provider) {
+            foreach ($provider->connections()->get() as $connection) {
+                $changes = [
+                    'credentials' => null,
+                    'settings' => null,
+                ];
+
+                if ($connection->status->canTransitionTo(ConnectionStatus::Disabled)) {
+                    $changes['status'] = ConnectionStatus::Disabled;
+                    $changes['disabled_at'] = now();
+                }
+
+                // حتى الاتصال المعطّل/المنتهي لا يحتفظ بأسرار Zoom قديمة.
+                $connection->forceFill($changes)->save();
+            }
+
+            if ($provider->key === 'zoom') {
+                $provider->delete();
             }
         }
     }

@@ -17,6 +17,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Content\Domain\Enums\MaterialType;
 use Modules\Content\Domain\Models\CourseMaterial;
+use Shared\Support\LocalizedJsonColumn;
 
 /**
  * مورد إدارة المواد التعليمية في لوحة الإدارة.
@@ -93,10 +94,9 @@ final class CourseMaterialResource extends Resource
             ->columns([
                 TextColumn::make('title')
                     ->label(__('content::fields.title'))
-                    ->formatStateUsing(fn ($state): string => is_array($state)
-                        ? ($state[app()->getLocale()] ?? reset($state))
-                        : (string) $state)
-                    ->searchable()
+                    ->formatStateUsing(static fn ($state): string => LocalizedJsonColumn::display($state))
+                    // عمود jsonb: البحث الافتراضي يبني LIKE عليه فينهار الطلب.
+                    ->searchable(query: LocalizedJsonColumn::search('course_materials.title'))
                     ->limit(40),
                 TextColumn::make('type')
                     ->label(__('content::fields.type'))

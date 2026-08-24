@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\AccessControl\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Domain\Events\RoleAssigned;
 use Modules\AccessControl\Domain\Models\ModelHasRole;
@@ -30,9 +31,12 @@ final readonly class AssignRoleAction
         string $modelType,
         string $modelId,
         ?string $actorId = null,
+        ?string $organizationId = null,
     ): ModelHasRole {
         /** @var Role|null $role */
-        $role = Role::query()->find($roleId);
+        $role = Role::query()
+            ->when($organizationId !== null, fn (Builder $query): Builder => $query->includingGlobal($organizationId))
+            ->find($roleId);
 
         if ($role === null) {
             throw BusinessRuleViolation::make(

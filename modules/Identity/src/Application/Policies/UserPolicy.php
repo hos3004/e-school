@@ -21,7 +21,8 @@ final class UserPolicy
 
     public function view(User $actor, User $target): bool
     {
-        return $actor->id === $target->id || $actor->can('identity.users.view');
+        return $this->sameOrganization($actor, $target)
+            && ($actor->id === $target->id || $actor->can('identity.users.view'));
     }
 
     public function create(User $actor): bool
@@ -31,17 +32,25 @@ final class UserPolicy
 
     public function update(User $actor, User $target): bool
     {
-        return $actor->id === $target->id || $actor->can('identity.users.update');
+        return $this->sameOrganization($actor, $target)
+            && ($actor->id === $target->id || $actor->can('identity.users.update'));
     }
 
     public function delete(User $actor, User $target): bool
     {
-        return $actor->id !== $target->id && $actor->can('identity.users.delete');
+        return false;
     }
 
     /** فعل خاص: تغيير حالة الحساب — لا يُستثنى به المالك لنفسه. */
     public function changeStatus(User $actor, User $target): bool
     {
-        return $actor->id !== $target->id && $actor->can('identity.users.change_status');
+        return $this->sameOrganization($actor, $target)
+            && $actor->id !== $target->id
+            && $actor->can('identity.users.change_status');
+    }
+
+    private function sameOrganization(User $actor, User $target): bool
+    {
+        return hash_equals($actor->organization_id, $target->organization_id);
     }
 }

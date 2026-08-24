@@ -17,12 +17,15 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Reporting\Domain\Enums\SnapshotType;
 use Modules\Reporting\Domain\Models\OrganizationSnapshot;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد اللقطات التنظيمية — قراءة فقط، والبناء عبر الإجراء المجدول.
  */
 final class OrganizationSnapshotResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = OrganizationSnapshot::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';

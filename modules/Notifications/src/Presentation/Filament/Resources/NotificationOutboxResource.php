@@ -18,6 +18,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Notifications\Application\Actions\CancelNotificationAction;
 use Modules\Notifications\Application\Actions\MarkNotificationAsReadAction;
 use Modules\Notifications\Application\Actions\RetryNotificationAction;
 use Modules\Notifications\Domain\Enums\Channel;
@@ -277,8 +278,13 @@ final class NotificationOutboxResource extends Resource
                     ->nullable(),
             ])
             ->recordActions([
+                Action::make('view')
+                    ->label(__('notifications::actions.view'))
+                    ->icon('heroicon-m-eye')
+                    ->url(fn (NotificationOutbox $record): string => self::getUrl('view', ['record' => $record])),
                 self::markAsReadAction(),
                 self::manualRetryAction(),
+                self::cancelAction(),
             ])
             ->defaultSort('scheduled_for');
     }
@@ -303,6 +309,7 @@ final class NotificationOutboxResource extends Resource
     {
         return [
             'index' => Pages\ListNotificationOutboxes::route('/'),
+            'view' => Pages\ViewNotificationOutbox::route('/{record}'),
         ];
     }
 
@@ -348,6 +355,36 @@ final class NotificationOutboxResource extends Resource
 
                 Notification::make()
                     ->title(__('notifications::messages.manual_retry_queued'))
+                    ->success()
+                    ->send();
+            });
+    }
+
+    private static function cancelAction(): Action
+    {
+        return Action::make('cancel')
+            ->label(__('notifications::actions.cancel'))
+            ->icon('heroicon-m-x-circle')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading(__('notifications::actions.cancel_heading'))
+            ->modalDescription(__('notifications::actions.cancel_description'))
+            ->form([
+                TextInput::make('reason')
+                    ->label(__('notifications::fields.cancel_reason'))
+                    ->required(),
+            ])
+            ->authorize('cancel')
+            ->visible(fn (NotificationOutbox $record): bool => $record->status === OutboxStatus::Queued)
+            ->action(function (NotificationOutbox $record, array $data): void {
+                app(CancelNotificationAction::class)->execute(
+                    $record,
+                    (string) $data['reason'],
+                    (string) auth()->id(),
+                );
+
+                Notification::make()
+                    ->title(__('notifications::messages.cancelled'))
                     ->success()
                     ->send();
             });

@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Notifications\Application\Services\NotificationCategorySettingsResolver;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Events\NotificationQueued;
@@ -31,6 +32,7 @@ final readonly class QueueNotificationAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private NotificationCategorySettingsResolver $categorySettings,
     ) {}
 
     /**
@@ -63,7 +65,7 @@ final readonly class QueueNotificationAction
             );
         }
 
-        $critical = (bool) config('notifications.categories.'.$category.'.critical', false);
+        $critical = $this->categorySettings->isCritical($organizationId, $category);
         $optedOut = !$critical
             && $channel !== Channel::InApp
             && NotificationPreference::query()

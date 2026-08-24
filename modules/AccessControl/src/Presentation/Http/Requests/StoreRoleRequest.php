@@ -21,7 +21,7 @@ final class StoreRoleRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:191'],
             'guard_name' => ['sometimes', 'string', 'in:web,api'],
-            'organization_id' => ['nullable', 'string', 'size:26'],
+            'organization_id' => ['prohibited'],
         ];
     }
 
@@ -32,7 +32,7 @@ final class StoreRoleRequest extends FormRequest
     {
         return [
             'name.required' => __('accesscontrol::validation.role_name_required'),
-            'organization_id.size' => __('accesscontrol::validation.ulid_invalid'),
+            'organization_id.prohibited' => __('accesscontrol::validation.organization_managed_by_server'),
             'guard_name.in' => __('accesscontrol::validation.guard_invalid'),
         ];
     }

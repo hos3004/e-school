@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Identity\Domain\Events;
 
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Shared\Domain\DomainEvent;
 
 /**
  * سُجّل حساب مستخدم جديد في المؤسسة.
  */
-final class UserRegistered extends DomainEvent
+final class UserRegistered extends DomainEvent implements ShouldDispatchAfterCommit
 {
     public function __construct(
         public readonly string $userId,

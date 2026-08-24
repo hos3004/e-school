@@ -15,10 +15,12 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Modules\Identity\Presentation\Http\Controllers\ChangeUserStatusController;
 use Modules\Identity\Presentation\Http\Controllers\ForgotPasswordController;
+use Modules\Identity\Presentation\Http\Controllers\ForgotPasswordPhoneController;
 use Modules\Identity\Presentation\Http\Controllers\MeController;
 use Modules\Identity\Presentation\Http\Controllers\RegisterDeviceController;
 use Modules\Identity\Presentation\Http\Controllers\RegisterUserController;
 use Modules\Identity\Presentation\Http\Controllers\ResetPasswordController;
+use Modules\Identity\Presentation\Http\Controllers\ResetPasswordPhoneController;
 use Modules\Identity\Presentation\Http\Controllers\RevokeDeviceController;
 use Modules\Identity\Presentation\Http\Controllers\UpdatePasswordController;
 use Modules\Identity\Presentation\Http\Controllers\UpdateProfileController;
@@ -28,7 +30,13 @@ Route::prefix('identity')->group(function (): void {
     Route::middleware('guest')->group(function (): void {
         Route::post('register', RegisterUserController::class)->name('identity.register');
         Route::post('forgot-password', ForgotPasswordController::class)->name('identity.password.email');
+        Route::post('forgot-password/phone', ForgotPasswordPhoneController::class)
+            ->middleware('throttle:identity-phone-reset-request')
+            ->name('identity.password.phone.request');
         Route::post('reset-password', ResetPasswordController::class)->name('identity.password.reset');
+        Route::post('reset-password/phone', ResetPasswordPhoneController::class)
+            ->middleware('throttle:identity-phone-reset-verify')
+            ->name('identity.password.phone.reset');
     });
 
     // ── مصادَق عليه ──────────────────────────────────────────────
@@ -44,7 +52,6 @@ Route::prefix('identity')->group(function (): void {
 
         // إدارة حالات الحسابات — عبر Policy وليس فحص أدوار.
         Route::patch('users/{user}/status', ChangeUserStatusController::class)
-            ->middleware('can:changeStatus,user')
             ->name('identity.users.change_status');
     });
 });

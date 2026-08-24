@@ -29,17 +29,17 @@ final class PermissionPolicy
 
     public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('accesscontrol.permissions.create');
+        return false;
     }
 
     public function update(Authenticatable&Authorizable $user, Permission $permission): bool
     {
-        return $user->can('accesscontrol.permissions.update');
+        return false;
     }
 
     public function delete(Authenticatable&Authorizable $user, Permission $permission): bool
     {
-        return $user->can('accesscontrol.permissions.delete');
+        return false;
     }
 
     /** منح الصلاحية مباشرة لنموذج دون وسيط دور. */

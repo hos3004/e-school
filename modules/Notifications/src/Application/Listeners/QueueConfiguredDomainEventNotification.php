@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Notifications\Application\Listeners;
 
+use Modules\Notifications\Domain\Contracts\DomainEventRecipientResolver;
 use Modules\Notifications\Domain\Contracts\NotificationDispatcher;
 use Shared\Domain\DomainEvent;
 
@@ -17,6 +18,7 @@ final readonly class QueueConfiguredDomainEventNotification
 {
     public function __construct(
         private NotificationDispatcher $notifications,
+        private DomainEventRecipientResolver $recipients,
     ) {}
 
     public function handle(DomainEvent $event): void
@@ -29,7 +31,12 @@ final readonly class QueueConfiguredDomainEventNotification
 
         [$eventKey, $settings] = $resolved;
         $payload = $event->payload();
-        $recipientIds = $this->recipientIds($settings, $payload);
+        $recipientIds = $this->recipients->resolve(
+            eventKey: $eventKey,
+            audiences: array_values((array) ($settings['audiences'] ?? [])),
+            recipientFields: array_values((array) ($settings['recipient_fields'] ?? [])),
+            payload: $payload,
+        );
 
         if ($recipientIds === []) {
             logger()->warning('notifications.event_has_no_recipient_user_ids', [
@@ -70,33 +77,5 @@ final readonly class QueueConfiguredDomainEventNotification
         }
 
         return null;
-    }
-
-    /**
-     * @param array<string, mixed> $settings
-     * @param array<string, mixed> $payload
-     * @return list<string>
-     */
-    private function recipientIds(array $settings, array $payload): array
-    {
-        $fields = array_values(array_filter(
-            (array) ($settings['recipient_fields'] ?? []),
-            static fn (mixed $field): bool => is_string($field) && $field !== '',
-        ));
-        $fields[] = 'recipient_user_ids';
-        $fields[] = 'recipient_user_id';
-        $ids = [];
-
-        foreach (array_unique($fields) as $field) {
-            $value = data_get($payload, $field);
-
-            foreach (is_array($value) ? $value : [$value] as $id) {
-                if (is_string($id) && trim($id) !== '') {
-                    $ids[] = $id;
-                }
-            }
-        }
-
-        return array_values(array_unique($ids));
     }
 }

@@ -20,7 +20,6 @@ final class AssignRoleRequest extends FormRequest
     {
         return [
             'role_id' => ['required', 'string', 'size:26'],
-            'model_type' => ['required', 'string', 'max:191'],
             'model_id' => ['required', 'string', 'size:26'],
         ];
     }
@@ -32,7 +31,6 @@ final class AssignRoleRequest extends FormRequest
     {
         return [
             'role_id.required' => __('accesscontrol::validation.role_required'),
-            'model_type.required' => __('accesscontrol::validation.model_type_required'),
             'model_id.required' => __('accesscontrol::validation.model_id_required'),
         ];
     }

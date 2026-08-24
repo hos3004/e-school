@@ -20,6 +20,12 @@ return [
             'guard' => 'Guard',
             'organization' => 'Organization',
             'system' => 'System role',
+            'permissions' => 'Granted permissions',
+            'user_id' => 'User ID',
+        ],
+        'actions' => [
+            'assign_user' => 'Assign to user',
+            'revoke_user' => 'Revoke from user',
         ],
         'filters' => [
             'system' => 'System roles only',

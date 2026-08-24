@@ -15,9 +15,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Organization\Domain\Models\Holiday;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 final class HolidayFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Holiday::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-sun';

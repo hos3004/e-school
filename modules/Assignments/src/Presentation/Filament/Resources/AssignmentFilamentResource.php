@@ -17,6 +17,8 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Assignments\Domain\Models\Assignment;
 use Modules\Assignments\Presentation\Filament\Resources\AssignmentFilamentResource\Pages;
+use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Support\LocalizedJsonColumn;
 
 /**
  * مورد الأنشطة في لوحة الإدارة — إنشاء وتعديل وحذف ناعم.
@@ -24,6 +26,8 @@ use Modules\Assignments\Presentation\Filament\Resources\AssignmentFilamentResour
  */
 final class AssignmentFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Assignment::class;
 
     protected static ?string $slug = 'assignments';
@@ -118,11 +122,10 @@ final class AssignmentFilamentResource extends Resource
             ->columns([
                 TextColumn::make('title')
                     ->label(__('assignments::attributes.title'))
-                    ->formatStateUsing(fn ($state): string => is_array($state)
-                        ? (string) ($state[app()->getLocale()] ?? reset($state))
-                        : (string) $state)
-                    ->searchable()
-                    ->sortable(),
+                    ->formatStateUsing(static fn ($state): string => LocalizedJsonColumn::display($state))
+                    // عمود jsonb: البحث الافتراضي يبني LIKE عليه فينهار الطلب.
+                    ->searchable(query: LocalizedJsonColumn::search('assignments.title'))
+                    ->sortable(query: LocalizedJsonColumn::sort('assignments.title')),
 
                 TextColumn::make('course_id')
                     ->label(__('assignments::attributes.course'))

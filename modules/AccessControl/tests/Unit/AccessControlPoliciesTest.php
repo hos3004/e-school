@@ -2,73 +2,98 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Modules\AccessControl\Application\Policies\PermissionPolicy;
 use Modules\AccessControl\Application\Policies\RolePolicy;
 use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Domain\Models\Role;
-use Modules\AccessControl\Tests\Support\ApiUser;
 
-function acPolicyUser(): ApiUser
+final class AccessControlPolicyActor extends Authenticatable
 {
-    return new ApiUser('01ACTOR0000000000000000000');
+    /** @param list<string> $abilities */
+    public function __construct(
+        string $organizationId = '',
+        private readonly array $abilities = [],
+    ) {
+        parent::__construct();
+        $this->forceFill(['organization_id' => $organizationId]);
+    }
+
+    public function can($abilities, $arguments = []): bool
+    {
+        foreach ((array) $abilities as $ability) {
+            if (in_array((string) $ability, $this->abilities, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
-function acSystemRole(): Role
+function acPolicyActor(array $abilities = [], string $organizationId = '01ORGAAAAAAAAAAAAAAAAAAAAA'): AccessControlPolicyActor
 {
-    return Role::make()->forceFill(['is_system' => true, 'name' => 'super-admin']);
+    return new AccessControlPolicyActor($organizationId, $abilities);
 }
 
-function acPlainRole(): Role
+function acPolicyRole(?string $organizationId, bool $system = false): Role
 {
-    return Role::make()->forceFill(['is_system' => false, 'name' => 'custom']);
+    return Role::make()->forceFill([
+        'organization_id' => $organizationId,
+        'is_system' => $system,
+        'name' => $system ? 'system-role' : 'custom-role',
+    ]);
 }
 
-it('locks system roles from update and delete at policy level', function (): void {
-    Gate::define('accesscontrol.roles.update', fn (): bool => true);
-    Gate::define('accesscontrol.roles.delete', fn (): bool => true);
-    Gate::define('accesscontrol.roles.sync_permissions', fn (): bool => true);
-
+it('locks system and global roles from tenant mutation', function (): void {
+    $actor = acPolicyActor([
+        'accesscontrol.roles.update',
+        'accesscontrol.roles.delete',
+        'accesscontrol.roles.sync_permissions',
+    ]);
     $policy = new RolePolicy;
 
-    expect($policy->update(acPolicyUser(), acSystemRole()))->toBeFalse()
-        ->and($policy->delete(acPolicyUser(), acSystemRole()))->toBeFalse()
-        ->and($policy->syncPermissions(acPolicyUser(), acSystemRole()))->toBeFalse();
+    expect($policy->update($actor, acPolicyRole('01ORGAAAAAAAAAAAAAAAAAAAAA', true)))->toBeFalse()
+        ->and($policy->delete($actor, acPolicyRole(null)))->toBeFalse()
+        ->and($policy->syncPermissions($actor, acPolicyRole(null)))->toBeFalse();
 });
 
-it('allows update, delete and sync on non-system roles for permitted users', function (): void {
-    Gate::define('accesscontrol.roles.update', fn (): bool => true);
-    Gate::define('accesscontrol.roles.delete', fn (): bool => true);
-    Gate::define('accesscontrol.roles.sync_permissions', fn (): bool => true);
-
+it('allows permitted role mutation only inside the actor tenant', function (): void {
+    $actor = acPolicyActor([
+        'accesscontrol.roles.update',
+        'accesscontrol.roles.delete',
+        'accesscontrol.roles.sync_permissions',
+        'accesscontrol.assignments.assign_role',
+        'accesscontrol.assignments.revoke_role',
+    ]);
+    $own = acPolicyRole('01ORGAAAAAAAAAAAAAAAAAAAAA');
+    $foreign = acPolicyRole('01ORGBBBBBBBBBBBBBBBBBBBBB');
+    $global = acPolicyRole(null, true);
     $policy = new RolePolicy;
 
-    expect($policy->update(acPolicyUser(), acPlainRole()))->toBeTrue()
-        ->and($policy->delete(acPolicyUser(), acPlainRole()))->toBeTrue()
-        ->and($policy->syncPermissions(acPolicyUser(), acPlainRole()))->toBeTrue();
+    expect($policy->update($actor, $own))->toBeTrue()
+        ->and($policy->delete($actor, $own))->toBeTrue()
+        ->and($policy->syncPermissions($actor, $own))->toBeTrue()
+        ->and($policy->assign($actor, $own))->toBeTrue()
+        ->and($policy->revoke($actor, $own))->toBeTrue()
+        ->and($policy->assign($actor, $global))->toBeTrue()
+        ->and($policy->revoke($actor, $global))->toBeTrue()
+        ->and($policy->update($actor, $foreign))->toBeFalse()
+        ->and($policy->assign($actor, $foreign))->toBeFalse();
 });
 
-it('denies everything when the user lacks the underlying ability', function (): void {
-    $policy = new RolePolicy;
-    $user = acPolicyUser();
-
-    expect($policy->viewAny($user))->toBeFalse()
-        ->and($policy->view($user, acPlainRole()))->toBeFalse()
-        ->and($policy->create($user))->toBeFalse()
-        ->and($policy->assign($user))->toBeFalse()
-        ->and($policy->revoke($user))->toBeFalse();
-});
-
-it('gates permission management behind permission abilities only', function (): void {
-    Gate::define('accesscontrol.permissions.view_any', fn (): bool => true);
-    Gate::define('accesscontrol.permissions.create', fn (): bool => false);
-    Gate::define('accesscontrol.permissions.grant_direct', fn (): bool => true);
-
+it('allows global permission definitions to be viewed but never mutated over tenant policy', function (): void {
+    $actor = acPolicyActor([
+        'accesscontrol.permissions.view_any',
+        'accesscontrol.permissions.grant_direct',
+    ]);
+    $permission = Permission::make(['name' => 'student.view']);
     $policy = new PermissionPolicy;
-    $permission = Permission::make(['name' => 'students.view_any']);
 
-    expect($policy->viewAny(acPolicyUser()))->toBeTrue()
-        ->and($policy->view(acPolicyUser(), $permission))->toBeTrue()
-        ->and($policy->create(acPolicyUser()))->toBeFalse()
-        ->and($policy->grant(acPolicyUser()))->toBeTrue();
+    expect($policy->viewAny($actor))->toBeTrue()
+        ->and($policy->view($actor, $permission))->toBeTrue()
+        ->and($policy->grant($actor))->toBeTrue()
+        ->and($policy->create($actor))->toBeFalse()
+        ->and($policy->update($actor, $permission))->toBeFalse()
+        ->and($policy->delete($actor, $permission))->toBeFalse();
 });

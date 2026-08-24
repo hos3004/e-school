@@ -20,7 +20,10 @@ interface TeacherRateResolver
      *
      * يُعتمد السعر الساري **بتاريخ الحصة** لا السعر الحالي.
      *
-     * @return array{money: Money, scope: RateScope, rate_id: string}|null
+     * `contract_id` جزء من الإجابة لأن قيدة الدفتر تُنسب إلى العقد الساري وقت
+     * الحصة، ولا يجوز للمستهلك أن يستنتجه بقراءة جداول هذا الموديول.
+     *
+     * @return array{money: Money, scope: RateScope, rate_id: string, contract_id: string, contract_basis: string}|null
      */
     public function resolve(
         string $staffProfileId,

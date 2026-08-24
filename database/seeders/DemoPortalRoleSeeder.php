@@ -31,9 +31,11 @@ final class DemoPortalRoleSeeder extends Seeder
         }
 
         $roleIds = DB::table('roles')
-            ->where('organization_id', $organizationId)
             ->where('guard_name', 'web')
-            ->whereIn('name', ['student', 'teacher', 'guardian'])
+            ->whereIn('name', ['platform_admin', 'academic_supervisor', 'student', 'teacher', 'guardian'])
+            ->orderByRaw('organization_id nulls first')
+            ->get()
+            ->unique('name')
             ->pluck('id', 'name');
 
         $missingRoles = array_values(array_diff(
@@ -92,6 +94,31 @@ final class DemoPortalRoleSeeder extends Seeder
                     continue;
                 }
 
+                $assignments[] = [
+                    'role_id' => $roleId,
+                    'model_type' => User::class,
+                    'model_id' => $userId,
+                ];
+            }
+        }
+
+        // Accounts used to verify the administration panel locally must have
+        // real seeded capabilities; no production-wide bypass is introduced.
+        $adminRoleIds = $roleIds->only(['platform_admin', 'academic_supervisor']);
+        $adminAccounts = [
+            'admin@eschool.test' => 'platform_admin',
+            'coordinator@eschool.test' => 'academic_supervisor',
+        ];
+
+        foreach ($adminAccounts as $email => $roleName) {
+            $userId = DB::table('users')
+                ->where('organization_id', $organizationId)
+                ->where('email', $email)
+                ->whereNull('deleted_at')
+                ->value('id');
+            $roleId = $adminRoleIds->get($roleName);
+
+            if (is_string($userId) && is_string($roleId)) {
                 $assignments[] = [
                     'role_id' => $roleId,
                     'model_type' => User::class,

@@ -57,23 +57,66 @@ return [
     ],
 
     'course' => [
-        'label' => 'course',
+        'label' => 'Course',
         'plural' => 'Courses',
+
+        'sections' => [
+            'identity' => 'Course identity',
+            'delivery' => 'Classification and delivery',
+            'rules' => 'Completion rules and prerequisites',
+        ],
 
         'fields' => [
             'level' => 'Level',
+            'program' => 'Program',
             'organization' => 'Organization',
             'code' => 'Code',
             'name' => 'Name',
             'name_ar' => 'Name (Arabic)',
             'name_en' => 'Name (English)',
+            'description_ar' => 'Description (Arabic)',
+            'description_en' => 'Description (English)',
             'total_sessions' => 'Total sessions',
             'completion_rules' => 'Completion rules',
+            'prerequisites' => 'Prerequisites',
+            'rule_key' => 'Rule',
+            'rule_value' => 'Value',
             'is_active' => 'Active',
+            'session_mode' => 'Session mode',
+            'target_gender' => 'Target audience',
+            'inherits_program' => 'Inherits from program',
+            'age_from' => 'Age from',
+            'age_to' => 'Age to',
+            'age_range' => 'Age range',
+            'any_age' => 'Any age',
+            'age_from_only' => ':age and above',
+            'age_to_only' => 'Up to :age',
+            'default_duration_minutes' => 'Session duration (minutes)',
+            'duration_help' => 'Used as the default when scheduling sessions for this course.',
+            'sessions_per_week' => 'Sessions per week',
         ],
 
         'filters' => [
             'active' => 'Active courses only',
+            'program' => 'Program',
+            'trashed' => 'Archived',
         ],
+
+        'errors' => [
+            'no_organization' => 'Your account is not linked to an organization, so a course cannot be created.',
+            'level_outside_organization' => 'The selected level does not belong to your organization.',
+        ],
+    ],
+
+    'session_modes' => [
+        'individual' => 'Individual',
+        'group' => 'Group',
+        'both' => 'Individual and group',
+    ],
+
+    'target_genders' => [
+        'male' => 'Male',
+        'female' => 'Female',
+        'all' => 'Everyone',
     ],
 ];

@@ -26,6 +26,7 @@ return [
     'email' => 'البريد الإلكتروني',
     'phone' => 'رقم الهاتف',
     'preferred_program_id' => 'البرنامج المفضّل',
+    'preferred_course_id' => 'الكورس المفضّل',
     'status' => 'الحالة',
     'submitted_at' => 'تاريخ التقديم',
     'reviewed_at' => 'تاريخ المراجعة',

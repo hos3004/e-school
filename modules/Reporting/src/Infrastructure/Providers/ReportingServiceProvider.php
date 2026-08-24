@@ -7,7 +7,6 @@ namespace Modules\Reporting\Infrastructure\Providers;
 use Modules\Attendance\Domain\Events\AttendanceConfirmed;
 use Modules\Discipline\Domain\Events\ViolationRecorded;
 use Modules\Enrollments\Domain\Events\EnrollmentFrozen;
-use Modules\Payroll\Domain\Events\PayrollEntryRecorded;
 use Modules\Reporting\Application\Listeners\ProjectDomainEventToDashboards;
 use Modules\Reporting\Application\Policies\OrganizationSnapshotPolicy;
 use Modules\Reporting\Application\Policies\ReportEventLogPolicy;
@@ -31,6 +30,14 @@ use Shared\Module\BaseModuleServiceProvider;
  */
 final class ReportingServiceProvider extends BaseModuleServiceProvider
 {
+    /**
+     * Payroll موديول مختوم (`config/modules.php` → `sealed_domains`)، والقناة
+     * الوحيدة المسموحة نحوه هي عقوده المعلنة. الاشتراك في حدث مجاله يتم هنا
+     * باسمه نصًّا لا باستيراد صنفه: `Event::listen` يقبل الاسم كما هو، فيبقى
+     * الإسقاط يعمل بلا اقتران بأصناف الموديول المختوم.
+     */
+    private const PAYROLL_ENTRY_RECORDED = 'Modules\\Payroll\\Domain\\Events\\PayrollEntryRecorded';
+
     protected function moduleName(): string
     {
         return 'Reporting';
@@ -39,7 +46,7 @@ final class ReportingServiceProvider extends BaseModuleServiceProvider
     /**
      * أحداث المصادر التي يُبنى عليها الإسقاط.
      *
-     * @return array<class-string, list<class-string>>
+     * @return array<string, list<class-string>>
      */
     protected function listeners(): array
     {
@@ -50,7 +57,7 @@ final class ReportingServiceProvider extends BaseModuleServiceProvider
             SessionNoShowRecorded::class => [$projection],
             AttendanceConfirmed::class => [$projection],
             ViolationRecorded::class => [$projection],
-            PayrollEntryRecorded::class => [$projection],
+            self::PAYROLL_ENTRY_RECORDED => [$projection],
             EnrollmentFrozen::class => [$projection],
         ];
     }

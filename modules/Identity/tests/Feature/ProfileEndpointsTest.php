@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Gate;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
 
@@ -11,7 +10,6 @@ uses(CreatesTestOrganization::class);
 beforeEach(function (): void {
     $this->createTestOrganization();
 
-    Gate::define('identity.users.view_any', fn ($user): bool => true);
 });
 
 it('returns the authenticated user profile', function (): void {

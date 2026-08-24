@@ -14,9 +14,12 @@ use Filament\Tables\Table;
 use Modules\Guardians\Domain\Enums\ContactChannel;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 use Modules\Guardians\Presentation\Filament\Resources\Pages\ManageGuardianProfiles;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 final class GuardianProfileFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = GuardianProfile::class;
 
     protected static bool $shouldRegisterNavigation = true;

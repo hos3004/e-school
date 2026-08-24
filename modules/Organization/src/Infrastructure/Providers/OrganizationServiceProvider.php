@@ -49,10 +49,17 @@ final class OrganizationServiceProvider extends BaseModuleServiceProvider
     /**
      * @return array<class-string, class-string>
      */
-    protected function bindings(): array
+    protected function scopedBindings(): array
     {
         return [
             GeographyQueries::class => GeographyQueryService::class,
+        ];
+    }
+
+    /** @return array<class-string, class-string> */
+    protected function bindings(): array
+    {
+        return [
             OrganizationSettingQueries::class => OrganizationSettingQueryService::class,
         ];
     }

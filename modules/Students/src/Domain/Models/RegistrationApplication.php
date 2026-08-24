@@ -29,6 +29,7 @@ use Shared\Concerns\HasUlid;
  * @property string|null $email
  * @property string|null $phone
  * @property string|null $preferred_program_id
+ * @property string|null $preferred_course_id
  * @property string|null $notes
  * @property CarbonImmutable|null $submitted_at
  * @property string|null $reviewed_by
@@ -62,6 +63,7 @@ final class RegistrationApplication extends Model
         'email',
         'phone',
         'preferred_program_id',
+        'preferred_course_id',
         'notes',
         'submitted_at',
         'reviewed_by',

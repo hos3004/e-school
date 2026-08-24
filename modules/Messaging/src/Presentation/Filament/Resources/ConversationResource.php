@@ -19,12 +19,15 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Messaging\Domain\Enums\ConversationType;
 use Modules\Messaging\Domain\Models\Conversation;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد إدارة المحادثات في لوحة الإدارة.
  */
 final class ConversationResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Conversation::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
@@ -44,6 +47,11 @@ final class ConversationResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('messaging::navigation.conversation.plural');
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
     }
 
     public static function form(Schema $schema): Schema

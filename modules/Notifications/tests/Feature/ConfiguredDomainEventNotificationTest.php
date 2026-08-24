@@ -18,6 +18,7 @@ use Shared\Testing\Fixtures;
 final class ConfiguredSessionScheduledEvent extends DomainEvent
 {
     public function __construct(
+        public readonly string $organizationId,
         public readonly string $studentUserId,
         public readonly string $scheduledStart,
     ) {
@@ -37,6 +38,7 @@ final class ConfiguredSessionScheduledEvent extends DomainEvent
     public function payload(): array
     {
         return [
+            'organization_id' => $this->organizationId,
             'student_user_id' => $this->studentUserId,
             'scheduled_start' => $this->scheduledStart,
         ];
@@ -78,6 +80,7 @@ it('runs a configured domain event through listener outbox job gateway and mail 
     );
 
     Event::dispatch(new ConfiguredSessionScheduledEvent(
+        organizationId: Fixtures::organizationId(),
         studentUserId: $recipientId,
         scheduledStart: '2026-08-23T10:00:00Z',
     ));

@@ -68,7 +68,7 @@ return [
      */
     'categories' => [
         'session_reminder' => [
-            'channels' => ['in_app', 'whatsapp'],
+            'channels' => ['in_app', 'email', 'whatsapp'],
             'critical' => false,
             'respects_quiet_hours' => false,
         ],
@@ -236,6 +236,46 @@ return [
             'recipient_fields' => ['teacher_user_id', 'supervisor_user_ids'],
             'source_events' => ['Modules\\AcademicReports\\Domain\\Events\\SessionReportLate'],
         ],
+        'discipline.action_applied' => [
+            'category' => 'discipline_notice',
+            'audiences' => ['student', 'guardian', 'supervisor'],
+            'recipient_fields' => ['student_user_id', 'guardian_user_ids', 'supervisor_user_ids'],
+            'source_events' => ['Modules\\Discipline\\Domain\\Events\\DisciplineActionApplied'],
+        ],
+        'discipline.student_frozen' => [
+            'category' => 'enrollment_frozen',
+            'audiences' => ['student', 'guardian', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_id', 'guardian_user_ids', 'supervisor_user_ids', 'admin_user_ids'],
+            'source_events' => ['Modules\\Enrollments\\Domain\\Events\\EnrollmentFrozen'],
+        ],
+        'assignment.created' => [
+            'category' => 'assignment_update',
+            'audiences' => ['student', 'guardian'],
+            'recipient_fields' => ['student_user_ids', 'student_user_id', 'guardian_user_ids'],
+            'source_events' => ['Modules\\Assignments\\Domain\\Events\\AssignmentCreated'],
+        ],
+        'assignment.submitted' => [
+            'category' => 'assignment_update',
+            'audiences' => ['teacher'],
+            'recipient_fields' => ['teacher_user_id'],
+            'source_events' => ['Modules\\Assignments\\Domain\\Events\\AssignmentSubmitted'],
+        ],
+        'submission.graded' => [
+            'category' => 'grade_published',
+            'audiences' => ['student', 'guardian'],
+            'recipient_fields' => ['student_user_id', 'guardian_user_ids'],
+            'source_events' => ['Modules\\Assignments\\Domain\\Events\\SubmissionGraded'],
+        ],
+    ],
+
+    // Permission-based operational audiences. No role names are inspected.
+    'audience_permissions' => [
+        'admin' => ['settings.manage'],
+        'supervisor' => ['message.moderate', 'enrollment.freeze'],
+    ],
+
+    'password_reset' => [
+        'whatsapp_template' => env('WHATSAPP_PASSWORD_RESET_TEMPLATE', 'password_reset_otp'),
     ],
 
     /*

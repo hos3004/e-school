@@ -8,6 +8,14 @@ return [
 
     'disks' => [
 
+        // لا يُستخدم إلا عبر scripts/test-isolated.php؛ لكل تشغيل root مستقل.
+        'test_isolated' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/'.env('TEST_RUN_TOKEN', 'unconfigured')),
+            'serve' => false,
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

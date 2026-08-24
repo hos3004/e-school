@@ -19,12 +19,15 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Certificates\Domain\Enums\BadgeTier;
 use Modules\Certificates\Domain\Models\Badge;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد إدارة شارات الكتالوج في لوحة الإدارة.
  */
 final class BadgeFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Badge::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-trophy';

@@ -41,6 +41,8 @@ return [
         // أقل عمر يُقبل تسجيله ذاتيًا؛ ما دونه يحتاج ولي أمر.
         'min_self_registration_age' => (int) env('ADMISSION_MIN_SELF_AGE', 13),
 
+        'rate_limit_per_minute' => (int) env('ADMISSION_REGISTRATION_RATE_LIMIT', 6),
+
         // منع الطلبات المكررة لنفس الشخص.
         'duplicate_detection' => [
             'enabled' => true,
@@ -194,5 +196,6 @@ return [
         // الاستعادة تتم عبر القناة المتاحة فعلًا على الحساب.
         'recovery_channels' => ['email', 'whatsapp'],
         'recovery_token_ttl_minutes' => 60,
+        'generated_password_length' => (int) env('ADMISSION_GENERATED_PASSWORD_LENGTH', 24),
     ],
 ];

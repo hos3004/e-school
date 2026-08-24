@@ -14,12 +14,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Messaging\Domain\Models\ClassWallPost;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد إدارة حائط الصفوف في لوحة الإدارة.
  */
 final class ClassWallPostResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = ClassWallPost::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
@@ -39,6 +42,11 @@ final class ClassWallPostResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('messaging::navigation.wall_post.plural');
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
     }
 
     public static function form(Schema $schema): Schema

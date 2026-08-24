@@ -19,4 +19,14 @@ return [
         'label' => 'Notification preference',
         'plural' => 'Notification preferences',
     ],
+
+    'template' => [
+        'label' => 'Notification template',
+        'plural' => 'Notification templates',
+    ],
+
+    'category_setting' => [
+        'label' => 'Category setting',
+        'plural' => 'Categories & channels',
+    ],
 ];

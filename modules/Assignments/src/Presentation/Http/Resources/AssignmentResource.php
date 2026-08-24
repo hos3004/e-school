@@ -38,6 +38,8 @@ final class AssignmentResource extends JsonResource
             'allows_late' => (bool) $assignment->allows_late,
             'late_penalty_percent' => $assignment->late_penalty_percent,
             'is_past_due' => $assignment->isPastDue(),
+            'submissions_count' => $this->whenCounted('submissions'),
+            'submissions' => AssignmentSubmissionResource::collection($this->whenLoaded('submissions')),
         ];
     }
 }

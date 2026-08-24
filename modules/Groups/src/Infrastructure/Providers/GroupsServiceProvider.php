@@ -8,6 +8,8 @@ use Modules\Groups\Application\Policies\GroupMembershipPolicy;
 use Modules\Groups\Application\Policies\GroupPolicy;
 use Modules\Groups\Application\Policies\GroupProgramPolicy;
 use Modules\Groups\Application\Policies\GroupTeacherPolicy;
+use Modules\Groups\Application\Services\GroupPlacementService;
+use Modules\Groups\Domain\Contracts\GroupPlacementGateway;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupMembership;
 use Modules\Groups\Domain\Models\GroupProgram;
@@ -59,6 +61,8 @@ final class GroupsServiceProvider extends BaseModuleServiceProvider
      */
     protected function bindings(): array
     {
-        return [];
+        return [
+            GroupPlacementGateway::class => GroupPlacementService::class,
+        ];
     }
 }

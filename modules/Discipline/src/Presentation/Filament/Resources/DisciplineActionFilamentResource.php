@@ -16,12 +16,15 @@ use Filament\Tables\Table;
 use Modules\Discipline\Domain\Enums\DisciplineActionType;
 use Modules\Discipline\Domain\Models\DisciplineAction;
 use Modules\Discipline\Presentation\Filament\Resources\DisciplineActionFilamentResource\Pages;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد قيود إجراءات الانضباط — سجل تاريخي للقراءة فقط.
  */
 final class DisciplineActionFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = DisciplineAction::class;
 
     protected static ?string $slug = 'discipline-actions';

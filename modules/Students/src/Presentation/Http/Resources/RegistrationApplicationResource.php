@@ -31,6 +31,7 @@ final class RegistrationApplicationResource extends JsonResource
             'email' => $this->resource->email,
             'phone' => $this->resource->phone,
             'preferred_program_id' => $this->resource->preferred_program_id,
+            'preferred_course_id' => $this->resource->preferred_course_id,
             'notes' => $this->resource->notes,
             'submitted_at' => $this->resource->submitted_at?->toIso8601String(),
             'reviewed_by' => $this->resource->reviewed_by,

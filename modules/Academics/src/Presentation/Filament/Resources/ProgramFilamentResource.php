@@ -17,9 +17,13 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Academics\Domain\Models\Program;
+use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Support\LocalizedJsonColumn;
 
 final class ProgramFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Program::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
@@ -115,9 +119,10 @@ final class ProgramFilamentResource extends Resource
 
                 TextColumn::make('name')
                     ->label(__('academics::filament.program.fields.name'))
-                    ->formatStateUsing(fn ($state): string => (string) ($state['ar'] ?? $state['en'] ?? ''))
-                    ->searchable()
-                    ->sortable(),
+                    ->formatStateUsing(static fn ($state): string => LocalizedJsonColumn::display($state))
+                    // عمود jsonb: البحث الافتراضي يبني LIKE عليه فينهار الطلب.
+                    ->searchable(query: LocalizedJsonColumn::search('programs.name'))
+                    ->sortable(query: LocalizedJsonColumn::sort('programs.name')),
 
                 TextColumn::make('duration_weeks')
                     ->label(__('academics::filament.program.fields.duration_weeks'))

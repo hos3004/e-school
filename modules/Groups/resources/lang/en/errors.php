@@ -21,4 +21,10 @@ return [
     'teacher_already_assigned' => 'Teacher ":staff_profile_id" is already assigned to this course within the group.',
     'assignment_already_closed' => 'Teacher assignment ":assignment_id" is already closed and cannot be unassigned again.',
     'program_already_attached' => 'Program ":program_id" is already attached to this group.',
+    'group_not_found' => 'The selected group does not exist in this organization.',
+    'program_not_attached' => 'Program ":program_id" is not attached to this group.',
+    'course_not_assigned' => 'Course ":course_id" is not assigned to an active teacher in this group.',
+    'individual_course_requires_empty_group' => 'An individual course group cannot accept more than one active student.',
+    'teacher_profile_invalid' => 'An assigned teacher is not active in this organization.',
+    'teacher_not_qualified' => 'An assigned teacher is not qualified for course ":course_id".',
 ];

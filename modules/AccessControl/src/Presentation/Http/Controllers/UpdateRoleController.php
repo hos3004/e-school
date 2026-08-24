@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\AccessControl\Presentation\Http\Controllers;
 
+use Illuminate\Support\Facades\Gate;
 use Modules\AccessControl\Application\Actions\UpdateRoleAction;
+use Modules\AccessControl\Domain\Models\Role;
 use Modules\AccessControl\Presentation\Http\Requests\UpdateRoleRequest;
 use Modules\AccessControl\Presentation\Http\Resources\RoleResource;
+use Modules\AccessControl\Presentation\Http\Support\ActorOrganization;
 
 final class UpdateRoleController
 {
@@ -17,11 +20,15 @@ final class UpdateRoleController
     public function __invoke(UpdateRoleRequest $request, string $roleId): RoleResource
     {
         $validated = $request->validated();
+        $organizationId = ActorOrganization::from($request);
+        $target = Role::query()->forOrganization($organizationId)->findOrFail($roleId);
+        Gate::authorize('update', $target);
 
         $role = $this->action->execute(
             roleId: $roleId,
             name: $validated['name'] ?? null,
-            organizationId: array_key_exists('organization_id', $validated) ? $validated['organization_id'] : null,
+            actorId: (string) $request->user()?->getAuthIdentifier(),
+            scopeOrganizationId: $organizationId,
         );
 
         return new RoleResource($role);

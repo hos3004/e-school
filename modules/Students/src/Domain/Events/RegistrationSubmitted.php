@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Students\Domain\Events;
 
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Shared\Domain\DomainEvent;
 
 /**
@@ -12,7 +13,7 @@ use Shared\Domain\DomainEvent;
  * التقديم **ليس قبولًا**: لا يوجد بعدُ ملف طالب ولا قيد ولا عضوية مجموعة
  * (docs/client-answers.md §أ). الحدث إخطاري ليصل الطلب إلى مراجعة الإدارة.
  */
-final class RegistrationSubmitted extends DomainEvent
+final class RegistrationSubmitted extends DomainEvent implements ShouldDispatchAfterCommit
 {
     public function __construct(
         public readonly string $applicationId,

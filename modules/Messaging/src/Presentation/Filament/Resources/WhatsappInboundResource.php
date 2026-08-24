@@ -15,12 +15,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Messaging\Domain\Models\WhatsappInbound;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد صندوق رسائل واتساب الواردة في لوحة الإدارة.
  */
 final class WhatsappInboundResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = WhatsappInbound::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-device-phone-mobile';
@@ -40,6 +43,11 @@ final class WhatsappInboundResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('messaging::navigation.whatsapp_inbound.plural');
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
     }
 
     public static function form(Schema $schema): Schema

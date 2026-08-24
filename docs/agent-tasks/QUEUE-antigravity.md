@@ -1,84 +1,120 @@
-# طابور التنفيذ — Antigravity
+# طابور Antigravity — Phase 1 V2 (تاريخي)
 
-> **أنت الآن المنفّذ الرئيسي للمشروع.** وكلاء OpenCode أُوقفوا لأنهم لم ينتجوا أي ملف.
-> نفّذ الحزم أدناه **واحدة تلو الأخرى بالترتيب**، ولا تبدأ حزمة قبل إغلاق سابقتها بتقريرها.
+> **الحالة:** ⛔ **مُستبدَل — لا يُنفَّذ كطابور حالي.**
+>
+> بموجب **ADR-018** (2026-08-24) صار ترتيب التنفيذ حزم الرحلة أولًا ثم إغلاق
+> الديون، والترتيب المعتمد في `docs/22-client-journey-fit-gap.md` §6.
+> تقارير المهام الأربع أدناه تبقى **أدلة تاريخية** على ما نُفِّذ، ولا تبقى أوامر.
+>
+> **مرجع النطاق الوحيد:** `docs/phase-1-approved-scope.md`
 
-## من يعمل معك الآن — لا تلمس ملفاتهم
+## تحذير من الطابور القديم
 
-| المنفّذ | يملك حصريًا | الحالة |
-|---------|--------------|--------|
-| **Codex** | `modules/Notifications/**` · `modules/Integrations/**` | **يعمل الآن** — ممنوع الاقتراب |
-| **مدير المشروع (Claude)** | `modules/Sessions/src/{Domain,Application}` · `modules/Scheduling/src/{Domain,Application}` · `modules/VirtualClassroom/**` · `modules/Recordings/src/{Domain,Application}` | يعمل الآن |
-| **أنت** | كل ما عدا ذلك، حسب كل حزمة | — |
+ملفات `AGENT-A` إلى `AGENT-H` الموجودة بجوار هذا الملف، وكذلك
+`docs/20-agent-task-packages.md`، حزم تاريخية وتقاريرها أدلة سابقة.
 
-`modules/Sessions/src/Presentation/Filament/**` **لك أنت** (أنجزته بالفعل).
-`modules/Sessions/src/Domain` و`Application` **ليست لك**.
+**ممنوع تنفيذها كطابور حالي أو دمج أوامرها مع المهام الأربع أدناه.**
+Git يحتفظ بنسخة الطابور V1 قبل هذا التعديل، لذلك لم نحذف ملفات الأدلة القديمة.
 
-## الترتيب الإلزامي
+## ترتيب القراءة في كل محادثة
 
-### ١. الحزمة F — الصلاحيات والخصوصية ← **ابدأ بها**
-`docs/agent-tasks/AGENT-F-permissions-privacy.md`
+1. `I:\e-school\AGENTS.md`
+2. `I:\e-school\PROJECT_MAP.md`
+3. `I:\e-school\docs\phase-1-approved-scope.md`
+4. ملف المهمة الواحدة فقط من القائمة التالية
+5. تقرير المهمة السابقة والمراجع التي يسميها ملف المهمة فقط
 
-**هذه أعلى أولوية في المشروع كله.** لوحة الإدارة ترجع `403` على **كل** مورد،
-فلا يستطيع أحد — لا أنت ولا مدير المشروع — التحقق يدويًا من أي ميزة.
+## تقسيم المسؤوليات
 
-في آخر الملف **تشخيص جاهز مؤكَّد بالفحص**: الـPolicies تفحص `students.view_any`
-والموجود فعلًا `student.view`. ابدأ من هناك مباشرة.
+- **Codex:** إدارة النطاق، إصدار التكليف، مراجعة الحدود، وإعادة تشغيل أدلة القبول.
+- **Antigravity:** البناء الرئيسي للحزمة الواحدة من الواجهة إلى البيانات والتكامل.
+- **OpenCode:** اختبارات مستقلة ومهام بسيطة يحددها Codex بعد تسليم الحزمة؛ لا يغيّر
+  قواعد أعمال أو Policies لتخضير الاختبار، ولا يعمل على الملفات نفسها بالتوازي.
 
-بعد إغلاقها يجب أن يفتح `http://localhost:8090/admin/students` فعليًا
-بحساب `admin@eschool.test` / `password`.
+كل منفذ يستخدم قاعدة اختبار معزولة. تقرير Antigravity لا يعتمد تلقائيًا؛ يُراجع قبل
+تغيير حالة المهمة وفتح المحادثة التالية.
 
-### ٢. الحزمة A — الطلاب والتسجيل والجغرافيا
-`docs/agent-tasks/AGENT-A-students-registration-geography.md`
-هجراتك: `2026_08_22_11*` حصرًا.
-**ابدأ داخلها بالبند A12** (`teacher_courses` + عقد `TeacherQualificationQueries`) —
-مدير المشروع ينتظره لترشيح المدرس البديل. ثم A1–A2 (الجغرافيا).
+## الطابور الإلزامي
 
-### ٣. الحزمة B — البرامج والكورسات والأهلية
-`docs/agent-tasks/AGENT-B-academics.md`
-هجراتك: `2026_08_22_12*` حصرًا. تعتمد على جدولَي `countries`/`regions` من الحزمة A.
+| الترتيب | المهمة | الملف | شرط البدء | تقرير الخروج | الحالة |
+|---------|--------|-------|-----------|---------------|--------|
+| 01 | الأداء + عزل الاختبارات + الحسابات والصلاحيات والعزل | `phase-1-v2/AGENT-ANTIGRAVITY-01-foundation-access.md` | الآن | `phase-1-v2/REPORT-ANTIGRAVITY-01.md` | **Ready** |
+| 02 | الطلاب والمعلمون والدورات والتسجيل والمجموعات والتسكين | `phase-1-v2/AGENT-ANTIGRAVITY-02-academics-enrollment.md` | اعتماد 01 | `phase-1-v2/REPORT-ANTIGRAVITY-02.md` | Pending |
+| 03 | الجدولة والحصة وBBB والتسجيل والحضور والتجميد والتقرير | `phase-1-v2/AGENT-ANTIGRAVITY-03-sessions-bbb-attendance.md` | اعتماد 02 | `phase-1-v2/REPORT-ANTIGRAVITY-03.md` | Pending |
+| 04 | الإشعارات والتواصل والتكليفات والتقارير والإقفال E2E | `phase-1-v2/AGENT-ANTIGRAVITY-04-communications-e2e.md` | اعتماد 03 | `phase-1-v2/REPORT-ANTIGRAVITY-04.md` | Pending |
 
-### ٤. الحزمة C — إتاحة المعلم والطالب
-`docs/agent-tasks/AGENT-C-availability.md`
-هجراتك: `2026_08_22_13*` حصرًا.
-بما أنك تنفّذ A و C معًا، قيود «لا تلمس `StaffProfile.php`» الواردة في ملف C
-**لم تعد سارية** — كانت لمنع التعارض مع وكيل آخر. باقي الملف ساري كما هو.
+## قواعد مشتركة لا يعاد التفاوض عليها
 
-### ٥. الحزمة G — السيناريوهات الاثنا عشر
-`docs/agent-tasks/AGENT-G-scenario-tests.md`
-ملفاتك في `tests/` فقط. آخر حزمة لأنها تقيس البقية.
+- كل بنود `phase-1-approved-scope.md` إلزامية، بما فيها البنود التي وصفها العميل سابقًا
+  بعبارة «لو بدأنا بها يكون جيد».
+- BigBlueButton فقط. لا Zoom.
+- كل شخص حساب مستقل وواجهة حسب الصلاحية؛ لا أنظمة Auth متعددة ولا فحص اسم دور.
+- المالية كلها خارج المرحلة الأولى.
+- لا `git commit` ولا `git push` إلا بأمر المستخدم.
+- PHP/Composer/Artisan داخل Docker فقط.
+- الاختبارات على البيئة المعزولة؛ لا قاعدة development ولا قاعدة مشتركة بين الوكلاء.
+- لا موديول/جدول/abstraction جديد إذا كان المالك الحالي يستطيع تنفيذ المتطلب.
+- لا Gate وهمي في الاختبار، ولا Policy موسعة، ولا fake completion.
+- `Model/API/Resource` ليس إنجازًا بلا route وواجهة وصلاحية وحفظ ونتيجة ظاهرة.
+- كل مهمة تكتب تقريرها الصادق، ثم Codex يعيد تشغيل الأدلة قبل اعتمادها.
 
----
+## البرومبت الافتتاحي للمحادثة الأولى
 
-## قواعد سارية على كل الحزم
+انسخ النص التالي إلى Antigravity:
 
-- **كل أوامر PHP/Composer/Artisan داخل Docker** — PHP على الجهاز 5.6:
-  `docker compose exec -T app php artisan ...`
-- **ممنوع `docker compose exec -T app php artisan test` بلا `--filter`.**
-  المستودع فيه ~212 اختبارًا فاشلًا سابقًا لا علاقة له بك، **و Codex يشغّل اختباراته
-  الآن على نفس الحاوية** — التشغيل الكامل يفسد نتائجه ونتائجك. استخدم `--filter` دائمًا.
-- **لا `git commit` ولا `git push`** مهما كان السبب.
-- **ممنوع نص مكتوب مباشرة في الواجهة** — كل النصوص عبر ملفات الترجمة `{ar,en}`.
-  (لاحظ: أدخلتَ مخالفتين في `SessionResource.php` سطر 171 و174 — `'متاح'` و`'في إجازة'`.
-  صلّحهما ضمن الحزمة F.)
-- **ممنوع `if ($user->role === ...)`** — الصلاحيات عبر Policies و`can:` فقط.
-- **لا حذف** — SoftDeletes. **التواريخ UTC** في التخزين.
-- **حدود الموديولات:** ممنوع `use Modules\X\Domain\Models\*` من موديول آخر.
-  التواصل بأحداث Domain أو عقود عامة أو Query Services تعيد DTOs.
-- **ممنوع Scope Creep:** لا موديول جديد · لا جدول أو خدمة جديدة بلا حاجة Domain حقيقية.
+```text
+هذه مهمة تنفيذ معتمدة وليست طلب إعداد خطة فقط.
 
-## تعريف «خلصت» لكل حزمة
+مجلد المشروع:
+I:\e-school
 
-الهجرات تعمل · اختباراتك (بـ`--filter`) تمر · `pint` نظيف على ملفاتك ·
-**الميزة تعمل من الواجهة حتى قاعدة البيانات** — وجود Model أو Route وحده لا يكفي ·
-تقرير `docs/agent-tasks/REPORT-<الحرف>.md` مكتوب.
+اقرأ بالترتيب وبالكامل:
+1) I:\e-school\AGENTS.md
+2) I:\e-school\PROJECT_MAP.md
+3) I:\e-school\docs\phase-1-approved-scope.md
+4) I:\e-school\docs\agent-tasks\phase-1-v2\AGENT-ANTIGRAVITY-01-foundation-access.md
 
-**في التقرير اكتب الحقيقة:** إن كان بند `Partial` فاكتب `Partial`. لا تكتب أن
-«تعريف خلصت تحقق» وهو لم يتحقق — المدير يتحقق من كل ادعاء على القرص وفي المتصفح.
+لا تنفذ ملفات AGENT-A إلى AGENT-H ولا docs/20-agent-task-packages.md؛ هي تاريخية.
+افحص الواقع على القرص ثم اكتب خطة قصيرة وابدأ التنفيذ داخل Task 01 مباشرة.
+لا تتوقف لطلب اعتماد الخطة، ولا تبدأ Task 02، ولا تدّع الإنجاز مع فشل أو جزء غير موصول.
+لا commit ولا push. استخدم Docker لكل PHP/Composer/Artisan، ولا تشغّل الاختبارات على
+قاعدة التطوير أو قاعدة مشتركة. في النهاية اكتب التقرير المحدد في ملف المهمة بالحقيقة.
+```
 
-## تحديث يخصك
+## البرومبت الافتتاحي للمحادثة الثانية
 
-عمود `original_teacher_id` **نزل بالفعل** على جدول `sessions` (هجرة `2026_08_22_150000`).
-المعنى المعتمد: `original_teacher_id` لا يتغيّر أبدًا، و`staff_profile_id` هو المعلم
-**الفعلي**. لا يوجد عمود `actual_teacher_id` منفصل — قيد منع الحجز المزدوج مبنيّ على
-`staff_profile_id` وهذا هو الصحيح. عدّل واجهة اختيار البديل على هذا الأساس عند العودة إليها.
+```text
+هذه مهمة تنفيذ معتمدة وليست طلب إعداد خطة فقط. اعمل داخل I:\e-school.
+اقرأ كاملًا: AGENTS.md، PROJECT_MAP.md، docs/phase-1-approved-scope.md،
+docs/agent-tasks/phase-1-v2/REPORT-ANTIGRAVITY-01.md، ثم
+docs/agent-tasks/phase-1-v2/AGENT-ANTIGRAVITY-02-academics-enrollment.md.
+لا تنفذ AGENT-A..H أو docs/20-agent-task-packages.md. افحص الواقع، اكتب خطة قصيرة،
+وابدأ Task 02 مباشرة. لا تبدأ Task 03، لا commit/push، واستخدم بيئة الاختبار المعزولة.
+في النهاية اكتب REPORT-ANTIGRAVITY-02.md بالحقيقة ولا تدّع إتمام جزء غير موصول.
+```
+
+## البرومبت الافتتاحي للمحادثة الثالثة
+
+```text
+هذه مهمة تنفيذ معتمدة وليست طلب إعداد خطة فقط. اعمل داخل I:\e-school.
+اقرأ كاملًا: AGENTS.md، PROJECT_MAP.md، docs/phase-1-approved-scope.md،
+docs/agent-tasks/phase-1-v2/REPORT-ANTIGRAVITY-02.md، ثم
+docs/agent-tasks/phase-1-v2/AGENT-ANTIGRAVITY-03-sessions-bbb-attendance.md.
+لا تنفذ AGENT-A..H أو docs/20-agent-task-packages.md. افحص الواقع، اكتب خطة قصيرة،
+وابدأ Task 03 مباشرة. لا تبدأ Task 04، لا commit/push، واستخدم بيئة الاختبار المعزولة.
+في النهاية اكتب REPORT-ANTIGRAVITY-03.md، وافصل Fake/contract عن اختبار BBB الحقيقي.
+```
+
+## البرومبت الافتتاحي للمحادثة الرابعة
+
+```text
+هذه مهمة تنفيذ معتمدة وليست طلب إعداد خطة فقط. اعمل داخل I:\e-school.
+اقرأ كاملًا: AGENTS.md، PROJECT_MAP.md، docs/phase-1-approved-scope.md، وتقارير
+REPORT-ANTIGRAVITY-01.md وREPORT-ANTIGRAVITY-02.md وREPORT-ANTIGRAVITY-03.md تحت
+docs/agent-tasks/phase-1-v2/، ثم اقرأ
+docs/agent-tasks/phase-1-v2/AGENT-ANTIGRAVITY-04-communications-e2e.md.
+لا تنفذ AGENT-A..H أو docs/20-agent-task-packages.md. افحص الواقع، اكتب خطة قصيرة،
+وابدأ Task 04 مباشرة. لا commit/push، واستخدم بيئة الاختبار المعزولة.
+لا تعلن Phase 1 مكتملة مع test skipped أو تكامل Fake أو صلاحية/عزل غير مثبت؛ اكتب
+REPORT-ANTIGRAVITY-04.md بنتائج الإقفال الحقيقية.
+```

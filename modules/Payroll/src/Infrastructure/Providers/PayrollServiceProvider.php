@@ -4,12 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\Payroll\Infrastructure\Providers;
 
+use Modules\Payroll\Application\Listeners\RecordSessionPayrollEntry;
 use Modules\Payroll\Application\Policies\PayrollAdjustmentPolicy;
 use Modules\Payroll\Application\Policies\PayrollEntryPolicy;
 use Modules\Payroll\Application\Policies\PayrollPeriodPolicy;
+use Modules\Payroll\Application\Queries\TeacherEarningsQueryService;
+use Modules\Payroll\Domain\Contracts\TeacherEarningsQueries;
 use Modules\Payroll\Domain\Models\PayrollAdjustment;
 use Modules\Payroll\Domain\Models\PayrollEntry;
 use Modules\Payroll\Domain\Models\PayrollPeriod;
+use Modules\Sessions\Domain\Events\SessionCancelled;
+use Modules\Sessions\Domain\Events\SessionCompleted;
+use Modules\Sessions\Domain\Events\SessionExcused;
+use Modules\Sessions\Domain\Events\SessionNoShowRecorded;
+use Modules\Sessions\Domain\Events\SessionPostponed;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class PayrollServiceProvider extends BaseModuleServiceProvider
@@ -20,14 +28,39 @@ final class PayrollServiceProvider extends BaseModuleServiceProvider
     }
 
     /**
-     * أحداث هذا الموديول تُستهلك من موديولات أخرى (Notifications، Reporting،
-     * Audit)؛ داخل Payroll تُنشر من الإجراءات مباشرة بعد نجاح المعاملة.
+     * أحداث دورة حياة الحصة هي ما يغذّي الدفتر.
      *
-     * @return array<class-string, list<class-string>>
+     * المستمع واحد لكل الأحداث لأنه لا يثق بالحدث في تحديد النتيجة: يقرأ
+     * الحالة النهائية للحصة من عقد Sessions ثم يترجمها عبر
+     * `config/payroll.php`. هذا يجعل وصول الحدث مرتين غير ضار، ويمنع
+     * تضارب حدث قديم مع حالة حُدِّثت بعده.
+     *
+     * أحداث Payroll نفسها تُستهلك من موديولات أخرى (Reporting، Audit) ولا
+     * تُسجَّل هنا؛ الإجراءات تنشرها مباشرة بعد نجاح المعاملة.
+     *
+     * @return array<string, list<class-string>>
      */
     protected function listeners(): array
     {
-        return [];
+        $accrual = RecordSessionPayrollEntry::class;
+
+        return [
+            SessionCompleted::class => [$accrual],
+            SessionNoShowRecorded::class => [$accrual],
+            SessionExcused::class => [$accrual],
+            SessionCancelled::class => [$accrual],
+            SessionPostponed::class => [$accrual],
+        ];
+    }
+
+    /**
+     * @return array<class-string, class-string>
+     */
+    protected function bindings(): array
+    {
+        return [
+            TeacherEarningsQueries::class => TeacherEarningsQueryService::class,
+        ];
     }
 
     /**

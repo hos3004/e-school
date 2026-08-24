@@ -149,6 +149,10 @@ final class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->status === UserStatus::Active;
+        if ($this->status !== UserStatus::Active) {
+            return false;
+        }
+
+        return $panel->getId() !== 'admin' || $this->can('admin.panel.access');
     }
 }

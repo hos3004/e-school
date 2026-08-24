@@ -24,7 +24,7 @@ final class CreateAssignmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'organization_id' => ['required', 'string', 'size:26'],
+            'organization_id' => ['prohibited'],
             'course_id' => ['required', 'string', 'size:26'],
             'group_id' => ['nullable', 'string', 'size:26'],
             'staff_profile_id' => ['required', 'string', 'size:26'],

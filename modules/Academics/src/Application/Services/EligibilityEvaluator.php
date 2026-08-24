@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Academics\Application\Services;
 
+use Modules\Academics\Domain\Contracts\ProgramEligibilityEvaluator;
 use Modules\Academics\Domain\Models\ProgramEligibility;
 use Modules\Academics\Domain\ValueObjects\ApplicantFacts;
 use Modules\Academics\Domain\ValueObjects\EligibilityResult;
 
-final class EligibilityEvaluator
+final class EligibilityEvaluator implements ProgramEligibilityEvaluator
 {
     public function evaluate(string $programId, ApplicantFacts $facts): EligibilityResult
     {
@@ -70,7 +71,16 @@ final class EligibilityEvaluator
         $warnings = [];
 
         foreach ($violations as $violation) {
-            $severity = config("admission.eligibility.on_violation.{$violation}", 'block');
+            $configKey = match ($violation) {
+                'eligibility.country_not_allowed' => 'countries',
+                'eligibility.region_not_allowed' => 'regions',
+                'eligibility.age_out_of_range' => 'age',
+                'eligibility.gender_mismatch' => 'gender',
+                default => null,
+            };
+            $severity = $configKey === null
+                ? 'block'
+                : config("admission.eligibility.on_violation.{$configKey}", 'block');
             if ($severity === 'warn') {
                 $warnings[] = $violation;
             } else {

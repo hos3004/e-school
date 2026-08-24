@@ -16,12 +16,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Certificates\Domain\Models\CertificateTemplate;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد إدارة قوالب الشهادات في لوحة الإدارة.
  */
 final class CertificateTemplateFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = CertificateTemplate::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-duplicate';

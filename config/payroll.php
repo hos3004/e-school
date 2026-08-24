@@ -205,4 +205,55 @@ return [
      */
     'accrual_trigger' => 'session_finalized',
     'ledger_is_append_only' => true,
+
+    /*
+     * ══════════════════════════════════════════════════════════════════════
+     * من حالة الحصة إلى مفتاح النتيجة.
+     *
+     * هذه الخريطة هي ما يحوّل حدث دورة حياة الحصة إلى صف في مصفوفة
+     * `outcomes` أعلاه. وجودها هنا — لا داخل المستمع — يعني أن تغيير سياسة
+     * المدرسة (مثلًا: ألّا يُخصم من المعلم عند إلغاء مقبول) تعديل سطر في
+     * الإعدادات لا تعديل كود.
+     *
+     * المفتاح قيمة `SessionStatus`، والقيمة مفتاح في `outcomes`.
+     * الحالة غير المذكورة هنا لا تولّد قيدة إطلاقًا.
+     * ══════════════════════════════════════════════════════════════════════
+     */
+    'status_outcomes' => [
+        'completed' => 'completed',
+        'no_show' => 'student_no_show',
+        'excused' => 'student_excused',
+        'postponed' => 'postponed',
+        'cancelled_by_student' => 'cancelled_accepted',
+        'cancelled_by_teacher' => 'teacher_absent',
+        'cancelled_by_school' => 'cancelled_by_school',
+    ],
+
+    /*
+     * الحصة المكتملة التي جاءت تلافيًا لحصة مؤجَّلة تُعامل معاملة
+     * `makeup_completed` لا `completed`، لأنها تُحرّر المستحق المؤجَّل.
+     */
+    'makeup_outcome' => 'makeup_completed',
+
+    /*
+     * إلغاء الطالب بعد انقضاء مهلة الإلغاء يُعامل معاملة التغيّب.
+     * المهلة نفسها مملوكة لـ`config/scheduling.php` ولا تُكرَّر هنا.
+     */
+    'late_cancellation' => [
+        'enabled' => true,
+        'applies_to_status' => 'cancelled_by_student',
+        'outcome' => 'cancelled_late_by_student',
+        'deadline_config_key' => 'scheduling.notice.cancellation_minutes',
+    ],
+
+    /*
+     * نوع القيدة حسب أثرها على المعلم.
+     * القيمة تُخزَّن في العمود `entry_type` وتُستعمل في القيد الفريد
+     * (session_id, staff_profile_id, entry_type) الذي يمنع التكرار.
+     */
+    'entry_types' => [
+        'full' => 'session_earning',
+        'deduct' => 'session_deduction',
+        'deferred' => 'session_earning',
+    ],
 ];

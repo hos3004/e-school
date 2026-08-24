@@ -19,12 +19,15 @@ use Filament\Tables\Table;
 use Modules\Integrations\Domain\Enums\ConnectionStatus;
 use Modules\Integrations\Domain\Models\IntegrationConnection;
 use Modules\Integrations\Domain\Models\IntegrationProvider;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد إدارة اتصالات المؤسسات بالمزوّدين في لوحة الإدارة.
  */
 final class IntegrationConnectionResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = IntegrationConnection::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-link';

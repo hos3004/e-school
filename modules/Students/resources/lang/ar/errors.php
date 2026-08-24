@@ -24,5 +24,6 @@ return [
     'registration_student_profile_exists' => 'يوجد بالفعل ملف طالب مرتبط بهذا الحساب.',
     'registration_rejection_reason_required' => 'سبب رفض طلب التسجيل إلزامي.',
     'direct_profile_creation_disabled' => 'لا يمكن إنشاء ملف طالب مباشرة؛ يجب قبول طلب التسجيل أولًا.',
+    'registration_not_cleared_for_assignment' => 'طلب التسجيل غير مقبول للتسكين بعد.',
 
 ];

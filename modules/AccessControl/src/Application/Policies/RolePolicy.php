@@ -23,8 +23,9 @@ final class RolePolicy
 
     public function view(Authenticatable&Authorizable $user, Role $role): bool
     {
-        return $user->can('accesscontrol.roles.view_any')
-            || $user->can('accesscontrol.roles.view');
+        return $this->isVisibleTo($user, $role)
+            && ($user->can('accesscontrol.roles.view_any')
+                || $user->can('accesscontrol.roles.view'));
     }
 
     public function create(Authenticatable&Authorizable $user): bool
@@ -34,7 +35,7 @@ final class RolePolicy
 
     public function update(Authenticatable&Authorizable $user, Role $role): bool
     {
-        if ($role->is_system) {
+        if ($role->is_system || !$this->belongsToActor($user, $role)) {
             return false;
         }
 
@@ -43,7 +44,7 @@ final class RolePolicy
 
     public function delete(Authenticatable&Authorizable $user, Role $role): bool
     {
-        if ($role->is_system) {
+        if ($role->is_system || !$this->belongsToActor($user, $role)) {
             return false;
         }
 
@@ -53,7 +54,7 @@ final class RolePolicy
     /** مزامنة صلاحيات الدور. */
     public function syncPermissions(Authenticatable&Authorizable $user, Role $role): bool
     {
-        if ($role->is_system) {
+        if ($role->is_system || !$this->belongsToActor($user, $role)) {
             return false;
         }
 
@@ -61,14 +62,37 @@ final class RolePolicy
     }
 
     /** إسناد الدور لنموذج. */
-    public function assign(Authenticatable&Authorizable $user): bool
+    public function assign(Authenticatable&Authorizable $user, Role $role): bool
     {
-        return $user->can('accesscontrol.assignments.assign_role');
+        return $this->isAssignableBy($user, $role)
+            && $user->can('accesscontrol.assignments.assign_role');
     }
 
     /** سحب الدور من نموذج. */
-    public function revoke(Authenticatable&Authorizable $user): bool
+    public function revoke(Authenticatable&Authorizable $user, Role $role): bool
     {
-        return $user->can('accesscontrol.assignments.revoke_role');
+        return $this->isAssignableBy($user, $role)
+            && $user->can('accesscontrol.assignments.revoke_role');
+    }
+
+    private function isAssignableBy(Authenticatable $user, Role $role): bool
+    {
+        return $role->organization_id === null || $this->belongsToActor($user, $role);
+    }
+
+    private function isVisibleTo(Authenticatable $user, Role $role): bool
+    {
+        return $role->organization_id === null || $this->belongsToActor($user, $role);
+    }
+
+    private function belongsToActor(Authenticatable $user, Role $role): bool
+    {
+        $organizationId = method_exists($user, 'getAttribute')
+            ? $user->getAttribute('organization_id')
+            : null;
+
+        return is_string($organizationId)
+            && $role->organization_id !== null
+            && hash_equals($organizationId, $role->organization_id);
     }
 }

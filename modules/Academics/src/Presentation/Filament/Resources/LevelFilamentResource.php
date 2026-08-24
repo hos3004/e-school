@@ -14,9 +14,20 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
+use Shared\Concerns\ScopesFilamentToOrganizationVia;
 
 final class LevelFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganizationVia;
+
+    /**
+     * الجدول لا يحمل `organization_id`؛ ينتمي عبر أبيه.
+     */
+    protected static function organizationRelation(): string
+    {
+        return 'program';
+    }
+
     protected static ?string $model = Level::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';

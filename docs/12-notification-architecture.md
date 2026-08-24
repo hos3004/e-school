@@ -1,5 +1,8 @@
 # 12 — معمارية الإشعارات
 
+> نطاق القنوات الملزم للمرحلة الأولى في `docs/phase-1-approved-scope.md`:
+> In-App وEmail وWhatsApp. Push ليس بوابة قبول حالية.
+
 المرجع التنفيذي: `config/notifications.php`
 
 **القاعدة الأولى:** لا يستدعي أي موديول قناة إرسال. لا `sendWhatsApp()`
@@ -106,14 +109,14 @@ in_app  ← دائمًا، لا يُطفأ
 
 | الفئة | القنوات | حرجة |
 |-------|---------|:----:|
-| `session_reminder` | in_app · push · whatsapp | لا |
-| `session_changed` | in_app · push · whatsapp · email | **نعم** |
-| `postponement_request` | in_app · push · whatsapp | **نعم** |
+| `session_reminder` | in_app · email · whatsapp | لا |
+| `session_changed` | in_app · whatsapp · email | **نعم** |
+| `postponement_request` | in_app · whatsapp · email | **نعم** |
 | `discipline_notice` | in_app · email · whatsapp | **نعم** |
 | `enrollment_frozen` | in_app · email · whatsapp | **نعم** |
 | `payroll_period` | in_app · email | **نعم** |
 | `grade_published` | in_app · email | لا |
-| `message_received` | in_app · push | لا |
+| `message_received` | in_app | لا |
 
 ---
 

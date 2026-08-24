@@ -40,6 +40,7 @@ RUN groupadd -g "${GID}" app 2>/dev/null || true \
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-app.ini
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
+COPY docker/php/fpm-dev.conf /usr/local/etc/php-fpm.d/zz-fpm-dev.conf
 
 WORKDIR /var/www/html
 USER app

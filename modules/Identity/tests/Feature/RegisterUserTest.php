@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
+use Modules\Identity\Application\Actions\RegisterUser;
 use Modules\Identity\Domain\Events\UserRegistered;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
@@ -14,7 +17,7 @@ beforeEach(function (): void {
     $this->createTestOrganization();
 });
 
-it('registers a user and dispatches UserRegistered', function (): void {
+it('registers a user and dispatches an after-commit UserRegistered event', function (): void {
     Event::fake([UserRegistered::class]);
 
     $response = $this->postJson('/api/identity/register', [
@@ -37,7 +40,37 @@ it('registers a user and dispatches UserRegistered', function (): void {
         ->and($user->organization_id)->toBe($this->organizationId)
         ->and($user->username)->toBe('eschool.student');
 
-    Event::assertDispatched(UserRegistered::class, fn (UserRegistered $e): bool => $e->userId === $user->id);
+    Event::assertDispatched(UserRegistered::class, fn (UserRegistered $event): bool => $event->userId === $user->id);
+    expect(new UserRegistered(
+        userId: $user->id,
+        organizationId: $user->organization_id,
+        email: $user->email,
+        username: $user->username,
+        phone: $user->phone,
+        locale: $user->locale,
+    ))->toBeInstanceOf(ShouldDispatchAfterCommit::class);
+});
+
+it('does not publish UserRegistered or retain the account when an outer transaction rolls back', function (): void {
+    Event::fake([UserRegistered::class]);
+    $email = 'rolled-back@eschool.test';
+
+    DB::beginTransaction();
+
+    try {
+        app(RegisterUser::class)->execute([
+            'organization_id' => $this->organizationId,
+            'name' => 'Rolled Back Account',
+            'email' => $email,
+            'username' => 'eschool.rolled-back',
+            'password' => 'Sup3r-Secret!',
+        ]);
+    } finally {
+        DB::rollBack();
+    }
+
+    expect(User::query()->where('email', $email)->exists())->toBeFalse();
+    Event::assertNotDispatched(UserRegistered::class);
 });
 
 it('rejects a duplicate email with a business rule violation', function (): void {

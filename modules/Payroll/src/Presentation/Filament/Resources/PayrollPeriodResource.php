@@ -18,6 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Gate;
 use Modules\Payroll\Domain\Enums\PayrollPeriodStatus;
 use Modules\Payroll\Domain\Models\PayrollPeriod;
+use Shared\Concerns\ScopesFilamentToOrganization;
 use Shared\ValueObjects\Money;
 
 /**
@@ -28,6 +29,8 @@ use Shared\ValueObjects\Money;
  */
 final class PayrollPeriodResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = PayrollPeriod::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';

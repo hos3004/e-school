@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Modules\AccessControl\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Domain\Events\RoleRevoked;
 use Modules\AccessControl\Domain\Models\ModelHasRole;
+use Modules\AccessControl\Domain\Models\Role;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -26,7 +28,20 @@ final readonly class RevokeRoleAction
         string $modelType,
         string $modelId,
         ?string $actorId = null,
+        ?string $organizationId = null,
     ): void {
+        $roleExists = Role::query()
+            ->when($organizationId !== null, fn (Builder $query): Builder => $query->includingGlobal($organizationId))
+            ->whereKey($roleId)
+            ->exists();
+
+        if (!$roleExists) {
+            throw BusinessRuleViolation::make(
+                'accesscontrol.role.not_found',
+                'accesscontrol::errors.role_not_found',
+            );
+        }
+
         /** @var ModelHasRole|null $assignment */
         $assignment = ModelHasRole::query()
             ->where('role_id', $roleId)

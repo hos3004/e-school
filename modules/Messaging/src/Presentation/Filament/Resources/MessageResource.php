@@ -15,12 +15,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Messaging\Domain\Models\Message;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد إشراف على الرسائل في لوحة الإدارة.
  */
 final class MessageResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Message::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
@@ -40,6 +43,11 @@ final class MessageResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('messaging::navigation.message.plural');
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
     }
 
     public static function form(Schema $schema): Schema

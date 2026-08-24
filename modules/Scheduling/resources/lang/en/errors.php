@@ -7,4 +7,7 @@ declare(strict_types=1);
 | Consumed via __('scheduling::errors.key') — keys describe meaning, not wording.
 */
 
-return [];
+return [
+    'postponement_invalid_transition' => 'The postponement request cannot transition from :from to :to.',
+    'rejection_reason_required' => 'A rejection reason is required.',
+];

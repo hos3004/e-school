@@ -51,7 +51,7 @@ final class AccessControlServiceProvider extends BaseModuleServiceProvider
     /**
      * @return array<class-string, class-string>
      */
-    protected function bindings(): array
+    protected function scopedBindings(): array
     {
         return [
             AccessControlQuerier::class => AccessControlQueryService::class,

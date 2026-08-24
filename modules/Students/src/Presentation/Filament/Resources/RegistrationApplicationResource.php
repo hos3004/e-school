@@ -108,6 +108,9 @@ final class RegistrationApplicationResource extends Resource
             TextInput::make('preferred_program_id')
                 ->label(__('students::attributes.preferred_program_id'))
                 ->disabled(),
+            TextInput::make('preferred_course_id')
+                ->label(__('students::attributes.preferred_course_id'))
+                ->disabled(),
             Textarea::make('notes')
                 ->label(__('students::attributes.notes'))
                 ->columnSpanFull()

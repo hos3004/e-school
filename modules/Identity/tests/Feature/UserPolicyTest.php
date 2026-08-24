@@ -2,63 +2,63 @@
 
 declare(strict_types=1);
 
+use Filament\Panel;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Modules\Identity\Application\Policies\UserPolicy;
 use Modules\Identity\Domain\Models\User;
+use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
+use Modules\Identity\Tests\Concerns\UsesRealAccessControl;
 
-function identityActor(bool $granted): User
-{
-    Gate::define('identity.users.view', fn ($user): bool => $granted);
-    Gate::define('identity.users.delete', fn ($user): bool => $granted);
-    Gate::define('identity.users.change_status', fn ($user): bool => $granted);
-    Gate::define('identity.users.view_any', fn ($user): bool => $granted);
-    Gate::define('identity.users.create', fn ($user): bool => $granted);
-    Gate::define('identity.users.update', fn ($user): bool => $granted);
+uses(CreatesTestOrganization::class, UsesRealAccessControl::class);
 
-    /** @var User $actor */
-    $actor = User::factory()->make(['id' => (string) Str::ulid()]);
-
-    return $actor;
-}
-
-it('lets a user view themselves even without permissions', function (): void {
-    $actor = identityActor(granted: false);
-    $other = User::factory()->make(['id' => (string) Str::ulid()]);
-
-    expect($actor->can('view', $actor))->toBeTrue()
-        ->and($actor->can('view', $other))->toBeFalse();
+beforeEach(function (): void {
+    $this->createTestOrganization();
+    $this->seedRealAccessControl();
 });
 
-it('never lets a user delete or suspend themselves', function (): void {
-    // حتى مع الصلاحية الممنوحة، الحذف الذاتي وتغيير الحالة الذاتي مرفوضان.
-    $privileged = identityActor(granted: true);
+it('allows self-service but denies every cross-tenant object even with real admin permissions', function (): void {
+    $actor = User::factory()->inOrganization($this->organizationId)->create();
+    $sameTenant = User::factory()->inOrganization($this->organizationId)->create();
+    $firstOrganization = $this->organizationId;
+    $otherOrganization = $this->createTestOrganization();
+    $foreign = User::factory()->inOrganization($otherOrganization)->create();
+    $this->assignRealRole($actor, 'platform_admin');
 
-    expect($privileged->can('delete', $privileged))->toBeFalse()
-        ->and($privileged->can('changeStatus', $privileged))->toBeFalse();
+    expect($actor->can('viewAny', User::class))->toBeTrue()
+        ->and($actor->can('view', $actor))->toBeTrue()
+        ->and($actor->can('update', $actor))->toBeTrue()
+        ->and($actor->can('view', $sameTenant))->toBeTrue()
+        ->and($actor->can('changeStatus', $sameTenant))->toBeTrue()
+        ->and($actor->can('view', $foreign))->toBeFalse()
+        ->and($actor->can('update', $foreign))->toBeFalse()
+        ->and($actor->can('changeStatus', $foreign))->toBeFalse()
+        ->and($actor->organization_id)->toBe($firstOrganization);
 });
 
-it('grants privileged staff full management over others', function (): void {
-    $staff = identityActor(granted: true);
-    $target = User::factory()->suspended()->make(['id' => (string) Str::ulid()]);
+it('forbids user deletion and self status changes', function (): void {
+    $actor = User::factory()->inOrganization($this->organizationId)->create();
+    $target = User::factory()->inOrganization($this->organizationId)->create();
+    $this->assignRealRole($actor, 'platform_admin');
 
-    expect($staff->can('viewAny', User::class))->toBeTrue()
-        ->and($staff->can('view', $target))->toBeTrue()
-        ->and($staff->can('update', $target))->toBeTrue()
-        ->and($staff->can('delete', $target))->toBeTrue()
-        ->and($staff->can('changeStatus', $target))->toBeTrue();
+    expect($actor->can('delete', $target))->toBeFalse()
+        ->and($actor->can('changeStatus', $actor))->toBeFalse();
 });
 
-it('denies everything for unprivileged actors on other records', function (): void {
-    $plain = identityActor(granted: false);
-    $target = User::factory()->make(['id' => (string) Str::ulid()]);
+it('uses capabilities for admin panel access and denies teacher and student accounts', function (): void {
+    $admin = User::factory()->inOrganization($this->organizationId)->create();
+    $supervisor = User::factory()->inOrganization($this->organizationId)->create();
+    $teacher = User::factory()->inOrganization($this->organizationId)->create();
+    $student = User::factory()->inOrganization($this->organizationId)->create();
+    $this->assignRealRole($admin, 'platform_admin');
+    $this->assignRealRole($supervisor, 'academic_supervisor');
+    $this->assignRealRole($teacher, 'teacher');
+    $this->assignRealRole($student, 'student');
+    $panel = Panel::make()->id('admin');
 
-    expect($plain->can('viewAny', User::class))->toBeFalse()
-        ->and($plain->can('update', $target))->toBeFalse()
-        ->and($plain->can('delete', $target))->toBeFalse()
-        ->and($plain->can('changeStatus', $target))->toBeFalse()
-        // تحديث حسابه الخاص مسموح بالملكية بلا أي صلاحية إضافية.
-        ->and($plain->can('update', $plain))->toBeTrue();
+    expect($admin->canAccessPanel($panel))->toBeTrue()
+        ->and($supervisor->canAccessPanel($panel))->toBeTrue()
+        ->and($teacher->canAccessPanel($panel))->toBeFalse()
+        ->and($student->canAccessPanel($panel))->toBeFalse();
 });
 
 it('maps the policy to the model through the service provider', function (): void {

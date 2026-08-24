@@ -64,7 +64,21 @@ final class AccessControlSeeder extends Seeder
         'Reporting' => ['report.view', 'report.export'],
         'Audit' => ['audit.view'],
         'Organization' => ['settings.manage', 'system.alerts'],
-        'Identity' => ['user.impersonate'],
+        'Identity' => [
+            'admin.panel.access',
+            'identity.users.view_any', 'identity.users.view',
+            'identity.users.create', 'identity.users.update',
+            'identity.users.delete', 'identity.users.change_status',
+            'user.impersonate',
+        ],
+        'AccessControl' => [
+            'accesscontrol.roles.view_any', 'accesscontrol.roles.view',
+            'accesscontrol.roles.create', 'accesscontrol.roles.update',
+            'accesscontrol.roles.delete', 'accesscontrol.roles.sync_permissions',
+            'accesscontrol.permissions.view_any', 'accesscontrol.permissions.view',
+            'accesscontrol.permissions.grant_direct',
+            'accesscontrol.assignments.assign_role', 'accesscontrol.assignments.revoke_role',
+        ],
     ];
 
     /**
@@ -77,6 +91,11 @@ final class AccessControlSeeder extends Seeder
         'platform_admin' => ['*'],
 
         'academic_supervisor' => [
+            'admin.panel.access',
+            'identity.users.view_any', 'identity.users.view', 'identity.users.update',
+            'identity.users.change_status',
+            'accesscontrol.roles.view_any', 'accesscontrol.roles.view',
+            'accesscontrol.permissions.view_any', 'accesscontrol.permissions.view',
             'student.view', 'student.view.any', 'student.update', 'guardian.view',
             'staff.view', 'staff.view.any', 'staff.contract.view', 'staff.leave.approve',
             'enrollment.view', 'enrollment.create', 'enrollment.pause',
@@ -103,6 +122,7 @@ final class AccessControlSeeder extends Seeder
         ],
 
         'finance_supervisor' => [
+            'admin.panel.access',
             'student.view', 'student.view.any', 'staff.view', 'staff.view.any', 'staff.contract.view',
             'enrollment.view', 'group.view', 'session.view',
             'attendance.view', 'grade.view',
@@ -113,6 +133,9 @@ final class AccessControlSeeder extends Seeder
         ],
 
         'registrar' => [
+            'admin.panel.access',
+            'identity.users.view_any', 'identity.users.view', 'identity.users.create',
+            'identity.users.update', 'identity.users.change_status',
             'student.view', 'student.view.any', 'student.create', 'student.update',
             'staff.view.any',
             'guardian.view', 'guardian.link',
@@ -129,6 +152,8 @@ final class AccessControlSeeder extends Seeder
         ],
 
         'communications_officer' => [
+            'admin.panel.access',
+            'identity.users.view_any', 'identity.users.view',
             'student.view', 'student.view.any', 'guardian.view', 'group.view', 'session.view',
             'attendance.view', 'enrollment.view',
             'message.send', 'message.moderate', 'messaging.inbound.view',
@@ -173,6 +198,10 @@ final class AccessControlSeeder extends Seeder
 
         // مراجع: قراءة شاملة بلا أي تعديل
         'auditor' => [
+            'admin.panel.access',
+            'identity.users.view_any', 'identity.users.view',
+            'accesscontrol.roles.view_any', 'accesscontrol.roles.view',
+            'accesscontrol.permissions.view_any', 'accesscontrol.permissions.view',
             'student.view', 'student.view.any', 'guardian.view',
             'staff.view', 'staff.view.any', 'staff.contract.view',
             'enrollment.view', 'group.view', 'content.view',
@@ -187,16 +216,8 @@ final class AccessControlSeeder extends Seeder
 
     public function run(): void
     {
-        $organizationId = (string) DB::table('organizations')->orderBy('created_at')->value('id');
-
-        if ($organizationId === '') {
-            $this->command?->warn('AccessControlSeeder: لا توجد مؤسسة — شغّل OrganizationSeeder أولًا.');
-
-            return;
-        }
-
         $permissionIds = $this->seedPermissions();
-        $this->seedRoles($organizationId, $permissionIds);
+        $this->seedRoles($permissionIds);
 
         $this->command?->info(sprintf(
             'الصلاحيات: %d · الأدوار: %d',
@@ -249,14 +270,14 @@ final class AccessControlSeeder extends Seeder
     /**
      * @param array<string, string> $permissionIds
      */
-    private function seedRoles(string $organizationId, array $permissionIds): void
+    private function seedRoles(array $permissionIds): void
     {
         $now = now();
         $allNames = array_keys($permissionIds);
 
         foreach (self::ROLE_PERMISSIONS as $role => $granted) {
             $roleId = (string) DB::table('roles')
-                ->where('organization_id', $organizationId)
+                ->whereNull('organization_id')
                 ->where('name', $role)
                 ->where('guard_name', 'web')
                 ->value('id');
@@ -265,7 +286,7 @@ final class AccessControlSeeder extends Seeder
                 $roleId = (string) Str::ulid();
                 DB::table('roles')->insert([
                     'id' => $roleId,
-                    'organization_id' => $organizationId,
+                    'organization_id' => null,
                     'name' => $role,
                     'guard_name' => 'web',
                     'is_system' => true,

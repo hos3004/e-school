@@ -15,9 +15,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Organization\Domain\Models\AcademicCalendar;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 final class AcademicCalendarFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = AcademicCalendar::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';

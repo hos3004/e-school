@@ -1,0 +1,47 @@
+services:
+  app:
+    volumes:
+      - php_vendor:/var/www/html/vendor
+      - js_node_modules:/var/www/html/node_modules
+
+  horizon:
+    volumes:
+      - php_vendor:/var/www/html/vendor
+
+  scheduler:
+    volumes:
+      - php_vendor:/var/www/html/vendor
+
+  reverb:
+    volumes:
+      - php_vendor:/var/www/html/vendor
+
+  vite:
+    volumes:
+      - js_node_modules:/var/www/html/node_modules
+
+  dependency-cache:
+    profiles: [tools]
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    user: root
+    working_dir: /var/www/html
+    entrypoint: ["/bin/sh", "-lc"]
+    command:
+      - >-
+        mkdir -p vendor node_modules &&
+        chown -R app:app vendor node_modules &&
+        su -s /bin/sh app -c
+        'composer install --no-interaction --prefer-dist --no-progress && npm ci --no-audit --no-fund'
+    volumes:
+      - .:/var/www/html
+      - php_vendor:/var/www/html/vendor
+      - js_node_modules:/var/www/html/node_modules
+
+volumes:
+  php_vendor:
+  js_node_modules:

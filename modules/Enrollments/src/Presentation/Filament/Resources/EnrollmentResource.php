@@ -12,6 +12,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Enrollments\Domain\Models\Enrollment;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * قيود الطلاب في البرامج.
@@ -23,6 +24,8 @@ use Modules\Enrollments\Domain\Models\Enrollment;
  */
 final class EnrollmentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Enrollment::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';

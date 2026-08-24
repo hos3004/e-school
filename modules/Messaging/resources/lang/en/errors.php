@@ -8,6 +8,8 @@ declare(strict_types=1);
 */
 
 return [
+    'invalid_participant_scope' => 'Every participant must be an active account in the same organization.',
+    'class_access_denied' => 'Only active class members and assigned teachers can access this class conversation.',
     'not_participant' => 'You cannot send a message in a conversation you are not part of.',
     'too_many_participants' => 'The number of participants exceeds the allowed limit (:max).',
     'direct_exceeds_two' => 'A direct conversation accepts only two parties.',

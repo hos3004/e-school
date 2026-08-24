@@ -33,6 +33,7 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
         private Transaction $transaction,
         private Dispatcher $events,
         private TemplateRenderer $templates,
+        private NotificationCategorySettingsResolver $categorySettings,
     ) {}
 
     public function dispatch(
@@ -41,20 +42,14 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
         array $payload,
         ?string $correlationId = null,
     ): int {
-        /** @var array{channels: list<string>, critical?: bool}|null $settings */
-        $settings = config('notifications.categories.'.$category);
-
-        if ($settings === null) {
+        // الفئة يجب أن تكون معرّفة في config؛ إعداد المؤسسة يعدّل توجيهها لا وجودها.
+        if (config('notifications.categories.'.$category) === null) {
             throw BusinessRuleViolation::make(
                 'notifications.category_unknown',
                 'notifications::errors.category_unknown',
                 ['category' => $category],
             );
         }
-
-        $categoryChannels = array_values((array) ($settings['channels'] ?? []));
-        $critical = (bool) ($settings['critical'] ?? false);
-        $respectsQuietHours = (bool) ($settings['respects_quiet_hours'] ?? true);
 
         if ($recipientIds === []) {
             return 0;
@@ -82,6 +77,13 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
             if ($profile === null) {
                 continue;
             }
+
+            // توجيه الفئة يُحسم بتوقيت المؤسسة صاحبة المستلم: override اللوحة إن
+            // وُجد وإلا افتراضي config، فمؤسستان قد تختلفان في نفس الفئة.
+            $organizationId = (string) $profile['organization_id'];
+            $categoryChannels = $this->categorySettings->channels($organizationId, $category);
+            $critical = $this->categorySettings->isCritical($organizationId, $category);
+            $respectsQuietHours = $this->categorySettings->respectsQuietHours($organizationId, $category);
 
             foreach ($this->channelsFor($category, $categoryChannels, $critical, $recipientId) as $channelValue) {
                 $channel = Channel::from($channelValue);

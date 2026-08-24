@@ -26,6 +26,9 @@ return [
     'ulid' => 'The user ID is invalid.',
     'user_id_required' => 'A user account is required.',
     'weekday_invalid' => 'The selected weekday is invalid.',
+    'full_name_required' => 'The full name is required.',
+    'contact_required' => 'An email address or phone number is required.',
+    'import_row_failed' => 'The row could not be imported; verify its account and unique fields.',
     'attributes' => [
         'amount' => 'amount',
         'base_amount' => 'base amount',

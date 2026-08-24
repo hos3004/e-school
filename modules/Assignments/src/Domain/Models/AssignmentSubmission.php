@@ -7,6 +7,7 @@ namespace Modules\Assignments\Domain\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Assignments\Domain\Enums\AssignmentSubmissionStatus;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -22,6 +23,18 @@ final class AssignmentSubmission extends Model
     use HasUlid;
 
     protected $table = 'assignment_submissions';
+
+    /**
+     * `attachments` عمود NOT NULL بلا default في قاعدة البيانات، وكل مسارات
+     * إنشاء التسليم تبدأ بصف فارغ قبل أن يرفع الطالب شيئًا. القيمة هنا تجعل
+     * الصف الجديد صالحًا أيًا كان المسار — متحكم API أو بوابة أو factory —
+     * بدل تكرار المفتاح في كل موضع إنشاء.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'attachments' => '[]',
+    ];
 
     protected $fillable = [
         'id',
@@ -46,7 +59,7 @@ final class AssignmentSubmission extends Model
             'attachments' => 'array',
             'score' => 'int',
             'graded_at' => 'immutable_datetime',
-            'status' => Enums\AssignmentSubmissionStatus::class,
+            'status' => AssignmentSubmissionStatus::class,
         ];
     }
 
@@ -63,18 +76,18 @@ final class AssignmentSubmission extends Model
 
     public function scopeOfStatus(Builder $query, mixed $status): Builder
     {
-        $value = $status instanceof Enums\AssignmentSubmissionStatus ? $status->value : $status;
+        $value = $status instanceof AssignmentSubmissionStatus ? $status->value : $status;
 
         return $query->where('status', $value);
     }
 
     public function scopeGraded(Builder $query): Builder
     {
-        return $query->ofStatus(Enums\AssignmentSubmissionStatus::Graded);
+        return $query->ofStatus(AssignmentSubmissionStatus::Graded);
     }
 
     public function scopePending(Builder $query): Builder
     {
-        return $query->ofStatus(Enums\AssignmentSubmissionStatus::Pending);
+        return $query->ofStatus(AssignmentSubmissionStatus::Pending);
     }
 }

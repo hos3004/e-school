@@ -20,10 +20,10 @@ it('seeds Arabic and English templates for all phase-one events and channels', f
         ->all();
     sort($seededEvents);
 
-    expect(NotificationTemplate::query()->distinct()->count('event_key'))->toBe(21)
+    expect(NotificationTemplate::query()->distinct()->count('event_key'))->toBe(26)
         ->and(NotificationTemplate::query()->distinct()->count('channel'))->toBe(3)
         ->and(NotificationTemplate::query()->distinct()->count('locale'))->toBe(2)
-        ->and(NotificationTemplate::query()->count())->toBe(126)
+        ->and(NotificationTemplate::query()->count())->toBe(156)
         ->and($seededEvents)->toBe($configuredEvents);
 });
 

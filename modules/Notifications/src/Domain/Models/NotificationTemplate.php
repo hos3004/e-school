@@ -56,4 +56,38 @@ final class NotificationTemplate extends Model
     {
         return $query->where('is_active', true);
     }
+
+    /**
+     * قوالب مؤسسة بعينها (لا تشمل القوالب العامة).
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
+    public function scopeForOrganization(Builder $query, string $organizationId): Builder
+    {
+        return $query->where('organization_id', $organizationId);
+    }
+
+    /**
+     * ما يراه الأدمن: القوالب العامة (organization_id = null) وقوالب مؤسسته.
+     * القالب العام مرجع مشترك؛ تخصيصه يكون بنسخة override خاصة بالمؤسسة.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
+    public function scopeVisibleToOrganization(Builder $query, string $organizationId): Builder
+    {
+        return $query->where(function (Builder $scope) use ($organizationId): void {
+            $scope->whereNull('organization_id')
+                ->orWhere('organization_id', $organizationId);
+        });
+    }
+
+    /**
+     * قالب عام (افتراضي مشترك) لا يملكه أي مؤسسة.
+     */
+    public function isGlobal(): bool
+    {
+        return $this->organization_id === null;
+    }
 }

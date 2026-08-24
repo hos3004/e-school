@@ -12,16 +12,20 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Models\NotificationPreference;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد تفضيلات الإشعارات في لوحة الإدارة — إدارة مركزية لتفضيلات المستخدمين.
  */
 final class NotificationPreferenceResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = NotificationPreference::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-adjustments-horizontal';
@@ -55,6 +59,8 @@ final class NotificationPreferenceResource extends Resource
                     ->maxLength(26),
                 Select::make('category')
                     ->label(__('notifications::fields.category'))
+                    ->options(self::categoryOptions())
+                    ->searchable()
                     ->required(),
                 Select::make('channel')
                     ->label(__('notifications::fields.channel'))
@@ -103,9 +109,30 @@ final class NotificationPreferenceResource extends Resource
                     ->sortable(),
             ])
             ->filters([
+                SelectFilter::make('category')
+                    ->label(__('notifications::fields.category'))
+                    ->options(self::categoryOptions()),
+                SelectFilter::make('channel')
+                    ->label(__('notifications::fields.channel'))
+                    ->options(collect(Channel::cases())
+                        ->mapWithKeys(fn (Channel $c): array => [$c->value => $c->label()])
+                        ->all()),
                 TernaryFilter::make('enabled')
                     ->label(__('notifications::fields.enabled')),
             ])
             ->defaultSort('updated_at', direction: 'desc');
+    }
+
+    /**
+     * فئات الإشعارات المعرّفة في الإعداد — مفتاح الفئة نفسه هو التسمية.
+     *
+     * @return array<string, string>
+     */
+    private static function categoryOptions(): array
+    {
+        $categories = array_keys((array) config('notifications.categories', []));
+        sort($categories);
+
+        return array_combine($categories, $categories) ?: [];
     }
 }

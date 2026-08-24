@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Identity\Presentation\Filament\Resources\Users;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
@@ -20,7 +17,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rules\Password;
 use Modules\Identity\Domain\Enums\UserStatus;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Presentation\Filament\Resources\Users\Pages\CreateUser;
@@ -48,6 +46,24 @@ final class UserResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('identity::filament.user.label_plural');
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('viewAny', User::class) ?? false;
+    }
+
+    /** @return Builder<User> */
+    public static function getEloquentQuery(): Builder
+    {
+        $organizationId = auth()->user()?->getAttribute('organization_id');
+
+        return parent::getEloquentQuery()
+            ->when(
+                is_string($organizationId) && $organizationId !== '',
+                fn (Builder $query): Builder => $query->forOrganization($organizationId),
+                fn (Builder $query): Builder => $query->whereRaw('1 = 0'),
+            );
     }
 
     public static function form(Schema $schema): Schema
@@ -82,8 +98,8 @@ final class UserResource extends Resource
                             ->password()
                             ->revealable()
                             ->required(fn (string $operation): bool => $operation === 'create')
-                            ->dehydrated(fn (?string $state): bool => filled($state))
-                            ->dehydrateStateUsing(fn (string $state): string => Hash::make($state)),
+                            ->rule(Password::defaults())
+                            ->dehydrated(fn (?string $state): bool => filled($state)),
                     ])
                     ->columns(2),
                 Section::make(__('identity::filament.user.section_preferences'))
@@ -96,13 +112,6 @@ final class UserResource extends Resource
                                 'fr' => __('identity::locales.fr'),
                             ])
                             ->default('ar'),
-                        Select::make('status')
-                            ->label(__('identity::labels.status'))
-                            ->options(collect(UserStatus::cases())
-                                ->mapWithKeys(fn (UserStatus $s): array => [$s->value => $s->label()])
-                                ->all())
-                            ->default(UserStatus::Active->value)
-                            ->required(),
                         DateTimePicker::make('email_verified_at')
                             ->label(__('identity::labels.email_verified_at')),
                     ])
@@ -153,13 +162,6 @@ final class UserResource extends Resource
                 ViewAction::make(),
                 EditAction::make()
                     ->visible(fn (User $record, mixed $livewire = null): bool => auth()->user()?->can('update', $record) ?? false),
-                DeleteAction::make()
-                    ->visible(fn (User $record): bool => auth()->user()?->can('delete', $record) ?? false),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 

@@ -8,6 +8,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Shared\Module\ModuleRegistry;
@@ -36,8 +37,21 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReport(BusinessRuleViolation::class);
 
-        $exceptions->render(function (BusinessRuleViolation $violation, Request $request): JsonResponse {
+        $exceptions->render(function (BusinessRuleViolation $violation, Request $request): JsonResponse|RedirectResponse {
             $correlationId = (string) ($request->header('X-Correlation-Id') ?: Str::ulid());
+
+            /*
+             * بوابات Inertia تعمل داخل مجموعة `web` ولا تفهم جسم JSON، فكانت
+             * مخالفة قاعدة العمل تظهر للمستخدم كنص خام بلا سياق. الطلب الذي لا
+             * ينتظر JSON يعود من حيث أتى برسالة الخطأ نفسها، بينما يحتفظ عملاء
+             * الـAPI بعقد 422 كما هو.
+             */
+            if (!$request->expectsJson()) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['business_rule' => $violation->getMessage()])
+                    ->with('error', $violation->getMessage());
+            }
 
             return response()
                 ->json([

@@ -7,6 +7,7 @@ namespace Modules\Staff\Domain\Models;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Staff\Domain\Enums\TeacherAvailabilityApprovalStatus;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -27,6 +28,9 @@ final class TeacherAvailability extends Model
         'timezone',
         'effective_from',
         'effective_to',
+        'approval_status',
+        'approved_by',
+        'approved_at',
     ];
 
     protected function casts(): array
@@ -35,8 +39,10 @@ final class TeacherAvailability extends Model
             'weekday' => 'integer',
             'start_time' => 'string',
             'end_time' => 'string',
-            'effective_from' => 'immutable_datetime',
-            'effective_to' => 'immutable_datetime',
+            'effective_from' => 'immutable_date',
+            'effective_to' => 'immutable_date',
+            'approval_status' => TeacherAvailabilityApprovalStatus::class,
+            'approved_at' => 'immutable_datetime',
         ];
     }
 

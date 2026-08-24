@@ -1,5 +1,7 @@
 # AGENT C — إتاحة المعلم والطالب · الخانات المتوافقة
 
+> **SUPERSEDED — DO NOT EXECUTE.** سجل تاريخي؛ الطابور الحالي في `QUEUE-antigravity.md`.
+
 > مدير المشروع (Claude) يحتفظ بـ Sessions/Scheduling/Substitute/BBB — **لا تقترب منها**.
 > أنت تبني **المصدر** الذي يقرأ منه المدير، لا الجدولة نفسها.
 

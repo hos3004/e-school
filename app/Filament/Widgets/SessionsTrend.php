@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Widgets\Concerns\ScopesToOrganization;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\DB;
 
 /**
  * منحنى الحصص خلال آخر أربعة أسابيع، مفصولًا بين المُقامة وغير المُقامة.
@@ -15,11 +15,16 @@ use Illuminate\Support\Facades\DB;
  */
 final class SessionsTrend extends ChartWidget
 {
-    protected ?string $heading = 'الحصص خلال آخر أربعة أسابيع';
+    use ScopesToOrganization;
 
     protected int|string|array $columnSpan = 'full';
 
     protected ?string $maxHeight = '260px';
+
+    public function getHeading(): string
+    {
+        return __('dashboard.sessions_trend.heading');
+    }
 
     /**
      * @return array<string, mixed>
@@ -28,7 +33,7 @@ final class SessionsTrend extends ChartWidget
     {
         $from = CarbonImmutable::now('UTC')->startOfDay()->subDays(27);
 
-        $rows = DB::table('sessions')
+        $rows = $this->scoped('sessions')
             ->whereNull('deleted_at')
             ->where('scheduled_start', '>=', $from)
             ->selectRaw("date_trunc('day', scheduled_start) as day, status, count(*) as total")
@@ -60,7 +65,7 @@ final class SessionsTrend extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'أُقيمت',
+                    'label' => __('dashboard.sessions_trend.dataset_held'),
                     'data' => $held,
                     'borderColor' => 'rgb(16, 185, 129)',
                     'backgroundColor' => 'rgba(16, 185, 129, 0.12)',
@@ -68,7 +73,7 @@ final class SessionsTrend extends ChartWidget
                     'tension' => 0.35,
                 ],
                 [
-                    'label' => 'لم تُقَم',
+                    'label' => __('dashboard.sessions_trend.dataset_missed'),
                     'data' => $missed,
                     'borderColor' => 'rgb(244, 63, 94)',
                     'backgroundColor' => 'rgba(244, 63, 94, 0.10)',

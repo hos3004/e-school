@@ -14,7 +14,7 @@ final class StoreMessageRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('messaging.message.create');
+        return $this->user()?->can('message.send') === true;
     }
 
     /**

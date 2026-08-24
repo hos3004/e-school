@@ -27,7 +27,7 @@ final class RecordingFactory extends Factory
             'organization_id' => Fixtures::organizationId(),
             'session_id' => (string) Str::ulid(),
             'classroom_id' => (string) Str::ulid(),
-            'provider' => $this->faker->randomElement(['zoom', 'bigbluebutton']),
+            'provider' => 'bigbluebutton',
             'external_recording_id' => 'ext-'.Str::ulid(),
             'status' => RecordingStatus::Processing,
             'duration_seconds' => null,

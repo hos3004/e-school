@@ -20,7 +20,7 @@ final class UpdateRoleRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'string', 'max:191'],
-            'organization_id' => ['sometimes', 'nullable', 'string', 'size:26'],
+            'organization_id' => ['prohibited'],
         ];
     }
 
@@ -30,7 +30,7 @@ final class UpdateRoleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'organization_id.size' => __('accesscontrol::validation.ulid_invalid'),
+            'organization_id.prohibited' => __('accesscontrol::validation.organization_managed_by_server'),
         ];
     }
 }

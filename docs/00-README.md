@@ -1,7 +1,12 @@
 # وثائق معمارية منصة E-School
 
-هذه الوثائق هي مصدر الحقيقة للمشروع. الكود يتبعها، لا العكس.
-أي قرار يخالف ما هنا يحتاج تعديل الوثيقة أولًا وتسجيل السبب في `18-ADRs.md`.
+هذه الوثائق تصف المشروع، لكن **نطاق المرحلة الأولى له مصدر حقيقة واحد**:
+[`phase-1-approved-scope.md`](phase-1-approved-scope.md). الكود يتبع القرارات المعتمدة،
+وأي تغيير نطاق يحتاج تعديل ذلك الملف أولًا وتسجيل السبب في `18-ADRs.md`.
+
+عند التعارض: `AGENTS.md` يحكم طريقة التنفيذ والأمان، ثم
+`phase-1-approved-scope.md` يحكم ما يدخل المرحلة الأولى، ثم وثائق قواعد العمل.
+ملفات حزم الوكلاء والتقارير القديمة لا تغيّر النطاق.
 
 ---
 
@@ -11,23 +16,26 @@
 
 | # | الملف | لماذا |
 |---|-------|-------|
-| 1 | [`01-PRD.md`](01-PRD.md) | ما الذي نبنيه، لمن، وما حجمه |
-| 2 | [`03-domain-model.md`](03-domain-model.md) | مفردات المشروع ومعانيها |
-| 3 | [`05-state-machines.md`](05-state-machines.md) | دورات الحياة الأربع الحاكمة |
-| 4 | [`08-module-boundaries.md`](08-module-boundaries.md) | من يكلّم من، وكيف |
-| 5 | [`17-coding-standards.md`](17-coding-standards.md) | كيف نكتب |
-| 6 | [`21-definition-of-done.md`](21-definition-of-done.md) | متى تقول "خلصت" |
+| 1 | [`phase-1-approved-scope.md`](phase-1-approved-scope.md) | ما الذي يجب تسليمه الآن وما هو خارج المرحلة |
+| 2 | [`01-PRD.md`](01-PRD.md) | ما الذي نبنيه ولمن |
+| 3 | [`03-domain-model.md`](03-domain-model.md) | مفردات المشروع ومعانيها |
+| 4 | [`05-state-machines.md`](05-state-machines.md) | دورات الحياة الحاكمة |
+| 5 | [`08-module-boundaries.md`](08-module-boundaries.md) | من يكلّم من، وكيف |
+| 6 | [`17-coding-standards.md`](17-coding-standards.md) | كيف نكتب |
+| 7 | [`21-definition-of-done.md`](21-definition-of-done.md) | متى تقول "خلصت" |
 
 ### لمن يبني موديولًا بعينه
 
-اقرأ الستة أعلاه، ثم حزمة موديولك في [`20-agent-task-packages.md`](20-agent-task-packages.md)،
-ثم الوثيقة المتخصصة إن وُجدت (`13` للجدولة، `14` للمستحقات، `12` للإشعارات، `11` للمزوّدين).
+اقرأ ما سبق، ثم طابور التنفيذ الحالي في
+[`agent-tasks/QUEUE-antigravity.md`](agent-tasks/QUEUE-antigravity.md) وملف مهمتك الواحدة.
+`20-agent-task-packages.md` مرجع بناء تاريخي وليس طابور المرحلة الأولى الحالي.
 
 ---
 
 ## الفهرس الكامل
 
 ### الأساس
+- [`phase-1-approved-scope.md`](phase-1-approved-scope.md) — **النطاق المعتمد للمرحلة الأولى**
 - [`01-PRD.md`](01-PRD.md) — وثيقة المتطلبات
 - [`02-scope-and-phases.md`](02-scope-and-phases.md) — النطاق والمراحل وما هو خارج النطاق
 - [`client-answers.md`](client-answers.md) — محضر إجابات العميل والقرارات المشتقة منها

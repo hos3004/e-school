@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Presentation\Filament\Resources;
 
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -17,12 +19,15 @@ use Filament\Tables\Table;
 use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Presentation\Filament\Resources\GroupResource\Pages;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * إدارة المجموعات في لوحة التحكم — كل النصوص عبر ملفات الترجمة.
  */
 final class GroupResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Group::class;
 
     protected static ?string $slug = 'groups';
@@ -126,8 +131,8 @@ final class GroupResource extends Resource
                 TextColumn::make('status')
                     ->label(__('groups::attributes.status'))
                     ->badge()
-                    ->formatState(fn (GroupStatus $state): string => $state->label())
-                    ->color(fn (GroupStatus $state): string => $state->color()),
+                    ->formatStateUsing(fn (?GroupStatus $state): string => $state?->label() ?? '')
+                    ->color(fn (?GroupStatus $state): string => $state?->color() ?? 'gray'),
 
                 TextColumn::make('starts_on')
                     ->label(__('groups::attributes.starts_on'))
@@ -147,7 +152,12 @@ final class GroupResource extends Resource
                         ->all()),
 
                 TrashedFilter::make(),
-            ]);
+            ])
+            ->actions([
+                ViewAction::make(),
+                EditAction::make(),
+            ])
+            ->bulkActions([]);
     }
 
     public static function getPages(): array

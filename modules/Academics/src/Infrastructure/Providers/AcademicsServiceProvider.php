@@ -8,10 +8,14 @@ use Modules\Academics\Application\Policies\CoursePolicy;
 use Modules\Academics\Application\Policies\LevelPolicy;
 use Modules\Academics\Application\Policies\ProgramPolicy;
 use Modules\Academics\Application\Queries\ProgramRulesQueryService;
+use Modules\Academics\Application\Queries\RegistrationOfferingQueryService;
+use Modules\Academics\Application\Services\EligibilityEvaluator;
+use Modules\Academics\Domain\Contracts\ProgramEligibilityEvaluator;
 use Modules\Academics\Domain\Contracts\ProgramRulesQueries;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
+use Modules\Students\Domain\Contracts\RegistrationOfferingQueries;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class AcademicsServiceProvider extends BaseModuleServiceProvider
@@ -53,6 +57,8 @@ final class AcademicsServiceProvider extends BaseModuleServiceProvider
     {
         return [
             ProgramRulesQueries::class => ProgramRulesQueryService::class,
+            RegistrationOfferingQueries::class => RegistrationOfferingQueryService::class,
+            ProgramEligibilityEvaluator::class => EligibilityEvaluator::class,
         ];
     }
 }

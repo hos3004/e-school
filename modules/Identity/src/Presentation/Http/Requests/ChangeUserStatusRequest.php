@@ -16,9 +16,14 @@ final class ChangeUserStatusRequest extends FormRequest
         /** @var User|null $target */
         $target = $this->route('user');
 
-        return $target !== null
-            && $this->user() !== null
-            && $this->user()->can('changeStatus', $target);
+        $actor = $this->user();
+
+        if ($target !== null && $actor !== null
+            && $target->organization_id !== (string) $actor->getAttribute('organization_id')) {
+            abort(404);
+        }
+
+        return $target !== null && $actor !== null && $actor->can('changeStatus', $target);
     }
 
     /**

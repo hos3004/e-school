@@ -10,19 +10,15 @@ use Illuminate\Support\Facades\Schedule;
 |--------------------------------------------------------------------------
 | المهام المجدولة على مستوى المنصة. مهام الموديولات تُسجَّل داخل
 | ModuleServiceProvider الخاص بكل موديول.
+|
+| ملاحظة تسليمية: أوامر sessions:dispatch-reminders و
+| sessions:finalize-due و recordings:enforce-retention ليست موجودة
+| بعد — تُضاف مع أوامر موديولاتها (المهام 03) ويُعاد جدولتها هنا
+| عند إنشائها. جدولة أمر غير موجود تفشل كل دورة وتلوث السجل.
 */
-
-// حذف التسجيلات بعد انتهاء مدة الاحتفاظ (config/recordings.php)
-Schedule::command('recordings:enforce-retention')->dailyAt('03:17');
 
 // إعادة محاولة الإشعارات الفاشلة
 Schedule::command('notifications:retry-failed')->everyFifteenMinutes()->withoutOverlapping();
 
 // توزيع الإشعارات التي حان موعدها إلى عمال قناة الإرسال
 Schedule::command('notifications:dispatch-due')->everyMinute()->withoutOverlapping();
-
-// تذكير قبل الحصص
-Schedule::command('sessions:dispatch-reminders')->everyFiveMinutes();
-
-// إغلاق الحصص المنتهية وإنشاء قيود الرواتب
-Schedule::command('sessions:finalize-due')->everyTenMinutes();

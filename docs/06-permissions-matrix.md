@@ -94,12 +94,22 @@
 | `session.postpone.approve` | ● | ● | — | ● | — | **◐assigned** | — | — | — |
 | `session.assign_substitute` | ● | ● | — | ● | — | — | — | — | — |
 | `session.join` | ◐ | ◐ | — | — | — | ◐assigned | ◐own | — | — |
+| `classroom.observe` | ● | ◐authorized | — | — | — | — | — | — | — |
+| `classroom.moderate` | ● | ◐authorized | — | — | — | — | — | — | — |
+| `classroom.guest.invite` | ● | ◐authorized | — | — | — | — | — | — | — |
+| `classroom.guest.revoke` | ● | ◐authorized | — | — | — | — | — | — | — |
 | `attendance.view` | ● | ● | ○ | ● | ○ | ◐ | ◐own | ◐children | ○ |
 | `attendance.record` | ● | ● | — | — | — | **◐assigned** | — | — | — |
 | `attendance.override` | ● | ● | — | — | — | — | — | — | — |
-| `recording.view` | ● | ● | — | ○ | — | ◐assigned | ◐enrolled | ◐children | ○ |
-| `recording.download` | ● | ● | — | — | — | ◐assigned | — | — | — |
+| `recording.view` | ● | ◐authorized | — | — | — | ◐assigned | ◐grant | — | — |
+| `recording.view.any` | ● | ◐authorized | — | — | — | — | — | — | — |
+| `recording.download` | ● | ◐authorized | — | — | — | — | — | — | — |
+| `recording.grant` | ● | ◐authorized | — | — | — | — | — | — | — |
 | `recording.delete` | ● | — | — | — | — | — | — | — | — |
+
+**خصوصية التسجيلات:** `◐grant` تعني منحة وصول نشطة محددة لها انتهاء، وليست صلاحية
+افتراضية لدور الطالب. `◐authorized` للمشرف يتطلب منح الصلاحية ونطاق المؤسسة. المعلم
+يرى تسجيل حصته فقط ولا ينزله افتراضيًا، وGuardian لا يرث الوصول من رابط القرابة.
 
 ### التعلّم والتقارير
 

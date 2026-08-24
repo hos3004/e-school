@@ -15,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Modules\Certificates\Domain\Models\Certificate;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد إدارة الشهادات الصادرة في لوحة الإدارة.
@@ -23,6 +24,8 @@ use Modules\Certificates\Domain\Models\Certificate;
  */
 final class CertificateFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Certificate::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';

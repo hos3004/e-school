@@ -17,12 +17,23 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Assessments\Domain\Models\AssessmentAttempt;
+use Shared\Concerns\ScopesFilamentToOrganizationVia;
 
 /**
  * مورد محاولات الاختبار في لوحة الإدارة — للعرض والتصحيح اليدوي.
  */
 final class AssessmentAttemptResource extends Resource
 {
+    use ScopesFilamentToOrganizationVia;
+
+    /**
+     * الجدول لا يحمل `organization_id`؛ ينتمي عبر أبيه.
+     */
+    protected static function organizationRelation(): string
+    {
+        return 'assessment';
+    }
+
     protected static ?string $model = AssessmentAttempt::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-check';

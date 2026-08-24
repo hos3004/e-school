@@ -17,9 +17,20 @@ use Filament\Tables\Table;
 use Modules\Guardians\Domain\Enums\GuardianRelationship;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Modules\Guardians\Presentation\Filament\Resources\Pages\ManageGuardianLinks;
+use Shared\Concerns\ScopesFilamentToOrganizationVia;
 
 final class GuardianLinkFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganizationVia;
+
+    /**
+     * الجدول لا يحمل `organization_id`؛ ينتمي عبر أبيه.
+     */
+    protected static function organizationRelation(): string
+    {
+        return 'guardian';
+    }
+
     protected static ?string $model = GuardianLink::class;
 
     protected static bool $shouldRegisterNavigation = true;

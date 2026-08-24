@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
 use Modules\Identity\Application\Actions\ChangeUserStatus;
 use Modules\Identity\Domain\Enums\UserStatus;
 use Modules\Identity\Domain\Events\UserStatusChanged;
@@ -16,9 +15,6 @@ uses(CreatesTestOrganization::class);
 beforeEach(function (): void {
     $this->createTestOrganization();
 
-    // الصلاحيات تأتي من AccessControl في التشغيل الفعلي؛ في الاختبار
-    // نمنح القدرة مباشرة عبر Gate بلا أي فحص أدوار.
-    Gate::define('identity.users.change_status', fn ($user): bool => true);
 });
 
 function statusTarget(string $organizationId, UserStatus $status): User

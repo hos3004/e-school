@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\AssignStudentToGroupController;
 use Illuminate\Support\Facades\Route;
 use Modules\Groups\Presentation\Http\Controllers\ActivateGroupController;
 use Modules\Groups\Presentation\Http\Controllers\ArchiveGroupController;
@@ -10,7 +11,6 @@ use Modules\Groups\Presentation\Http\Controllers\AttachProgramController;
 use Modules\Groups\Presentation\Http\Controllers\CompleteGroupController;
 use Modules\Groups\Presentation\Http\Controllers\CreateGroupController;
 use Modules\Groups\Presentation\Http\Controllers\DetachProgramController;
-use Modules\Groups\Presentation\Http\Controllers\EnrollStudentController;
 use Modules\Groups\Presentation\Http\Controllers\ListGroupsController;
 use Modules\Groups\Presentation\Http\Controllers\ShowGroupController;
 use Modules\Groups\Presentation\Http\Controllers\UnassignTeacherController;
@@ -49,8 +49,9 @@ Route::post('/groups/{group}/complete', CompleteGroupController::class)
     ->whereUlid('group')
     ->name('groups.complete');
 
-Route::post('/groups/{group}/students', EnrollStudentController::class)
-    ->whereUlid('group')
+Route::post('/groups/{groupId}/students', AssignStudentToGroupController::class)
+    ->middleware('auth:sanctum')
+    ->whereUlid('groupId')
     ->name('groups.students.enroll');
 
 Route::post('/groups/{group}/teachers', AssignTeacherController::class)

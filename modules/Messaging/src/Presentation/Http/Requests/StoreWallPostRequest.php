@@ -13,7 +13,7 @@ final class StoreWallPostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('messaging.class_wall_post.create');
+        return $this->user()?->can('class_wall.post') === true;
     }
 
     /**

@@ -12,6 +12,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Payroll\Domain\Models\PayrollEntry;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * قيود المستحقات — **للعرض فقط**.
@@ -21,6 +22,8 @@ use Modules\Payroll\Domain\Models\PayrollEntry;
  */
 final class PayrollEntryResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = PayrollEntry::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';

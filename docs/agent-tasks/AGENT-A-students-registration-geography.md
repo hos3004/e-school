@@ -1,5 +1,7 @@
 # AGENT A — الطلاب · التسجيل · الجغرافيا · الحساب
 
+> **SUPERSEDED — DO NOT EXECUTE.** سجل تاريخي؛ الطابور الحالي في `QUEUE-antigravity.md`.
+
 > مدير المشروع (Claude) يحتفظ بـ Sessions/Scheduling/Substitute/BBB — **لا تقترب منها**.
 
 ## اقرأ أولًا (إلزامي)

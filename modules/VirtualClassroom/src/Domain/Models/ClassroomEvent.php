@@ -22,6 +22,7 @@ final class ClassroomEvent extends Model
 
     protected $fillable = [
         'classroom_id',
+        'idempotency_key',
         'event_type',
         'external_user_id',
         'user_id',

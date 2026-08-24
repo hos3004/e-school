@@ -77,11 +77,21 @@ export interface Attendance {
 export interface Assignment {
     id: Identifier;
     title: string;
+    instructions?: string;
     courseName: string;
     dueAt: IsoDateTime;
     status: string;
     submissionStatus: string;
     submittedAt?: IsoDateTime | null;
+    submissionContent?: string | null;
+    allowsLate?: boolean;
+    latePenaltyPercent?: number;
+    maxScore?: number;
+    score?: number | null;
+    feedback?: string | null;
+    gradedAt?: IsoDateTime | null;
+    canSubmit?: boolean;
+    submitUrl?: string;
     url?: string | null;
 }
 

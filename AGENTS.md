@@ -5,6 +5,26 @@
 
 ---
 
+## 0. بيئة العمل النشطة — WSL2 فقط (إلزامي)
+
+تم نقل نسخة العمل المعتمدة إلى Ubuntu داخل WSL2. من الآن فصاعدًا:
+
+- **مصدر الحقيقة الوحيد القابل للتعديل:** `/home/gamer/e-school`
+- الوصول إليه من Windows: `\\wsl.localhost\Ubuntu\home\gamer\e-school`
+- النسخة `I:\e-school` **قديمة وللقراءة فقط**. ممنوع تعديلها أو تشغيل Docker أو
+  الاختبارات أو إنشاء commits منها، وممنوع مزامنتها إلى Linux إلا بطلب صريح من المستخدم.
+- إذا بدأ الـagent و`cwd` هو `I:\e-school`، يجب أن يتوقف عن أي كتابة وينتقل أولًا إلى
+  `/home/gamer/e-school` داخل Ubuntu/WSL2.
+- كل أوامر Git وDocker وPHP وComposer وArtisan وNode، وكل تعديلات الملفات، تُنفّذ على
+  نسخة Linux فقط. مثال تحقق قبل بدء أي مهمة:
+
+```bash
+wsl -d Ubuntu -- bash -lc 'cd /home/gamer/e-school && git status --short --branch'
+```
+
+لا تُنسخ تغييرات Linux إلى `I:\e-school` تلقائيًا؛ أي نسخ أو مزامنة بين النسختين يحتاج
+موافقة صريحة من المستخدم وتحديد اتجاه المزامنة.
+
 ## 1. المعمارية
 
 **Modular Monolith.** تطبيق Laravel واحد، و27 موديول تحت `modules/`، لكل واحد namespace

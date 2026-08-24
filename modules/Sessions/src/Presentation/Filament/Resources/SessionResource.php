@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\Sessions\Presentation\Filament\Resources;
 
 use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -15,18 +17,24 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Sessions\Application\Actions\AssignSubstituteTeacherAction;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Services\SubstituteCandidateFinder;
+use Modules\Staff\Domain\Contracts\StaffQueries;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد إدارة الحصص في لوحة الإدارة.
  */
 final class SessionResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Session::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
@@ -116,7 +124,14 @@ final class SessionResource extends Resource
                         : 'gray'),
                 TextColumn::make('staff_profile_id')
                     ->label(__('sessions::fields.staff_profile'))
-                    ->copyable(),
+                    /*
+                     * كان يعرض ULID خامًا — رقم لا يقرأه مشرف ولا يميّز به
+                     * معلمًا عن آخر. الاسم يأتي عبر عقد Staff دفعة واحدة
+                     * للصفحة، لا باستعلام لكل صف.
+                     */
+                    ->formatStateUsing(static fn ($state): string => self::teacherNames()[(string) $state]
+                        ?? (string) $state)
+                    ->toggleable(),
                 TextColumn::make('scheduled_start')
                     ->label(__('sessions::fields.scheduled_start'))
                     ->dateTime()
@@ -134,14 +149,108 @@ final class SessionResource extends Resource
             ->filters([
                 SelectFilter::make('status')
                     ->label(__('sessions::fields.status'))
+                    ->multiple()
                     ->options(collect(SessionStatus::cases())
                         ->mapWithKeys(fn (SessionStatus $s): array => [$s->value => $s->label()])
                         ->all()),
+
+                SelectFilter::make('staff_profile_id')
+                    ->label(__('sessions::fields.staff_profile'))
+                    ->options(fn (): array => self::teacherNames())
+                    ->searchable(),
+
+                SelectFilter::make('session_type')
+                    ->label(__('sessions::fields.session_type'))
+                    ->options(fn (): array => self::sessionTypeOptions()),
+
+                /*
+                 * الجدول التشغيلي بلا نافذة زمنية بلا معنى: المشرف يسأل عن
+                 * أسبوع أو شهر، لا عن كل تاريخ الحصص.
+                 */
+                Filter::make('scheduled_between')
+                    ->label(__('sessions::filters.scheduled_between'))
+                    ->schema([
+                        DatePicker::make('from')->label(__('sessions::filters.from')),
+                        DatePicker::make('until')->label(__('sessions::filters.until')),
+                    ])
+                    ->query(static function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'] ?? null,
+                                static fn (Builder $q, string $from): Builder => $q
+                                    ->whereDate('scheduled_start', '>=', $from),
+                            )
+                            ->when(
+                                $data['until'] ?? null,
+                                static fn (Builder $q, string $until): Builder => $q
+                                    ->whereDate('scheduled_start', '<=', $until),
+                            );
+                    })
+                    ->indicateUsing(static function (array $data): array {
+                        $indicators = [];
+
+                        if (($data['from'] ?? null) !== null) {
+                            $indicators[] = __('sessions::filters.from').': '.$data['from'];
+                        }
+
+                        if (($data['until'] ?? null) !== null) {
+                            $indicators[] = __('sessions::filters.until').': '.$data['until'];
+                        }
+
+                        return $indicators;
+                    }),
             ])
             ->recordActions([
+                ViewAction::make(),
                 self::assignSubstituteAction(),
             ])
             ->defaultSort('scheduled_start');
+    }
+
+    /**
+     * أسماء معلمي المؤسسة — تُحلّ مرة واحدة لكل طلب.
+     *
+     * @return array<string, string>
+     */
+    private static function teacherNames(): array
+    {
+        static $cache = null;
+
+        if ($cache !== null) {
+            return $cache;
+        }
+
+        $organizationId = data_get(auth()->user(), 'organization_id');
+
+        if (!is_string($organizationId) || $organizationId === '') {
+            return $cache = [];
+        }
+
+        /** @var StaffQueries $staff */
+        $staff = app(StaffQueries::class);
+
+        return $cache = $staff->namesForProfiles(
+            $organizationId,
+            $staff->activeTeacherIdsForOrganization($organizationId),
+        );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function sessionTypeOptions(): array
+    {
+        $types = config('academic.session_types');
+        $options = [];
+
+        // المفاتيح هي الأنواع؛ القيم إعدادات سعة لا تُعرض هنا.
+        foreach (array_keys(is_array($types) ? $types : []) as $type) {
+            if (is_string($type)) {
+                $options[$type] = __('sessions::session_types.'.$type);
+            }
+        }
+
+        return $options;
     }
 
     private static function assignSubstituteAction(): Action
@@ -189,7 +298,7 @@ final class SessionResource extends Resource
                     ->required(),
                 Textarea::make('override_reason')
                     ->label(__('sessions::fields.override_reason'))
-                    ->placeholder('سبب التجاوز الإداري الإلزامي عند اختيار معلم غير مؤهل أو غير متاح')
+                    ->placeholder(__('sessions::fields.override_reason_hint'))
                     ->visible(function (callable $get, Session $record): bool {
                         $subId = $get('substitute_teacher_id');
                         if (!$subId) {
@@ -234,6 +343,7 @@ final class SessionResource extends Resource
     {
         return [
             'index' => SessionResource\Pages\ListSessions::route('/'),
+            'calendar' => SessionResource\Pages\CalendarSessions::route('/calendar'),
             'view' => SessionResource\Pages\ViewSession::route('/{record}'),
         ];
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Messaging\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Messaging\Domain\Contracts\ClassAudienceQueries;
 use Modules\Messaging\Domain\Enums\ConversationType;
 use Modules\Messaging\Domain\Enums\ParticipantRole;
 use Modules\Messaging\Domain\Events\ConversationCreated;
@@ -21,6 +22,7 @@ final readonly class CreateConversationAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private ClassAudienceQueries $audience,
     ) {}
 
     /**
@@ -56,6 +58,13 @@ final readonly class CreateConversationAction
             throw BusinessRuleViolation::make(
                 'messaging.direct_exceeds_two',
                 'messaging::errors.direct_exceeds_two',
+            );
+        }
+
+        if (!$this->audience->usersBelongToOrganization($organizationId, $participants)) {
+            throw BusinessRuleViolation::make(
+                'messaging.invalid_participant_scope',
+                'messaging::errors.invalid_participant_scope',
             );
         }
 

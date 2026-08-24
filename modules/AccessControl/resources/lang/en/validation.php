@@ -15,4 +15,5 @@ return [
     'model_id_required' => 'The target model id is required.',
     'ulid_invalid' => 'Invalid identifier; it must be a 26-character ULID.',
     'guard_invalid' => 'Unknown guard; allowed values: web or api.',
+    'organization_managed_by_server' => 'The organization is derived from the authenticated account and cannot be supplied.',
 ];

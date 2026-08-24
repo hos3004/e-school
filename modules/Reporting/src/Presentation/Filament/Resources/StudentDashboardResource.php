@@ -13,12 +13,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Reporting\Domain\Models\StudentDashboard;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد لوحات الطلاب في لوحة الإدارة — قراءة وتصحيح موثّق فقط.
  */
 final class StudentDashboardResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = StudentDashboard::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';

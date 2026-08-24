@@ -6,7 +6,9 @@ namespace Modules\Academics\Application\Queries;
 
 use Modules\Academics\Domain\Contracts\ProgramRulesQueries;
 use Modules\Academics\Domain\Models\Course;
+use Modules\Academics\Domain\Models\Program;
 use Modules\Academics\Domain\Models\ProgramEligibility;
+use Modules\Academics\Domain\ValueObjects\PlacementAcademicContext;
 use Modules\Academics\Domain\ValueObjects\ProgramEligibilityData;
 
 final class ProgramRulesQueryService implements ProgramRulesQueries
@@ -62,5 +64,48 @@ final class ProgramRulesQueryService implements ProgramRulesQueries
         $course = Course::query()->find($courseId);
 
         return $course?->session_mode?->value;
+    }
+
+    public function placementContext(
+        string $organizationId,
+        string $programId,
+        ?string $courseId,
+    ): ?PlacementAcademicContext {
+        $programExists = Program::query()
+            ->forOrganization($organizationId)
+            ->active()
+            ->whereKey($programId)
+            ->exists();
+
+        if (!$programExists) {
+            return null;
+        }
+
+        if ($courseId === null) {
+            return new PlacementAcademicContext(
+                organizationId: $organizationId,
+                programId: $programId,
+                courseId: null,
+                sessionMode: null,
+            );
+        }
+
+        /** @var Course|null $course */
+        $course = Course::query()
+            ->forOrganization($organizationId)
+            ->active()
+            ->with('level')
+            ->find($courseId);
+
+        if ($course === null || $course->level === null || (string) $course->level->program_id !== $programId) {
+            return null;
+        }
+
+        return new PlacementAcademicContext(
+            organizationId: $organizationId,
+            programId: $programId,
+            courseId: $courseId,
+            sessionMode: $course->session_mode?->value,
+        );
     }
 }

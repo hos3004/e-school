@@ -47,4 +47,10 @@ return [
     'routing' => 'التوجيه',
     'content' => 'المحتوى',
     'dispatching' => 'التسليم',
+
+    // حقول القوالب
+    'is_active' => 'مُفعّل',
+    'parameters' => 'المتغيّرات',
+    'provider_template_name' => 'اسم قالب المزوّد',
+    'scope' => 'النطاق',
 ];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Payroll\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Payroll\Domain\Enums\PayrollEntryStatus;
@@ -25,6 +26,7 @@ use Shared\Concerns\HasUlid;
  * @property PayrollEntryStatus $status
  * @property string|null $deferred_until_session_id
  * @property array<string, mixed>|null $description
+ * @property CarbonImmutable|null $created_at
  */
 final class PayrollEntry extends Model
 {
@@ -58,6 +60,12 @@ final class PayrollEntry extends Model
             'rate_snapshot' => 'array',
             'status' => PayrollEntryStatus::class,
             'description' => 'array',
+            /*
+             * `$timestamps = false` لأن الدفتر لا يُعدَّل، فلا معنى لـ
+             * updated_at. لكن `created_at` عمود قائم ويوثّق **وقت القيد**،
+             * فيجب تحويله — بدونه يصل نصًّا خامًا لكل مستهلك.
+             */
+            'created_at' => 'immutable_datetime',
         ];
     }
 

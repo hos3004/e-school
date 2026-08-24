@@ -12,6 +12,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Modules\Reporting\Domain\Models\TeacherDashboard;
+use Shared\Concerns\ScopesFilamentToOrganization;
 use Shared\ValueObjects\Money;
 
 /**
@@ -19,6 +20,8 @@ use Shared\ValueObjects\Money;
  */
 final class TeacherDashboardResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = TeacherDashboard::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';

@@ -45,6 +45,14 @@ final class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
+            /*
+             * مفاتيح الميزات التي تحكم ظهور عناصر تنقّل. الواجهة تخفي الرابط،
+             * والمسار نفسه غير مسجَّل حين تكون الميزة مطفأة — فلا يعتمد المنع
+             * على الإخفاء وحده.
+             */
+            'features' => [
+                'payroll' => (bool) config('features.payroll'),
+            ],
             'locale' => $locale,
             'direction' => in_array($locale, (array) config('app.rtl_locales', ['ar']), true)
                 ? 'rtl'

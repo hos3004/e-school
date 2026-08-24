@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Widgets\Concerns\ScopesToOrganization;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
 
 /**
  * البطاقات العلوية في لوحة التحكم.
@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class PlatformOverview extends StatsOverviewWidget
 {
+    use ScopesToOrganization;
+
     protected ?string $pollingInterval = null;
 
     protected int|string|array $columnSpan = 'full';
@@ -31,33 +33,67 @@ final class PlatformOverview extends StatsOverviewWidget
 
         return [
             $this->students(),
+            $this->teachers(),
+            $this->activePrograms(),
             $this->sessionsToday($today),
             $this->attendanceRate($monthStart),
-            $this->payrollThisMonth($monthStart),
+            ...((bool) config('features.payroll') ? [$this->payrollThisMonth($monthStart)] : []),
         ];
     }
 
     private function students(): Stat
     {
-        $total = DB::table('student_profiles')->whereNull('deleted_at')->count();
+        $total = $this->scoped('student_profiles')->whereNull('deleted_at')->count();
 
-        $active = DB::table('enrollments')
+        $active = $this->scoped('enrollments')
             ->where('status', 'active')
             ->whereNull('deleted_at')
             ->distinct('student_profile_id')
             ->count('student_profile_id');
 
-        $frozen = DB::table('enrollments')->where('status', 'frozen')->count();
+        $frozen = $this->scoped('enrollments')
+            ->whereNull('deleted_at')
+            ->where('status', 'frozen')
+            ->count();
 
-        return Stat::make('الطلاب', (string) $total)
-            ->description($active.' قيد نشط · '.$frozen.' مجمَّد')
+        return Stat::make(__('dashboard.stats.students.label'), (string) $total)
+            ->description(__('dashboard.stats.students.description', [
+                'active' => $active,
+                'frozen' => $frozen,
+            ]))
             ->descriptionIcon('heroicon-m-users')
-            ->color($frozen > 0 ? 'warning' : 'success');
+            ->color($frozen > 0 ? 'warning' : 'success')
+            ->url('/admin/students');
+    }
+
+    private function teachers(): Stat
+    {
+        $total = $this->scoped('staff_profiles')->whereNull('deleted_at')->count();
+
+        return Stat::make(__('dashboard.stats.teachers.label'), (string) $total)
+            ->description(__('dashboard.stats.teachers.description'))
+            ->descriptionIcon('heroicon-m-user-group')
+            ->color('info')
+            ->url('/admin/staff-profiles');
+    }
+
+    private function activePrograms(): Stat
+    {
+        $total = $this->scoped('programs')
+            ->whereNull('deleted_at')
+            ->where('is_active', true)
+            ->count();
+
+        return Stat::make(__('dashboard.stats.programs.label'), (string) $total)
+            ->description(__('dashboard.stats.programs.description'))
+            ->descriptionIcon('heroicon-m-academic-cap')
+            ->color('success')
+            ->url('/admin/program-filaments');
     }
 
     private function sessionsToday(CarbonImmutable $today): Stat
     {
-        $base = DB::table('sessions')
+        $base = $this->scoped('sessions')
             ->whereNull('deleted_at')
             ->whereBetween('scheduled_start', [$today, $today->addDay()]);
 
@@ -65,10 +101,14 @@ final class PlatformOverview extends StatsOverviewWidget
         $done = (clone $base)->where('status', 'completed')->count();
         $upcoming = (clone $base)->whereIn('status', ['scheduled', 'confirmed'])->count();
 
-        return Stat::make('حصص اليوم', (string) $total)
-            ->description($done.' مكتملة · '.$upcoming.' قادمة')
+        return Stat::make(__('dashboard.stats.sessions_today.label'), (string) $total)
+            ->description(__('dashboard.stats.sessions_today.description', [
+                'done' => $done,
+                'upcoming' => $upcoming,
+            ]))
             ->descriptionIcon('heroicon-m-calendar-days')
-            ->color('info');
+            ->color('info')
+            ->url('/admin/sessions');
     }
 
     /**
@@ -76,9 +116,9 @@ final class PlatformOverview extends StatsOverviewWidget
      */
     private function attendanceRate(CarbonImmutable $monthStart): Stat
     {
-        $rows = DB::table('attendances')
-            ->join('session_participants', 'session_participants.id', '=', 'attendances.session_participant_id')
-            ->join('sessions', 'sessions.id', '=', 'session_participants.session_id')
+        $rows = $this->scopedVia('session_participants', 'sessions', 'session_id')
+            ->join('attendances', 'attendances.session_participant_id', '=', 'session_participants.id')
+            ->whereNull('sessions.deleted_at')
             ->where('sessions.scheduled_start', '>=', $monthStart)
             ->selectRaw('attendances.status, count(*) as total')
             ->groupBy('attendances.status')
@@ -90,15 +130,21 @@ final class PlatformOverview extends StatsOverviewWidget
 
         $absent = (int) ($rows['absent'] ?? 0) + (int) ($rows['no_show'] ?? 0);
 
-        return Stat::make('نسبة الحضور هذا الشهر', $rate.'%')
-            ->description($all > 0 ? $absent.' غياب من '.$all.' سجل' : 'لا سجلات بعد')
+        return Stat::make(
+            __('dashboard.stats.attendance_rate.label'),
+            $rate.'%',
+        )
+            ->description($all > 0
+                ? __('dashboard.stats.attendance_rate.description', ['absent' => $absent, 'total' => $all])
+                : __('dashboard.stats.attendance_rate.empty_description'))
             ->descriptionIcon('heroicon-m-check-badge')
             ->color(match (true) {
                 $all === 0 => 'gray',
                 $rate >= 85 => 'success',
                 $rate >= 70 => 'warning',
                 default => 'danger',
-            });
+            })
+            ->url('/admin/attendance-filaments');
     }
 
     /**
@@ -106,21 +152,24 @@ final class PlatformOverview extends StatsOverviewWidget
      */
     private function payrollThisMonth(CarbonImmutable $monthStart): Stat
     {
-        $net = (int) DB::table('payroll_entries')
+        $net = (int) $this->scoped('payroll_entries')
             ->where('created_at', '>=', $monthStart)
             ->sum('amount');
 
-        $deferred = DB::table('payroll_entries')
+        $deferred = $this->scoped('payroll_entries')
             ->where('created_at', '>=', $monthStart)
             ->where('status', 'deferred')
             ->count();
 
         return Stat::make(
-            'مستحقات الشهر',
-            number_format($net / 100, 2).' ج.م',
+            __('dashboard.stats.payroll.label'),
+            number_format($net / 100, 2).' '.__('dashboard.stats.payroll.currency'),
         )
-            ->description($deferred > 0 ? $deferred.' قيدة مؤجَّلة' : 'لا قيود مؤجَّلة')
+            ->description($deferred > 0
+                ? __('dashboard.stats.payroll.deferred_description', ['count' => $deferred])
+                : __('dashboard.stats.payroll.no_deferred_description'))
             ->descriptionIcon('heroicon-m-banknotes')
-            ->color($net >= 0 ? 'success' : 'danger');
+            ->color($net >= 0 ? 'success' : 'danger')
+            ->url('/admin/payroll-entries');
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Recordings\Presentation\Filament\Resources;
 
+use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -13,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Models\Recording;
 
@@ -40,6 +42,22 @@ final class RecordingResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('recordings::navigation.recording.plural');
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $organizationId = data_get(auth()->user(), 'organization_id');
+
+        return parent::getEloquentQuery()->when(
+            is_string($organizationId) && $organizationId !== '',
+            fn (Builder $query): Builder => $query->where('organization_id', $organizationId),
+            fn (Builder $query): Builder => $query->whereRaw('1 = 0'),
+        );
     }
 
     public static function form(Schema $schema): Schema
@@ -131,6 +149,20 @@ final class RecordingResource extends Resource
                         ->mapWithKeys(fn (RecordingStatus $s): array => [$s->value => $s->label()])
                         ->all()),
             ])
+            ->recordActions([
+                Action::make('view')
+                    ->label(__('recordings::actions.view'))
+                    ->icon('heroicon-m-eye')
+                    ->url(fn (Recording $record): string => self::getUrl('view', ['record' => $record])),
+            ])
             ->defaultSort('available_from', direction: 'desc');
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => RecordingResource\Pages\ListRecordings::route('/'),
+            'view' => RecordingResource\Pages\ViewRecording::route('/{record}'),
+        ];
     }
 }

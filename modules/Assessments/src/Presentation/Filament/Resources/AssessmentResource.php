@@ -17,12 +17,16 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Modules\Assessments\Domain\Enums\AssessmentType;
 use Modules\Assessments\Domain\Models\Assessment;
+use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Support\LocalizedJsonColumn;
 
 /**
  * مورد إدارة الاختبارات في لوحة الإدارة.
  */
 final class AssessmentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = Assessment::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
@@ -117,11 +121,10 @@ final class AssessmentResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('title')
                     ->label(__('assessments::fields.title'))
-                    ->formatStateUsing(fn ($state): string => is_array($state)
-                        ? ($state[app()->getLocale()] ?? reset($state))
-                        : (string) $state)
+                    ->formatStateUsing(static fn ($state): string => LocalizedJsonColumn::display($state))
                     ->limit(40)
-                    ->searchable(),
+                    // عمود jsonb: البحث الافتراضي يبني LIKE عليه فينهار الطلب.
+                    ->searchable(query: LocalizedJsonColumn::search('assessments.title')),
                 TextColumn::make('type')
                     ->label(__('assessments::fields.type'))
                     ->badge()

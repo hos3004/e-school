@@ -26,6 +26,7 @@ return [
     'users' => 'Identity',
     'user_devices' => 'Identity',
     'password_reset_tokens' => 'Identity',
+    'phone_password_reset_tokens' => 'Identity',
 
     // AccessControl
     'roles' => 'AccessControl',
@@ -60,6 +61,9 @@ return [
     'programs' => 'Academics',
     'levels' => 'Academics',
     'courses' => 'Academics',
+    'program_categories' => 'Academics',
+    'course_category' => 'Academics',
+    'program_eligibility' => 'Academics',
 
     // Groups
     'groups' => 'Groups',
@@ -95,6 +99,7 @@ return [
     // Recordings
     'recordings' => 'Recordings',
     'recording_views' => 'Recordings',
+    'recording_access_grants' => 'Recordings',
 
     // Assignments
     'assignments' => 'Assignments',

@@ -117,7 +117,7 @@ final class PortalRoutesTest extends TestCase
         ]);
 
         $studentRoleId = DB::table('roles')
-            ->where('organization_id', $organizationId)
+            ->whereNull('organization_id')
             ->where('guard_name', 'web')
             ->where('name', 'student')
             ->value('id');

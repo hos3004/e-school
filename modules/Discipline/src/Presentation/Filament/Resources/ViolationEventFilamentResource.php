@@ -18,6 +18,7 @@ use Filament\Tables\Table;
 use Modules\Discipline\Domain\Enums\ViolationType;
 use Modules\Discipline\Domain\Models\ViolationEvent;
 use Modules\Discipline\Presentation\Filament\Resources\ViolationEventFilamentResource\Pages;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد أحداث المخالفات في لوحة التحكم — قراءة فقط مع فعل عفو موثّق.
@@ -25,6 +26,8 @@ use Modules\Discipline\Presentation\Filament\Resources\ViolationEventFilamentRes
  */
 final class ViolationEventFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = ViolationEvent::class;
 
     protected static ?string $slug = 'discipline-violations';

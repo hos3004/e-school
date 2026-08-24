@@ -12,6 +12,9 @@ use Modules\Identity\Application\Queries\DTOs\UserSummary;
  */
 interface UserQueryService
 {
+    /** قيمة morph type الرسمية لاستخدام إسنادات AccessControl دون استيراد النموذج. */
+    public function modelType(): string;
+
     public function findSummary(string $userId): ?UserSummary;
 
     /**

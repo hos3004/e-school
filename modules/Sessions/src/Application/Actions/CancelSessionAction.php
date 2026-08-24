@@ -57,12 +57,12 @@ final readonly class CancelSessionAction
             $session,
             $as,
             [
-                'cancelled_by' => (string) auth()->id(),
+                'cancelled_by' => $actorId,
                 'cancelled_at' => $now,
                 'cancellation_reason' => $reason,
             ],
             reason: $reason,
-            changedBy: (string) auth()->id(),
+            changedBy: $actorId,
             metadata: ['cancel_channel' => 'api'],
         );
 

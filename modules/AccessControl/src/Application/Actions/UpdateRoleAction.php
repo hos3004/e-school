@@ -28,9 +28,12 @@ final readonly class UpdateRoleAction
         ?string $name = null,
         ?string $organizationId = null,
         ?string $actorId = null,
+        ?string $scopeOrganizationId = null,
     ): Role {
         /** @var Role|null $role */
-        $role = Role::query()->find($roleId);
+        $role = Role::query()
+            ->when($scopeOrganizationId !== null, fn (Builder $query): Builder => $query->forOrganization($scopeOrganizationId))
+            ->find($roleId);
 
         if ($role === null) {
             throw BusinessRuleViolation::make(

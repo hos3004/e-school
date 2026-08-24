@@ -26,6 +26,7 @@ return [
     'email' => 'Email address',
     'phone' => 'Phone number',
     'preferred_program_id' => 'Preferred program',
+    'preferred_course_id' => 'Preferred course',
     'status' => 'Status',
     'submitted_at' => 'Submitted at',
     'reviewed_at' => 'Reviewed at',

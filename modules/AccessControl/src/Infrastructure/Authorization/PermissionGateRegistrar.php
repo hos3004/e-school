@@ -15,12 +15,8 @@ use Modules\AccessControl\Domain\Models\Permission;
 /**
  * يسجّل صلاحيات قاعدة البيانات كقدرات Gate دون ربط AccessControl بنموذج Identity.
  */
-final readonly class PermissionGateRegistrar
+final class PermissionGateRegistrar
 {
-    public function __construct(
-        private AccessControlQuerier $accessControl,
-    ) {}
-
     public function register(): void
     {
         if (!Schema::hasTable('permissions')) {
@@ -54,7 +50,9 @@ final readonly class PermissionGateRegistrar
 
         $modelType = $user instanceof Model ? $user->getMorphClass() : $user::class;
 
-        return $this->accessControl->modelHasPermission(
+        // Resolve inside the Gate callback so a long-running worker receives
+        // the current request scope instead of capturing the boot-time object.
+        return app(AccessControlQuerier::class)->modelHasPermission(
             $modelType,
             (string) $identifier,
             $permissionName,

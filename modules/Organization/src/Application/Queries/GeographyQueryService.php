@@ -10,22 +10,38 @@ use Modules\Organization\Domain\ValueObjects\CountryData;
 use Modules\Organization\Domain\ValueObjects\RegionData;
 use UnexpectedValueException;
 
-final readonly class GeographyQueryService implements GeographyQueries
+final class GeographyQueryService implements GeographyQueries
 {
+    /** @var array<string, list<CountryData>> */
+    private array $countries = [];
+
+    /** @var array<string, array<string, list<RegionData>>> */
+    private array $regionsByCountry = [];
+
     /**
      * @return list<CountryData>
      */
     public function countries(bool $activeOnly = true): array
     {
+        $key = $activeOnly ? 'active' : 'all';
+
+        if (array_key_exists($key, $this->countries)) {
+            return $this->countries[$key];
+        }
+
         $query = DB::table('countries')->orderBy('sort_order')->orderBy('iso2');
 
         if ($activeOnly) {
             $query->where('is_active', true);
         }
 
-        return $query->get()
+        $results = $query->get()
             ->map(fn (object $row): CountryData => $this->mapCountry($row))
             ->all();
+
+        $this->countries[$key] = $results;
+
+        return $results;
     }
 
     /**
@@ -33,18 +49,29 @@ final readonly class GeographyQueryService implements GeographyQueries
      */
     public function regionsOf(string $countryId, bool $activeOnly = true): array
     {
-        $query = DB::table('regions')
-            ->where('country_id', $countryId)
-            ->orderBy('sort_order')
-            ->orderBy('code');
+        $key = $activeOnly ? 'active' : 'all';
 
-        if ($activeOnly) {
-            $query->where('is_active', true);
+        if (!array_key_exists($key, $this->regionsByCountry)) {
+            $query = DB::table('regions')
+                ->orderBy('country_id')
+                ->orderBy('sort_order')
+                ->orderBy('code');
+
+            if ($activeOnly) {
+                $query->where('is_active', true);
+            }
+
+            /** @var array<string, list<RegionData>> $grouped */
+            $grouped = [];
+            foreach ($query->get() as $row) {
+                $region = $this->mapRegion($row);
+                $grouped[$region->countryId][] = $region;
+            }
+
+            $this->regionsByCountry[$key] = $grouped;
         }
 
-        return $query->get()
-            ->map(fn (object $row): RegionData => $this->mapRegion($row))
-            ->all();
+        return $this->regionsByCountry[$key][$countryId] ?? [];
     }
 
     public function findCountryByIso2(string $iso2): ?CountryData

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Assignments\Application\Policies;
 
+use Modules\Assignments\Domain\Contracts\AssignmentAudienceQueries;
 use Modules\Assignments\Domain\Models\AssignmentSubmission;
 
 /**
@@ -17,10 +18,14 @@ use Modules\Assignments\Domain\Models\AssignmentSubmission;
  */
 final class AssignmentSubmissionPolicy
 {
+    public function __construct(
+        private readonly AssignmentAudienceQueries $audiences,
+    ) {}
+
     /** @param  mixed  $user */
     public function viewAny($user): bool
     {
-        return $user !== null && $user->can('assignments.submissions.view_any');
+        return $user !== null && ($user->can('assignment.manage') || $user->can('assignment.grade'));
     }
 
     /** @param  mixed  $user */
@@ -30,14 +35,33 @@ final class AssignmentSubmissionPolicy
             return false;
         }
 
-        return $user->can('assignments.submissions.view_any')
-            || $user->can('assignments.submissions.view_own');
+        $assignment = $submission->assignment()->first();
+
+        if ($assignment === null || (string) $user->organization_id !== (string) $assignment->organization_id) {
+            return false;
+        }
+
+        $audience = $this->audiences->forUser(
+            (string) $assignment->organization_id,
+            (string) $user->getAuthIdentifier(),
+        );
+
+        if ($user->can('assignment.submit')
+            && $audience->studentProfileId === (string) $submission->student_profile_id) {
+            return true;
+        }
+
+        return ($user->can('assignment.manage') || $user->can('assignment.grade'))
+            && ($audience->staffProfileId === (string) $assignment->staff_profile_id
+                || $user->can('settings.manage')
+                || $user->can('student.update')
+                || $user->can('message.moderate'));
     }
 
     /** @param  mixed  $user */
     public function create($user): bool
     {
-        return $user !== null && $user->can('assignments.submissions.submit');
+        return $user !== null && $user->can('assignment.submit');
     }
 
     /** التسليم لا يُعدَّل مباشرة — التعديل الوحيد هو إجراء Submit. */
@@ -55,6 +79,10 @@ final class AssignmentSubmissionPolicy
     /** رصد الدرجة — فعل المعلم بصلاحية مستقلة موثّقة. */
     public function grade($user, AssignmentSubmission $submission): bool
     {
-        return $user !== null && $user->can('assignments.submissions.grade');
+        if ($user === null || !$user->can('assignment.grade')) {
+            return false;
+        }
+
+        return $this->view($user, $submission);
     }
 }

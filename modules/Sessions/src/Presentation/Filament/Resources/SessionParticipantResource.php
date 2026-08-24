@@ -13,12 +13,23 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Modules\Sessions\Domain\Models\SessionParticipant;
+use Shared\Concerns\ScopesFilamentToOrganizationVia;
 
 /**
  * مورد مشاركو الحصص في لوحة الإدارة.
  */
 final class SessionParticipantResource extends Resource
 {
+    use ScopesFilamentToOrganizationVia;
+
+    /**
+     * الجدول لا يحمل `organization_id`؛ ينتمي عبر أبيه.
+     */
+    protected static function organizationRelation(): string
+    {
+        return 'session';
+    }
+
     protected static ?string $model = SessionParticipant::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';

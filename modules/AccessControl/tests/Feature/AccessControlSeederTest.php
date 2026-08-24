@@ -26,7 +26,7 @@ it('seeds the base permission matrix and system roles idempotently', function ()
     $seeder->run();
     $seeder->run();
 
-    $permissionCount = 74;
+    $permissionCount = 92;
     $systemRoleNames = [
         'platform_admin',
         'academic_supervisor',
@@ -41,7 +41,7 @@ it('seeds the base permission matrix and system roles idempotently', function ()
 
     expect(Permission::query()->count())->toBe($permissionCount)
         ->and(Role::query()
-            ->where('organization_id', $organizationId)
+            ->whereNull('organization_id')
             ->where('is_system', true)
             ->whereIn('name', $systemRoleNames)
             ->count())->toBe(count($systemRoleNames));
@@ -69,7 +69,7 @@ it('seeds the base permission matrix and system roles idempotently', function ()
 
     foreach ($systemRoleNames as $roleName) {
         $role = Role::query()
-            ->where('organization_id', $organizationId)
+            ->whereNull('organization_id')
             ->where('name', $roleName)
             ->firstOrFail();
         $permissionNames = $role->permissions()->pluck('name')->all();

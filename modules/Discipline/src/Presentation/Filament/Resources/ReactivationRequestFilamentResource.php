@@ -14,12 +14,15 @@ use Filament\Tables\Table;
 use Modules\Discipline\Domain\Enums\ReactivationStatus;
 use Modules\Discipline\Domain\Models\ReactivationRequest;
 use Modules\Discipline\Presentation\Filament\Resources\ReactivationRequestFilamentResource\Pages;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد طلبات إعادة التفعيل — مراجعة إدارية بلا نصوص مكتوبة مباشرة.
  */
 final class ReactivationRequestFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = ReactivationRequest::class;
 
     protected static ?string $slug = 'discipline-reactivations';

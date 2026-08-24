@@ -17,4 +17,7 @@ return [
     'deletion_reason_required' => 'A documented reason is required to delete a recording.',
     'not_watchable' => 'This recording is not watchable in its current status (":status").',
     'download_not_allowed' => 'Downloading recordings is not allowed by policy.',
+    'grant_target_invalid' => 'Choose exactly one recipient: a user or a group.',
+    'grant_reason_required' => 'A documented reason is required to grant recording access.',
+    'grant_expiry_invalid' => 'The recording access expiry must be in the future.',
 ];

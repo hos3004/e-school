@@ -14,6 +14,11 @@ use Modules\Identity\Domain\Models\User;
  */
 final readonly class EloquentUserQueryService implements UserQueryService
 {
+    public function modelType(): string
+    {
+        return (new User)->getMorphClass();
+    }
+
     public function findSummary(string $userId): ?UserSummary
     {
         /** @var User|null $user */

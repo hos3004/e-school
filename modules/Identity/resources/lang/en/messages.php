@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 return [
     'reset_link_sent' => 'If this email is registered with us, a password reset link will arrive within minutes.',
+    'phone_reset_requested' => 'If this account is registered with us, a verification code will arrive within minutes.',
     'password_changed' => 'Your password has been changed successfully.',
     'profile_updated' => 'Your profile has been updated successfully.',
     'device_registered' => 'The device has been registered successfully.',

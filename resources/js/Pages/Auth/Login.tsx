@@ -8,6 +8,7 @@ import type { AppPageProps } from '@/types';
 
 interface LoginProps extends AppPageProps {
     action?: string;
+    status?: string;
 }
 
 interface LoginForm {
@@ -22,6 +23,7 @@ const inputClasses =
 export default function Login({
     action = '/login',
     flash,
+    status,
 }: LoginProps) {
     const t = useI18n();
     const form = useForm<LoginForm>({
@@ -55,12 +57,12 @@ export default function Login({
                 </p>
             </div>
 
-            {flash.success ? (
+            {flash.success ?? status ? (
                 <div
                     className="mt-6 rounded-lg border border-[var(--success)] bg-[var(--surface-muted)] ps-4 pe-4 py-3 text-sm text-[var(--ink)]"
                     role="status"
                 >
-                    {flash.success}
+                    {status ?? flash.success}
                 </div>
             ) : null}
 
@@ -167,6 +169,15 @@ export default function Login({
                     {form.processing
                         ? t('auth.login.submitting')
                         : t('auth.login.submit')}
+                </Button>
+
+                <Button
+                    as="link"
+                    fullWidth
+                    href="/forgot-password"
+                    variant="ghost"
+                >
+                    {t('auth.forgot_password.title')}
                 </Button>
             </form>
         </GuestLayout>

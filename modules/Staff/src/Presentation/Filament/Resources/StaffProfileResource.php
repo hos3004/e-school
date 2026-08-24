@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Presentation\Filament\Resources;
 
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -42,10 +44,9 @@ final class StaffProfileResource extends Resource
         return __('staff::filament.profile.plural_label');
     }
 
-    /** إنشاء الملف يظل عبر API/Action حتى يكتمل اختيار حساب المستخدم بأمان. */
     public static function canCreate(): bool
     {
-        return false;
+        return true;
     }
 
     public static function getNavigationBadge(): string
@@ -180,7 +181,8 @@ final class StaffProfileResource extends Resource
                     ->preload(),
             ])
             ->actions([
-                // الإجراءات عبر صفحة الإدارة الموحّدة.
+                ViewAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([]);
     }

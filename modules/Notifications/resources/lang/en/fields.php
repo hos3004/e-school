@@ -47,4 +47,10 @@ return [
     'routing' => 'Routing',
     'content' => 'Content',
     'dispatching' => 'Delivery',
+
+    // Template fields
+    'is_active' => 'Active',
+    'parameters' => 'Parameters',
+    'provider_template_name' => 'Provider template name',
+    'scope' => 'Scope',
 ];

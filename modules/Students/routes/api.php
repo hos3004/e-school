@@ -7,6 +7,7 @@ use Modules\Students\Presentation\Http\Controllers\AcceptRegistrationApplication
 use Modules\Students\Presentation\Http\Controllers\ArchiveStudentController;
 use Modules\Students\Presentation\Http\Controllers\ListRegistrationApplicationsController;
 use Modules\Students\Presentation\Http\Controllers\ListStudentProfilesController;
+use Modules\Students\Presentation\Http\Controllers\PublicRegistrationController;
 use Modules\Students\Presentation\Http\Controllers\RejectRegistrationApplicationController;
 use Modules\Students\Presentation\Http\Controllers\RestoreStudentController;
 use Modules\Students\Presentation\Http\Controllers\ReviewRegistrationApplicationController;
@@ -44,6 +45,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->whereUlid('student')
         ->name('students.restore');
 });
+
+Route::post('/public/organizations/{organizationId}/registration-applications', PublicRegistrationController::class)
+    ->whereUlid('organizationId')
+    ->middleware('throttle:'.(int) config('admission.self_registration.rate_limit_per_minute').',1')
+    ->name('registration-applications.public');
 
 Route::middleware('auth:sanctum')->prefix('registration-applications')->group(function (): void {
     Route::get('/', ListRegistrationApplicationsController::class)

@@ -18,6 +18,7 @@ use Modules\Audit\Domain\Enums\AuditAction;
 use Modules\Audit\Domain\Enums\AuditActorType;
 use Modules\Audit\Domain\Models\AuditLog;
 use Modules\Audit\Presentation\Filament\Resources\AuditLogResource\Pages;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد Filament لقيود التدقيق — قراءة فقط.
@@ -27,6 +28,8 @@ use Modules\Audit\Presentation\Filament\Resources\AuditLogResource\Pages;
  */
 final class AuditLogResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = AuditLog::class;
 
     public static function getNavigationIcon(): ?string

@@ -26,7 +26,11 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
     /**
      * ربط Domain Event بمستمعيه.
      *
-     * @return array<class-string, list<class-string>>
+     * المفتاح اسم الحدث كما يستقبله `Event::listen`. يكون عادةً `Event::class`،
+     * ويكون اسمًا نصيًّا حين يشترك موديول في حدث موديول **مختوم** لا يجوز
+     * استيراد أصنافه — فيبقى الاشتراك قائمًا بلا اقتران بالأصناف.
+     *
+     * @return array<string, list<class-string>>
      */
     protected function listeners(): array
     {
@@ -53,10 +57,25 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
         return [];
     }
 
+    /**
+     * Request/job-scoped bindings. Use this for memoized readers so Octane and
+     * long-running queue workers never retain one tenant's data indefinitely.
+     *
+     * @return array<class-string, class-string>
+     */
+    protected function scopedBindings(): array
+    {
+        return [];
+    }
+
     public function register(): void
     {
         foreach ($this->bindings() as $contract => $implementation) {
             $this->app->bind($contract, $implementation);
+        }
+
+        foreach ($this->scopedBindings() as $contract => $implementation) {
+            $this->app->scoped($contract, $implementation);
         }
 
         $config = ModuleRegistry::path($this->moduleName(), 'config');

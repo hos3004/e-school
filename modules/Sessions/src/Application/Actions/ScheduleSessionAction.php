@@ -72,7 +72,7 @@ final readonly class ScheduleSessionAction
             );
         }
 
-        [$session, $event] = DB::transaction(function () use ($data, $start, $end): array {
+        [$session, $event] = DB::transaction(function () use ($data, $start, $end, $actorId): array {
             $session = new Session;
             $session->fill([
                 ...$data,
@@ -87,7 +87,7 @@ final readonly class ScheduleSessionAction
                 'from_status' => null,
                 'to_status' => SessionStatus::Scheduled->value,
                 'reason' => null,
-                'changed_by' => (string) auth()->id(),
+                'changed_by' => $actorId,
                 'changed_at' => CarbonImmutable::now('UTC'),
             ]);
 

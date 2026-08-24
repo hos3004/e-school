@@ -21,4 +21,10 @@ return [
     'teacher_already_assigned' => 'المعلم «:staff_profile_id» مُسند بالفعل إلى هذا المقرر داخل المجموعة.',
     'assignment_already_closed' => 'إسناد المعلم «:assignment_id» مغلق بالفعل ولا يمكن إلغاؤه مرة أخرى.',
     'program_already_attached' => 'البرنامج «:program_id» مرتبط بالفعل بهذه المجموعة.',
+    'group_not_found' => 'المجموعة المحددة غير موجودة داخل هذه المؤسسة.',
+    'program_not_attached' => 'البرنامج «:program_id» غير مرتبط بهذه المجموعة.',
+    'course_not_assigned' => 'الكورس «:course_id» غير مسند إلى معلم نشط داخل هذه المجموعة.',
+    'individual_course_requires_empty_group' => 'مجموعة الكورس الفردي لا تقبل أكثر من طالب نشط واحد.',
+    'teacher_profile_invalid' => 'أحد المعلمين المسندين غير نشط داخل هذه المؤسسة.',
+    'teacher_not_qualified' => 'أحد المعلمين المسندين غير مؤهل للكورس «:course_id».',
 ];

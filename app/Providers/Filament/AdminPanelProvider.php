@@ -7,7 +7,9 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Widgets\NeedsAttention;
 use App\Filament\Widgets\PlatformOverview;
+use App\Filament\Widgets\QuickActions;
 use App\Filament\Widgets\SessionsTrend;
+use App\Filament\Widgets\UpcomingSessions;
 use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -56,8 +58,10 @@ use Modules\Messaging\Presentation\Filament\Resources\ClassWallPostResource;
 use Modules\Messaging\Presentation\Filament\Resources\ConversationResource;
 use Modules\Messaging\Presentation\Filament\Resources\MessageResource;
 use Modules\Messaging\Presentation\Filament\Resources\WhatsappInboundResource;
+use Modules\Notifications\Presentation\Filament\Resources\NotificationCategorySettingResource;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationOutboxResource;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationPreferenceResource;
+use Modules\Notifications\Presentation\Filament\Resources\NotificationTemplateResource;
 use Modules\Organization\Presentation\Filament\Resources\AcademicCalendarFilamentResource;
 use Modules\Organization\Presentation\Filament\Resources\HolidayFilamentResource;
 use Modules\Organization\Presentation\Filament\Resources\OrganizationFilamentResource;
@@ -93,8 +97,6 @@ final class AdminPanelProvider extends PanelProvider
                 'success' => Color::Emerald,
                 'info' => Color::Sky,
             ])
-            // خط عربي مقروء — الافتراضي لا يدعم العربية جيدًا
-            ->font('IBM Plex Sans Arabic')
             ->sidebarCollapsibleOnDesktop()
             ->maxContentWidth(Width::Full)
             ->navigationGroups([
@@ -105,7 +107,7 @@ final class AdminPanelProvider extends PanelProvider
                 'التعلّم',
                 'الانضباط',
                 'التواصل',
-                'المال',
+                ...((bool) config('features.payroll') ? ['المال'] : []),
                 'التقارير',
                 'النظام',
             ])
@@ -144,11 +146,15 @@ final class AdminPanelProvider extends PanelProvider
                 WhatsappInboundResource::class,
                 NotificationOutboxResource::class,
                 NotificationPreferenceResource::class,
+                NotificationTemplateResource::class,
+                NotificationCategorySettingResource::class,
                 AcademicCalendarFilamentResource::class,
                 HolidayFilamentResource::class,
                 OrganizationFilamentResource::class,
-                PayrollEntryResource::class,
-                PayrollPeriodResource::class,
+                ...((bool) config('features.payroll') ? [
+                    PayrollEntryResource::class,
+                    PayrollPeriodResource::class,
+                ] : []),
                 RecordingResource::class,
                 OrganizationSnapshotResource::class,
                 ReportEventLogResource::class,
@@ -173,6 +179,8 @@ final class AdminPanelProvider extends PanelProvider
             ->widgets([
                 PlatformOverview::class,
                 NeedsAttention::class,
+                QuickActions::class,
+                UpcomingSessions::class,
                 SessionsTrend::class,
             ])
             ->pages([

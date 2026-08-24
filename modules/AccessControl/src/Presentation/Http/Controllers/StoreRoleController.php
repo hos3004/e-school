@@ -8,6 +8,7 @@ use Modules\AccessControl\Application\Actions\CreateRoleAction;
 use Modules\AccessControl\Domain\Enums\GuardName;
 use Modules\AccessControl\Presentation\Http\Requests\StoreRoleRequest;
 use Modules\AccessControl\Presentation\Http\Resources\RoleResource;
+use Modules\AccessControl\Presentation\Http\Support\ActorOrganization;
 
 final class StoreRoleController
 {
@@ -22,7 +23,8 @@ final class StoreRoleController
         $role = $this->action->execute(
             name: (string) $validated['name'],
             guard: GuardName::from((string) ($validated['guard_name'] ?? 'web')),
-            organizationId: $validated['organization_id'] ?? null,
+            organizationId: ActorOrganization::from($request),
+            actorId: (string) $request->user()?->getAuthIdentifier(),
         );
 
         return new RoleResource($role);

@@ -14,7 +14,7 @@ final class StoreWallCommentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('messaging.class_wall_comment.create');
+        return $this->user()?->can('message.send') === true;
     }
 
     /**

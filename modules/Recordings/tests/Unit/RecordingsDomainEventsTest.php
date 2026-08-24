@@ -20,7 +20,7 @@ it('exposes stable names, the owning module and primitive payloads', function ()
         organizationId: '01O0000000000000000000000',
         sessionId: '01S0000000000000000000000',
         classroomId: '01C0000000000000000000000',
-        provider: 'zoom',
+        provider: 'bigbluebutton',
         externalRecordingId: 'ext-1',
         expiresAt: '2026-02-01T00:00:00+00:00',
     );

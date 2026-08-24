@@ -19,21 +19,23 @@ use Modules\Messaging\Presentation\Http\Controllers\WhatsappWebhookController;
 */
 Route::post('webhooks/whatsapp', WhatsappWebhookController::class)->name('whatsapp.webhook');
 
-Route::post('conversations', StoreConversationController::class)->name('conversations.store');
-Route::get('messaging/conversations/{conversation}', ShowConversationController::class)
-    ->name('messaging.conversations.show');
-Route::get('conversations/{conversation}/messages', ListConversationMessagesController::class)
-    ->name('conversations.messages.index');
-Route::post('conversations/{conversation}/messages', StoreMessageController::class)
-    ->name('conversations.messages.store');
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::post('conversations', StoreConversationController::class)->name('conversations.store');
+    Route::get('messaging/conversations/{conversation}', ShowConversationController::class)
+        ->name('messaging.conversations.show');
+    Route::get('conversations/{conversation}/messages', ListConversationMessagesController::class)
+        ->name('conversations.messages.index');
+    Route::post('conversations/{conversation}/messages', StoreMessageController::class)
+        ->name('conversations.messages.store');
 
-Route::prefix('messages/{message}')->group(function (): void {
-    Route::put('', UpdateMessageController::class)->name('messages.update');
-    Route::post('flag', FlagMessageController::class)->name('messages.flag');
+    Route::prefix('messages/{message}')->group(function (): void {
+        Route::put('', UpdateMessageController::class)->name('messages.update');
+        Route::post('flag', FlagMessageController::class)->name('messages.flag');
+    });
+
+    Route::post('wall/posts', StoreWallPostController::class)->name('wall.posts.store');
+    Route::post('wall/posts/{post}/comments', StoreWallCommentController::class)->name('wall.posts.comments.store');
+
+    Route::post('whatsapp/inbound/{inbound}/handle', HandleWhatsappInboundController::class)
+        ->name('whatsapp.inbound.handle');
 });
-
-Route::post('wall/posts', StoreWallPostController::class)->name('wall.posts.store');
-Route::post('wall/posts/{post}/comments', StoreWallCommentController::class)->name('wall.posts.comments.store');
-
-Route::post('whatsapp/inbound/{inbound}/handle', HandleWhatsappInboundController::class)
-    ->name('whatsapp.inbound.handle');

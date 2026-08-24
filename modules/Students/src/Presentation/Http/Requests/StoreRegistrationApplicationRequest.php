@@ -33,7 +33,8 @@ final class StoreRegistrationApplicationRequest extends FormRequest
             'region_id' => ['required', 'string', 'size:26'],
             'email' => ['nullable', 'email:rfc', 'max:255', 'required_without:phone'],
             'phone' => ['nullable', 'string', 'max:32', 'required_without:email'],
-            'preferred_program_id' => ['nullable', 'string', 'size:26'],
+            'preferred_program_id' => ['nullable', 'ulid'],
+            'preferred_course_id' => ['nullable', 'ulid'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];
     }

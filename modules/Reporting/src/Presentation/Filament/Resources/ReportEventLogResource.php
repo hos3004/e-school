@@ -10,12 +10,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Reporting\Domain\Models\ReportEventLog;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد سجل الأحداث المُدخلة — قراءة تشخيصية فقط، السجل append-only.
  */
 final class ReportEventLogResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = ReportEventLog::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-inbox-arrow-down';

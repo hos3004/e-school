@@ -20,6 +20,12 @@ return [
             'guard' => 'الحارس',
             'organization' => 'المنظمة',
             'system' => 'دور نظامي',
+            'permissions' => 'الصلاحيات الممنوحة',
+            'user_id' => 'معرّف المستخدم',
+        ],
+        'actions' => [
+            'assign_user' => 'إسناد لمستخدم',
+            'revoke_user' => 'سحب من مستخدم',
         ],
         'filters' => [
             'system' => 'الأدوار النظامية فقط',

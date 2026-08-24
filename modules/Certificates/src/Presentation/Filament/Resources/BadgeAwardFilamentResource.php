@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Modules\Certificates\Domain\Models\BadgeAward;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * مورد عرض منح الشارات في لوحة الإدارة.
@@ -20,6 +21,8 @@ use Modules\Certificates\Domain\Models\BadgeAward;
  */
 final class BadgeAwardFilamentResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = BadgeAward::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-star';

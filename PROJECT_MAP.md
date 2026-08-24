@@ -4,6 +4,15 @@
 > قاعدة البيانات الحالية وبياناتها تجريبية بالكامل، لكن ضوابط الصلاحيات والمال
 > والتكاملات تُعامل كضوابط إنتاج لأن الكود نفسه مرشح للنشر لاحقًا.
 
+## مدخل التنفيذ الحالي
+
+- مصدر نطاق المرحلة الأولى الوحيد: `docs/phase-1-approved-scope.md`.
+- طابور Antigravity الوحيد: `docs/agent-tasks/QUEUE-antigravity.md`، وفيه أربع مهام
+  متتابعة تُنفّذ كل واحدة في محادثة جديدة.
+- ملفات `AGENT-A`…`AGENT-H` و`docs/20-agent-task-packages.md` تاريخية وليست أوامر حالية.
+- المرحلة الأولى تشمل التشغيل الأكاديمي وBBB والتسجيلات والحضور والتجميد والتقارير
+  والتواصل والتكليفات؛ المالية وZoom خارجها.
+
 ## صورة النظام
 
 - تطبيق Laravel واحد بنمط **Modular Monolith**، وواجهة Filament للإدارة وInertia/React
@@ -22,7 +31,7 @@
 4. التشغيل: Scheduling, Sessions, Attendance, VirtualClassroom, Recordings.
 5. التعلّم: Assignments, Assessments, AcademicReports, Certificates.
 6. الانضباط والتواصل: Discipline, Messaging.
-7. المال: Payroll؛ Billing متوقف بعلم ميزة.
+7. المال: Payroll وBilling موجودان معماريًا لكنهما مؤجلان بالكامل خارج قبول المرحلة الأولى.
 8. القراءة: Reporting.
 
 التواصل العابر للموديولات يكون بأحداث المجال أو العقود العامة أو Query Services
@@ -69,7 +78,7 @@
 الدائرة من `config/virtual-classroom.php` وبيئة التشغيل. Webhook لا يُفسّر قبل
 التحقق من توقيعه.
 
-### المال
+### المال — مؤجل خارج المرحلة الأولى
 
 `payroll_entries` و`billing_entries` دفاتر append-only. التصحيح بقيد تسوية جديد؛
 لا تعديل أو حذف لقيد إنتاجي، ولا حسابات مالية بـ float.
@@ -88,12 +97,14 @@
 
 كل أوامر PHP/Composer/Artisan داخل Docker:
 
+> **مؤقتًا قبل إغلاق Task 01:** لا تشغّل `php artisan test` أو `composer check` الخام؛
+> قاعدة الاختبار المشتركة تصادمت سابقًا. استخدم أمر البيئة المعزولة الذي سيوثقه
+> `REPORT-ANTIGRAVITY-01.md`. الأوامر غير الكاتبة التالية فقط آمنة للجرد الحالي.
+
 ```bash
 docker compose exec -T app php artisan route:list --json
-docker compose exec -T app vendor/bin/pint
+docker compose exec -T app vendor/bin/pint --test
 docker compose exec -T app vendor/bin/phpstan analyse --memory-limit=1G
-docker compose exec -T app php artisan test
-docker compose exec -T app composer check
 ```
 
 ## حالة الجاهزية والمخاطر المعروفة
@@ -110,6 +121,8 @@ docker compose exec -T app composer check
   تركيب التطبيق؛ اختبارات أسماء المستخدمين ما زالت خضراء، وإخفاق الحدود الخاص به زال.
 - العمل الجاري الآخر يغطي: الترجمات الناقصة، توحيد صلاحيات موارد Filament، بوابات
   Inertia، محرّك الإشعارات، وموفّر BigBlueButton.
+- لا يعتمد هذا التوزيع القديم كطابور. التنفيذ الجديد مقسّم إلى المهام الأربع في
+  `docs/agent-tasks/QUEUE-antigravity.md`، ولا تُقبل حزمة من تقرير المنفّذ وحده.
 - توجد عقود كتابة قديمة في بعض صفحات المعلم لا تطابق APIs الحالية، ولا يوجد بعد
   مسار `/locale` أو مسارات HTTP لاعتماد/اقتراح التأجيل؛ لا ينبغي اختراع URLs وهمية.
 - بعض فحوص `can()` القديمة خارج موارد Filament ما زالت تستخدم أسماء غير موجودة في
@@ -123,6 +136,8 @@ docker compose exec -T app composer check
 ## مراجع القرار
 
 - `AGENTS.md`: عقد العمل داخل المستودع.
+- `docs/phase-1-approved-scope.md`: مصدر حقيقة نطاق المرحلة الأولى.
+- `docs/agent-tasks/QUEUE-antigravity.md`: ترتيب التنفيذ الحالي.
 - `docs/06-permissions-matrix.md`: مصفوفة الصلاحيات.
 - `docs/08-module-boundaries.md` و`docs/09-domain-events.md`: الحدود والتواصل.
 - `docs/12-notification-architecture.md`: تدفق الإشعارات.

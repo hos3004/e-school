@@ -7,6 +7,8 @@ namespace Modules\Messaging\Application\Policies;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Modules\AccessControl\Domain\Contracts\AccessControlQuerier;
+use Modules\Messaging\Domain\Contracts\ClassAudienceQueries;
+use Modules\Messaging\Domain\Enums\ConversationType;
 use Modules\Messaging\Domain\Models\Conversation;
 use Modules\Messaging\Domain\Models\ConversationParticipant;
 
@@ -17,6 +19,7 @@ final class ConversationPolicy
 {
     public function __construct(
         private readonly AccessControlQuerier $accessControl,
+        private readonly ClassAudienceQueries $audience,
     ) {}
 
     /** @param Authenticatable&object{organization_id: string} $user */
@@ -32,6 +35,23 @@ final class ConversationPolicy
             return false;
         }
 
+        $userId = (string) $user->getAuthIdentifier();
+        $participantIds = $conversation->participants()
+            ->pluck('user_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+
+        // Explicit privacy barrier: even a corrupted/legacy participant row
+        // never grants a guardian access to a Student<->Teacher direct thread.
+        if ($conversation->type === ConversationType::Direct->value
+            && $this->audience->isGuardian((string) $conversation->organization_id, $userId)
+            && $this->audience->isStudentTeacherConversation(
+                (string) $conversation->organization_id,
+                $participantIds,
+            )) {
+            return false;
+        }
+
         // صلاحية الإشراف الصريحة تتقدم على تصنيف الحساب؛ فقد يحمل المشرف
         // صلاحيات متابعة إضافية، لكن ذلك لا يجعله ولي أمر في هذا السياق.
         if ($this->hasPermission($user, 'classroom.moderate')
@@ -39,7 +59,7 @@ final class ConversationPolicy
             return true;
         }
 
-        return $this->isParticipant((string) $user->getAuthIdentifier(), (string) $conversation->id);
+        return $this->isParticipant($userId, (string) $conversation->id);
     }
 
     /** @param Authenticatable&object{organization_id: string} $user */

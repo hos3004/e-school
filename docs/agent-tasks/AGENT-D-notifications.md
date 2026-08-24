@@ -1,5 +1,7 @@
 # AGENT D — الإشعارات · البريد · WhatsApp Cloud API
 
+> **SUPERSEDED — DO NOT EXECUTE.** سجل تاريخي؛ الطابور الحالي في `QUEUE-antigravity.md`.
+
 > مدير المشروع (Claude) يحتفظ بـ Sessions/Scheduling/Substitute/BBB.
 > **لا تغيّر منطق Sessions إطلاقًا** — تستمع لأحداثه فقط.
 

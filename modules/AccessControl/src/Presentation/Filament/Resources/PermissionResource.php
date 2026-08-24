@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\AccessControl\Presentation\Filament\Resources;
 
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -16,6 +14,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Modules\AccessControl\Domain\Enums\GuardName;
 use Modules\AccessControl\Domain\Models\Permission;
+use Modules\AccessControl\Presentation\Filament\Resources\PermissionResource\Pages\ListPermissions;
 
 final class PermissionResource extends Resource
 {
@@ -34,7 +33,7 @@ final class PermissionResource extends Resource
     {
         $user = auth()->user();
 
-        return $user !== null && $user->can('settings.manage');
+        return $user !== null && $user->can('viewAny', Permission::class);
     }
 
     public static function getModelLabel(): string
@@ -93,7 +92,9 @@ final class PermissionResource extends Resource
                 TextColumn::make('guard_name')
                     ->label(__('accesscontrol::filament.permission.fields.guard'))
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => GuardName::tryFrom($state)?->label() ?? $state),
+                    ->formatStateUsing(fn (GuardName|string $state): string => $state instanceof GuardName
+                        ? $state->label()
+                        : (GuardName::tryFrom($state)?->label() ?? $state)),
             ])
             ->filters([
                 SelectFilter::make('guard_name')
@@ -114,12 +115,13 @@ final class PermissionResource extends Resource
                             ->all(),
                     ),
             ])
-            ->actions([
-                EditAction::make()
-                    ->visible(fn (): bool => (bool) (auth()->user()?->can('update', new Permission))),
-                DeleteAction::make()
-                    ->visible(fn (): bool => (bool) (auth()->user()?->can('delete', new Permission))),
-            ])
             ->paginated([25, 50, 100]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListPermissions::route('/'),
+        ];
     }
 }

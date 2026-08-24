@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\Students\Presentation\Filament\Resources;
 
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -16,6 +20,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Organization\Domain\ValueObjects\CountryData;
 use Modules\Organization\Domain\ValueObjects\RegionData;
@@ -58,7 +63,7 @@ final class StudentProfileResource extends Resource
     /** ملفات الطلاب لا تُنشأ إلا من قبول طلب التسجيل. */
     public static function canCreate(): bool
     {
-        return false;
+        return (bool) auth()->user()?->can('student.create');
     }
 
     /** يمنع دخول الطالب صفحة Filament الحساسة اعتمادًا على الملكية وحدها. */
@@ -92,6 +97,23 @@ final class StudentProfileResource extends Resource
                     ->label(__('students::attributes.student_code'))
                     ->disabled()
                     ->dehydrated(false),
+
+                Select::make('user_id')
+                    ->label(__('students::attributes.user_id'))
+                    ->options(fn (): array => DB::table('users')
+                        ->where('organization_id', (string) data_get(auth()->user(), 'organization_id'))
+                        ->whereNull('deleted_at')
+                        ->whereNotExists(fn ($query) => $query
+                            ->selectRaw('1')
+                            ->from('student_profiles')
+                            ->whereColumn('student_profiles.user_id', 'users.id')
+                            ->whereNull('student_profiles.deleted_at'))
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->searchable()
+                    ->required()
+                    ->visibleOn('create'),
 
                 DatePicker::make('date_of_birth')
                     ->label(__('students::attributes.date_of_birth'))
@@ -238,7 +260,68 @@ final class StudentProfileResource extends Resource
 
                 TrashedFilter::make(),
             ])
-            ->actions([])
+            ->actions([
+                ViewAction::make(),
+                EditAction::make(),
+                Action::make('assign_group')
+                    ->label('تسكين في مجموعة')
+                    ->icon('heroicon-o-user-plus')
+                    ->color('info')
+                    ->form([
+                        Select::make('group_id')
+                            ->label('المجموعة الدراسية')
+                            ->options(fn () => DB::table('groups')
+                                ->whereNull('deleted_at')
+                                ->pluck('name', 'id')
+                                ->toArray())
+                            ->required()
+                            ->searchable(),
+                    ])
+                    ->action(function (StudentProfile $record, array $data): void {
+                        DB::table('group_memberships')->updateOrInsert(
+                            [
+                                'group_id' => $data['group_id'],
+                                'student_profile_id' => $record->id,
+                            ],
+                            [
+                                'status' => 'active',
+                                'joined_at' => now(),
+                                'updated_at' => now(),
+                            ],
+                        );
+                        Notification::make()
+                            ->title('تم تسكين الطالب في المجموعة بنجاح')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('change_status')
+                    ->label('تغيير الحالة / تجميد')
+                    ->icon('heroicon-o-adjustments-horizontal')
+                    ->color('warning')
+                    ->form([
+                        Select::make('status')
+                            ->label('الحالة الجديدة')
+                            ->options([
+                                'active' => 'نشط',
+                                'frozen' => 'مجمَّد',
+                                'suspended' => 'موقوف',
+                                'withdrawn' => 'منسحب',
+                            ])
+                            ->required(),
+                        Textarea::make('reason')
+                            ->label('سبب التغيير')
+                            ->required(),
+                    ])
+                    ->action(function (StudentProfile $record, array $data): void {
+                        $record->registrationApplication()?->update([
+                            'status' => $data['status'],
+                        ]);
+                        Notification::make()
+                            ->title('تم تحديث حالة الطالب والطلب بنجاح')
+                            ->success()
+                            ->send();
+                    }),
+            ])
             ->bulkActions([]);
     }
 

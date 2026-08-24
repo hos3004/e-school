@@ -44,6 +44,8 @@ final class Classroom extends Model
         return [
             'health_status' => ClassroomHealthStatus::class,
             'external_meta' => 'array',
+            'moderator_secret' => 'encrypted',
+            'attendee_secret' => 'encrypted',
             'created_remote_at' => 'immutable_datetime',
             'started_at' => 'immutable_datetime',
             'ended_at' => 'immutable_datetime',

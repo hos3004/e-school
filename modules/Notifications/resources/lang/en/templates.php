@@ -92,4 +92,25 @@ return [
         'subject' => 'Session report is late',
         'body' => 'The session report was not completed within the deadline and is now marked as late.',
     ],
+    'discipline.action_applied' => [
+        'subject' => 'Discipline notice',
+        'body' => 'A discipline action related to your enrollment was recorded. Review the details in your account or contact the administration.',
+    ],
+    'discipline.student_frozen' => [
+        'subject' => 'Enrollment frozen',
+        'body' => 'Your enrollment has been temporarily frozen, and course access is paused until it is reactivated. Contact the administration for details.',
+    ],
+    'assignment.created' => [
+        'subject' => 'New assignment',
+        'body' => 'A new assignment has been assigned to you. Review its details and due date in your account.',
+    ],
+    'assignment.submitted' => [
+        'subject' => 'Assignment submitted',
+        'body' => 'A student has submitted an assignment and it is now ready for grading.',
+    ],
+    'submission.graded' => [
+        'subject' => 'Assignment graded',
+        'body' => 'Your grade has been recorded: {{score}} out of {{max_score}}. View the feedback in your account.',
+        'parameters' => ['score', 'max_score'],
+    ],
 ];
