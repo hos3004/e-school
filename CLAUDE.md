@@ -5,6 +5,36 @@
 
 ---
 
+## 0. نسخة العمل — اقرأ هذا قبل أي شيء (إلزامي)
+
+**نسخة العمل الوحيدة هي `/home/gamer/e-school` داخل Ubuntu/WSL2.**
+
+- الوصول إليها من Windows: `\\wsl.localhost\Ubuntu\home\gamer\e-school`
+- الفرع الصالح: `merge/recovery-2026-08-24`
+- كل أوامر Git وDocker وPHP وComposer وArtisan وNode، وكل تعديل لأي ملف، تُنفَّذ هنا.
+
+**النسخة القديمة `I:\e-school` أُرشفت في 2026-08-24 إلى**
+`I:\e-school-ARCHIVED-2026-08-24` **وهي للقراءة فقط.**
+
+ممنوع منعًا باتًا: التعديل فيها، أو إنشاء commits منها، أو تشغيل Docker أو الاختبارات
+منها، أو مزامنتها في أي اتجاه. لو وجدت نفسك تعمل داخل مسار يحتوي `e-school-ARCHIVED`،
+**توقّف عن أي كتابة فورًا** وانتقل إلى نسخة WSL.
+
+تحقّق قبل بدء أي مهمة:
+
+```bash
+wsl -d Ubuntu -- bash -lc 'cd /home/gamer/e-school && git status --short --branch'
+```
+
+**لماذا هذا القسم هنا:** كانت هذه القاعدة مكتوبة في `AGENTS.md` منذ 2026-08-23، ومع
+ذلك جرى تطوير 12 ساعة على نسخة Windows بعدها — لأن Claude Code يحمّل `CLAUDE.md`
+تلقائيًا ولا يحمّل `AGENTS.md`. كلّف ذلك عملية استرداد ودمج كاملة. لا تكرّرها.
+
+سجل تلك العملية: `RECOVERY-REPORT.md` و`MERGE-PLAN.md` و`MERGE-RESULT.md` داخل
+`\\wsl.localhost\Ubuntu\home\gamer\recovery\e-school-20260824-124426+0300\`.
+
+---
+
 ## 1. المعمارية
 
 **Modular Monolith.** تطبيق Laravel واحد، و27 موديول تحت `modules/`، لكل واحد namespace
