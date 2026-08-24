@@ -32,5 +32,6 @@ final class DatabaseSeeder extends Seeder
         }
 
         $this->call(DemoPortalRoleSeeder::class);
+        $this->call(PortalLiveSessionSeeder::class);
     }
 }
