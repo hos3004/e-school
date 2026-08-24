@@ -42,4 +42,21 @@ final class GeographyQueriesTest extends TestCase
         $this->assertTrue($queries->regionExistsIn($cairoRegion->id, $egypt->id));
         $this->assertFalse($queries->regionExistsIn($cairoRegion->id, 'invalid-country-id'));
     }
+
+    public function test_geography_queries_exposes_administrative_divisions_for_every_arab_country(): void
+    {
+        /** @var GeographyQueries $queries */
+        $queries = app(GeographyQueries::class);
+
+        $totalRegions = 0;
+
+        foreach ($queries->countries() as $country) {
+            $regions = $queries->regionsOf($country->id);
+
+            $this->assertNotEmpty($regions, $country->iso2.' must have administrative divisions.');
+            $totalRegions += count($regions);
+        }
+
+        $this->assertSame(343, $totalRegions);
+    }
 }

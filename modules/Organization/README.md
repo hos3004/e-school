@@ -2,7 +2,7 @@
 
 ## يملك
 
-`organizations` · `academic_calendar` · `holidays`
+`organizations` · `academic_calendar` · `holidays` · `countries` · `regions`
 
 ## ينشر
 
@@ -18,3 +18,4 @@
 - `settings` و`feature_overrides` هي تجاوزات لكل مؤسسة فوق `config/` — أي رقم سياسة يعيش هنا أو في config، لا في الكود.
 - موديول `Billing` كله خلف مفتاح ميزة يُدار من هنا.
 - التواريخ تُخزَّن UTC دائمًا وتُعرض بتوقيت المستخدم (`default_timezone`).
+- الدولة والتقسيم الإداري يُختاران من البيانات المرجعية المملوكة هنا؛ لا تُقبل قيمة حرة لهما في بيانات الطالب أو الموظف.
