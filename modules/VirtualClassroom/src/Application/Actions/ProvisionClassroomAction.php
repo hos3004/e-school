@@ -35,8 +35,10 @@ final readonly class ProvisionClassroomAction
 
         $externalMeetingId = 'SES-'.$sessionId;
         $spec = new ClassroomSpec(
+            sessionId: $sessionId,
             title: $title,
             externalMeetingId: $externalMeetingId,
+            startsAt: null,
             maxParticipants: $maxParticipants,
             recordable: $recordable,
         );
