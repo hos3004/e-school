@@ -7,6 +7,7 @@ namespace Modules\Sessions\Presentation\Filament\Resources\SessionResource\Pages
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -151,7 +152,7 @@ final class ViewSession extends ViewRecord
                         TextEntry::make('original_teacher_id')->label(__('sessions::fields.original_teacher')),
                         TextEntry::make('substitute_teacher_id')->label(__('sessions::fields.substitute_teacher')),
                         TextEntry::make('reason')->label(__('sessions::fields.reason')),
-                        TextEntry::make('is_override')->label(__('sessions::fields.is_override'))->boolean(),
+                        IconEntry::make('is_override')->label(__('sessions::fields.is_override'))->boolean(),
                         TextEntry::make('override_reason')->label(__('sessions::fields.override_reason')),
                         TextEntry::make('assigned_at')->label(__('sessions::fields.assigned_at'))->dateTime(),
                     ])->columns(3),
