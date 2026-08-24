@@ -95,7 +95,7 @@ final class Task03AcceptanceTest extends TestCase
         $joinUrlAction = new GenerateJoinUrlAction(new NullProvider);
 
         $teacherUrl = $joinUrlAction->execute($classroom, (string) $teacherUser->id, 'الأستاذ خالد', JoinRole::Moderator);
-        $studentUrl = $joinUrlAction->execute($classroom, (string) $studentUser->id, 'الطالب عمر', JoinRole::Attendee);
+        $studentUrl = $joinUrlAction->execute($classroom, (string) $studentUser->id, 'الطالب عمر', JoinRole::Viewer);
         $supervisorUrl = $joinUrlAction->execute($classroom, (string) $supervisorUser->id, 'المشرف علي', JoinRole::Viewer);
 
         $this->assertStringContainsString('MODERATOR', $teacherUrl);
@@ -103,7 +103,7 @@ final class Task03AcceptanceTest extends TestCase
 
         // Block Frozen Student from Join URL
         $this->expectException(BusinessRuleViolation::class);
-        $joinUrlAction->execute($classroom, (string) $studentUser->id, 'طالب مجمد', JoinRole::Attendee, isFrozen: true);
+        $joinUrlAction->execute($classroom, (string) $studentUser->id, 'طالب مجمد', JoinRole::Viewer, isFrozen: true);
     }
 
     public function test_bbb_webhook_signature_and_idempotency(): void
@@ -205,7 +205,7 @@ final class Task03AcceptanceTest extends TestCase
             'id' => $participantId,
             'session_id' => (string) $session->id,
             'user_id' => Fixtures::userId(),
-            'role' => JoinRole::Attendee->value,
+            'role' => JoinRole::Viewer->value,
             'is_invited_guest' => false,
             'created_at' => now()->utc(),
             'updated_at' => now()->utc(),

@@ -83,7 +83,7 @@ final readonly class HandleClassroomWebhookAction
 
             $joinRole = strtoupper((string) data_get($webhook->payload, 'data.attributes.user.role')) === 'MODERATOR'
                 ? JoinRole::Moderator
-                : JoinRole::Attendee;
+                : JoinRole::Viewer;
 
             match ($webhook->type) {
                 ClassroomEventType::MeetingStarted => $this->events->dispatch(new ClassroomStarted(

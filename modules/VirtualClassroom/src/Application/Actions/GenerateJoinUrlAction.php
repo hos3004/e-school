@@ -33,7 +33,7 @@ final readonly class GenerateJoinUrlAction
 
         $password = match ($role) {
             JoinRole::Moderator => $classroom->moderator_secret,
-            JoinRole::Attendee, JoinRole::Viewer => $classroom->attendee_secret,
+            JoinRole::Viewer => $classroom->attendee_secret,
         };
 
         if ($password === null || $password === '') {
