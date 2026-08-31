@@ -83,8 +83,7 @@ final class Task04AcceptanceTest extends TestCase
 
         Event::dispatch($event);
 
-        // Outbox entries depend on notification config, if no configured channel matches, it might be 0, so we just ensure no exception occurs.
-        $this->assertTrue(true);
+        self::assertSame($orgId, $event->organizationId);
     }
 
     // ─── 2. In-App mark read / mark all read ─────────────────────────

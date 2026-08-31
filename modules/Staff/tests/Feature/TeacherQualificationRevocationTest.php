@@ -76,7 +76,6 @@ final class TeacherQualificationRevocationTest extends TestCase
         self::assertSame(1, DB::table('teacher_courses')->count());
         self::assertNull(DB::table('teacher_courses')->value('revoked_at'));
 
-        /** @var TeacherQualificationQueries $queries */
         self::assertTrue(app(TeacherQualificationQueries::class)
             ->isQualified((string) $profile->id, $courseId));
     }

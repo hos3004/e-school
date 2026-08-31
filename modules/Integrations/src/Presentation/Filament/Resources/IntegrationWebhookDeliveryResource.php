@@ -29,7 +29,7 @@ final class IntegrationWebhookDeliveryResource extends Resource
 
     protected static ?int $navigationSort = 104;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('integrations::navigation.group');
     }

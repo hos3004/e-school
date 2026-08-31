@@ -134,17 +134,19 @@ final class ViewPopupCampaign extends ViewRecord
                 'count(*) filter (where dismissed_at is not null) as dismissals',
                 'count(*) filter (where clicked_at is not null) as clicks',
             ]))
+            ->toBase()
             ->first();
 
-        $impressions = (int) ($stats?->impressions ?? 0);
-        $clicks = (int) ($stats?->clicks ?? 0);
+        /** @var object{seen_users: int|string, impressions: int|string, acknowledgements: int|string, dismissals: int|string, clicks: int|string} $stats */
+        $impressions = (int) ($stats->impressions ?? 0);
+        $clicks = (int) ($stats->clicks ?? 0);
         $ctr = $impressions > 0 ? round(100 * $clicks / $impressions, 1).'%' : '—';
 
         return [
-            TextEntry::make('stat_seen_users')->label(__('notifications::popups.analytics.seen_users'))->state((string) ($stats?->seen_users ?? 0)),
+            TextEntry::make('stat_seen_users')->label(__('notifications::popups.analytics.seen_users'))->state((string) ($stats->seen_users ?? 0)),
             TextEntry::make('stat_impressions')->label(__('notifications::popups.analytics.impressions'))->state((string) $impressions),
-            TextEntry::make('stat_acknowledgements')->label(__('notifications::popups.analytics.acknowledgements'))->state((string) ($stats?->acknowledgements ?? 0)),
-            TextEntry::make('stat_dismissals')->label(__('notifications::popups.analytics.dismissals'))->state((string) ($stats?->dismissals ?? 0)),
+            TextEntry::make('stat_acknowledgements')->label(__('notifications::popups.analytics.acknowledgements'))->state((string) ($stats->acknowledgements ?? 0)),
+            TextEntry::make('stat_dismissals')->label(__('notifications::popups.analytics.dismissals'))->state((string) ($stats->dismissals ?? 0)),
             TextEntry::make('stat_clicks')->label(__('notifications::popups.analytics.clicks'))->state((string) $clicks),
             TextEntry::make('stat_ctr')->label(__('notifications::popups.analytics.ctr'))->state($ctr),
         ];

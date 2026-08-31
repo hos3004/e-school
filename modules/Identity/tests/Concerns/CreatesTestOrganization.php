@@ -15,9 +15,9 @@ use Illuminate\Support\Str;
  */
 trait CreatesTestOrganization
 {
-    protected string $organizationId;
+    public string $organizationId;
 
-    protected function createTestOrganization(): string
+    public function createTestOrganization(): string
     {
         $this->organizationId = (string) Str::ulid();
 

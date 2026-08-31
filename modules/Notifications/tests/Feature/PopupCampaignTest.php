@@ -30,10 +30,6 @@ final class PopupCampaignTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const PAST = '-1 day';
-
-    private const FUTURE = '+1 day';
-
     // ------------------------------------------------------------------
     // الأهلية الزمنية والحالة
     // ------------------------------------------------------------------
@@ -433,6 +429,7 @@ final class PopupCampaignTest extends TestCase
         return [$organization, $user];
     }
 
+    /** @param array<string, mixed> $overrides */
     private function campaign(Organization $organization, array $overrides = []): PopupCampaign
     {
         /** @var array<string, mixed> $attributes */
@@ -467,6 +464,7 @@ final class PopupCampaignTest extends TestCase
     }
 
     /**
+     * @param array{organization: Organization, user: User} $fixture
      * @param list<string>|null $audiences
      */
     private function fetch(

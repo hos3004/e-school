@@ -39,6 +39,7 @@ use Shared\Concerns\HasUlid;
  * @property CarbonImmutable $starts_at
  * @property CarbonImmutable|null $ends_at
  * @property CarbonImmutable|null $published_at
+ * @property string|null $published_by
  * @property string|null $created_by
  * @property string|null $updated_by
  */

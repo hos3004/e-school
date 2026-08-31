@@ -77,6 +77,7 @@ function apologyCourseId(): string
     return $id = $courseId;
 }
 
+/** @param array<string, mixed> $overrides */
 function apologySession(array $overrides = []): Session
 {
     $session = new Session;

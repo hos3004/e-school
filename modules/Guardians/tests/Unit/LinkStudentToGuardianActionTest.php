@@ -15,6 +15,7 @@ use Shared\Testing\Fixtures;
 uses(RefreshDatabase::class);
 
 it('links a student to a guardian and dispatches GuardianLinkedToStudent', function (): void {
+    /** @var \Tests\TestCase $this */
     Event::fake([GuardianLinkedToStudent::class]);
 
     $guardian = GuardianProfile::factory()->create();
@@ -39,6 +40,7 @@ it('links a student to a guardian and dispatches GuardianLinkedToStudent', funct
 });
 
 it('defaults visible sections to the configured defaults', function (): void {
+    /** @var \Tests\TestCase $this */
     $guardian = GuardianProfile::factory()->create();
     /** @var list<string> $defaults */
     $defaults = config('guardians.links.default_visible_sections');
@@ -53,6 +55,7 @@ it('defaults visible sections to the configured defaults', function (): void {
 });
 
 it('rejects linking the same student twice to the same guardian', function (): void {
+    /** @var \Tests\TestCase $this */
     $guardian = GuardianProfile::factory()->create();
     $studentId = Fixtures::studentProfileId();
 
@@ -70,6 +73,7 @@ it('rejects linking the same student twice to the same guardian', function (): v
 });
 
 it('enforces the configured maximum of guardians per student', function (): void {
+    /** @var \Tests\TestCase $this */
     config()->set('guardians.limits.max_links_per_student', 2);
 
     $studentId = Fixtures::studentProfileId();
@@ -92,6 +96,7 @@ it('enforces the configured maximum of guardians per student', function (): void
 });
 
 it('enforces the configured maximum of students per guardian', function (): void {
+    /** @var \Tests\TestCase $this */
     config()->set('guardians.limits.max_students_per_guardian', 1);
 
     $guardian = GuardianProfile::factory()->create();
@@ -112,6 +117,7 @@ it('enforces the configured maximum of students per guardian', function (): void
 });
 
 it('keeps only one primary guardian per student', function (): void {
+    /** @var \Tests\TestCase $this */
     $studentId = Fixtures::studentProfileId();
 
     $firstPrimary = GuardianLink::factory()->primary()->create(['student_profile_id' => $studentId]);

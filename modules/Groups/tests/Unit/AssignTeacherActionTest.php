@@ -16,6 +16,10 @@ use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
+/**
+ * @param array<string, mixed> $overrides
+ * @return array<string, mixed>
+ */
 function assignmentData(array $overrides = []): array
 {
     return array_merge([

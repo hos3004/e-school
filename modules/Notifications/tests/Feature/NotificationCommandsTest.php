@@ -8,6 +8,7 @@ use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 
 it('dispatches only due queued notifications up to the requested limit', function (): void {
+    /** @var \Tests\TestCase $this */
     Bus::fake([SendQueuedNotification::class]);
 
     NotificationOutbox::factory()->count(3)->state([
@@ -29,6 +30,7 @@ it('dispatches only due queued notifications up to the requested limit', functio
 });
 
 it('requeues failed notifications up to the configured command limit', function (): void {
+    /** @var \Tests\TestCase $this */
     Bus::fake([SendQueuedNotification::class]);
 
     NotificationOutbox::factory()->failed()->count(3)->create();
@@ -44,6 +46,7 @@ it('requeues failed notifications up to the configured command limit', function 
 });
 
 it('does not automatically retry permanent failures', function (): void {
+    /** @var \Tests\TestCase $this */
     Bus::fake([SendQueuedNotification::class]);
 
     $permanent = NotificationOutbox::factory()->failed()->state([

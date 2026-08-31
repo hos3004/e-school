@@ -318,7 +318,10 @@ function schedulingFixture(): array
     return compact('organization', 'operator', 'teacher', 'student', 'program', 'level', 'course', 'group');
 }
 
-/** @param array<string, object> $fixture @param array<string, mixed> $overrides */
+/**
+ * @param array<string, object> $fixture
+ * @param array<string, mixed> $overrides
+ */
 function createOperationalSchedule(array $fixture, array $overrides = []): Schedule
 {
     return app(CreateScheduleAction::class)->execute(

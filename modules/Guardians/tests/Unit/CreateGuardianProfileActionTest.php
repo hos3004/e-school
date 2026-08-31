@@ -14,6 +14,7 @@ use Shared\Testing\Fixtures;
 uses(RefreshDatabase::class);
 
 it('creates a guardian profile and dispatches GuardianProfileCreated', function (): void {
+    /** @var \Tests\TestCase $this */
     Event::fake([GuardianProfileCreated::class]);
 
     $action = app(CreateGuardianProfile::class);
@@ -34,6 +35,7 @@ it('creates a guardian profile and dispatches GuardianProfileCreated', function 
 });
 
 it('rejects a second profile for the same user', function (): void {
+    /** @var \Tests\TestCase $this */
     $profile = GuardianProfile::factory()->create();
 
     $action = app(CreateGuardianProfile::class);

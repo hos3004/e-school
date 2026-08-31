@@ -11,6 +11,7 @@ use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
 it('records the administrator and queues a genuinely new delivery attempt on manual resend', function (): void {
+    /** @var \Tests\TestCase $this */
     $actorId = Fixtures::userId();
     $failed = NotificationOutbox::factory()
         ->withChannel(Channel::InApp)
@@ -42,6 +43,7 @@ it('records the administrator and queues a genuinely new delivery attempt on man
 });
 
 it('does not automatically reopen a permanent failure', function (): void {
+    /** @var \Tests\TestCase $this */
     $failed = NotificationOutbox::factory()
         ->failed()
         ->state(['last_error_retryable' => false])
@@ -49,7 +51,7 @@ it('does not automatically reopen a permanent failure', function (): void {
 
     try {
         app(RetryNotificationAction::class)->execute($failed);
-        test()->fail('Expected BusinessRuleViolation was not thrown.');
+        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('notifications.failure_not_retryable');
     }

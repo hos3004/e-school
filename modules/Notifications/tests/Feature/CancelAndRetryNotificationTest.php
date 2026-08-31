@@ -33,7 +33,7 @@ it('refuses to cancel notifications that left the queue', function (): void {
 
         try {
             app(CancelNotificationAction::class)->execute($outbox, 'late_cancel');
-            $this->fail('Expected BusinessRuleViolation was not thrown.');
+            \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
         } catch (BusinessRuleViolation $violation) {
             expect($violation->rule)->toBe('notifications.not_cancellable');
         }
@@ -64,7 +64,7 @@ it('does not overwrite a newer status when retrying a stale failed model', funct
 
     try {
         app(RetryNotificationAction::class)->execute($stale);
-        $this->fail('Expected BusinessRuleViolation was not thrown.');
+        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('notifications.not_retryable');
     }
@@ -78,7 +78,7 @@ it('refuses to retry anything but failed notifications', function (): void {
 
         try {
             app(RetryNotificationAction::class)->execute($outbox);
-            $this->fail('Expected BusinessRuleViolation was not thrown.');
+            \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
         } catch (BusinessRuleViolation $violation) {
             expect($violation->rule)->toBe('notifications.not_retryable');
         }

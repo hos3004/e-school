@@ -260,7 +260,10 @@ it('rolls the participant lifecycle migration down and reapplies it cleanly', fu
         ->and(Schema::hasColumn('session_participants', 'deleted_at'))->toBeTrue();
 });
 
-/** @param array<string, mixed> $sessionOverrides @return array<string, object> */
+/**
+ * @param array<string, mixed> $sessionOverrides
+ * @return array<string, object>
+ */
 function sessionOperationsFixture(array $sessionOverrides = []): array
 {
     $organization = Organization::factory()->create();

@@ -10,8 +10,15 @@ use Modules\Integrations\Database\Factories\IntegrationProviderFactory;
 use Modules\Integrations\Domain\Models\IntegrationConnection;
 use Shared\Testing\Fixtures;
 
+interface IntegrationCredentialsReversibleMigration
+{
+    public function up(): void;
+
+    public function down(): void;
+}
+
 it('preserves existing credentials across encryption migration and rollback', function (): void {
-    /** @var Migration $migration */
+    /** @var Migration&IntegrationCredentialsReversibleMigration $migration */
     $migration = require base_path('modules/Integrations/database/migrations/2026_08_22_100000_store_encrypted_credentials_as_text.php');
 
     $organizationId = Fixtures::organizationId();

@@ -9,7 +9,7 @@ declare(strict_types=1);
 return [
 
     'account' => [
-        'guardian_role' => env('GUARDIAN_ACCOUNT_ROLE', 'guardian'),
+        'guardian_role' => Illuminate\Support\Env::get('GUARDIAN_ACCOUNT_ROLE', 'guardian'),
     ],
 
     'limits' => [

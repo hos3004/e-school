@@ -72,21 +72,37 @@ final class RegistrationFormPolicyTest extends TestCase
                 private array $abilities,
             ) {}
 
+            /**
+             * @param string|iterable<string> $abilities
+             * @param mixed $arguments
+             */
             public function can($abilities, $arguments = []): bool
             {
                 return in_array($abilities, $this->abilities, true);
             }
 
+            /**
+             * @param string|iterable<string> $abilities
+             * @param mixed $arguments
+             */
             public function canAny($abilities, $arguments = []): bool
             {
                 return false;
             }
 
+            /**
+             * @param string|iterable<string> $abilities
+             * @param mixed $arguments
+             */
             public function cant($abilities, $arguments = []): bool
             {
                 return !$this->can($abilities, $arguments);
             }
 
+            /**
+             * @param string|iterable<string> $abilities
+             * @param mixed $arguments
+             */
             public function cannot($abilities, $arguments = []): bool
             {
                 return $this->cant($abilities, $arguments);

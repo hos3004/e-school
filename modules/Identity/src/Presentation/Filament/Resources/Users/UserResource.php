@@ -160,7 +160,7 @@ final class UserResource extends Resource
                 ImageColumn::make('avatar')
                     ->label(__('identity::avatars.field'))
                     ->circular()
-                    ->state(fn (User $record): ?string => app(AvatarQueries::class)->resolve($record->avatar_path, null)->url)
+                    ->state(fn (User $record): string => app(AvatarQueries::class)->resolve($record->avatar_path, null)->url)
                     ->defaultImageUrl(fn (): string => app(AvatarQueries::class)->defaultUrl(null))
                     ->alt(fn (User $record): string => __('identity::avatars.alt', ['name' => $record->name]))
                     ->extraImgAttributes(['loading' => 'lazy']),

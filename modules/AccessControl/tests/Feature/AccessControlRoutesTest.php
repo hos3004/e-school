@@ -43,6 +43,7 @@ function acAssignSeededRole(User $user, string $roleName): Role
 }
 
 beforeEach(function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     $this->organizationId = acCreateOrganization('access-a');
     (new AccessControlSeeder)->run();
     $this->otherOrganizationId = acCreateOrganization('access-b');
@@ -52,6 +53,7 @@ beforeEach(function (): void {
 });
 
 it('uses real production permissions and lists only tenant plus global roles', function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     Role::query()->create([
         'organization_id' => $this->otherOrganizationId,
         'name' => 'other-tenant-role',
@@ -65,17 +67,21 @@ it('uses real production permissions and lists only tenant plus global roles', f
         'is_system' => true,
     ]);
 
-    $names = collect($this->actingAs($this->actor)
+    $data = $this->actingAs($this->actor)
         ->getJson('/api/access-control/roles')
         ->assertOk()
-        ->json('data'))
+        ->json('data');
+    $this->assertIsArray($data);
+    /** @var list<array{name: string}> $data */
+    $names = collect($data)
         ->pluck('name');
 
-    expect($names)->toContain('platform_admin', 'global-read-only-role')
-        ->not->toContain('other-tenant-role');
+    expect($names)->toContain('platform_admin', 'global-read-only-role');
+    expect($names->contains('other-tenant-role'))->toBeFalse();
 });
 
 it('forces new roles into the actor tenant and rejects a supplied tenant', function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     $response = $this->actingAs($this->actor)->postJson('/api/access-control/roles', [
         'name' => 'tenant-custom',
         'guard_name' => 'web',
@@ -93,6 +99,7 @@ it('forces new roles into the actor tenant and rejects a supplied tenant', funct
 });
 
 it('returns not found for cross-tenant role update delete and sync', function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     $role = Role::query()->create([
         'organization_id' => $this->otherOrganizationId,
         'name' => 'foreign-role',
@@ -118,6 +125,7 @@ it('returns not found for cross-tenant role update delete and sync', function ()
 });
 
 it('requires a written reason for every access mutation', function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     $target = User::factory()->inOrganization($this->organizationId)->create();
 
     $this->actingAs($this->actor)
@@ -135,6 +143,7 @@ it('requires a written reason for every access mutation', function (): void {
 });
 
 it('assigns and revokes roles only for users in the actor tenant', function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     $target = User::factory()->inOrganization($this->organizationId)->create();
     $foreign = User::factory()->inOrganization($this->otherOrganizationId)->create();
     $role = Role::query()->create([
@@ -174,6 +183,7 @@ it('assigns and revokes roles only for users in the actor tenant', function (): 
 });
 
 it('assigns and revokes a global system role only to a same-tenant user', function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     $target = User::factory()->inOrganization($this->organizationId)->create();
     $foreign = User::factory()->inOrganization($this->otherOrganizationId)->create();
     $role = Role::query()->create([
@@ -204,6 +214,7 @@ it('assigns and revokes a global system role only to a same-tenant user', functi
 });
 
 it('grants then revokes a direct permission only for a same-tenant account', function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     $target = User::factory()->inOrganization($this->organizationId)->create();
     $foreign = User::factory()->inOrganization($this->otherOrganizationId)->create();
     $payload = [
@@ -234,6 +245,7 @@ it('grants then revokes a direct permission only for a same-tenant account', fun
 });
 
 it('keeps the global permission catalog read-only over tenant HTTP', function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     $this->actingAs($this->actor)
         ->getJson('/api/access-control/permissions')
         ->assertOk();
@@ -244,6 +256,7 @@ it('keeps the global permission catalog read-only over tenant HTTP', function ()
 });
 
 it('denies access-control management without a real seeded capability', function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     $student = User::factory()->inOrganization($this->organizationId)->create();
     acAssignSeededRole($student, 'student');
 
@@ -252,6 +265,7 @@ it('denies access-control management without a real seeded capability', function
 });
 
 it('requires authentication on every access control route', function (): void {
+    /** @var \Modules\AccessControl\Tests\Support\AccessControlPestContext $this */
     $this->getJson('/api/access-control/roles')->assertUnauthorized();
     $this->postJson('/api/access-control/roles', ['name' => 'x'])->assertUnauthorized();
     $this->getJson('/api/access-control/permissions')->assertUnauthorized();

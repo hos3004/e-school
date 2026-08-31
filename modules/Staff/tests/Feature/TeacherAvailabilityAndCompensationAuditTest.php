@@ -63,8 +63,8 @@ final class TeacherAvailabilityAndCompensationAuditTest extends TestCase
             );
 
             self::fail('Overlapping availability windows must be rejected.');
-        } catch (BusinessRuleViolation) {
-            self::assertTrue(true);
+        } catch (BusinessRuleViolation $violation) {
+            self::assertSame('staff.availability_overlaps', $violation->rule);
         }
 
         // يوم مختلف → مقبول.

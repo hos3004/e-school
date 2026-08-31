@@ -12,6 +12,7 @@ use Modules\Organization\Domain\Models\Holiday;
 use Shared\Support\BusinessRuleViolation;
 
 it('adds a holiday and dispatches HolidayAdded', function (): void {
+    /** @var \Tests\TestCase $this */
     Event::fake([HolidayAdded::class]);
 
     $organization = OrganizationFactory::new()->create();
@@ -33,6 +34,7 @@ it('adds a holiday and dispatches HolidayAdded', function (): void {
 });
 
 it('rejects a holiday longer than the configured maximum', function (): void {
+    /** @var \Tests\TestCase $this */
     config()->set('organization.rules.max_holiday_days', 5);
 
     $organization = OrganizationFactory::new()->create();
@@ -55,6 +57,7 @@ it('rejects a holiday longer than the configured maximum', function (): void {
 });
 
 it('rejects a holiday overlapping an existing one for the same organization', function (): void {
+    /** @var \Tests\TestCase $this */
     $organization = OrganizationFactory::new()->create();
     HolidayFactory::new()->create([
         'organization_id' => $organization->id,
@@ -79,6 +82,7 @@ it('rejects a holiday overlapping an existing one for the same organization', fu
 });
 
 it('rejects a holiday whose end precedes its start', function (): void {
+    /** @var \Tests\TestCase $this */
     $organization = OrganizationFactory::new()->create();
     $action = app(AddHoliday::class);
 

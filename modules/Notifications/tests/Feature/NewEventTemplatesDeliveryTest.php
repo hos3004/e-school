@@ -22,11 +22,13 @@ use Shared\Testing\Fixtures;
  * صارت تُسلَّم فعليًا عبر واتساب والبريد بعد إضافة قوالبها.
  */
 beforeEach(function (): void {
+    /** @var \Tests\TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
     config(['notifications.quiet_hours.enabled' => false]);
 });
 
 it('delivers the enrollment-frozen event through the WhatsApp template gateway', function (): void {
+    /** @var \Tests\TestCase $this */
     config([
         'notifications.channels' => [
             'in_app' => ['enabled' => false],
@@ -82,6 +84,7 @@ it('delivers the enrollment-frozen event through the WhatsApp template gateway',
 });
 
 it('delivers the graded-submission event through email with its score parameters', function (): void {
+    /** @var \Tests\TestCase $this */
     Mail::fake();
 
     config([

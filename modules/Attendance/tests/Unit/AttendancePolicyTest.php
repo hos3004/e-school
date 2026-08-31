@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Gate;
+use Mockery\MockInterface;
 use Modules\Attendance\Application\Policies\AttendancePolicy;
 use Modules\Attendance\Database\Factories\AttendanceFactory;
 use Modules\Attendance\Domain\Models\Attendance;
@@ -40,6 +41,7 @@ it('combines declared permissions with organization ownership', function (): voi
         attendedMinutes: 0,
         invitationActive: true,
     );
+    /** @var SessionParticipantAdministrationQueries&MockInterface $queries */
     $queries = Mockery::mock(SessionParticipantAdministrationQueries::class);
     $queries->shouldReceive('findForOrganization')
         ->with($organizationId, $participantId)

@@ -31,6 +31,7 @@ function mailPipelineRecipient(string $email, string $locale = 'en'): string
 }
 
 beforeEach(function (): void {
+    /** @var \Tests\TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
 
     config([
@@ -48,6 +49,7 @@ beforeEach(function (): void {
 });
 
 it('delivers a localized outbox notification through the Laravel Mail transport', function (): void {
+    /** @var \Tests\TestCase $this */
     Mail::fake();
     $recipientId = mailPipelineRecipient('student@example.test', 'en');
     $scheduledStart = '2026-08-23T10:00:00Z';
@@ -79,6 +81,7 @@ it('delivers a localized outbox notification through the Laravel Mail transport'
 });
 
 it('keeps in-app delivery successful when the email channel has a permanent recipient failure', function (): void {
+    /** @var \Tests\TestCase $this */
     Mail::fake();
     config(['notifications.channels.in_app.enabled' => true]);
     $recipientId = mailPipelineRecipient('not-an-email');

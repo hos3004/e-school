@@ -11,6 +11,10 @@ use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
+/**
+ * @param array<string, mixed> $overrides
+ * @return array<string, mixed>
+ */
 function programData(array $overrides = []): array
 {
     return array_merge([

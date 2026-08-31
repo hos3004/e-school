@@ -92,7 +92,7 @@ final class TeacherDirectoryTest extends TestCase
         );
 
         self::assertTrue($directory[(string) $available->id]->hasApprovedAvailability);
-        self::assertSame(false, $directory[(string) $unavailable->id]?->hasApprovedAvailability ?? false);
+        self::assertFalse($directory[(string) $unavailable->id]->hasApprovedAvailability);
     }
 
     public function test_directory_page_is_gated_by_staff_view_any_permission(): void

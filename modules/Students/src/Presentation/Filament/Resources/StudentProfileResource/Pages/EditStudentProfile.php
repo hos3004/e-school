@@ -20,10 +20,13 @@ final class EditStudentProfile extends EditRecord
 
     protected function getHeaderActions(): array
     {
+        $record = $this->getRecord();
+        abort_unless($record instanceof StudentProfile, 404);
+
         return [
             UserAvatarAction::make(
-                (string) $this->getRecord()->organization_id,
-                (string) $this->getRecord()->user_id,
+                (string) $record->organization_id,
+                (string) $record->user_id,
             )->visible(fn (): bool => (bool) auth()->user()?->can('identity.users.update')),
         ];
     }

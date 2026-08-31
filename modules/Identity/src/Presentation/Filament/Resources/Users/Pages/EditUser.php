@@ -17,11 +17,14 @@ final class EditUser extends EditRecord
 
     protected function getHeaderActions(): array
     {
+        $record = $this->getRecord();
+        abort_unless($record instanceof User, 404);
+
         return [
             UserAvatarAction::make(
-                (string) $this->getRecord()->organization_id,
-                (string) $this->getRecord()->getKey(),
-            )->visible(fn (): bool => (bool) auth()->user()?->can('update', $this->getRecord())),
+                (string) $record->organization_id,
+                (string) $record->getKey(),
+            )->visible(fn (): bool => (bool) auth()->user()?->can('update', $record)),
         ];
     }
 

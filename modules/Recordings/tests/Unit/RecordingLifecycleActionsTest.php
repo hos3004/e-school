@@ -80,7 +80,7 @@ it('expires recordings past retention according to the configured policy', funct
     $processed = app(ExpireRecordingsAction::class)->execute();
 
     expect($processed)->toContain((string) $pastReady->id)
-        ->not->toContain((string) $withinRetention->id)
+        ->and(in_array((string) $withinRetention->id, $processed, true))->toBeFalse()
         ->and($pastReady->refresh()->status)->toBe(RecordingStatus::Expired)
         ->and($withinRetention->refresh()->status)->toBe(RecordingStatus::Ready);
 });

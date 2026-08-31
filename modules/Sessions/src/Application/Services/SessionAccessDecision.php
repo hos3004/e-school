@@ -158,6 +158,7 @@ final readonly class SessionAccessDecision
             && $staffProfileId === (string) $session->staff_profile_id;
     }
 
+    /** @param list<string> $studentProfileIds */
     private function hasActiveParticipant(Session $session, array $studentProfileIds): bool
     {
         return $studentProfileIds !== []

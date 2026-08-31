@@ -10,6 +10,7 @@ use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
 it('seeds Arabic and English templates for all phase-one events and channels', function (): void {
+    /** @var \Tests\TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
 
     $configuredEvents = array_keys((array) config('notifications.events'));
@@ -46,6 +47,7 @@ it('keeps template placeholders declared and identical in Arabic and English', f
 });
 
 it('falls back from an unavailable locale to Arabic before English', function (): void {
+    /** @var \Tests\TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
 
     $rendered = app(TemplateRenderer::class)->render(
@@ -62,6 +64,7 @@ it('falls back from an unavailable locale to Arabic before English', function ()
 });
 
 it('prefers an organization template over the global template in the same locale', function (): void {
+    /** @var \Tests\TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
     $organizationId = Fixtures::organizationId();
 
@@ -90,6 +93,7 @@ it('prefers an organization template over the global template in the same locale
 });
 
 it('rejects a template when an announced parameter is absent from the event payload', function (): void {
+    /** @var \Tests\TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
 
     try {
@@ -100,7 +104,7 @@ it('rejects a template when an announced parameter is absent from the event payl
             organizationId: Fixtures::organizationId(),
             payload: [],
         );
-        $this->fail('Expected BusinessRuleViolation was not thrown.');
+        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('notifications.template_parameter_missing');
     }

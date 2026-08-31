@@ -30,7 +30,7 @@ final class WhatsappInboundResource extends Resource
 
     protected static ?int $navigationSort = 70;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('messaging::navigation.group');
     }

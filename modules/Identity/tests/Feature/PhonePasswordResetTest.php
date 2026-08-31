@@ -20,6 +20,7 @@ use Shared\Support\BusinessRuleViolation;
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $this->createTestOrganization();
     $this->phoneDelivery = new FakePhonePasswordResetOtpDelivery;
     app()->instance(PhonePasswordResetOtpDelivery::class, $this->phoneDelivery);
@@ -39,6 +40,7 @@ function insertPhoneResetOtp(User $user, string $otp, ?CarbonImmutable $expiresA
 }
 
 it('issues a tenant-bound hashed OTP through the delivery contract and a safe event', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     Event::fake([PhonePasswordResetRequested::class]);
     $user = User::factory()->inOrganization($this->organizationId)->create(['phone' => '+201000000001']);
 
@@ -59,6 +61,7 @@ it('issues a tenant-bound hashed OTP through the delivery contract and a safe ev
 });
 
 it('returns the same silent outcome for unknown and duplicate tenant phones', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     User::factory()->count(2)->inOrganization($this->organizationId)->create(['phone' => '+201000000002']);
 
     app(IssuePhonePasswordResetOtp::class)->execute($this->organizationId, '+201000000002');
@@ -69,6 +72,7 @@ it('returns the same silent outcome for unknown and duplicate tenant phones', fu
 });
 
 it('does not redeliver within the configured resend interval', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     User::factory()->inOrganization($this->organizationId)->create(['phone' => '+201000000003']);
     $action = app(IssuePhonePasswordResetOtp::class);
 
@@ -79,6 +83,7 @@ it('does not redeliver within the configured resend interval', function (): void
 });
 
 it('atomically resets once, rotates persistent access and revokes active devices', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     Event::fake([PasswordResetCompleted::class]);
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'phone' => '+201000000004',
@@ -112,6 +117,7 @@ it('atomically resets once, rotates persistent access and revokes active devices
 });
 
 it('persists invalid-attempt increments and removes the token at the configured limit', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $user = User::factory()->inOrganization($this->organizationId)->create(['phone' => '+201000000005']);
     $maximum = (int) config('identity.phone_password_reset.max_verification_attempts');
     insertPhoneResetOtp($user, '123456', attempts: $maximum - 2);
@@ -135,6 +141,7 @@ it('persists invalid-attempt increments and removes the token at the configured 
 });
 
 it('persists deletion of expired tokens and never crosses organization boundaries', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $firstOrganization = $this->organizationId;
     $otherOrganization = $this->createTestOrganization();
     $otherUser = User::factory()->inOrganization($otherOrganization)->create(['phone' => '+201000000006']);

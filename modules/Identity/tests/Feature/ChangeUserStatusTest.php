@@ -14,6 +14,7 @@ use Shared\Support\BusinessRuleViolation;
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $this->createTestOrganization();
 
 });
@@ -29,6 +30,7 @@ function statusTarget(string $organizationId, UserStatus $status): User
 }
 
 it('suspends an active user and records the reason', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     Event::fake([UserStatusChanged::class]);
 
     $admin = statusTarget($this->organizationId, UserStatus::Active);
@@ -52,6 +54,7 @@ it('suspends an active user and records the reason', function (): void {
 });
 
 it('rejects an empty reason', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $target = statusTarget($this->organizationId, UserStatus::Active);
 
     app(ChangeUserStatus::class)
@@ -59,6 +62,7 @@ it('rejects an empty reason', function (): void {
 })->throws(BusinessRuleViolation::class);
 
 it('rejects a user changing their own status', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $self = statusTarget($this->organizationId, UserStatus::Active);
 
     app(ChangeUserStatus::class)
@@ -66,6 +70,7 @@ it('rejects a user changing their own status', function (): void {
 })->throws(BusinessRuleViolation::class);
 
 it('rejects transitions outside the state machine', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $admin = statusTarget($this->organizationId, UserStatus::Active);
     // الموقوف لا ينتقل إلى نفسه — انتقال غير معرَّف في الآلة.
     $target = statusTarget($this->organizationId, UserStatus::Suspended);
@@ -79,6 +84,4 @@ it('rejects transitions outside the state machine', function (): void {
 
         return;
     }
-
-    $this->fail('Unreachable.');
 });

@@ -11,6 +11,7 @@ use Modules\Students\Domain\Models\StudentProfile;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     $this->policy = new StudentProfilePolicy;
 
     $this->owner = User::factory()->create();
@@ -24,6 +25,7 @@ beforeEach(function (): void {
 });
 
 it('lets the student view their own profile without any ability', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     Gate::define('student.view.any', fn ($user): bool => false);
 
     expect($this->policy->viewAny($this->owner))->toBeFalse()
@@ -32,6 +34,7 @@ it('lets the student view their own profile without any ability', function (): v
 });
 
 it('lets anyone with student view any permission view profiles in their organization', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     Gate::define('student.view.any', fn ($user): bool => true);
 
     expect($this->policy->view($this->stranger, $this->student))->toBeTrue()
@@ -39,6 +42,7 @@ it('lets anyone with student view any permission view profiles in their organiza
 });
 
 it('allows update via student update permission or direct ownership', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     Gate::define('student.update', fn ($user): bool => false);
 
     expect($this->policy->update($this->owner, $this->student))->toBeTrue()
@@ -49,6 +53,7 @@ it('allows update via student update permission or direct ownership', function (
 });
 
 it('never grants archive or restore by ownership — abilities only', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     Gate::define('student.update', fn ($user): bool => false);
 
     expect($this->policy->delete($this->owner, $this->student))->toBeFalse()
@@ -61,6 +66,7 @@ it('never grants archive or restore by ownership — abilities only', function (
 });
 
 it('gates create behind student create only', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     Gate::define('student.create', fn ($user): bool => false);
 
     expect($this->policy->create($this->owner))->toBeFalse();
@@ -71,6 +77,7 @@ it('gates create behind student create only', function (): void {
 });
 
 it('denies every record action across organization boundaries despite abilities', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     Gate::define('student.view.any', fn ($user): bool => true);
     Gate::define('student.update', fn ($user): bool => true);
 

@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\DB;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 
+interface NotificationReversibleMigration
+{
+    public function up(): void;
+
+    public function down(): void;
+}
+
 it('rolls the idempotency migration down and up without deleting duplicate history', function (): void {
     $key = hash('sha256', 'migration-rollback-duplicate');
 
@@ -23,7 +30,7 @@ it('rolls the idempotency migration down and up without deleting duplicate histo
         'status' => OutboxStatus::Suppressed,
     ])->create();
 
-    /** @var Migration $migration */
+    /** @var Migration&NotificationReversibleMigration $migration */
     $migration = require base_path(
         'modules/Notifications/database/migrations/2026_08_22_000001_allow_suppressed_notification_duplicates.php',
     );

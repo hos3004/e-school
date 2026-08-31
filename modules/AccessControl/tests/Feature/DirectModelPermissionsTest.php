@@ -66,7 +66,7 @@ it('revokes a direct permission and dispatches the event', function (): void {
 it('refuses revoking a permission that was never granted', function (): void {
     try {
         app(RevokeModelPermissionAction::class)->execute('never.granted', AC_DIRECT_TYPE, AC_DIRECT_ID);
-        self::fail('Expected BusinessRuleViolation was not thrown.');
+        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.permission.not_granted');
     }

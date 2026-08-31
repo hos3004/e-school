@@ -7,7 +7,6 @@ namespace Modules\Notifications\Presentation\Filament\Resources;
 use Filament\Actions\BulkAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
@@ -15,6 +14,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
@@ -72,11 +72,10 @@ final class PopupCampaignResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $organizationId = data_get(auth()->user(), 'organization_id');
-        /** @var Builder<PopupCampaign> $query */
         $query = parent::getEloquentQuery();
 
         return is_string($organizationId) && $organizationId !== ''
-            ? $query->forOrganization($organizationId)
+            ? $query->where('organization_id', $organizationId)
             : $query->whereRaw('1 = 0');
     }
 

@@ -8,11 +8,13 @@ use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $this->createTestOrganization();
 
 });
 
 it('returns the authenticated user profile', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'name' => 'صاحب الحساب',
@@ -28,6 +30,7 @@ it('returns the authenticated user profile', function (): void {
 });
 
 it('updates own profile fields', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create();
 
@@ -45,10 +48,12 @@ it('updates own profile fields', function (): void {
 });
 
 it('forbids guests from reading profiles', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $this->getJson('/api/identity/me')->assertUnauthorized();
 });
 
 it('rejects profile updates with an invalid locale length', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create();
 

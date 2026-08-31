@@ -84,7 +84,7 @@ it('refuses revoking a role that was never assigned', function (): void {
 
     try {
         app(RevokeRoleAction::class)->execute((string) $role->getKey(), AC_USER_TYPE, AC_USER_ID);
-        self::fail('Expected BusinessRuleViolation was not thrown.');
+        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.role.not_assigned');
     }

@@ -72,7 +72,7 @@ it('refuses to modify a system role', function (): void {
 
     try {
         app(UpdateRoleAction::class)->execute((string) $role->getKey(), name: 'renamed');
-        self::fail('Expected BusinessRuleViolation was not thrown.');
+        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.role.system_locked');
     }
@@ -104,7 +104,7 @@ it('refuses deleting a system role', function (): void {
 
     try {
         app(DeleteRoleAction::class)->execute((string) $role->getKey());
-        self::fail('Expected BusinessRuleViolation was not thrown.');
+        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.role.system_locked');
     }

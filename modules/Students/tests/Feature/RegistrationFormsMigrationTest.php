@@ -9,6 +9,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
+interface RegistrationFormsReversibleMigration
+{
+    public function up(): void;
+
+    public function down(): void;
+}
+
 final class RegistrationFormsMigrationTest extends TestCase
 {
     use RefreshDatabase;
@@ -17,7 +24,7 @@ final class RegistrationFormsMigrationTest extends TestCase
     {
         $this->assertRegistrationFormsSchemaExists();
 
-        /** @var Migration $migration */
+        /** @var Migration&RegistrationFormsReversibleMigration $migration */
         $migration = require base_path(
             'modules/Students/database/migrations/2026_08_31_160000_create_registration_forms_table.php',
         );

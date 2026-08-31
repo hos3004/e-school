@@ -21,6 +21,10 @@ beforeEach(function (): void {
     $this->actor = User::factory()->create();
 });
 
+/**
+ * @param array<string, mixed> $overrides
+ * @return array<string, mixed>
+ */
 function groupPayload(array $overrides = []): array
 {
     return array_merge([

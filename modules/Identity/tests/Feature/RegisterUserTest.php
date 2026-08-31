@@ -14,10 +14,12 @@ use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $this->createTestOrganization();
 });
 
 it('registers a user and dispatches an after-commit UserRegistered event', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     Event::fake([UserRegistered::class]);
 
     $response = $this->postJson('/api/identity/register', [
@@ -52,6 +54,7 @@ it('registers a user and dispatches an after-commit UserRegistered event', funct
 });
 
 it('does not publish UserRegistered or retain the account when an outer transaction rolls back', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     Event::fake([UserRegistered::class]);
     $email = 'rolled-back@eschool.test';
 
@@ -74,6 +77,7 @@ it('does not publish UserRegistered or retain the account when an outer transact
 });
 
 it('rejects a duplicate email with a business rule violation', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     User::query()->create([
         'organization_id' => $this->organizationId,
         'name' => 'موجود مسبقًا',
@@ -94,6 +98,7 @@ it('rejects a duplicate email with a business rule violation', function (): void
 });
 
 it('registers with a phone when email is unavailable', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $response = $this->postJson('/api/identity/register', [
         'organization_id' => $this->organizationId,
         'name' => 'طالب عبر الهاتف',
@@ -110,6 +115,7 @@ it('registers with a phone when email is unavailable', function (): void {
 });
 
 it('requires a username and at least one recovery contact', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $this->postJson('/api/identity/register', [
         'organization_id' => $this->organizationId,
         'name' => 'طلب ناقص',

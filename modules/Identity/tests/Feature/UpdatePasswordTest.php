@@ -11,10 +11,12 @@ use Shared\Support\BusinessRuleViolation;
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $this->createTestOrganization();
 });
 
 it('changes the password when the current one is correct', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'password' => Hash::make('old-Secret-99'),
@@ -27,6 +29,7 @@ it('changes the password when the current one is correct', function (): void {
 });
 
 it('rejects a wrong current password', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'password' => Hash::make('real-current'),
@@ -42,6 +45,7 @@ it('rejects a wrong current password', function (): void {
 });
 
 it('rejects setting the same password again', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'password' => Hash::make('same-password-1'),

@@ -36,6 +36,7 @@ use Shared\Filament\UserAvatarAction;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Locales;
 
+/** @property StudentProfile $record */
 final class ViewStudentProfile extends ViewRecord
 {
     protected static string $resource = StudentProfileResource::class;
@@ -74,7 +75,7 @@ final class ViewStudentProfile extends ViewRecord
                                 $this->record->gender?->value,
                             )->url)
                         ->alt(fn (): string => __('identity::avatars.alt', [
-                            'name' => (string) ($this->record->registrationApplication?->full_name
+                            'name' => (string) ($this->record->registrationApplication->full_name
                                 ?? $this->record->student_code),
                         ]))
                         ->columnSpanFull(),

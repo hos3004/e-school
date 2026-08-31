@@ -34,6 +34,7 @@ function categorySettingRecipient(): string
 }
 
 beforeEach(function (): void {
+    /** @var \Tests\TestCase $this */
     config([
         'notifications.channels' => [
             'in_app' => ['enabled' => true],
@@ -49,6 +50,7 @@ beforeEach(function (): void {
 });
 
 it('falls back to the configuration when the organization has no override', function (): void {
+    /** @var \Tests\TestCase $this */
     $resolver = new NotificationCategorySettingsResolver;
     $orgId = (string) Str::ulid();
 
@@ -59,6 +61,7 @@ it('falls back to the configuration when the organization has no override', func
 });
 
 it('returns the organization override instead of the configuration when present', function (): void {
+    /** @var \Tests\TestCase $this */
     $orgId = Fixtures::organizationId();
 
     NotificationCategorySetting::query()->create([
@@ -77,6 +80,7 @@ it('returns the organization override instead of the configuration when present'
 });
 
 it('routes an event to only the channels the organization configured', function (): void {
+    /** @var \Tests\TestCase $this */
     $userId = categorySettingRecipient();
 
     NotificationCategorySetting::query()->create([
@@ -107,6 +111,7 @@ it('routes an event to only the channels the organization configured', function 
 });
 
 it('keeps the configured channels when no organization override exists', function (): void {
+    /** @var \Tests\TestCase $this */
     $userId = categorySettingRecipient();
 
     app(NotificationDispatcher::class)->dispatch(
@@ -129,6 +134,7 @@ it('keeps the configured channels when no organization override exists', functio
 });
 
 it('synchronizes a row for every configured category without overwriting customizations', function (): void {
+    /** @var \Tests\TestCase $this */
     $orgId = Fixtures::organizationId();
     $configuredCount = count((array) config('notifications.categories'));
 
@@ -151,6 +157,7 @@ it('synchronizes a row for every configured category without overwriting customi
 });
 
 it('scopes the settings resource to the users organization and opens the edit page', function (): void {
+    /** @var \Tests\TestCase $this */
     Gate::before(static fn (): bool => true);
     Filament::setCurrentPanel('admin');
 

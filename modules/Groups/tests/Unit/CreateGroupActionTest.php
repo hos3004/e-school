@@ -27,6 +27,10 @@ function createTestOrganization(): string
     return $id;
 }
 
+/**
+ * @param array<string, mixed> $overrides
+ * @return array<string, mixed>
+ */
 function groupData(array $overrides = []): array
 {
     return array_merge([

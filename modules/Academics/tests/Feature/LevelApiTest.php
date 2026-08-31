@@ -14,6 +14,10 @@ beforeEach(function (): void {
     Gate::define('program.manage', fn ($user) => true);
 });
 
+/**
+ * @param array<string, mixed> $overrides
+ * @return array<string, mixed>
+ */
 function levelPayload(array $overrides = []): array
 {
     return array_merge([

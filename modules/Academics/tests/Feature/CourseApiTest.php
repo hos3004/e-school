@@ -16,6 +16,10 @@ beforeEach(function (): void {
     Gate::define('course.manage', fn ($user) => true);
 });
 
+/**
+ * @param array<string, mixed> $overrides
+ * @return array<string, mixed>
+ */
 function coursePayload(array $overrides = []): array
 {
     return array_merge([

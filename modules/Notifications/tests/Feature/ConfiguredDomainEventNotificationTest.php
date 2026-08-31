@@ -46,6 +46,7 @@ final class ConfiguredSessionScheduledEvent extends DomainEvent
 }
 
 it('runs a configured domain event through listener outbox job gateway and mail transport', function (): void {
+    /** @var \Tests\TestCase $this */
     Mail::fake();
     $this->seed(NotificationTemplateSeeder::class);
     $recipientId = Fixtures::userId();

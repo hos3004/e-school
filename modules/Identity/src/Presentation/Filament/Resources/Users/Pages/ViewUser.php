@@ -88,7 +88,7 @@ final class ViewUser extends ViewRecord
                     ImageEntry::make('avatar')
                         ->label(__('identity::avatars.field'))
                         ->circular()
-                        ->state(fn (): ?string => app(AvatarQueries::class)
+                        ->state(fn (): string => app(AvatarQueries::class)
                             ->resolve($this->userRecord()->avatar_path, null)->url)
                         ->alt(fn (): string => __('identity::avatars.alt', ['name' => $this->userRecord()->name])),
                     TextEntry::make('name')->label(__('identity::labels.name')),

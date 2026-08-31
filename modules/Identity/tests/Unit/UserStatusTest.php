@@ -25,8 +25,8 @@ it('only allows login while active', function (): void {
 });
 
 it('exposes translated labels', function (): void {
-    expect(UserStatus::Active->label())->toBeString()
-        ->not->toBe('')
-        ->and(UserStatus::Suspended->label())->toBeString()
+    expect(UserStatus::Active->label())->toBeString();
+    expect(UserStatus::Active->label() !== '')->toBeTrue();
+    expect(UserStatus::Suspended->label())->toBeString()
         ->and(UserStatus::Frozen->label())->toBeString();
 });

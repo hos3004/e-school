@@ -12,10 +12,12 @@ use Shared\Support\BusinessRuleViolation;
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $this->createTestOrganization();
 });
 
 it('creates a tenant-fixed account and returns only a public DTO', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $account = app(UserAccountProvisioner::class)->create(new CreateUserAccountData(
         organizationId: $this->organizationId,
         name: 'Imported Student',
@@ -31,6 +33,7 @@ it('creates a tenant-fixed account and returns only a public DTO', function (): 
 });
 
 it('confirms only an explicitly identified same-tenant account with matching contact', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'email' => 'verified-link@example.test',
         'phone' => '+201000000010',
@@ -48,6 +51,7 @@ it('confirms only an explicitly identified same-tenant account with matching con
 });
 
 it('never auto-links by contact across users or organizations', function (): void {
+    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
     $firstOrganization = $this->organizationId;
     $otherOrganization = $this->createTestOrganization();
     $other = User::factory()->inOrganization($otherOrganization)->create([

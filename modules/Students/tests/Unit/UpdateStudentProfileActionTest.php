@@ -18,6 +18,7 @@ use Shared\Support\BusinessRuleViolation;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     $this->seed(GeographySeeder::class);
 });
 
@@ -39,6 +40,7 @@ function actingAdminOf(Organization $organization): User
 }
 
 it('updates changed fields only and publishes the event with primitives', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     [$organization] = createStudentWithOrg();
     $student = StudentProfile::query()
         ->where('organization_id', (string) $organization->id)
@@ -62,6 +64,7 @@ it('updates changed fields only and publishes the event with primitives', functi
 });
 
 it('records an audit entry with actor reason before and after values', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     [$organization, , $student] = createStudentWithOrg();
     $admin = actingAdminOf($organization);
 
@@ -77,6 +80,7 @@ it('records an audit entry with actor reason before and after values', function 
 });
 
 it('accepts country_id with matching region and publishes nothing when nothing changed', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     [$organization, , $student] = createStudentWithOrg();
     $admin = actingAdminOf($organization);
     Event::fake([StudentProfileUpdated::class]);
@@ -96,6 +100,7 @@ it('accepts country_id with matching region and publishes nothing when nothing c
 });
 
 it('rejects a region that does not belong to the country', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     [$organization, , $student] = createStudentWithOrg();
     $admin = actingAdminOf($organization);
     [$countryId] = geographyIds();
@@ -107,6 +112,7 @@ it('rejects a region that does not belong to the country', function (): void {
 })->throws(BusinessRuleViolation::class);
 
 it('ignores ownership fields such as student_code and user_id', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     [$organization, $owner, $student] = createStudentWithOrg();
     $admin = actingAdminOf($organization);
 
@@ -123,6 +129,7 @@ it('ignores ownership fields such as student_code and user_id', function (): voi
 });
 
 it('refuses an actor from another organization (cross-tenant)', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     [$organization, , $student] = createStudentWithOrg();
     $outsiderOrg = Organization::factory()->create();
     $outsider = User::factory()->inOrganization((string) $outsiderOrg->id)->create();
@@ -133,6 +140,7 @@ it('refuses an actor from another organization (cross-tenant)', function (): voi
 })->throws(BusinessRuleViolation::class);
 
 it('requires a written reason', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     [$organization, , $student] = createStudentWithOrg();
     $admin = actingAdminOf($organization);
 
@@ -145,6 +153,7 @@ it('requires a written reason', function (): void {
 })->throws(BusinessRuleViolation::class);
 
 it('refuses to update an archived student', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     [$organization, , $student] = createStudentWithOrg();
     $admin = actingAdminOf($organization);
     app(ArchiveStudentAction::class)->execute($student, 'انتقال العائلة');
@@ -163,6 +172,7 @@ it('refuses to update an archived student', function (): void {
  * التدقيق تغييرًا لم يحدث.
  */
 it('records no audit entry when cast fields are resubmitted unchanged', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     [$organization, , $student] = createStudentWithOrg();
     $admin = actingAdminOf($organization);
     Event::fake([StudentProfileUpdated::class]);

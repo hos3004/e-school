@@ -12,6 +12,7 @@ use Shared\Support\BusinessRuleViolation;
 uses(RefreshDatabase::class);
 
 it('verifies a link and dispatches GuardianLinkVerified', function (): void {
+    /** @var \Tests\TestCase $this */
     Event::fake([GuardianLinkVerified::class]);
 
     $link = GuardianLink::factory()->create();
@@ -24,6 +25,7 @@ it('verifies a link and dispatches GuardianLinkVerified', function (): void {
 });
 
 it('rejects verifying an already verified link', function (): void {
+    /** @var \Tests\TestCase $this */
     $link = GuardianLink::factory()->verified()->create();
 
     try {

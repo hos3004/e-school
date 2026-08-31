@@ -14,6 +14,7 @@ use Modules\AccessControl\Domain\Models\Role;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
+/** @param list<string> $permissionNames */
 function acRoleWithPermissions(string $name, array $permissionNames): Role
 {
     $role = app(CreateRoleAction::class)->execute($name, GuardName::Web);
@@ -73,7 +74,7 @@ it('rejects unknown permission names', function (): void {
 
     try {
         app(SyncRolePermissionsAction::class)->execute((string) $role->getKey(), ['ghost.permission']);
-        self::fail('Expected BusinessRuleViolation was not thrown.');
+        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.permission.not_found');
     }
@@ -85,7 +86,7 @@ it('rejects permissions whose guard does not match the role guard', function ():
 
     try {
         app(SyncRolePermissionsAction::class)->execute((string) $role->getKey(), ['api.only']);
-        self::fail('Expected BusinessRuleViolation was not thrown.');
+        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.permission.guard_mismatch');
     }
@@ -101,7 +102,7 @@ it('refuses syncing permissions on a system role', function (): void {
 
     try {
         app(SyncRolePermissionsAction::class)->execute((string) $role->getKey(), []);
-        self::fail('Expected BusinessRuleViolation was not thrown.');
+        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.role.system_locked');
     }

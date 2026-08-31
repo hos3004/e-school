@@ -49,6 +49,7 @@ use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Locales;
 use Shared\ValueObjects\Money;
 
+/** @property StaffProfile $record */
 final class ViewStaffProfile extends ViewRecord
 {
     protected static string $resource = StaffProfileResource::class;
@@ -88,7 +89,7 @@ final class ViewStaffProfile extends ViewRecord
                         ->circular()
                         ->state(fn (): string => $this->avatarPresentation()->url)
                         ->alt(fn (): string => __('identity::avatars.alt', [
-                            'name' => (string) ($this->accountSummary()?->name ?? $this->record->staff_code),
+                            'name' => (string) ($this->accountSummary()->name ?? $this->record->staff_code),
                         ]))
                         ->columnSpanFull(),
                     TextEntry::make('staff_code')

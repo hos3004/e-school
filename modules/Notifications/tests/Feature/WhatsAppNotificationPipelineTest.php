@@ -17,6 +17,7 @@ use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Shared\Testing\Fixtures;
 
 beforeEach(function (): void {
+    /** @var \Tests\TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
 
     config([
@@ -56,6 +57,7 @@ function whatsappPipelineRecipient(): string
 }
 
 it('stores the Meta external id and status after a successful outbox delivery', function (): void {
+    /** @var \Tests\TestCase $this */
     Http::fake([
         'graph.facebook.com/*' => Http::response([
             'messages' => [[
@@ -99,6 +101,7 @@ it('stores the Meta external id and status after a successful outbox delivery', 
 });
 
 it('marks a Meta 400 response as a permanent delivery failure with its reason', function (): void {
+    /** @var \Tests\TestCase $this */
     Bus::fake([SendQueuedNotification::class]);
     Http::fake([
         'graph.facebook.com/*' => Http::response([

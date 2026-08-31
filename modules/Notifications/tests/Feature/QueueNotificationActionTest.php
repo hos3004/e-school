@@ -14,10 +14,12 @@ use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
 afterEach(function (): void {
+    /** @var \Tests\TestCase $this */
     CarbonImmutable::setTestNow();
 });
 
 it('queues a notification and announces it', function (): void {
+    /** @var \Tests\TestCase $this */
     Event::fake([NotificationQueued::class]);
 
     $action = app(QueueNotificationAction::class);
@@ -43,6 +45,7 @@ it('queues a notification and announces it', function (): void {
 });
 
 it('records a duplicate within the idempotency window as suppressed', function (): void {
+    /** @var \Tests\TestCase $this */
     Event::fake([NotificationQueued::class]);
 
     $action = app(QueueNotificationAction::class);
@@ -80,6 +83,7 @@ it('records a duplicate within the idempotency window as suppressed', function (
 });
 
 it('allows the same event to be queued after the idempotency window', function (): void {
+    /** @var \Tests\TestCase $this */
     CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-22 12:00:00', 'UTC'));
 
     $action = app(QueueNotificationAction::class);
@@ -106,6 +110,7 @@ it('allows the same event to be queued after the idempotency window', function (
 });
 
 it('queues one entry per channel even from the same event', function (): void {
+    /** @var \Tests\TestCase $this */
     $action = app(QueueNotificationAction::class);
     $eventId = (string) str()->ulid();
 
@@ -136,6 +141,7 @@ it('queues one entry per channel even from the same event', function (): void {
 });
 
 it('queues the same event independently for different recipients', function (): void {
+    /** @var \Tests\TestCase $this */
     $action = app(QueueNotificationAction::class);
     $eventId = (string) str()->ulid();
 
@@ -167,6 +173,7 @@ it('queues the same event independently for different recipients', function (): 
 });
 
 it('skips queueing when the recipient opted out of that category and channel', function (): void {
+    /** @var \Tests\TestCase $this */
     Event::fake([NotificationQueued::class]);
 
     $userId = Fixtures::userId();
@@ -199,9 +206,8 @@ it('skips queueing when the recipient opted out of that category and channel', f
 });
 
 it('rejects channels that are disabled in configuration', function (): void {
+    /** @var \Tests\TestCase $this */
     config(['notifications.channels.enabled' => ['in_app']]);
-
-    QueueNotificationAction::class;
 
     try {
         app(QueueNotificationAction::class)->execute(

@@ -183,7 +183,7 @@ final class StudentProfileResource extends Resource
                     ->defaultImageUrl(fn (StudentProfile $record): string => app(AvatarQueries::class)
                         ->defaultUrl($record->gender?->value))
                     ->alt(function (StudentProfile $record): string {
-                        $name = (string) ($record->registrationApplication?->full_name ?? $record->student_code);
+                        $name = (string) ($record->registrationApplication->full_name ?? $record->student_code);
 
                         return __('identity::avatars.alt', ['name' => $name]);
                     })

@@ -8,6 +8,7 @@ use Modules\Identity\Domain\Models\User;
 uses(RefreshDatabase::class);
 
 it('does not expose the legacy direct student profile creation endpoint', function (): void {
+    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
     $this->actingAs(User::factory()->create())
         ->postJson('/api/students', [
             'student_code' => 'LEGACY-DIRECT',

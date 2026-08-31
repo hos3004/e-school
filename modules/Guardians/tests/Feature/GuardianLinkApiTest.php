@@ -19,6 +19,7 @@ function guardianLinkApiUser(): ApiUser
 }
 
 it('links a student over the api and returns 201', function (): void {
+    /** @var \Tests\TestCase $this */
     Gate::after(fn (): bool => true);
     Event::fake([GuardianLinkedToStudent::class]);
 
@@ -43,6 +44,7 @@ it('links a student over the api and returns 201', function (): void {
 });
 
 it('rejects an unknown relationship over the api', function (): void {
+    /** @var \Tests\TestCase $this */
     Gate::after(fn (): bool => true);
 
     $guardian = GuardianProfile::factory()->create();
@@ -58,6 +60,7 @@ it('rejects an unknown relationship over the api', function (): void {
 });
 
 it('verifies a link over the api', function (): void {
+    /** @var \Tests\TestCase $this */
     Gate::after(fn (): bool => true);
 
     $link = GuardianLink::factory()->create();
@@ -73,6 +76,7 @@ it('verifies a link over the api', function (): void {
 });
 
 it('sets a link as primary over the api and demotes the old primary', function (): void {
+    /** @var \Tests\TestCase $this */
     Gate::after(fn (): bool => true);
 
     $studentId = Fixtures::studentProfileId();
@@ -90,6 +94,7 @@ it('sets a link as primary over the api and demotes the old primary', function (
 });
 
 it('unlinks a student over the api with a mandatory reason', function (): void {
+    /** @var \Tests\TestCase $this */
     Gate::after(fn (): bool => true);
 
     $link = GuardianLink::factory()->create();
@@ -103,6 +108,7 @@ it('unlinks a student over the api with a mandatory reason', function (): void {
 });
 
 it('scopes the links list to the caller when lacking view_any', function (): void {
+    /** @var \Tests\TestCase $this */
     Gate::define('guardian.view', fn (): bool => false);
 
     $userId = Fixtures::userId();
