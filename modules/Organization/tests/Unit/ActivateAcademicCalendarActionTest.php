@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Organization\Application\Actions\ActivateAcademicCalendar;
 use Modules\Organization\Database\Factories\AcademicCalendarFactory;
@@ -10,6 +11,8 @@ use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Enums\HolidaySource;
 use Modules\Organization\Domain\Events\AcademicCalendarActivated;
 use Modules\Organization\Domain\Models\Holiday;
+
+uses(RefreshDatabase::class);
 
 it('activates a calendar and deactivates the previously active one', function (): void {
     Event::fake([AcademicCalendarActivated::class]);
