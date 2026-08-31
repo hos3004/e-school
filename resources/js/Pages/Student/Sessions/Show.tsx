@@ -11,9 +11,9 @@ import Card, {
 import EmptyState from '@/Components/EmptyState';
 import ErrorState from '@/Components/ErrorState';
 import LoadingState from '@/Components/LoadingState';
-import PageHeader from '@/Components/PageHeader';
 import StatusPill from '@/Components/StatusPill';
 import AppLayout from '@/Layouts/AppLayout';
+import { StudentPageHero } from '@/Pages/Student/Partials/StudentUi';
 import {
     formatDate,
     formatDateTime,
@@ -21,11 +21,7 @@ import {
     useLocale,
 } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
-import type {
-    LoadablePageProps,
-    Session,
-    StatusColorMap,
-} from '@/types';
+import type { LoadablePageProps, Session, StatusColorMap } from '@/types';
 
 interface StudentSessionShowProps extends LoadablePageProps {
     session?: Session | null;
@@ -62,19 +58,18 @@ function joinIsAvailable(session: Session, now: number): boolean {
         ? Date.parse(session.canJoinUntil)
         : Number.POSITIVE_INFINITY;
 
-    return Number.isFinite(threshold)
-        && now >= threshold
-        && (!Number.isFinite(closesAt) || now <= closesAt);
+    return (
+        Number.isFinite(threshold) &&
+        now >= threshold &&
+        (!Number.isFinite(closesAt) || now <= closesAt)
+    );
 }
 
 function useJoinClock(session: Session | null): number {
     const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
-        if (
-            !session?.canJoinAt ||
-            session.canJoin === true
-        ) {
+        if (!session?.canJoinAt || session.canJoin === true) {
             return;
         }
 
@@ -105,8 +100,7 @@ export default function Show({
     const t = useI18n();
     const locale = useLocale();
     const now = useJoinClock(session);
-    const pageTitle =
-        session?.title ?? t('student.sessions.details_title');
+    const pageTitle = session?.title ?? t('student.sessions.details_title');
 
     const content = (() => {
         if (loading) {
@@ -139,9 +133,7 @@ export default function Show({
                             {t('student.sessions.back_to_schedule')}
                         </Button>
                     }
-                    description={t(
-                        'student.sessions.not_found_description',
-                    )}
+                    description={t('student.sessions.not_found_description')}
                     title={t('student.sessions.not_found')}
                 />
             );
@@ -150,8 +142,12 @@ export default function Show({
         const canJoin = joinIsAvailable(session, now);
 
         return (
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
-                <Card as="section" padding="lg">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
+                <Card
+                    as="section"
+                    className="border-[color:var(--brand)]/25 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--brand)_7%,var(--surface)),var(--surface)_55%)] shadow-md"
+                    padding="lg"
+                >
                     <CardHeader>
                         <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0">
@@ -172,8 +168,8 @@ export default function Show({
                     </CardHeader>
 
                     <CardContent className="mt-6">
-                        <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                            <div>
+                        <dl className="grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-2xl bg-[var(--surface)]/80 p-4 shadow-sm">
                                 <dt className="text-sm font-semibold text-[var(--ink-muted)]">
                                     {t('common.date')}
                                 </dt>
@@ -188,7 +184,7 @@ export default function Show({
                                 </dd>
                             </div>
 
-                            <div>
+                            <div className="rounded-2xl bg-[var(--surface)]/80 p-4 shadow-sm">
                                 <dt className="text-sm font-semibold text-[var(--ink-muted)]">
                                     {t('common.time')}
                                 </dt>
@@ -219,7 +215,7 @@ export default function Show({
                                 </dd>
                             </div>
 
-                            <div>
+                            <div className="rounded-2xl bg-[var(--surface)]/80 p-4 shadow-sm">
                                 <dt className="text-sm font-semibold text-[var(--ink-muted)]">
                                     {t('student.sessions.teacher')}
                                 </dt>
@@ -229,13 +225,12 @@ export default function Show({
                                 </dd>
                             </div>
 
-                            <div>
+                            <div className="rounded-2xl bg-[var(--surface)]/80 p-4 shadow-sm">
                                 <dt className="text-sm font-semibold text-[var(--ink-muted)]">
                                     {t('student.sessions.location')}
                                 </dt>
                                 <dd className="mt-1 text-[var(--ink)]">
-                                    {session.location ??
-                                        t('common.online')}
+                                    {session.location ?? t('common.online')}
                                 </dd>
                             </div>
                         </dl>
@@ -243,7 +238,14 @@ export default function Show({
                 </Card>
 
                 <div className="space-y-6">
-                    <Card as="section">
+                    <Card
+                        as="section"
+                        className={
+                            canJoin
+                                ? 'border-[color:var(--success)]/35 bg-[color:var(--success)]/8 shadow-md'
+                                : 'border-[color:var(--ink-muted)]/15'
+                        }
+                    >
                         <CardHeader>
                             <CardTitle as="h2">
                                 {t('student.sessions.join_heading')}
@@ -262,6 +264,7 @@ export default function Show({
                             <Button
                                 as="link"
                                 disabled={!canJoin}
+                                className="min-h-12"
                                 fullWidth
                                 href={session.joinUrl ?? '#'}
                                 rel="noopener noreferrer"
@@ -293,12 +296,13 @@ export default function Show({
                     </Card>
 
                     {session.recordingUrl ? (
-                        <Card as="section">
+                        <Card
+                            as="section"
+                            className="border-[color:var(--brand)]/20"
+                        >
                             <CardHeader>
                                 <CardTitle as="h2">
-                                    {t(
-                                        'student.sessions.recording_heading',
-                                    )}
+                                    {t('student.sessions.recording_heading')}
                                 </CardTitle>
                                 <CardDescription>
                                     {t(
@@ -315,9 +319,7 @@ export default function Show({
                                     target="_blank"
                                     variant="secondary"
                                 >
-                                    {t(
-                                        'student.sessions.watch_recording',
-                                    )}
+                                    {t('student.sessions.watch_recording')}
                                 </Button>
                             </CardContent>
                         </Card>
@@ -331,7 +333,7 @@ export default function Show({
         <AppLayout role="student">
             <Head title={pageTitle} />
 
-            <PageHeader
+            <StudentPageHero
                 action={
                     <Button
                         as="link"
@@ -341,7 +343,7 @@ export default function Show({
                         {t('student.sessions.back_to_schedule')}
                     </Button>
                 }
-                className="mb-6"
+                className="mb-8"
                 subtitle={t('student.sessions.details_subtitle')}
                 title={pageTitle}
             />

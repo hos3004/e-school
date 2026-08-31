@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 
+import Button from '@/Components/Button';
 import Card, {
     CardDescription,
     CardHeader,
@@ -8,10 +9,10 @@ import Card, {
 import EmptyState from '@/Components/EmptyState';
 import ErrorState from '@/Components/ErrorState';
 import LoadingState from '@/Components/LoadingState';
-import PageHeader from '@/Components/PageHeader';
 import StatusPill from '@/Components/StatusPill';
 import type { StatusColorMap } from '@/Components/StatusPill';
 import AppLayout from '@/Layouts/AppLayout';
+import { StudentPageHero } from '@/Pages/Student/Partials/StudentUi';
 import { formatDate, formatDateTime, useLocale } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import type { LoadablePageProps } from '@/types';
@@ -79,8 +80,20 @@ export default function Group({
     return (
         <AppLayout role="student">
             <Head title={t('student.group.title')} />
-            <PageHeader
-                className="mb-6"
+            <StudentPageHero
+                action={
+                    <div className="flex min-h-11 items-center gap-3 rounded-2xl border border-[color:var(--brand)]/20 bg-[var(--surface)]/80 px-4 py-2 shadow-sm">
+                        <strong className="text-2xl font-bold tabular-nums text-[var(--ink)]">
+                            {new Intl.NumberFormat(locale).format(
+                                groups.length,
+                            )}
+                        </strong>
+                        <span className="text-sm font-semibold text-[var(--ink-muted)]">
+                            {t('student.group.title')}
+                        </span>
+                    </div>
+                }
+                className="mb-8"
                 title={t('student.group.title')}
                 subtitle={t('student.group.subtitle')}
             />
@@ -97,7 +110,12 @@ export default function Group({
             ) : (
                 <div className="space-y-6">
                     {groups.map((group) => (
-                        <Card key={group.id}>
+                        <Card
+                            as="article"
+                            className="overflow-hidden border-[color:var(--ink-muted)]/15 shadow-md"
+                            key={group.id}
+                            padding="lg"
+                        >
                             <CardHeader className="mb-5">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div className="min-w-0">
@@ -122,8 +140,8 @@ export default function Group({
                                 ) : null}
                             </CardHeader>
 
-                            <dl className="grid gap-4 sm:grid-cols-3">
-                                <div>
+                            <dl className="grid gap-3 sm:grid-cols-3">
+                                <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
                                     <dt className="text-xs text-[var(--ink-muted)]">
                                         {t('student.group.capacity')}
                                     </dt>
@@ -131,7 +149,7 @@ export default function Group({
                                         {group.membersCount} / {group.capacity}
                                     </dd>
                                 </div>
-                                <div>
+                                <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
                                     <dt className="text-xs text-[var(--ink-muted)]">
                                         {t('student.group.starts_on')}
                                     </dt>
@@ -141,7 +159,7 @@ export default function Group({
                                             : t('common.not_available')}
                                     </dd>
                                 </div>
-                                <div>
+                                <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
                                     <dt className="text-xs text-[var(--ink-muted)]">
                                         {t('student.group.joined_at')}
                                     </dt>
@@ -153,7 +171,7 @@ export default function Group({
                                 </div>
                             </dl>
 
-                            <section className="mt-6">
+                            <section className="mt-6 rounded-2xl border border-[color:var(--ink-muted)]/15 p-4 sm:p-5">
                                 <h3 className="text-sm font-bold text-[var(--ink)]">
                                     {t('student.group.teachers')}
                                 </h3>
@@ -182,7 +200,7 @@ export default function Group({
                                 )}
                             </section>
 
-                            <section className="mt-6">
+                            <section className="mt-4 rounded-2xl border border-[color:var(--ink-muted)]/15 p-4 sm:p-5">
                                 <h3 className="text-sm font-bold text-[var(--ink)]">
                                     {t('student.group.classmates')}
                                 </h3>
@@ -205,20 +223,34 @@ export default function Group({
                             </section>
 
                             {group.nextSession ? (
-                                <section className="mt-6 rounded-lg bg-[var(--surface-muted)] p-4">
-                                    <h3 className="text-sm font-bold text-[var(--ink)]">
-                                        {t('student.group.next_session')}
-                                    </h3>
-                                    <p className="mt-1 text-sm text-[var(--ink)]">
-                                        {group.nextSession.title}
-                                    </p>
-                                    <p className="mt-1 text-sm text-[var(--ink-muted)]">
-                                        {formatDateTime(
-                                            group.nextSession.startsAt,
-                                            locale,
-                                            group.nextSession.timezone,
-                                        )}
-                                    </p>
+                                <section className="mt-4 rounded-2xl border border-[color:var(--brand)]/25 bg-[color:var(--brand)]/8 p-4 sm:p-5">
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="min-w-0">
+                                            <h3 className="text-sm font-bold text-[var(--brand)]">
+                                                {t(
+                                                    'student.group.next_session',
+                                                )}
+                                            </h3>
+                                            <p className="mt-1 font-bold text-[var(--ink)]">
+                                                {group.nextSession.title}
+                                            </p>
+                                            <p className="mt-1 text-sm text-[var(--ink-muted)]">
+                                                {formatDateTime(
+                                                    group.nextSession.startsAt,
+                                                    locale,
+                                                    group.nextSession.timezone,
+                                                )}
+                                            </p>
+                                        </div>
+                                        <Button
+                                            as="link"
+                                            className="w-full sm:w-auto"
+                                            href={`/student/sessions/${encodeURIComponent(group.nextSession.id)}`}
+                                            variant="secondary"
+                                        >
+                                            {t('student.sessions.view_details')}
+                                        </Button>
+                                    </div>
                                 </section>
                             ) : null}
                         </Card>

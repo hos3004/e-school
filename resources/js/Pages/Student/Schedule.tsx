@@ -11,16 +11,12 @@ import Card, {
 import EmptyState from '@/Components/EmptyState';
 import ErrorState from '@/Components/ErrorState';
 import LoadingState from '@/Components/LoadingState';
-import PageHeader from '@/Components/PageHeader';
 import StatusPill from '@/Components/StatusPill';
 import AppLayout from '@/Layouts/AppLayout';
+import { StudentPageHero } from '@/Pages/Student/Partials/StudentUi';
 import { formatDateTime, useLocale } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
-import type {
-    LoadablePageProps,
-    Session,
-    StatusColorMap,
-} from '@/types';
+import type { LoadablePageProps, Session, StatusColorMap } from '@/types';
 
 interface StudentScheduleProps extends LoadablePageProps {
     sessions?: readonly Session[];
@@ -58,13 +54,11 @@ function useJoinClock(sessions: readonly Session[]): number {
     const nextThreshold = useMemo(() => {
         const futureThresholds = sessions
             .filter(
-                (session) =>
-                    session.canJoin === undefined && session.canJoinAt,
+                (session) => session.canJoin === undefined && session.canJoinAt,
             )
             .map((session) => Date.parse(session.canJoinAt ?? ''))
             .filter(
-                (threshold) =>
-                    Number.isFinite(threshold) && threshold > now,
+                (threshold) => Number.isFinite(threshold) && threshold > now,
             );
 
         return futureThresholds.length > 0
@@ -102,10 +96,7 @@ export default function Schedule({
     const content = (() => {
         if (loading) {
             return (
-                <LoadingState
-                    label={t('student.schedule.loading')}
-                    rows={5}
-                />
+                <LoadingState label={t('student.schedule.loading')} rows={5} />
             );
         }
 
@@ -121,9 +112,7 @@ export default function Schedule({
         if (sessions.length === 0) {
             return (
                 <EmptyState
-                    description={t(
-                        'student.schedule.empty_description',
-                    )}
+                    description={t('student.schedule.empty_description')}
                     title={t('student.schedule.empty_title')}
                 />
             );
@@ -132,14 +121,22 @@ export default function Schedule({
         return (
             <section
                 aria-label={t('student.schedule.upcoming_sessions')}
-                className="space-y-4"
+                className="grid gap-4 xl:grid-cols-2"
             >
                 {sessions.map((session) => {
                     const canJoin = joinIsAvailable(session, now);
 
                     return (
-                        <Card as="article" key={session.id}>
-                            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                        <Card
+                            as="article"
+                            className="relative overflow-hidden border-[color:var(--ink-muted)]/15 shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-[color:var(--brand)]/40 hover:shadow-md"
+                            key={session.id}
+                        >
+                            <div
+                                aria-hidden="true"
+                                className="absolute inset-y-0 start-0 w-1 bg-[var(--brand)]"
+                            />
+                            <div className="flex flex-col gap-5 ps-2">
                                 <CardHeader className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-start gap-3">
                                         <CardTitle as="h2">
@@ -157,7 +154,7 @@ export default function Schedule({
                                     ) : null}
                                 </CardHeader>
 
-                                <div className="flex shrink-0 flex-wrap gap-3">
+                                <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:flex-wrap">
                                     <Button
                                         as="link"
                                         href={
@@ -166,9 +163,7 @@ export default function Schedule({
                                         }
                                         variant="secondary"
                                     >
-                                        {t(
-                                            'student.sessions.view_details',
-                                        )}
+                                        {t('student.sessions.view_details')}
                                     </Button>
                                     <Button
                                         aria-label={
@@ -187,9 +182,9 @@ export default function Schedule({
                                 </div>
                             </div>
 
-                            <CardContent className="mt-5">
-                                <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                                    <div>
+                            <CardContent className="mt-5 ps-2">
+                                <dl className="grid gap-3 text-sm sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
+                                    <div className="rounded-xl bg-[var(--surface-muted)] px-3 py-3">
                                         <dt className="font-semibold text-[var(--ink-muted)]">
                                             {t('common.date_and_time')}
                                         </dt>
@@ -204,7 +199,7 @@ export default function Schedule({
                                         </dd>
                                     </div>
 
-                                    <div>
+                                    <div className="rounded-xl bg-[var(--surface-muted)] px-3 py-3">
                                         <dt className="font-semibold text-[var(--ink-muted)]">
                                             {t('student.sessions.teacher')}
                                         </dt>
@@ -214,7 +209,7 @@ export default function Schedule({
                                         </dd>
                                     </div>
 
-                                    <div>
+                                    <div className="rounded-xl bg-[var(--surface-muted)] px-3 py-3">
                                         <dt className="font-semibold text-[var(--ink-muted)]">
                                             {t('student.sessions.location')}
                                         </dt>
@@ -227,7 +222,7 @@ export default function Schedule({
 
                                 {!canJoin && session.canJoinAt ? (
                                     <p
-                                        className="mt-4 rounded-lg bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--ink-muted)]"
+                                        className="mt-4 rounded-xl border border-[color:var(--warning)]/25 bg-[color:var(--warning)]/8 px-4 py-3 text-sm leading-6 text-[var(--ink-muted)]"
                                         role="status"
                                     >
                                         <span className="font-semibold text-[var(--ink)]">
@@ -256,8 +251,20 @@ export default function Schedule({
         <AppLayout role="student">
             <Head title={t('student.schedule.title')} />
 
-            <PageHeader
-                className="mb-6"
+            <StudentPageHero
+                action={
+                    <div className="flex min-h-11 items-center gap-3 rounded-2xl border border-[color:var(--brand)]/20 bg-[var(--surface)]/80 px-4 py-2 shadow-sm">
+                        <strong className="text-2xl font-bold tabular-nums text-[var(--ink)]">
+                            {new Intl.NumberFormat(locale).format(
+                                sessions.length,
+                            )}
+                        </strong>
+                        <span className="max-w-32 text-sm font-semibold leading-5 text-[var(--ink-muted)]">
+                            {t('student.schedule.upcoming_sessions')}
+                        </span>
+                    </div>
+                }
+                className="mb-8"
                 subtitle={t('student.schedule.subtitle')}
                 title={t('student.schedule.title')}
             />
