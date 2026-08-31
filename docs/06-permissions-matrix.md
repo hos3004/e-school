@@ -157,6 +157,14 @@
 | `message.moderate` | ● | ● | — | — | ● | — | — | — | — |
 | **`messaging.inbound.view`** | ● | ● | — | — | ● | — | — | — | — |
 | `announcement.publish` | ● | ● | — | ○ | ● | — | — | — | — |
+| `popup_campaign.view_any` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.view` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.view_analytics` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.create` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.update` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.publish` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.pause` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.archive` | ● | — | — | — | ● | — | — | — | — |
 | `class_wall.post` | ● | ● | — | — | — | ◐assigned | ◐own | — | — |
 | `report.view` | ● | ● | ◐finance | ◐ops | ○ | ◐own | — | — | ○ |
 | `report.export` | ● | ● | ◐finance | ◐ops | — | — | — | — | ● |

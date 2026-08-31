@@ -36,6 +36,7 @@ return [
         'Notifications' => 'الإشعارات',
         'Organization' => 'المؤسسة والإعدادات',
         'Payroll' => 'مستحقات المعلمين',
+        'Popups' => 'الحملات المنبثقة',
         'Recordings' => 'التسجيلات',
         'Reporting' => 'التقارير',
         'Scheduling' => 'الجدولة',
@@ -141,6 +142,15 @@ return [
         'payroll.view' => 'عرض المستحقات',
 
         'program.manage' => 'إدارة البرامج',
+
+        'popup_campaign.archive' => 'أرشفة حملة منبثقة',
+        'popup_campaign.create' => 'إنشاء حملة منبثقة',
+        'popup_campaign.pause' => 'إيقاف حملة منبثقة مؤقتًا',
+        'popup_campaign.publish' => 'نشر حملة منبثقة',
+        'popup_campaign.update' => 'تعديل حملة منبثقة',
+        'popup_campaign.view' => 'عرض حملة منبثقة',
+        'popup_campaign.view_analytics' => 'عرض تحليلات الحملات المنبثقة',
+        'popup_campaign.view_any' => 'عرض قائمة الحملات المنبثقة',
 
         'recording.delete' => 'حذف تسجيل',
         'recording.download' => 'تنزيل تسجيل',

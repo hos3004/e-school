@@ -218,14 +218,31 @@ final class AccessControlSeeder extends Seeder
             'student.view', 'student.view.any', 'guardian.view',
             'staff.view', 'staff.view.any', 'staff.contract.view',
             'enrollment.view', 'group.view', 'content.view',
-            'program.manage', 'course.manage',
             'schedule.view', 'session.view', 'attendance.view',
-            'recording.view', 'assignment.manage', 'assessment.manage',
+            'recording.view',
             'grade.view', 'session_report.view',
             'payroll.view', 'report.view', 'report.export',
             'audit.view',
         ],
     ];
+
+    /**
+     * المصدر القابل للاختبار لأسماء الصلاحيات، مع إبقاء تصنيف الموديولات
+     * داخل البذرة نفسها. لا نستخدم array_unique هنا حتى يكشف الاختبار أي
+     * اسم مكرر بدل أن تخفيه عملية التطبيع.
+     *
+     * @return list<string>
+     */
+    public static function permissionNames(): array
+    {
+        $permissions = [];
+
+        foreach (self::PERMISSIONS as $names) {
+            array_push($permissions, ...$names);
+        }
+
+        return $permissions;
+    }
 
     public function run(): void
     {

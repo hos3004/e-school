@@ -13,6 +13,8 @@ use Modules\Assessments\Domain\Models\Assessment;
  */
 final class AssessmentPolicy
 {
+    public function __construct(private readonly AssessmentManagementScope $management) {}
+
     public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('assessment.manage') || $user->can('assessment.take') || $user->can('grade.view');
@@ -31,20 +33,17 @@ final class AssessmentPolicy
 
     public function update(Authenticatable&Authorizable $user, Assessment $assessment): bool
     {
-        return $user->can('assessment.manage')
-            && $assessment->organization_id === data_get($user, 'organization_id');
+        return $this->management->allows($user, $assessment);
     }
 
     public function delete(Authenticatable&Authorizable $user, Assessment $assessment): bool
     {
-        return $user->can('assessment.manage')
-            && $assessment->organization_id === data_get($user, 'organization_id');
+        return $this->management->allows($user, $assessment);
     }
 
     /** إضافة سؤال أو إدارة بنك أسئلة الاختبار. */
     public function manageQuestions(Authenticatable&Authorizable $user, Assessment $assessment): bool
     {
-        return $user->can('assessment.manage')
-            && $assessment->organization_id === data_get($user, 'organization_id');
+        return $this->management->allows($user, $assessment);
     }
 }

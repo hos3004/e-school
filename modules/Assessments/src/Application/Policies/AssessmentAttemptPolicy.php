@@ -6,6 +6,7 @@ namespace Modules\Assessments\Application\Policies;
 
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Modules\Assessments\Domain\Models\Assessment;
 use Modules\Assessments\Domain\Models\AssessmentAttempt;
 use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
 
@@ -14,7 +15,10 @@ use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
  */
 final readonly class AssessmentAttemptPolicy
 {
-    public function __construct(private StudentDirectoryQueries $students) {}
+    public function __construct(
+        private StudentDirectoryQueries $students,
+        private AssessmentManagementScope $management,
+    ) {}
 
     public function viewAny(Authenticatable&Authorizable $user): bool
     {
@@ -35,9 +39,17 @@ final readonly class AssessmentAttemptPolicy
     }
 
     /** بدء محاولة جديدة — يمر إضافيًا بحراس نافذة التوفر وسقف المحاولات. */
-    public function create(Authenticatable&Authorizable $user): bool
+    public function create(Authenticatable&Authorizable $user, Assessment $assessment): bool
     {
-        return $user->can('assessment.take');
+        if (!$user->can('assessment.take')
+            || $assessment->organization_id !== data_get($user, 'organization_id')) {
+            return false;
+        }
+
+        return $this->students->forUserIds(
+            (string) $assessment->organization_id,
+            [(string) $user->getAuthIdentifier()],
+        ) !== [];
     }
 
     public function update(Authenticatable&Authorizable $user, AssessmentAttempt $attempt): bool
@@ -59,8 +71,8 @@ final readonly class AssessmentAttemptPolicy
 
     public function grade(Authenticatable&Authorizable $user, AssessmentAttempt $attempt): bool
     {
-        return $user->can('assessment.manage')
-            && $attempt->assessment?->organization_id === data_get($user, 'organization_id');
+        return $attempt->assessment !== null
+            && $this->management->allows($user, $attempt->assessment);
     }
 
     private function belongsToUser(Authenticatable $user, AssessmentAttempt $attempt): bool

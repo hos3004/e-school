@@ -32,7 +32,7 @@ final class QuestionResource extends JsonResource
             'options' => $this->options,
             // correct_answer يُخفى افتراضيًا ويُكشف فقط لمن يملك صلاحية التصحيح.
             'correct_answer' => $this->when(
-                $request->user()?->can('assessments.attempt.grade'),
+                $request->user()?->can('assessment.manage'),
                 $this->correct_answer,
             ),
             'score' => $this->score,

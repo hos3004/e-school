@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
 use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Domain\Models\Role;
+use Modules\AccessControl\Presentation\Support\AccessControlLabels;
 
 uses(RefreshDatabase::class);
 
@@ -26,7 +27,8 @@ it('seeds the base permission matrix and system roles idempotently', function ()
     $seeder->run();
     $seeder->run();
 
-    $permissionCount = 94;
+    $sourcePermissionNames = AccessControlSeeder::permissionNames();
+    $permissionCount = count($sourcePermissionNames);
     $systemRoleNames = [
         'platform_admin',
         'academic_supervisor',
@@ -39,7 +41,12 @@ it('seeds the base permission matrix and system roles idempotently', function ()
         'auditor',
     ];
 
-    expect(Permission::query()->count())->toBe($permissionCount)
+    $seededPermissionNames = Permission::query()->orderBy('name')->pluck('name')->all();
+    $expectedPermissionNames = $sourcePermissionNames;
+    sort($expectedPermissionNames);
+
+    expect($sourcePermissionNames)->toHaveCount(count(array_unique($sourcePermissionNames)))
+        ->and($seededPermissionNames)->toBe($expectedPermissionNames)
         ->and(Role::query()
             ->whereNull('organization_id')
             ->where('is_system', true)
@@ -95,4 +102,54 @@ it('seeds the base permission matrix and system roles idempotently', function ()
 
     expect($teacher->permissions()->where('name', 'staff.availability.create')->exists())
         ->toBeTrue();
+
+    $popupPermissions = [
+        'popup_campaign.view_any',
+        'popup_campaign.view',
+        'popup_campaign.view_analytics',
+        'popup_campaign.create',
+        'popup_campaign.update',
+        'popup_campaign.publish',
+        'popup_campaign.pause',
+        'popup_campaign.archive',
+    ];
+
+    foreach ($popupPermissions as $popupPermission) {
+        expect($sourcePermissionNames)->toContain($popupPermission);
+    }
+
+    $communicationsOfficer = Role::query()
+        ->whereNull('organization_id')
+        ->where('name', 'communications_officer')
+        ->firstOrFail();
+
+    expect($communicationsOfficer->permissions()
+        ->whereIn('name', $popupPermissions)
+        ->count())->toBe(count($popupPermissions));
+
+    $auditor = Role::query()
+        ->whereNull('organization_id')
+        ->where('name', 'auditor')
+        ->firstOrFail();
+    $auditorPermissionNames = $auditor->permissions()->pluck('name')->all();
+
+    foreach (['program.manage', 'course.manage', 'assignment.manage', 'assessment.manage'] as $writePermission) {
+        expect($auditorPermissionNames)->not->toContain($writePermission);
+    }
+
+    foreach (['grade.view', 'session_report.view', 'audit.view'] as $readPermission) {
+        expect($auditorPermissionNames)->toContain($readPermission);
+    }
+
+    $originalLocale = app()->getLocale();
+
+    foreach (['ar', 'en'] as $locale) {
+        app()->setLocale($locale);
+
+        foreach ($popupPermissions as $permission) {
+            expect(AccessControlLabels::permission($permission))->not->toBe($permission);
+        }
+    }
+
+    app()->setLocale($originalLocale);
 });
