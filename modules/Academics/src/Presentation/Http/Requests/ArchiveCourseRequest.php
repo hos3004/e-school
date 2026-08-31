@@ -22,7 +22,7 @@ final class ArchiveCourseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => ['required', 'string', 'min:3', 'max:1000'],
+            'reason' => ['required', 'string', 'min:'.(int) config('academics.reason.minimum_length'), 'max:'.(int) config('academics.reason.maximum_length')],
         ];
     }
 

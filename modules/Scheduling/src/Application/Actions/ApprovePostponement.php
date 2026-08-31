@@ -5,169 +5,120 @@ declare(strict_types=1);
 namespace Modules\Scheduling\Application\Actions;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Modules\Scheduling\Domain\Events\PostponementScheduled;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
-use Modules\Scheduling\Domain\Services\ConflictDetector;
+use Modules\Sessions\Domain\Contracts\SessionSchedulingGateway;
+use Modules\Sessions\Domain\Contracts\SessionSchedulingQueries;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
-use Shared\ValueObjects\TimeRange;
 
-/**
- * اعتماد طلب التأجيل وإنشاء حصة التلافي.
- *
- * هنا تلتقي ثلاث قواعد من العميل:
- *  - التأجيل — وحده — يقابله حصة تلافي.
- *  - حصة التلافي مرتبطة بأصلها عبر makeup_for_session_id.
- *  - مستحق المعلم عن الحصة الأصلية يبقى مؤجَّلًا حتى تُقام حصة التلافي،
- *    وهو ما يتكفّل به موديول Payroll عند سماعه للحدث المنشور في النهاية.
- */
+/** اعتماد الموعد عبر عقد Sessions؛ لا كتابة في جدول يملكه موديول آخر. */
 final readonly class ApprovePostponement
 {
     public function __construct(
         private Transaction $transaction,
-        private ConflictDetector $conflicts,
+        private SessionSchedulingQueries $sessionQueries,
+        private SessionSchedulingGateway $sessions,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(
+        string $organizationId,
         string $requestId,
         string $approvedBy,
-        ?CarbonImmutable $agreedStart = null,
+        CarbonImmutable $agreedStart,
+        string $reason,
     ): PostponementRequest {
-        $request = PostponementRequest::query()->findOrFail($requestId);
-
-        $this->assertTransitionAllowed($request->status, PostponementStatus::Scheduled);
-
-        $start = $agreedStart
-            ?? $request->proposed_by_teacher_start
-            ?? $request->proposed_start;
-
-        if (!$start instanceof CarbonImmutable) {
-            $start = CarbonImmutable::parse((string) $start);
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw BusinessRuleViolation::make('scheduling.reason_required', 'scheduling::errors.reason_required');
+        }
+        if ($agreedStart->lessThanOrEqualTo(CarbonImmutable::now('UTC'))) {
+            throw BusinessRuleViolation::make('postponement.proposed_start_in_past', 'scheduling::errors.proposed_start_in_past');
         }
 
-        $original = DB::table('sessions')
-            ->where('id', $request->session_id)
-            ->first(['id', 'organization_id', 'group_id', 'course_id', 'staff_profile_id',
-                'session_type', 'scheduled_start', 'scheduled_end', 'title']);
-
-        if ($original === null) {
+        /** @var PostponementRequest|null $request */
+        $request = PostponementRequest::query()
+            ->forOrganization($organizationId)
+            ->whereKey($requestId)
+            ->first();
+        if ($request === null) {
+            throw BusinessRuleViolation::make('postponement.not_found', 'scheduling::errors.postponement_not_found');
+        }
+        if (!$request->status->canTransitionTo(PostponementStatus::Scheduled)) {
             throw BusinessRuleViolation::make(
-                'session.not_found',
-                'scheduling::errors.session_not_found',
+                'postponement.invalid_transition',
+                'scheduling::errors.postponement_invalid_transition',
+                ['from' => $request->status->value, 'to' => PostponementStatus::Scheduled->value],
             );
         }
 
-        $durationMinutes = (int) CarbonImmutable::parse($original->scheduled_start)
-            ->diffInMinutes(CarbonImmutable::parse($original->scheduled_end));
+        $original = $this->sessionQueries->find($organizationId, (string) $request->session_id);
+        if ($original === null) {
+            throw BusinessRuleViolation::make('session.not_found', 'scheduling::errors.session_not_found');
+        }
+        $windowDays = (int) config('scheduling.postponement.makeup_window_days');
+        if ($agreedStart->greaterThan($original->scheduledStart->addDays($windowDays))) {
+            throw BusinessRuleViolation::make(
+                'postponement.outside_makeup_window',
+                'scheduling::errors.outside_makeup_window',
+                ['days' => $windowDays],
+            );
+        }
 
-        $range = TimeRange::fromDuration($start, $durationMinutes);
-
-        $this->assertWithinMakeupWindow(CarbonImmutable::parse($original->scheduled_start), $start);
-        $this->assertNoConflict($range, (string) $original->staff_profile_id, $original->group_id);
-
-        $makeupId = (string) Str::ulid();
-
+        $old = ['status' => $request->status->value, 'agreed_start' => $request->agreed_start?->toIso8601String()];
         $updated = $this->transaction->run(function () use (
-            $request, $original, $range, $makeupId, $approvedBy, $start,
+            $organizationId,
+            $request,
+            $approvedBy,
+            $agreedStart,
+            $reason,
+            $old,
         ): PostponementRequest {
-            DB::table('sessions')->insert([
-                'id' => $makeupId,
-                'organization_id' => $original->organization_id,
-                'group_id' => $original->group_id,
-                'course_id' => $original->course_id,
-                'staff_profile_id' => $original->staff_profile_id,
-                'makeup_for_session_id' => $original->id,
-                'session_type' => 'makeup',
-                'status' => 'scheduled',
-                'scheduled_start' => $range->start,
-                'scheduled_end' => $range->end,
-                'title' => $original->title,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // الحصة الأصلية تصبح مؤجَّلة — وهي حالة نهائية لا تُقام بعدها.
-            DB::table('sessions')
-                ->where('id', $original->id)
-                ->update(['status' => 'postponed', 'updated_at' => now()]);
-
+            $makeupId = $this->sessions->scheduleMakeup(
+                $organizationId,
+                (string) $request->session_id,
+                $agreedStart,
+                $approvedBy,
+                $reason,
+            );
             $request->fill([
                 'status' => PostponementStatus::Scheduled,
-                'agreed_start' => $start,
+                'agreed_start' => $agreedStart,
                 'makeup_session_id' => $makeupId,
                 'responded_by' => $approvedBy,
                 'responded_at' => CarbonImmutable::now('UTC'),
-            ]);
-
-            $request->save();
+                'admin_note' => $reason,
+            ])->save();
+            $this->audit->record(
+                organizationId: $organizationId,
+                actorId: $approvedBy,
+                actorType: 'user',
+                action: 'scheduling.postponement_approved',
+                auditableType: 'postponement_requests',
+                auditableId: (string) $request->getKey(),
+                oldValues: $old,
+                newValues: [
+                    'status' => PostponementStatus::Scheduled->value,
+                    'agreed_start' => $agreedStart->toIso8601String(),
+                    'makeup_session_id' => $makeupId,
+                ],
+                reason: $reason,
+            );
 
             return $request;
         });
 
         event(new PostponementScheduled(
             requestId: (string) $updated->getKey(),
-            sessionId: (string) $original->id,
-            makeupSessionId: $makeupId,
-            agreedStart: $start->toIso8601String(),
+            sessionId: (string) $updated->session_id,
+            makeupSessionId: (string) $updated->makeup_session_id,
+            agreedStart: $agreedStart->toIso8601String(),
             actorId: $approvedBy,
         ));
 
         return $updated;
-    }
-
-    private function assertTransitionAllowed(
-        PostponementStatus $from,
-        PostponementStatus $to,
-    ): void {
-        if (!$from->canTransitionTo($to)) {
-            throw BusinessRuleViolation::make(
-                'postponement.invalid_transition',
-                'scheduling::errors.postponement_invalid_transition',
-                ['from' => $from->value, 'to' => $to->value],
-            );
-        }
-    }
-
-    /**
-     * حصة التلافي يجب أن تُعقد خلال نافذة محددة من الموعد الأصلي،
-     * وإلا فقد التأجيل معناه وتحوّل إلى تأجيل مفتوح.
-     */
-    private function assertWithinMakeupWindow(
-        CarbonImmutable $originalStart,
-        CarbonImmutable $makeupStart,
-    ): void {
-        $days = (int) config('scheduling.postponement.makeup_window_days', 30);
-        $deadline = $originalStart->addDays($days);
-
-        if ($makeupStart->greaterThan($deadline)) {
-            throw BusinessRuleViolation::make(
-                'postponement.outside_makeup_window',
-                'scheduling::errors.outside_makeup_window',
-                ['days' => $days],
-            );
-        }
-    }
-
-    private function assertNoConflict(
-        TimeRange $range,
-        string $staffProfileId,
-        ?string $groupId,
-    ): void {
-        $conflicts = $this->conflicts->conflictsFor(
-            range: $range,
-            staffProfileId: $staffProfileId,
-            groupId: $groupId === null ? null : (string) $groupId,
-        );
-
-        if ($conflicts !== []) {
-            throw BusinessRuleViolation::make(
-                'scheduling.conflict_detected',
-                'scheduling::errors.conflict_detected',
-                ['count' => count($conflicts)],
-            );
-        }
     }
 }

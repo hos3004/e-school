@@ -12,7 +12,9 @@ use Shared\Testing\Fixtures;
 
 function guardianApiUser(): ApiUser
 {
-    return new ApiUser((string) Str::ulid());
+    return (new ApiUser((string) Str::ulid()))->forceFill([
+        'organization_id' => Fixtures::organizationId(),
+    ]);
 }
 
 it('stores a guardian profile over the api and returns 201', function (): void {
@@ -49,7 +51,7 @@ it('validates the store payload and reports translated errors', function (): voi
 });
 
 it('forbids storing a guardian profile without the ability', function (): void {
-    Gate::define('guardians.create', fn (): bool => false);
+    Gate::define('guardian.link', fn (): bool => false);
     $profilesBefore = GuardianProfile::query()->count();
 
     $this->actingAs(guardianApiUser())
@@ -68,7 +70,9 @@ it('updates a guardian profile when the caller owns it', function (): void {
     $userId = Fixtures::userId();
     $profile = GuardianProfile::factory()->create(['user_id' => $userId]);
 
-    $this->actingAs(new ApiUser($userId))
+    $this->actingAs((new ApiUser($userId))->forceFill([
+        'organization_id' => Fixtures::organizationId(),
+    ]))
         ->patchJson("/api/guardians/profiles/{$profile->id}", [
             'occupation' => 'physician',
             'preferred_contact_channel' => 'email',
@@ -79,7 +83,7 @@ it('updates a guardian profile when the caller owns it', function (): void {
 });
 
 it('forbids updating a profile owned by another user without the ability', function (): void {
-    Gate::define('guardians.update_any', fn (): bool => false);
+    Gate::define('guardian.link', fn (): bool => false);
 
     $profile = GuardianProfile::factory()->create();
 

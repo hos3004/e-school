@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Domain\Events\RoleUpdated;
 use Modules\AccessControl\Domain\Models\Role;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -21,6 +22,7 @@ final readonly class UpdateRoleAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(
@@ -29,6 +31,7 @@ final readonly class UpdateRoleAction
         ?string $organizationId = null,
         ?string $actorId = null,
         ?string $scopeOrganizationId = null,
+        ?string $reason = null,
     ): Role {
         /** @var Role|null $role */
         $role = Role::query()
@@ -55,7 +58,7 @@ final readonly class UpdateRoleAction
         $changes = [];
 
         /** @var Role $role */
-        $role = DB::transaction(function () use ($role, $name, $organizationId, &$changes): Role {
+        $role = DB::transaction(function () use ($role, $name, $organizationId, $actorId, $scopeOrganizationId, $reason, &$changes): Role {
             if ($name !== null && $name !== $role->name) {
                 $changes['name'] = ['from' => $role->name, 'to' => $name];
                 $role->name = $name;
@@ -68,6 +71,20 @@ final readonly class UpdateRoleAction
 
             if ($changes !== []) {
                 $role->save();
+
+                if ($actorId !== null && $scopeOrganizationId !== null && $reason !== null && trim($reason) !== '') {
+                    $this->audit->record(
+                        organizationId: $scopeOrganizationId,
+                        actorId: $actorId,
+                        actorType: 'user',
+                        action: 'accesscontrol.role_updated',
+                        auditableType: 'roles',
+                        auditableId: (string) $role->getKey(),
+                        oldValues: array_map(static fn (array $change): mixed => $change['from'], $changes),
+                        newValues: array_map(static fn (array $change): mixed => $change['to'], $changes),
+                        reason: $reason,
+                    );
+                }
             }
 
             return $role;

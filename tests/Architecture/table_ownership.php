@@ -44,6 +44,8 @@ return [
     // Students
     'student_profiles' => 'Students',
     'registration_applications' => 'Students',
+    'registration_forms' => 'Students',
+    'registration_questions' => 'Students',
 
     // Guardians
     'guardian_profiles' => 'Guardians',
@@ -77,6 +79,7 @@ return [
 
     // Content
     'course_materials' => 'Content',
+    'course_material_versions' => 'Content',
 
     // Scheduling
     'schedules' => 'Scheduling',
@@ -138,6 +141,9 @@ return [
     'notification_delivery_attempts' => 'Notifications',
     'notification_preferences' => 'Notifications',
     'notification_templates' => 'Notifications',
+    'notification_category_settings' => 'Notifications',
+    'popup_campaigns' => 'Notifications',
+    'popup_campaign_user_state' => 'Notifications',
 
     // Payroll
     'payroll_periods' => 'Payroll',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Reporting\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Modules\Reporting\Domain\Events\OrganizationSnapshotRecorded;
@@ -61,6 +62,42 @@ it('rejects a snapshot build without the permission', function (): void {
         ])->assertForbidden();
 });
 
+it('ignores a client supplied organization when building a snapshot', function (): void {
+    Event::fake([OrganizationSnapshotRecorded::class]);
+    Gate::define('reporting.snapshot.build', fn (): bool => true);
+
+    $actorOrganizationId = Fixtures::organizationId();
+    $foreignOrganizationId = (string) str()->ulid();
+
+    DB::table('organizations')->insert([
+        'id' => $foreignOrganizationId,
+        'name' => json_encode(['ar' => 'مؤسسة أخرى', 'en' => 'Other organization'], JSON_UNESCAPED_UNICODE),
+        'slug' => 'reporting-foreign-'.strtolower(substr($foreignOrganizationId, -8)),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->actingAs(reportingActor())
+        ->postJson('/api/organization-snapshots', [
+            'organization_id' => $foreignOrganizationId,
+            'snapshot_date' => '2026-08-23',
+            'students_active' => 5,
+            'students_frozen' => 0,
+            'teachers_active' => 2,
+            'sessions_held' => 3,
+            'sessions_cancelled' => 1,
+        ])->assertCreated();
+
+    expect(OrganizationSnapshot::query()
+        ->where('organization_id', $actorOrganizationId)
+        ->whereDate('snapshot_date', '2026-08-23')
+        ->exists())->toBeTrue()
+        ->and(OrganizationSnapshot::query()
+            ->where('organization_id', $foreignOrganizationId)
+            ->whereDate('snapshot_date', '2026-08-23')
+            ->exists())->toBeFalse();
+});
+
 it('validates snapshot payload bounds', function (): void {
     Gate::define('reporting.snapshot.build', fn (): bool => true);
 
@@ -74,7 +111,8 @@ it('validates snapshot payload bounds', function (): void {
 });
 
 it('returns a student dashboard by enrollment', function (): void {
-    Gate::define('reporting.student.view_any', fn (): bool => true);
+    Gate::define('report.view', fn (): bool => true);
+    Gate::define('student.view.any', fn (): bool => true);
 
     $dashboard = StudentDashboard::factory()->create();
 
@@ -86,7 +124,8 @@ it('returns a student dashboard by enrollment', function (): void {
 });
 
 it('returns 404 for a dashboard that was never projected', function (): void {
-    Gate::define('reporting.student.view_any', fn (): bool => true);
+    Gate::define('report.view', fn (): bool => true);
+    Gate::define('student.view.any', fn (): bool => true);
 
     $this->actingAs(reportingActor())
         ->getJson('/api/student-dashboards/01UNKNOWNENROLLMENT00000')

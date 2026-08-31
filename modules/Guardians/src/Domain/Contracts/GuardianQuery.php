@@ -26,6 +26,18 @@ interface GuardianQuery
     public function guardiansForStudent(string $studentProfileId): array;
 
     /**
+     * خيارات الأوصياء المتاحين داخل مؤسسة (profile_id => تسمية عرض).
+     *
+     * @return array<string, string>
+     */
+    public function guardianOptions(string $organizationId, string $search = ''): array;
+
+    /**
+     * اسم عرض لوصي محدد داخل مؤسسة، إن وُجد.
+     */
+    public function guardianLabel(string $organizationId, string $guardianProfileId): ?string;
+
+    /**
      * هل يحق لهذا المستخدم (بصفته وصيًا موثّقًا) التصرف باسم الطالب؟
      * يراعي guardians.links.require_verification_for_acting و can_act_for.
      */

@@ -9,14 +9,17 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Academics\Domain\Contracts\ProgramEligibilityEvaluator;
 use Modules\Academics\Domain\Contracts\ProgramRulesQueries;
 use Modules\Academics\Domain\ValueObjects\ApplicantFacts;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Enrollments\Domain\Contracts\EnrollmentPlacementGateway;
 use Modules\Enrollments\Domain\ValueObjects\EnrollmentPlacementData;
 use Modules\Groups\Domain\Contracts\GroupPlacementGateway;
 use Modules\Groups\Domain\Events\StudentAssignedToGroup;
+use Modules\Groups\Domain\ValueObjects\GroupPlacementData;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 use Modules\Staff\Domain\Contracts\TeacherQualificationQueries;
 use Modules\Students\Domain\Contracts\StudentPlacementGateway;
 use Modules\Students\Domain\Events\StudentAssignedToTeacher;
+use Modules\Students\Domain\ValueObjects\StudentPlacementData;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -35,6 +38,7 @@ final readonly class AssignStudentToGroupAction
         private TeacherQualificationQueries $qualifications,
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(
@@ -45,14 +49,27 @@ final readonly class AssignStudentToGroupAction
         ?string $courseId = null,
         ?string $actorId = null,
         ?string $correlationId = null,
+        ?string $reason = null,
     ): EnrollmentPlacementData {
-        /** @var array{0: \Modules\Students\Domain\ValueObjects\StudentPlacementData, 1: \Modules\Groups\Domain\ValueObjects\GroupPlacementData, 2: EnrollmentPlacementData, 3: list<array{staff_profile_id: string, teacher_user_id: string, course_id: string|null}>} $result */
+        $reason = $reason === null ? null : trim($reason);
+
+        if ($reason === null || $reason === '') {
+            throw BusinessRuleViolation::make(
+                'enrollments.placement_reason_required',
+                'enrollments::errors.placement_reason_required',
+            );
+        }
+
+        /** @var array{0: StudentPlacementData, 1: GroupPlacementData, 2: EnrollmentPlacementData, 3: list<array{staff_profile_id: string, teacher_user_id: string, course_id: string|null}>} $result */
         $result = $this->transaction->run(function () use (
             $actorOrganizationId,
             $studentProfileId,
             $programId,
             $groupId,
             $courseId,
+            $actorId,
+            $correlationId,
+            $reason,
         ): array {
             $student = $this->students->findCleared($studentProfileId);
 
@@ -143,9 +160,32 @@ final readonly class AssignStudentToGroupAction
                 organizationId: $student->organizationId,
                 studentProfileId: $studentProfileId,
                 programId: $programId,
+                reason: $reason,
+                actorId: $actorId,
+                correlationId: $correlationId,
             );
 
             $this->students->markAssigned($student->organizationId, $studentProfileId);
+
+            $this->audit->record(
+                organizationId: $student->organizationId,
+                actorId: $actorId,
+                actorType: 'user',
+                action: 'enrollment.placed',
+                auditableType: 'student_profile',
+                auditableId: $studentProfileId,
+                oldValues: ['registration_status' => $student->status],
+                newValues: [
+                    'registration_status' => 'assigned',
+                    'program_id' => $programId,
+                    'course_id' => $courseId,
+                    'group_id' => $groupId,
+                    'enrollment_id' => $enrollment->enrollmentId,
+                    'membership_id' => $placement->membershipId,
+                ],
+                reason: $reason,
+                correlationId: $correlationId,
+            );
 
             return [$student, $placement, $enrollment, $teacherAssignments];
         });
@@ -164,6 +204,7 @@ final readonly class AssignStudentToGroupAction
                     courseId: $assignment['course_id'],
                     actorId: $actorId,
                     correlationId: $correlationId,
+                    reason: $reason,
                 ));
             }
 
@@ -178,6 +219,7 @@ final readonly class AssignStudentToGroupAction
                 courseId: $courseId,
                 actorId: $actorId,
                 correlationId: $correlationId,
+                reason: $reason,
             ));
         }
 

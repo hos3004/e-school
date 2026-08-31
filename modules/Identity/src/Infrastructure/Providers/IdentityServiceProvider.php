@@ -11,14 +11,22 @@ use Modules\Identity\Application\Actions\IssuePhonePasswordResetOtp;
 use Modules\Identity\Application\Policies\PasswordResetTokenPolicy;
 use Modules\Identity\Application\Policies\UserDevicePolicy;
 use Modules\Identity\Application\Policies\UserPolicy;
+use Modules\Identity\Application\Services\AvatarResolver;
+use Modules\Identity\Application\Services\UserAccountOperationService;
 use Modules\Identity\Application\Services\UserAccountProvisioningService;
+use Modules\Identity\Application\Services\UsernameSuggester;
+use Modules\Identity\Domain\Contracts\AvatarQueries;
 use Modules\Identity\Domain\Contracts\PhonePasswordResetOtpDelivery;
+use Modules\Identity\Domain\Contracts\UserAccountDirectory;
+use Modules\Identity\Domain\Contracts\UserAccountOperations;
 use Modules\Identity\Domain\Contracts\UserAccountProvisioner;
+use Modules\Identity\Domain\Contracts\UsernameSuggestionGateway;
 use Modules\Identity\Domain\Contracts\UserQueryService;
 use Modules\Identity\Domain\Models\PasswordResetToken;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Domain\Models\UserDevice;
 use Modules\Identity\Infrastructure\Delivery\NullPhonePasswordResetOtpDelivery;
+use Modules\Identity\Infrastructure\Persistence\EloquentUserAccountDirectory;
 use Modules\Identity\Infrastructure\Persistence\EloquentUserQueryService;
 use Shared\Module\BaseModuleServiceProvider;
 
@@ -88,8 +96,12 @@ final class IdentityServiceProvider extends BaseModuleServiceProvider
     {
         return [
             PhonePasswordResetOtpDelivery::class => NullPhonePasswordResetOtpDelivery::class,
+            UserAccountDirectory::class => EloquentUserAccountDirectory::class,
+            UsernameSuggestionGateway::class => UsernameSuggester::class,
             UserAccountProvisioner::class => UserAccountProvisioningService::class,
             UserQueryService::class => EloquentUserQueryService::class,
+            UserAccountOperations::class => UserAccountOperationService::class,
+            AvatarQueries::class => AvatarResolver::class,
         ];
     }
 }

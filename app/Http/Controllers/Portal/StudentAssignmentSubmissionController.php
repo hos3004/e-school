@@ -62,7 +62,11 @@ final class StudentAssignmentSubmissionController extends Controller
             ),
         );
 
-        $result = $this->submit->execute($submission, $request->validated());
+        $result = $this->submit->execute(
+            $submission,
+            $request->validated(),
+            (string) $request->user()?->getAuthIdentifier(),
+        );
 
         return back()->with(
             'success',

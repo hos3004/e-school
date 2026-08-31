@@ -7,7 +7,6 @@ namespace Modules\Sessions\Application\Actions;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
-use Modules\Sessions\Application\Concerns\TransitionsSessionStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\SessionCompleted;
 use Modules\Sessions\Domain\Models\Session;
@@ -18,23 +17,23 @@ use Modules\Sessions\Domain\Models\Session;
  */
 final readonly class CompleteSessionAction
 {
-    use TransitionsSessionStatus;
-
     public function __construct(
         private Dispatcher $events,
+        private TransitionSessionStatusAction $transition,
     ) {}
 
-    public function execute(Session $session, ?string $actorId = null): Session
+    public function execute(Session $session, string $actorId, string $reason): Session
     {
-        $this->guardNotTerminal($session);
-
-        DB::transaction(function () use ($session): void {
-            $this->applyTransition(
+        DB::transaction(function () use (&$session, $actorId, $reason): void {
+            $session = $this->transition->execute(
                 $session,
                 SessionStatus::Completed,
+                $actorId,
+                $reason,
+                'sessions.session_completed',
                 [
-                    'finalized_at' => CarbonImmutable::now('UTC'),
-                    'finalized_by' => (string) auth()->id(),
+                    'finalized_at' => CarbonImmutable::now('UTC')->toIso8601String(),
+                    'finalized_by' => $actorId,
                 ],
             );
         });
@@ -49,6 +48,6 @@ final readonly class CompleteSessionAction
             attendedMinutes: $attended,
         ));
 
-        return $session->refresh();
+        return $session;
     }
 }

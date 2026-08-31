@@ -26,7 +26,7 @@ it('seeds the base permission matrix and system roles idempotently', function ()
     $seeder->run();
     $seeder->run();
 
-    $permissionCount = 92;
+    $permissionCount = 94;
     $systemRoleNames = [
         'platform_admin',
         'academic_supervisor',
@@ -79,4 +79,20 @@ it('seeds the base permission matrix and system roles idempotently', function ()
         expect(in_array('staff.view.any', $permissionNames, true))
             ->toBe(in_array($roleName, $staffViewAnyRoles, true));
     }
+
+    $academicSupervisor = Role::query()
+        ->whereNull('organization_id')
+        ->where('name', 'academic_supervisor')
+        ->firstOrFail();
+
+    expect($academicSupervisor->permissions()->where('name', 'staff.availability.approve')->exists())
+        ->toBeTrue();
+
+    $teacher = Role::query()
+        ->whereNull('organization_id')
+        ->where('name', 'teacher')
+        ->firstOrFail();
+
+    expect($teacher->permissions()->where('name', 'staff.availability.create')->exists())
+        ->toBeTrue();
 });

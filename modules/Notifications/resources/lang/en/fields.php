@@ -53,4 +53,12 @@ return [
     'parameters' => 'Parameters',
     'provider_template_name' => 'Provider template name',
     'scope' => 'Scope',
+    'recipient' => 'Recipient',
+    'retry_reason' => 'Resend reason',
+    'cancel_reason' => 'Cancellation reason',
+    'attempts_history' => 'Delivery attempts history',
+    'result' => 'Result',
+    'audit_history' => 'Decision and audit history',
+    'action' => 'Action',
+    'actor' => 'Performed by',
 ];

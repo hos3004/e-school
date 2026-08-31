@@ -13,11 +13,15 @@ use Modules\Reporting\Application\Policies\ReportEventLogPolicy;
 use Modules\Reporting\Application\Policies\StudentDashboardPolicy;
 use Modules\Reporting\Application\Policies\TeacherDashboardPolicy;
 use Modules\Reporting\Application\Queries\DashboardQueryService;
+use Modules\Reporting\Application\Queries\OperationalReportQueryService;
 use Modules\Reporting\Domain\Contracts\DashboardQuery;
+use Modules\Reporting\Domain\Contracts\OperationalReportQuery;
+use Modules\Reporting\Domain\Contracts\ReportPdfRenderer;
 use Modules\Reporting\Domain\Models\OrganizationSnapshot;
 use Modules\Reporting\Domain\Models\ReportEventLog;
 use Modules\Reporting\Domain\Models\StudentDashboard;
 use Modules\Reporting\Domain\Models\TeacherDashboard;
+use Modules\Reporting\Infrastructure\Pdf\MpdfReportPdfRenderer;
 use Modules\Sessions\Domain\Events\SessionCompleted;
 use Modules\Sessions\Domain\Events\SessionNoShowRecorded;
 use Shared\Module\BaseModuleServiceProvider;
@@ -82,6 +86,8 @@ final class ReportingServiceProvider extends BaseModuleServiceProvider
     {
         return [
             DashboardQuery::class => DashboardQueryService::class,
+            OperationalReportQuery::class => OperationalReportQueryService::class,
+            ReportPdfRenderer::class => MpdfReportPdfRenderer::class,
         ];
     }
 }

@@ -15,12 +15,12 @@ final class RecordingViewPolicy
 {
     public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('recordings.recording_view.view_any');
+        return $user->can('recording.view.any');
     }
 
     public function view(Authenticatable&Authorizable $user, RecordingView $view): bool
     {
-        return $user->can('recordings.recording_view.view')
+        return $user->can('recording.view.any')
             && $view->recording !== null
             && $view->recording->organization_id === data_get($user, 'organization_id');
     }

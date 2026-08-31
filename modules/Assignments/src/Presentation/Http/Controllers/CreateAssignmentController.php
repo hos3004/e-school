@@ -49,6 +49,10 @@ final class CreateAssignmentController extends Controller
             'organization_id' => $organizationId,
         ]);
 
-        return new AssignmentResource($this->action->execute($data));
+        return new AssignmentResource($this->action->execute(
+            $data,
+            (string) $user->getAuthIdentifier(),
+            $request->string('reason')->toString(),
+        ));
     }
 }

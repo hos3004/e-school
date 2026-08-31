@@ -14,28 +14,28 @@ use Modules\Enrollments\Domain\Models\EnrollmentStatusHistory;
  */
 final class EnrollmentStatusHistoryPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
-        return $user->can('enrollments.status_history.view_any');
+        return $user->can('enrollment.view');
     }
 
-    public function view($user, EnrollmentStatusHistory $history): bool
+    public function view(mixed $user, EnrollmentStatusHistory $history): bool
     {
-        return $user->can('enrollments.status_history.view')
+        return $user->can('enrollment.view')
             && $history->enrollment()->first()?->organization_id === $user->organization_id;
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
         return false;
     }
 
-    public function update($user, EnrollmentStatusHistory $history): bool
+    public function update(mixed $user, EnrollmentStatusHistory $history): bool
     {
         return false;
     }
 
-    public function delete($user, EnrollmentStatusHistory $history): bool
+    public function delete(mixed $user, EnrollmentStatusHistory $history): bool
     {
         return false;
     }

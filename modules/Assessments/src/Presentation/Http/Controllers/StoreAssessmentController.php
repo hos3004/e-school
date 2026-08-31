@@ -20,10 +20,19 @@ final class StoreAssessmentController extends Controller
 
     public function __invoke(StoreAssessmentRequest $request): AssessmentResource
     {
+        $user = $request->user();
+
+        // السبب يخص قيد التدقيق وحده — لا يُمرَّر كسمة على نموذج الاختبار.
         $assessment = $this->action->execute([
-            ...$request->validated(),
-            'organization_id' => (string) $request->user()?->organization_id,
-        ]);
+            ...$request->safe()->except('reason'),
+            'organization_id' => (string) $user?->organization_id,
+        ],
+            actorId: (string) $user?->getAuthIdentifier(),
+            reason: (string) $request->validated('reason'),
+            canManageAll: $user?->can('settings.manage') === true
+                || $user?->can('student.update') === true
+                || $user?->can('message.moderate') === true,
+        );
 
         return new AssessmentResource($assessment);
     }

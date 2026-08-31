@@ -22,6 +22,7 @@ final class StudentAssignedToGroup extends DomainEvent
         public readonly ?string $courseId = null,
         ?string $actorId = null,
         ?string $correlationId = null,
+        public readonly ?string $reason = null,
     ) {
         parent::__construct($actorId, $correlationId);
     }
@@ -48,6 +49,7 @@ final class StudentAssignedToGroup extends DomainEvent
             'teacher_user_ids' => $this->teacherUserIds,
             'program_id' => $this->programId,
             'course_id' => $this->courseId,
+            'reason' => $this->reason,
         ];
     }
 }

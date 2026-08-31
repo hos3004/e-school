@@ -21,7 +21,12 @@ final class UpdateStudentProfileController extends Controller
 
     public function __invoke(UpdateStudentProfileRequest $request, StudentProfile $student): StudentProfileResource
     {
-        $student = $this->action->execute($student, $request->validated());
+        $student = $this->action->execute(
+            student: $student,
+            changes: collect($request->validated())->except('reason')->all(),
+            actorId: (string) $request->user()?->getAuthIdentifier(),
+            reason: (string) $request->validated('reason'),
+        );
 
         return StudentProfileResource::make($student);
     }

@@ -13,6 +13,7 @@
 - `Identity` (حساب المستخدم).
 - يعلن للآخرين: `TeacherRateResolver` — عقد عام في `Domain/Contracts` يستعمله `Payroll` دون معرفة جداوله (docs/08 §2).
 - يعلن `TeacherQualificationQueries` لإرجاع معرّفات المعلمين المؤهلين للكورس والتحقق من التأهيل والجنس دون كشف نماذج Eloquent.
+- يعلن `StaffAdministrationQueries` لإرجاع توافر المعلم كـDTOs إلى Hub الإدارة.
 
 ## قواعد خاصة
 

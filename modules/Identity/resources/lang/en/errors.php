@@ -8,12 +8,15 @@ declare(strict_types=1);
 */
 
 return [
+    'managed_role_requires_profile' => 'Use the student, teacher, or guardian onboarding flow for this account type.',
     'email_taken' => 'This email address is already registered.',
     'username_taken' => 'This username is already taken.',
 
     'status_reason_required' => 'Changing an account status requires a written reason.',
     'self_status_change' => 'You cannot change your own account status.',
     'invalid_status_transition' => 'Cannot transition from ":from" to ":to".',
+    'organization_mismatch' => 'The requested account does not belong to your organization.',
+    'update_reason_required' => 'Editing account details requires a written reason.',
 
     'current_password_wrong' => 'The current password is incorrect.',
     'password_unchanged' => 'The new password must differ from the current one.',
@@ -25,4 +28,7 @@ return [
 
     'push_token_in_use' => 'The push token is already registered on another active device.',
     'device_already_revoked' => 'The device has already been revoked.',
+
+    'avatar_not_uploaded' => 'No image was uploaded, or the file was lost before saving. Please try again.',
+    'avatar_invalid_image' => 'The uploaded file is not a valid image. Only JPEG, PNG, or WebP are allowed.',
 ];

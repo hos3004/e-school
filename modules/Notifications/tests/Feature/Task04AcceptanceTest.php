@@ -218,8 +218,14 @@ final class Task04AcceptanceTest extends TestCase
     public function test_group_wall_post_and_comment(): void
     {
         $orgId = Fixtures::organizationId();
-        $teacherUser = User::factory()->create(['organization_id' => $orgId]);
-        $studentUser = User::factory()->create(['organization_id' => $orgId]);
+        $staffProfileId = Fixtures::staffProfileId();
+        $studentProfileId = Fixtures::studentProfileId();
+        $teacherUser = User::query()->findOrFail((string) DB::table('staff_profiles')
+            ->where('id', $staffProfileId)
+            ->value('user_id'));
+        $studentUser = User::query()->findOrFail((string) DB::table('student_profiles')
+            ->where('id', $studentProfileId)
+            ->value('user_id'));
 
         $groupId = (string) Str::ulid();
         DB::table('groups')->insert([
@@ -234,6 +240,24 @@ final class Task04AcceptanceTest extends TestCase
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
+        DB::table('group_teachers')->insert([
+            'id' => (string) Str::ulid(),
+            'group_id' => $groupId,
+            'staff_profile_id' => $staffProfileId,
+            'course_id' => null,
+            'role' => 'primary',
+            'assigned_from' => now('UTC')->toDateString(),
+            'created_at' => now('UTC'),
+        ]);
+        DB::table('group_memberships')->insert([
+            'id' => (string) Str::ulid(),
+            'group_id' => $groupId,
+            'student_profile_id' => $studentProfileId,
+            'joined_at' => now('UTC'),
+            'status' => 'active',
+            'created_at' => now('UTC'),
+        ]);
+
         $post = app(PublishWallPostAction::class)->execute(
             organizationId: $orgId,
             groupId: $groupId,
@@ -245,11 +269,11 @@ final class Task04AcceptanceTest extends TestCase
 
         $comment = app(AddWallCommentAction::class)->execute(
             post: $post,
-            authorUserId: (string) $studentUser->id,
-            content: 'شكرا استاذ',
+            commenterUserId: (string) $studentUser->id,
+            body: 'شكرا استاذ',
         );
 
-        $this->assertEquals('شكرا استاذ', $comment->content);
+        $this->assertEquals('شكرا استاذ', $comment->body);
     }
 
     // ─── 6. Assignment lifecycle: Create → Submit → Grade ────────────
@@ -268,13 +292,13 @@ final class Task04AcceptanceTest extends TestCase
         DB::table('programs')->insert([
             'id' => $programId, 'organization_id' => $orgId, 'code' => 'P1',
             'name' => '[]', 'program_type' => 'ongoing', 'target_gender' => 'all',
-            'default_session_minutes' => 60,
+            'default_session_minutes' => 60, 'currency' => 'USD',
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
         DB::table('levels')->insert([
             'id' => $levelId, 'program_id' => $programId, 'code' => 'L1',
-            'name' => '[]', 'created_at' => now(), 'updated_at' => now(),
+            'name' => '[]', 'created_at' => now(),
         ]);
 
         DB::table('courses')->insert([
@@ -289,6 +313,27 @@ final class Task04AcceptanceTest extends TestCase
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
+        DB::table('group_programs')->insert([
+            'id' => (string) Str::ulid(), 'group_id' => $groupId, 'program_id' => $programId, 'created_at' => now(),
+        ]);
+        DB::table('teacher_courses')->insert([
+            'id' => (string) Str::ulid(), 'staff_profile_id' => $staffProfileId, 'course_id' => $courseId,
+            'qualified_at' => now(), 'qualified_by' => $userId, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('group_teachers')->insert([
+            'id' => (string) Str::ulid(), 'group_id' => $groupId, 'staff_profile_id' => $staffProfileId,
+            'course_id' => $courseId, 'role' => 'primary', 'assigned_from' => now()->toDateString(), 'created_at' => now(),
+        ]);
+        DB::table('enrollments')->insert([
+            'id' => (string) Str::ulid(), 'organization_id' => $orgId, 'student_profile_id' => $studentProfileId,
+            'program_id' => $programId, 'status' => 'active', 'applied_at' => now(), 'activated_at' => now(),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('group_memberships')->insert([
+            'id' => (string) Str::ulid(), 'group_id' => $groupId, 'student_profile_id' => $studentProfileId,
+            'joined_at' => now(), 'status' => 'active', 'created_at' => now(),
+        ]);
+
         /** @var Assignment $assignment */
         $assignment = app(CreateAssignmentAction::class)->execute([
             'organization_id' => $orgId,
@@ -299,22 +344,18 @@ final class Task04AcceptanceTest extends TestCase
             'due_at' => now()->utc()->addDays(2)->toIso8601String(),
             'max_score' => 100,
             'allows_late' => true,
-        ]);
+        ], $userId, 'اختبار إنشاء واجب كامل');
 
         $this->assertInstanceOf(Assignment::class, $assignment);
 
-        // Create pending submission
-        $submission = AssignmentSubmission::query()->create([
-            'assignment_id' => (string) $assignment->id,
-            'student_profile_id' => $studentProfileId,
-            'organization_id' => $orgId,
-            'status' => AssignmentSubmissionStatus::Pending->value,
-            'is_late' => false,
-        ]);
+        $submission = AssignmentSubmission::query()
+            ->where('assignment_id', (string) $assignment->id)
+            ->where('student_profile_id', $studentProfileId)
+            ->firstOrFail();
 
         $submitted = app(SubmitAssignmentAction::class)->execute($submission, [
             'content' => 'إجابة الإعراب النموذجية',
-        ]);
+        ], $userId);
 
         $this->assertEquals(AssignmentSubmissionStatus::Submitted, $submitted->status);
 
@@ -325,6 +366,8 @@ final class Task04AcceptanceTest extends TestCase
                 'score' => 95,
                 'feedback' => 'إجابة ممتازة جدا',
             ],
+            actorId: $userId,
+            reason: 'اعتماد نتيجة الاختبار',
         );
 
         $this->assertEquals(AssignmentSubmissionStatus::Graded, $graded->status);

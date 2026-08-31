@@ -29,6 +29,7 @@ final class AssignTeacherRequest extends FormRequest
             'role' => ['required', 'string', Rule::enum(GroupTeacherRole::class)],
             'assigned_from' => ['required', 'date'],
             'assigned_to' => ['nullable', 'date', 'after_or_equal:assigned_from'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }
 
@@ -39,6 +40,7 @@ final class AssignTeacherRequest extends FormRequest
     {
         return [
             'assigned_to.after_or_equal' => __('groups::validation.ends_before_starts'),
+            'reason.required' => __('groups::validation.reason_required'),
         ];
     }
 
@@ -53,6 +55,7 @@ final class AssignTeacherRequest extends FormRequest
             'role',
             'assigned_from',
             'assigned_to',
+            'reason',
         ])->mapWithKeys(
             fn (string $field): array => [$field => __('groups::attributes.'.$field)],
         )->all();

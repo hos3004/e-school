@@ -11,7 +11,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Payroll\Domain\Enums\PayrollEntryStatus;
 use Modules\Payroll\Domain\Models\PayrollEntry;
+use Modules\Staff\Domain\Contracts\StaffQueries;
 use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
@@ -82,14 +84,19 @@ final class PayrollEntryResource extends Resource
 
                 TextColumn::make('staff_profile_id')
                     ->label(__('payroll::filament.entry.staff'))
+                    // اسم المعلم بدل ULID من ٢٦ خانة. الأسماء تُجلب دفعة واحدة
+                    // لكل صفحة عبر عقد Staff العام تفاديًا لـ N+1.
+                    ->formatStateUsing(fn (?string $state): string => self::teacherName($state))
                     ->searchable(),
 
                 TextColumn::make('entry_type')
                     ->label(__('payroll::filament.entry.type'))
+                    ->formatStateUsing(fn (?string $state): string => self::translated('payroll::filament.entry_type', $state))
                     ->badge(),
 
                 TextColumn::make('outcome_key')
                     ->label(__('payroll::filament.entry.outcome'))
+                    ->formatStateUsing(fn (?string $state): string => self::translated('payroll::outcomes', $state))
                     ->toggleable(),
 
                 TextColumn::make('amount')
@@ -104,7 +111,17 @@ final class PayrollEntryResource extends Resource
 
                 TextColumn::make('status')
                     ->label(__('payroll::filament.entry.status'))
-                    ->badge(),
+                    ->formatStateUsing(fn (PayrollEntryStatus|string|null $state): string => $state instanceof PayrollEntryStatus
+                        ? $state->label()
+                        : (PayrollEntryStatus::tryFrom((string) $state)?->label() ?? (string) $state))
+                    ->badge()
+                    ->color(fn (PayrollEntryStatus|string|null $state): string => match (
+                        $state instanceof PayrollEntryStatus ? $state : PayrollEntryStatus::tryFrom((string) $state)
+                    ) {
+                        PayrollEntryStatus::Released => 'success',
+                        PayrollEntryStatus::Deferred => 'warning',
+                        default => 'gray',
+                    }),
 
                 TextColumn::make('session_id')
                     ->label(__('payroll::filament.entry.session'))
@@ -133,4 +150,51 @@ final class PayrollEntryResource extends Resource
             'index' => PayrollEntryResource\Pages\ListPayrollEntries::route('/'),
         ];
     }
+
+    /**
+     * ترجمة مفتاح مخزَّن؛ المفتاح نفسه هو البديل حين تنقص الترجمة، فلا يظهر
+     * صف فارغ لقيمة موجودة في قاعدة البيانات.
+     */
+    private static function translated(string $group, ?string $key): string
+    {
+        if ($key === null || $key === '') {
+            return '—';
+        }
+
+        $translation = __("{$group}.{$key}");
+
+        return is_string($translation) && $translation !== "{$group}.{$key}"
+            ? $translation
+            : $key;
+    }
+
+    /**
+     * أسماء المعلمين، مُحمَّلة مرة واحدة لكل طلب — لا استعلام لكل صف.
+     */
+    private static function teacherName(?string $staffProfileId): string
+    {
+        if ($staffProfileId === null || $staffProfileId === '') {
+            return '—';
+        }
+
+        $organizationId = data_get(auth()->user(), 'organization_id');
+
+        if (!is_string($organizationId) || $organizationId === '') {
+            return $staffProfileId;
+        }
+
+        if (self::$teacherNames === null) {
+            /** @var StaffQueries $staff */
+            $staff = app(StaffQueries::class);
+            self::$teacherNames = $staff->namesForProfiles(
+                $organizationId,
+                $staff->profileIdsForOrganization($organizationId),
+            );
+        }
+
+        return self::$teacherNames[$staffProfileId] ?? $staffProfileId;
+    }
+
+    /** @var array<string, string>|null */
+    private static ?array $teacherNames = null;
 }

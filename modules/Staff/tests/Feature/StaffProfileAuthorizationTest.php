@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Tests\Feature;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -13,7 +13,7 @@ use Tests\TestCase;
 
 final class StaffProfileAuthorizationTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     public function test_index_only_returns_profiles_from_the_authenticated_users_organization(): void
     {
@@ -87,9 +87,58 @@ final class StaffProfileAuthorizationTest extends TestCase
             ->assertForbidden();
     }
 
-    private function actor(string $organizationId): ApiUser
+    public function test_teacher_can_only_create_availability_for_their_own_profile(): void
     {
-        return (new ApiUser((string) Str::ulid()))->forceFill([
+        Gate::define('staff.availability.create', static fn (): bool => true);
+        Gate::define('staff.view.any', static fn (): bool => false);
+
+        $organizationId = $this->createOrganization('availability-owner');
+        $ownProfileId = $this->createStaffProfile($organizationId, 'OWN-AVAILABILITY');
+        $otherProfileId = $this->createStaffProfile($organizationId, 'OTHER-AVAILABILITY');
+        $ownUserId = (string) DB::table('staff_profiles')->where('id', $ownProfileId)->value('user_id');
+
+        $payload = [
+            'weekday' => 1,
+            'start_time' => '09:00',
+            'end_time' => '12:00',
+            'timezone' => 'UTC',
+            'effective_from' => now()->toDateString(),
+        ];
+
+        $this->actingAs($this->actor($organizationId, $ownUserId))
+            ->postJson('/api/staff/availability', ['staff_profile_id' => $otherProfileId, ...$payload])
+            ->assertForbidden();
+
+        $this->actingAs($this->actor($organizationId, $ownUserId))
+            ->postJson('/api/staff/availability', ['staff_profile_id' => $ownProfileId, ...$payload])
+            ->assertCreated()
+            ->assertJsonPath('data.staff_profile_id', $ownProfileId);
+    }
+
+    public function test_availability_creation_cannot_cross_organization_even_with_staff_view_any(): void
+    {
+        Gate::define('staff.availability.create', static fn (): bool => true);
+        Gate::define('staff.view.any', static fn (): bool => true);
+
+        $organizationId = $this->createOrganization('availability-supervisor');
+        $otherOrganizationId = $this->createOrganization('availability-cross-organization');
+        $otherProfileId = $this->createStaffProfile($otherOrganizationId, 'CROSS-AVAILABILITY');
+
+        $this->actingAs($this->actor($organizationId))
+            ->postJson('/api/staff/availability', [
+                'staff_profile_id' => $otherProfileId,
+                'weekday' => 2,
+                'start_time' => '10:00',
+                'end_time' => '14:00',
+                'timezone' => 'UTC',
+                'effective_from' => now()->toDateString(),
+            ])
+            ->assertForbidden();
+    }
+
+    private function actor(string $organizationId, ?string $userId = null): ApiUser
+    {
+        return (new ApiUser($userId ?? (string) Str::ulid()))->forceFill([
             'organization_id' => $organizationId,
         ]);
     }

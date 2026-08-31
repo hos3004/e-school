@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\Identity\Application\Actions\ChangeUserStatus;
 use Modules\Identity\Domain\Enums\UserStatus;
@@ -37,7 +38,12 @@ it('suspends an active user and records the reason', function (): void {
     $updated = $action->execute($target, UserStatus::Suspended, 'تكرار المخالفات', $admin->id);
 
     expect($updated->status)->toBe(UserStatus::Suspended)
-        ->and($updated->fresh()->status)->toBe(UserStatus::Suspended);
+        ->and($updated->fresh()->status)->toBe(UserStatus::Suspended)
+        ->and(DB::table('audit_log')->where([
+            'action' => 'identity.user_status_changed',
+            'auditable_id' => (string) $target->id,
+            'reason' => 'تكرار المخالفات',
+        ])->exists())->toBeTrue();
 
     Event::assertDispatched(UserStatusChanged::class, fn (UserStatusChanged $e): bool => $e->userId === $target->id
         && $e->from === 'active'

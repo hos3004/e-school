@@ -5,29 +5,25 @@ declare(strict_types=1);
 namespace Modules\Attendance\Presentation\Filament\Resources;
 
 use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
-use Filament\Support\Colors\Color;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Attendance\Application\Actions\ConfirmAttendanceAction;
 use Modules\Attendance\Application\Actions\OverrideAttendanceAction;
+use Modules\Attendance\Application\Queries\AttendanceOperationsQueryService;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Models\Attendance;
 use Modules\Attendance\Presentation\Filament\Resources\AttendanceResource\Pages;
+use Shared\Support\BusinessRuleViolation;
 
-/**
- * مورد Filament لقيود الحضور.
- *
- * القيد يُنشأ برمجيًا من أحداث الفصل — لا إنشاء من اللوحة.
- * التعديل الوحيد المسموح هو الاعتماد أو التجاوز بسبب، وكلاهما يمرّ
- * عبر إجراءات التطبيق (Application\Actions) حفاظًا على قواعد العمل والتدقيق.
- */
+/** شاشة تشغيلية لقيود الحضور؛ الرصد نفسه يأتي من الفصل ولا يُنشأ يدويًا. */
 final class AttendanceFilamentResource extends Resource
 {
     protected static ?string $model = Attendance::class;
@@ -36,7 +32,7 @@ final class AttendanceFilamentResource extends Resource
 
     protected static ?int $navigationSort = 42;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('attendance::filament.navigation_group');
     }
@@ -56,71 +52,60 @@ final class AttendanceFilamentResource extends Resource
         return (bool) (auth()->user()?->can('viewAny', Attendance::class) ?? false);
     }
 
-    /** الرصد يتم من أحداث الفصل فقط — لا إنشاء يدوي من اللوحة. */
     public static function canCreate(): bool
     {
         return false;
     }
 
-    public static function form(Schema $schema): Schema
+    public static function getEloquentQuery(): Builder
     {
-        return $schema
-            ->components([
-                Select::make('status')
-                    ->label(__('attendance::fields.status'))
-                    ->options(self::statusOptions())
-                    ->disabled(),
-                Select::make('derived_status')
-                    ->label(__('attendance::fields.derived_status'))
-                    ->options(self::statusOptions())
-                    ->disabled(),
-                TextInput::make('attended_minutes')
-                    ->label(__('attendance::fields.attended_minutes'))
-                    ->numeric()
-                    ->disabled(),
-                TextInput::make('joined_after_minutes')
-                    ->label(__('attendance::fields.joined_after_minutes'))
-                    ->numeric()
-                    ->disabled(),
-                TextInput::make('left_before_minutes')
-                    ->label(__('attendance::fields.left_before_minutes'))
-                    ->numeric()
-                    ->disabled(),
-                TextInput::make('session_participant_id')
-                    ->label(__('attendance::fields.session_participant_id'))
-                    ->disabled(),
-                Textarea::make('override_reason')
-                    ->label(__('attendance::fields.override_reason'))
-                    ->rows(3)
-                    ->disabled(),
-            ])
-            ->columns(2);
+        $organizationId = self::organizationId();
+        $participantIds = $organizationId === ''
+            ? []
+            : self::operations()->participantIdsForOrganization($organizationId);
+
+        return parent::getEloquentQuery()->whereIn('session_participant_id', $participantIds);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('session_participant_id')
-                    ->label(__('attendance::fields.session_participant_id'))
-                    ->copyable()
-                    ->searchable(),
+                TextColumn::make('student_label')
+                    ->label(__('attendance::fields.student'))
+                    ->state(fn (Attendance $record): string => self::contextValue($record, 'student'))
+                    ->wrap(),
+                TextColumn::make('student_code_label')
+                    ->label(__('attendance::fields.student_code'))
+                    ->state(fn (Attendance $record): string => self::contextValue($record, 'student_code'))
+                    ->badge()
+                    ->toggleable(),
+                TextColumn::make('session_label')
+                    ->label(__('attendance::fields.session'))
+                    ->state(fn (Attendance $record): string => self::contextValue($record, 'session'))
+                    ->wrap(),
+                TextColumn::make('course_label')
+                    ->label(__('attendance::fields.course'))
+                    ->state(fn (Attendance $record): string => self::contextValue($record, 'course'))
+                    ->toggleable(),
+                TextColumn::make('group_label')
+                    ->label(__('attendance::fields.group'))
+                    ->state(fn (Attendance $record): string => self::contextValue($record, 'group'))
+                    ->toggleable(),
+                TextColumn::make('teacher_label')
+                    ->label(__('attendance::fields.teacher'))
+                    ->state(fn (Attendance $record): string => self::contextValue($record, 'teacher'))
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
                     ->label(__('attendance::fields.status'))
                     ->badge()
                     ->formatStateUsing(fn (?AttendanceStatus $state): string => $state?->label() ?? '—')
-                    ->color(fn (?AttendanceStatus $state): array => match ($state) {
-                        AttendanceStatus::Present => Color::Emerald,
-                        AttendanceStatus::Late, AttendanceStatus::Partial, AttendanceStatus::LeftEarly => Color::Amber,
-                        AttendanceStatus::Excused, AttendanceStatus::TechnicalIssue => Color::Sky,
-                        AttendanceStatus::Absent, AttendanceStatus::NoShow => Color::Rose,
-                        default => Color::Gray,
-                    }),
+                    ->color(fn (?AttendanceStatus $state): string => self::statusColor($state)),
                 TextColumn::make('derived_status')
                     ->label(__('attendance::fields.derived_status'))
                     ->badge()
                     ->formatStateUsing(fn (?AttendanceStatus $state): string => $state?->label() ?? '—')
-                    ->color(Color::Gray)
+                    ->color('gray')
                     ->toggleable(),
                 TextColumn::make('attended_minutes')
                     ->label(__('attendance::fields.attended_minutes'))
@@ -140,39 +125,51 @@ final class AttendanceFilamentResource extends Resource
                     ->label(__('attendance::filters.confirmed'))
                     ->nullable(),
             ])
-            ->actions([
+            ->recordActions([
+                ViewAction::make(),
                 self::confirmAction(),
                 self::overrideAction(),
             ])
             ->defaultSort('created_at', 'desc');
     }
 
-    private static function confirmAction(): Action
+    public static function confirmAction(): Action
     {
         return Action::make('confirm')
             ->label(__('attendance::filament.actions.confirm'))
             ->icon('heroicon-m-check-badge')
             ->color('success')
+            ->authorize('confirm')
+            ->visible(fn (Attendance $record): bool => !$record->isConfirmed())
             ->requiresConfirmation()
             ->modalDescription(__('attendance::filament.actions.confirm_description'))
-            ->visible(fn (Attendance $record): bool => !$record->isConfirmed()
-                && (bool) (auth()->user()?->can('confirm', $record) ?? false))
-            ->action(function (Attendance $record): void {
-                app(ConfirmAttendanceAction::class)->execute(
-                    $record,
-                    (string) auth()->id(),
-                );
+            ->schema([
+                Textarea::make('reason')
+                    ->label(__('attendance::fields.reason'))
+                    ->required()
+                    ->minLength((int) config('attendance.confirm.reason_min_chars', 5))
+                    ->maxLength((int) config('attendance.confirm.reason_max_chars', 1000)),
+            ])
+            ->action(function (Attendance $record, array $data): void {
+                self::runSafely(function () use ($record, $data): void {
+                    app(ConfirmAttendanceAction::class)->execute(
+                        attendance: $record,
+                        confirmedBy: (string) auth()->id(),
+                        reason: (string) $data['reason'],
+                        organizationId: self::organizationId(),
+                    );
+                }, __('attendance::filament.messages.confirmed'));
             });
     }
 
-    private static function overrideAction(): Action
+    public static function overrideAction(): Action
     {
         return Action::make('override')
             ->label(__('attendance::filament.actions.override'))
             ->icon('heroicon-m-pencil-square')
             ->color('warning')
-            ->visible(fn (Attendance $record): bool => (bool) (auth()->user()?->can('override', $record) ?? false))
-            ->form([
+            ->authorize('override')
+            ->schema([
                 Select::make('status')
                     ->label(__('attendance::fields.new_status'))
                     ->options(self::statusOptions())
@@ -185,22 +182,63 @@ final class AttendanceFilamentResource extends Resource
                     ->helperText(__('attendance::filament.actions.reason_helper')),
             ])
             ->action(function (array $data, Attendance $record): void {
-                app(OverrideAttendanceAction::class)->execute(
-                    $record,
-                    AttendanceStatus::from((string) $data['status']),
-                    (string) $data['reason'],
-                );
+                self::runSafely(function () use ($data, $record): void {
+                    app(OverrideAttendanceAction::class)->execute(
+                        attendance: $record,
+                        newStatus: AttendanceStatus::from((string) $data['status']),
+                        reason: (string) $data['reason'],
+                        actorId: (string) auth()->id(),
+                        organizationId: self::organizationId(),
+                    );
+                }, __('attendance::filament.messages.overridden'));
             });
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private static function statusOptions(): array
+    /** @return array<string, string> */
+    public static function statusOptions(): array
     {
         return collect(AttendanceStatus::cases())
             ->mapWithKeys(fn (AttendanceStatus $case): array => [$case->value => $case->label()])
             ->all();
+    }
+
+    private static function contextValue(Attendance $attendance, string $key): string
+    {
+        return (string) (self::operations()->participantContext(
+            self::organizationId(),
+            (string) $attendance->session_participant_id,
+        )[$key] ?? __('attendance::messages.not_available'));
+    }
+
+    private static function statusColor(?AttendanceStatus $status): string
+    {
+        return match ($status) {
+            AttendanceStatus::Present => 'success',
+            AttendanceStatus::Late, AttendanceStatus::Partial, AttendanceStatus::LeftEarly => 'warning',
+            AttendanceStatus::Excused, AttendanceStatus::TechnicalIssue => 'info',
+            AttendanceStatus::Absent, AttendanceStatus::NoShow => 'danger',
+            default => 'gray',
+        };
+    }
+
+    private static function organizationId(): string
+    {
+        return (string) data_get(auth()->user(), 'organization_id', '');
+    }
+
+    private static function operations(): AttendanceOperationsQueryService
+    {
+        return app(AttendanceOperationsQueryService::class);
+    }
+
+    private static function runSafely(callable $operation, string $message): void
+    {
+        try {
+            $operation();
+            Notification::make()->title($message)->success()->send();
+        } catch (BusinessRuleViolation $violation) {
+            Notification::make()->title($violation->getMessage())->danger()->send();
+        }
     }
 
     public static function getPages(): array

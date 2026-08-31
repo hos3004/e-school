@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Mockery\MockInterface;
 use Modules\AcademicReports\Application\Actions\DraftMonthlyReportAction;
 use Modules\AcademicReports\Database\Factories\MonthlyReportFactory;
 use Modules\AcademicReports\Database\Factories\SessionReportFactory;
@@ -15,7 +16,10 @@ use Modules\AcademicReports\Domain\Enums\MonthlyReportStatus;
 use Modules\AcademicReports\Domain\Events\MonthlyReportSent;
 use Modules\AcademicReports\Domain\Events\SessionReportSubmitted;
 use Modules\AcademicReports\Domain\Models\MonthlyReport;
+use Modules\AcademicReports\Domain\Models\SessionReport;
 use Modules\AcademicReports\Tests\Support\ApiUser;
+use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
+use Modules\Staff\Domain\Contracts\StaffQueries;
 use Shared\Testing\Fixtures;
 use Tests\TestCase;
 
@@ -104,6 +108,71 @@ final class AcademicReportsApiTest extends TestCase
                     ],
                 ],
             ])->assertForbidden();
+    }
+
+    public function test_lists_session_reports_only_for_sessions_in_the_user_organization(): void
+    {
+        Gate::define('session_report.view', fn (): bool => true);
+        Gate::define('staff.view.any', fn (): bool => true);
+
+        /** @var SessionReport $allowed */
+        $allowed = SessionReportFactory::new()->create();
+        /** @var SessionReport $foreign */
+        $foreign = SessionReportFactory::new()->create();
+
+        $organizationId = Fixtures::organizationId();
+
+        $this->mock(SessionAdministrationQueries::class, function (MockInterface $mock) use ($organizationId, $allowed): void {
+            $mock->shouldReceive('sessionIdsForOrganization')
+                ->once()
+                ->with($organizationId)
+                ->andReturn([(string) $allowed->session_id]);
+        });
+
+        $this->actingAs(new ApiUser(self::ACTOR_ID, $organizationId))
+            ->getJson('/api/session-reports')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', (string) $allowed->getKey())
+            ->assertJsonMissing(['id' => (string) $foreign->getKey()]);
+    }
+
+    public function test_limits_a_teacher_to_their_own_session_reports_without_role_name_checks(): void
+    {
+        Gate::define('session_report.view', fn (): bool => true);
+        Gate::define('staff.view.any', fn (): bool => false);
+
+        /** @var SessionReport $own */
+        $own = SessionReportFactory::new()->create();
+        /** @var SessionReport $other */
+        $other = SessionReportFactory::new()->create();
+
+        $organizationId = Fixtures::organizationId();
+
+        $this->mock(SessionAdministrationQueries::class, function (MockInterface $mock) use ($organizationId, $own, $other): void {
+            $mock->shouldReceive('sessionIdsForOrganization')
+                ->once()
+                ->with($organizationId)
+                ->andReturn([(string) $own->session_id, (string) $other->session_id]);
+        });
+
+        $this->mock(StaffQueries::class, function (MockInterface $mock) use ($organizationId, $own): void {
+            $mock->shouldReceive('findActiveProfileForUser')
+                ->once()
+                ->with(self::ACTOR_ID)
+                ->andReturn(['id' => (string) $own->staff_profile_id, 'staff_code' => 'OWN']);
+            $mock->shouldReceive('isActiveTeacherForOrganization')
+                ->once()
+                ->with($organizationId, (string) $own->staff_profile_id)
+                ->andReturnTrue();
+        });
+
+        $this->actingAs(new ApiUser(self::ACTOR_ID, $organizationId))
+            ->getJson('/api/session-reports')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', (string) $own->getKey())
+            ->assertJsonMissing(['id' => (string) $other->getKey()]);
     }
 
     public function test_lists_monthly_reports_scoped_to_the_user_organization(): void

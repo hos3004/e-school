@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'postponement_invalid_transition' => 'Transition de report impossible de :from vers :to.',
+    'rejection_reason_required' => 'Le motif du refus est obligatoire.',
+    'reason_required' => 'Le motif de l’opération est obligatoire.',
+    'session_not_found' => 'La séance demandée est introuvable.',
+    'session_not_postponable' => 'Cette séance ne peut pas être reportée dans son état actuel (:status).',
+    'postponement_not_found' => 'La demande de report est introuvable.',
+    'postponement_notice_not_met' => 'La demande doit être faite au moins :required minutes avant la séance.',
+    'postponement_already_pending' => 'Une demande de report est déjà en attente pour cette séance.',
+    'proposed_start_in_past' => 'La date proposée doit être future.',
+    'student_not_participant' => 'L’étudiant ne participe pas à cette séance.',
+    'outside_makeup_window' => 'Le rattrapage doit avoir lieu dans les :days jours suivant la séance initiale.',
+    'conflict_detected' => 'Ce créneau entre en conflit avec :count séance(s).',
+    'weekdays_invalid' => 'Sélectionnez au moins un jour valide.',
+    'interval_invalid' => 'L’intervalle hebdomadaire est invalide.',
+    'rrule_invalid' => 'La règle de récurrence est invalide ou non prise en charge.',
+    'timezone_invalid' => 'Le fuseau horaire est invalide.',
+    'target_invalid' => 'Sélectionnez exactement un groupe ou un étudiant.',
+    'course_not_found' => 'Le cours est introuvable dans cet établissement.',
+    'teacher_not_eligible' => 'L’enseignant est inactif ou non qualifié pour ce cours.',
+    'teacher_not_assigned' => 'L’enseignant n’est pas affecté à ce cours du groupe sur toute la période.',
+    'ends_before_start' => 'La date de fin ne peut pas précéder la date de début.',
+    'duration_invalid' => 'La durée de séance n’est pas autorisée.',
+    'course_mode_mismatch' => 'La cible ne correspond pas au mode de séance du cours.',
+    'group_not_eligible' => 'Le groupe est inactif ou non lié au programme du cours.',
+    'student_not_schedulable' => 'Aucune inscription de l’étudiant n’autorise cette planification.',
+    'schedule_inactive' => 'Le modèle de planning est inactif.',
+    'teacher_on_leave' => 'L’enseignant est en congé approuvé le :date.',
+    'outside_teacher_availability' => 'Le créneau est hors des disponibilités approuvées de l’enseignant.',
+];

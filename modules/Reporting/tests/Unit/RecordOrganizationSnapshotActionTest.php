@@ -12,7 +12,6 @@ uses(RefreshDatabase::class);
 function snapshotData(): array
 {
     return [
-        'organization_id' => Fixtures::organizationId(),
         'snapshot_date' => '2026-08-22',
         'students_active' => 120,
         'students_frozen' => 5,
@@ -24,7 +23,7 @@ function snapshotData(): array
 }
 
 it('records a daily snapshot for the organization', function (): void {
-    $snapshot = app(RecordOrganizationSnapshotAction::class)->execute(snapshotData());
+    $snapshot = app(RecordOrganizationSnapshotAction::class)->execute(Fixtures::organizationId(), snapshotData());
 
     expect($snapshot->exists)->toBeTrue()
         ->and((int) $snapshot->sessions_held)->toBe(64)
@@ -35,8 +34,8 @@ it('records a daily snapshot for the organization', function (): void {
 it('updates the same snapshot instead of duplicating it (idempotent upsert)', function (): void {
     $action = app(RecordOrganizationSnapshotAction::class);
 
-    $first = $action->execute(snapshotData());
-    $second = $action->execute([...snapshotData(), 'sessions_held' => 70]);
+    $first = $action->execute(Fixtures::organizationId(), snapshotData());
+    $second = $action->execute(Fixtures::organizationId(), [...snapshotData(), 'sessions_held' => 70]);
 
     expect((string) $second->getKey())->toBe((string) $first->getKey())
         ->and((int) $second->sessions_held)->toBe(70)
@@ -44,7 +43,7 @@ it('updates the same snapshot instead of duplicating it (idempotent upsert)', fu
 });
 
 it('clamps the attendance rate into the 0..10000 range', function (): void {
-    $snapshot = app(RecordOrganizationSnapshotAction::class)->execute([
+    $snapshot = app(RecordOrganizationSnapshotAction::class)->execute(Fixtures::organizationId(), [
         ...snapshotData(),
         'attendance_rate_bp' => 20000,
     ]);

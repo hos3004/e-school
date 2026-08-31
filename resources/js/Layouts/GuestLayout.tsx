@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect, type ReactNode } from 'react';
 
-type SupportedLocale = 'ar' | 'en' | 'fr';
+import { useSupportedLocales } from '@/lib/format';
 
 interface GuestLayoutProps {
     children: ReactNode;
@@ -16,18 +16,17 @@ interface GuestSharedProps {
     };
 }
 
-function isSupportedLocale(locale: unknown): locale is SupportedLocale {
-    return locale === 'ar' || locale === 'en' || locale === 'fr';
-}
-
 export default function GuestLayout({ children }: GuestLayoutProps) {
     const { props } = usePage();
     const sharedProps = props as typeof props & GuestSharedProps;
+    const supportedLocales: readonly string[] = useSupportedLocales();
     const requestedLocale =
         sharedProps.locale ?? sharedProps.auth?.user?.locale;
-    const locale = isSupportedLocale(requestedLocale)
-        ? requestedLocale
-        : 'ar';
+    const locale =
+        typeof requestedLocale === 'string' &&
+        supportedLocales.includes(requestedLocale)
+            ? requestedLocale
+            : 'ar';
     const direction = locale === 'ar' ? 'rtl' : 'ltr';
 
     useEffect(() => {

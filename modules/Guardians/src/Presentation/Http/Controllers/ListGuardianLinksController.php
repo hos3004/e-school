@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Guardians\Presentation\Http\Controllers;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Guardians\Domain\Models\GuardianLink;
@@ -14,7 +15,12 @@ final class ListGuardianLinksController
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $query = GuardianLink::query()->with('guardian');
+        $organizationId = data_get($request->user(), 'organization_id');
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403);
+
+        $query = GuardianLink::query()
+            ->with('guardian')
+            ->whereHas('guardian', fn (Builder $guardianQuery): Builder => $guardianQuery->where('organization_id', $organizationId));
 
         if ($request->filled('guardian_profile_id')) {
             $query->forGuardian((string) $request->string('guardian_profile_id'));
@@ -24,9 +30,12 @@ final class ListGuardianLinksController
             $query->forStudent((string) $request->string('student_profile_id'));
         }
 
-        if (!$request->user()?->can('guardians.view_any')) {
+        if (!$request->user()?->can('guardian.view')) {
             /** @var GuardianProfile|null $own */
-            $own = GuardianProfile::query()->where('user_id', (string) $request->user()?->id)->first();
+            $own = GuardianProfile::query()
+                ->forOrganization($organizationId)
+                ->where('user_id', (string) $request->user()?->id)
+                ->first();
 
             $query->forGuardian($own->id ?? 'none');
         }

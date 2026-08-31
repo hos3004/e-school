@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VirtualClassroom\Application\Actions;
 
 use Modules\VirtualClassroom\Domain\Contracts\VirtualClassroomProvider;
+use Modules\VirtualClassroom\Domain\Enums\ClassroomStatus;
 use Modules\VirtualClassroom\Domain\Enums\JoinRole;
 use Modules\VirtualClassroom\Domain\Exceptions\ClassroomProviderException;
 use Modules\VirtualClassroom\Domain\Models\Classroom;
@@ -28,6 +29,14 @@ final readonly class GenerateJoinUrlAction
             throw BusinessRuleViolation::make(
                 'virtualclassroom.student_frozen',
                 'virtualclassroom::errors.student_frozen_cannot_join',
+            );
+        }
+
+        if (!in_array($classroom->status, [ClassroomStatus::Provisioned, ClassroomStatus::Running], true)
+            || $classroom->external_id === null) {
+            throw BusinessRuleViolation::make(
+                'virtualclassroom.classroom_not_ready',
+                'virtualclassroom::errors.classroom_not_ready',
             );
         }
 

@@ -53,4 +53,12 @@ return [
     'parameters' => 'المتغيّرات',
     'provider_template_name' => 'اسم قالب المزوّد',
     'scope' => 'النطاق',
+    'recipient' => 'المستلم',
+    'retry_reason' => 'سبب إعادة الإرسال',
+    'cancel_reason' => 'سبب الإلغاء',
+    'attempts_history' => 'سجل محاولات التسليم',
+    'result' => 'النتيجة',
+    'audit_history' => 'سجل القرارات والتدقيق',
+    'action' => 'الإجراء',
+    'actor' => 'نفّذ بواسطة',
 ];

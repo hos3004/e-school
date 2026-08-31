@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Route;
+use Modules\VirtualClassroom\Presentation\Http\Controllers\ClassroomWebhookController;
+
 /*
-|--------------------------------------------------------------------------
-| مسارات موديول VirtualClassroom — الـ API
-|--------------------------------------------------------------------------
-|
-| يُحمَّل هذا الملف تلقائيًا من ModuleRegistry::loadRoutes() ضمن مجموعة
-| middleware «api» وبالبادئة api/ عند إقلاع التطبيق. لا مسارات معرّفة
-| بعد؛ ستُضاف هنا مسارات طبقة Presentation للموديول عند بنائها.
+| يستقبل هذا المسار POST موقّعًا من BBB؛ لا يستخدم مصادقة مستخدم التطبيق.
+| يجب أن يساوي BBB_WEBHOOK_CALLBACK_URL هذا العنوان المسجّل عند المزوّد.
 */
+Route::post('webhooks/classroom', ClassroomWebhookController::class)
+    ->middleware('throttle:classroom-webhook')
+    ->name('classroom.webhook');

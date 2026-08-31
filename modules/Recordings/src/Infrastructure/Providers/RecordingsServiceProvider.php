@@ -6,6 +6,8 @@ namespace Modules\Recordings\Infrastructure\Providers;
 
 use Modules\Recordings\Application\Policies\RecordingPolicy;
 use Modules\Recordings\Application\Policies\RecordingViewPolicy;
+use Modules\Recordings\Application\Queries\RecordingAdministrationQueryService;
+use Modules\Recordings\Domain\Contracts\RecordingAdministrationQueries;
 use Modules\Recordings\Domain\Models\Recording;
 use Modules\Recordings\Domain\Models\RecordingView;
 use Shared\Module\BaseModuleServiceProvider;
@@ -41,6 +43,7 @@ final class RecordingsServiceProvider extends BaseModuleServiceProvider
     {
         return [
             Transaction::class => DatabaseTransaction::class,
+            RecordingAdministrationQueries::class => RecordingAdministrationQueryService::class,
         ];
     }
 

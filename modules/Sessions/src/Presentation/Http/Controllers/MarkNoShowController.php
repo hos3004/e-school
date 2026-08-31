@@ -26,7 +26,11 @@ final class MarkNoShowController extends Controller
 
         Gate::authorize('markNoShow', $sessionModel);
 
-        $this->action->execute($sessionModel, $request->validated('reason'));
+        $this->action->execute(
+            $sessionModel,
+            (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
+        );
 
         return new SessionResource($sessionModel->refresh());
     }

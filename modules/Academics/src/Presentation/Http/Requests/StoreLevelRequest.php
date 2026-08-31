@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Academics\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\Academics\Domain\Models\Level;
 
 /**
@@ -23,7 +24,7 @@ final class StoreLevelRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'program_id' => ['required', 'string', 'size:26', 'exists:programs,id'],
+            'program_id' => ['required', 'string', 'size:26', Rule::exists('programs', 'id')->where('organization_id', (string) $this->user()->organization_id)],
             'code' => [
                 'required',
                 'string',
@@ -35,6 +36,7 @@ final class StoreLevelRequest extends FormRequest
             'name.ar' => ['required_with:name', 'string', 'max:255'],
             'name.en' => ['nullable', 'string', 'max:255'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'reason' => ['required', 'string', 'min:'.(int) config('academics.reason.minimum_length'), 'max:'.(int) config('academics.reason.maximum_length')],
         ];
     }
 

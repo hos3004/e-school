@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 it('updates course fields and publishes CourseUpdated', function (): void {
     Event::fake([CourseUpdated::class]);
 
-    $course = Course::factory()->create();
+    $course = Course::factory()->create(['total_sessions' => 10]);
 
     $updated = app(UpdateCourseAction::class)->execute($course, [
         'total_sessions' => 20,

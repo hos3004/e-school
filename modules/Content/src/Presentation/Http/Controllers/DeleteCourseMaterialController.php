@@ -21,7 +21,11 @@ final class DeleteCourseMaterialController extends Controller
 
     public function __invoke(DeleteCourseMaterialRequest $request, CourseMaterial $material): Response
     {
-        $this->action->execute($material->id, (string) $request->validated('reason'));
+        $this->action->execute(
+            $material,
+            (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
+        );
 
         return response()->noContent();
     }

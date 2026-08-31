@@ -10,8 +10,10 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Modules\Reporting\Domain\Models\TeacherDashboard;
+use Modules\Staff\Domain\Contracts\StaffQueries;
 use Shared\Concerns\ScopesFilamentToOrganization;
 use Shared\ValueObjects\Money;
 
@@ -28,7 +30,7 @@ final class TeacherDashboardResource extends Resource
 
     protected static ?int $navigationSort = 90;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('reporting::navigation.group');
     }
@@ -88,8 +90,9 @@ final class TeacherDashboardResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('staff_profile_id')
                     ->label(__('reporting::fields.staff'))
-                    ->copyable()
-                    ->limit(12),
+                    // كان ULID خامًا — يُعرض اسم المعلم عبر عقد Staff المعلن.
+                    ->formatStateUsing(static fn ($state): string => self::teacherNames()[(string) $state]
+                        ?? (string) $state),
                 TextColumn::make('sessions_total')
                     ->label(__('reporting::fields.sessions_total'))
                     ->sortable()
@@ -122,6 +125,39 @@ final class TeacherDashboardResource extends Resource
                     ->sortable()
                     ->toggleable(),
             ])
+            ->filters([
+                SelectFilter::make('staff_profile_id')
+                    ->label(__('reporting::fields.staff'))
+                    ->options(fn (): array => self::teacherNames())
+                    ->searchable(),
+            ])
             ->defaultSort('sessions_completed', direction: 'desc');
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => TeacherDashboardResource\Pages\ListTeacherDashboards::route('/'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function teacherNames(): array
+    {
+        $organizationId = data_get(auth()->user(), 'organization_id');
+
+        if (!is_string($organizationId) || $organizationId === '') {
+            return [];
+        }
+
+        return app(StaffQueries::class)->namesForProfiles(
+            $organizationId,
+            TeacherDashboard::query()
+                ->forOrganization($organizationId)
+                ->pluck('staff_profile_id')
+                ->all(),
+        );
     }
 }

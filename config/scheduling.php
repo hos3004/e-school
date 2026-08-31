@@ -94,6 +94,9 @@ return [
         // توليد الحصص الفعلية من قاعدة التكرار قبل الموعد بهذه المدة.
         'materialize_ahead_days' => 60,
         'skip_holidays' => true,
+
+        // الأحداث داخل هذه النافذة لا تتغير عند تعديل القالب.
+        'edit_lock_hours' => 48,
     ],
 
     /*
@@ -221,5 +224,10 @@ return [
 
         // الجدولة خارج الإتاحة المعلنة: warn (تحذير للإدارة) أو block.
         'outside_declared' => env('AVAILABILITY_OUTSIDE_DECLARED', 'warn'),
+    ],
+
+    'admin_hub' => [
+        'max_sessions' => 40,
+        'max_history' => 30,
     ],
 ];

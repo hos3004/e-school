@@ -8,7 +8,9 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'Reports & Dashboards',
+    'group' => 'Reports',
+
+    'operational' => 'Session reports',
 
     'student' => [
         'label' => 'Student dashboard',

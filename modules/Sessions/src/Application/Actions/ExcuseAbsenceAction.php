@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Sessions\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
-use Modules\Sessions\Application\Concerns\TransitionsSessionStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\SessionExcused;
 use Modules\Sessions\Domain\Models\Session;
@@ -16,13 +15,12 @@ use Shared\Support\BusinessRuleViolation;
  */
 final readonly class ExcuseAbsenceAction
 {
-    use TransitionsSessionStatus;
-
     public function __construct(
         private Dispatcher $events,
+        private TransitionSessionStatusAction $transition,
     ) {}
 
-    public function execute(Session $session, string $reason, ?string $actorId = null): Session
+    public function execute(Session $session, string $reason, string $actorId): Session
     {
         if (trim($reason) === '') {
             throw BusinessRuleViolation::make(
@@ -31,12 +29,12 @@ final readonly class ExcuseAbsenceAction
             );
         }
 
-        $this->guardNotTerminal($session);
-
-        $this->applyTransition(
+        $session = $this->transition->execute(
             $session,
             SessionStatus::Excused,
-            reason: $reason,
+            $actorId,
+            $reason,
+            'sessions.session_excused',
         );
 
         $this->events->dispatch(new SessionExcused(
@@ -47,6 +45,6 @@ final readonly class ExcuseAbsenceAction
             reason: $reason,
         ));
 
-        return $session->refresh();
+        return $session;
     }
 }

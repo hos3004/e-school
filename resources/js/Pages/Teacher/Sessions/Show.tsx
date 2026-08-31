@@ -1,4 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import Button from '@/Components/Button';
@@ -54,6 +55,55 @@ interface FieldErrorProps {
     message?: string;
 }
 
+function joinIsAvailable(session: Session, now: number): boolean {
+    if (
+        !session.joinUrl
+        || !['scheduled', 'confirmed', 'in_progress'].includes(session.status)
+    ) {
+        return false;
+    }
+
+    if (session.canJoin === true) {
+        return true;
+    }
+
+    const opensAt = session.canJoinAt
+        ? Date.parse(session.canJoinAt)
+        : Number.POSITIVE_INFINITY;
+    const closesAt = session.canJoinUntil
+        ? Date.parse(session.canJoinUntil)
+        : Number.POSITIVE_INFINITY;
+
+    return Number.isFinite(opensAt)
+        && now >= opensAt
+        && (!Number.isFinite(closesAt) || now <= closesAt);
+}
+
+function useJoinClock(session: Session | null): number {
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        if (!session?.canJoinAt || session.canJoin === true) {
+            return;
+        }
+
+        const opensAt = Date.parse(session.canJoinAt);
+
+        if (!Number.isFinite(opensAt) || opensAt <= now) {
+            return;
+        }
+
+        const timer = window.setTimeout(
+            () => setNow(Date.now()),
+            Math.min(Math.max(opensAt - Date.now(), 0) + 50, 2_147_000_000),
+        );
+
+        return () => window.clearTimeout(timer);
+    }, [now, session]);
+
+    return now;
+}
+
 function FieldError({ id, message }: FieldErrorProps) {
     if (!message) {
         return null;
@@ -93,6 +143,7 @@ export default function TeacherSessionShow({
 }: TeacherSessionShowProps) {
     const t = useI18n();
     const locale = useLocale();
+    const joinNow = useJoinClock(session);
     const attendanceForm = useForm<AttendanceFormData>({
         statuses: initialStatuses(attendance),
         reason: '',
@@ -268,17 +319,30 @@ export default function TeacherSessionShow({
                         </dl>
                     </CardContent>
 
-                    {session.joinUrl ? (
-                        <CardFooter className="mt-5">
-                            <Button
-                                as="link"
-                                disabled={session.canJoin === false}
-                                href={session.joinUrl}
-                                rel="noopener noreferrer"
-                                target="_blank"
-                            >
-                                {t('sessions.join')}
-                            </Button>
+                    {session.joinUrl || session.recordingUrl ? (
+                        <CardFooter className="mt-5 flex flex-wrap gap-3">
+                            {session.joinUrl ? (
+                                <Button
+                                    as="link"
+                                    disabled={!joinIsAvailable(session, joinNow)}
+                                    href={session.joinUrl}
+                                    rel="noopener noreferrer"
+                                    target="_blank"
+                                >
+                                    {t('sessions.join')}
+                                </Button>
+                            ) : null}
+                            {session.recordingUrl ? (
+                                <Button
+                                    as="link"
+                                    href={session.recordingUrl}
+                                    rel="noopener noreferrer"
+                                    target="_blank"
+                                    variant="secondary"
+                                >
+                                    {t('teacher.sessions.show.watch_recording')}
+                                </Button>
+                            ) : null}
                         </CardFooter>
                     ) : null}
                 </Card>

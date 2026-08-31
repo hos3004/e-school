@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\Guardians\Domain\Contracts\GuardianQuery;
 use Modules\Guardians\Domain\Enums\ContactChannel;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 use Shared\Testing\Fixtures;
+
+uses(RefreshDatabase::class);
 
 it('returns the verified primary guardian summary for a student', function (): void {
     $guardian = GuardianProfile::factory()->create([

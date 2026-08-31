@@ -50,6 +50,10 @@
                 <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
                     {{ $session['start'] }} — {{ $session['end'] }}
                 </div>
+                <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+                    <span>{{ __('sessions::calendar.group') }}: {{ $session['group'] }}</span>
+                    <span>{{ __('sessions::calendar.teacher') }}: {{ $session['teacher'] }}</span>
+                </div>
             </a>
         @empty
             <div class="rounded-xl border p-6 text-gray-500">{{ __('sessions::calendar.empty') }}</div>

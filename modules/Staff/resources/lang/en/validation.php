@@ -22,6 +22,7 @@ return [
     'scope_required' => 'A rate scope is required.',
     'staff_code_required' => 'A staff code is required.',
     'staff_code_unique' => 'This staff code is already assigned to another staff member.',
+    'hire_before_birth_invalid' => 'The hire date must come after the date of birth.',
     'staff_profile_required' => 'A staff profile is required.',
     'ulid' => 'The user ID is invalid.',
     'user_id_required' => 'A user account is required.',

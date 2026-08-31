@@ -9,6 +9,10 @@ declare(strict_types=1);
 
 return [
     'pending_confirmation' => 'Awaiting confirmation',
+    'record_reason' => 'Automatically recorded from classroom join and leave data.',
+    'confirm_reason' => 'Confirmed after reviewing the derived attendance status.',
+    'system_actor' => 'System',
+    'not_available' => 'Not available',
     'demo_override_reason' => 'Administrative correction after reviewing the classroom recording.',
     'seeder_no_participants' => 'No session participants exist yet — run the Sessions seeder first to generate demo attendance records.',
 ];

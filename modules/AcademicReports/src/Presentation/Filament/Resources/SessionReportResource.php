@@ -21,6 +21,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\AcademicReports\Domain\Models\SessionReport;
+use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 
 /**
@@ -158,9 +159,9 @@ final class SessionReportResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('session_id')
                     ->label(__('academicreports::fields.session'))
-                    ->searchable()
-                    ->copyable()
-                    ->limit(12),
+                    // كان ULID خامًا — يُعرض عنوان الحصة عبر عقد Sessions المعلن.
+                    ->formatStateUsing(static fn ($state): string => self::sessionLabels()[(string) $state]
+                        ?? (string) $state),
                 TextColumn::make('staff_profile_id')
                     ->label(__('academicreports::fields.staff_profile'))
                     // كان ULID خامًا مقصوصًا إلى 12 حرفًا — لا يدل على معلم.
@@ -209,5 +210,35 @@ final class SessionReportResource extends Resource
                     ->query(static fn (Builder $query): Builder => $query->whereNull('submitted_at')),
             ])
             ->defaultSort('submitted_at', direction: 'desc');
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => SessionReportResource\Pages\ListSessionReports::route('/'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function sessionLabels(): array
+    {
+        static $cache = null;
+
+        if ($cache !== null) {
+            return $cache;
+        }
+
+        $organizationId = data_get(auth()->user(), 'organization_id');
+
+        if (!is_string($organizationId) || $organizationId === '') {
+            return $cache = [];
+        }
+
+        return $cache = app(SessionAdministrationQueries::class)->labelsForSessions(
+            $organizationId,
+            SessionReport::query()->pluck('session_id')->unique()->values()->all(),
+        );
     }
 }

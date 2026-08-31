@@ -6,6 +6,7 @@ namespace Modules\Recordings\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Recordings\Application\Concerns\TransitionsRecordingStatus;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Events\RecordingExpired;
@@ -28,6 +29,7 @@ final readonly class ExpireRecordingsAction
         private Transaction $transaction,
         private Dispatcher $events,
         private ArchiveRecordingAction $archive,
+        private AuditRecorder $audit,
     ) {}
 
     /**
@@ -80,8 +82,23 @@ final readonly class ExpireRecordingsAction
 
     private function markExpired(Recording $recording, CarbonImmutable $at): void
     {
-        $this->transaction->run(function () use ($recording): bool {
+        $this->transaction->run(function () use ($recording, $at): bool {
+            $oldStatus = $recording->status->value;
             $this->applyTransition($recording, RecordingStatus::Expired);
+            $this->audit->record(
+                organizationId: (string) $recording->organization_id,
+                actorId: null,
+                actorType: 'system',
+                action: 'recordings.expired',
+                auditableType: 'recordings',
+                auditableId: (string) $recording->getKey(),
+                oldValues: ['status' => $oldStatus],
+                newValues: [
+                    'status' => RecordingStatus::Expired->value,
+                    'expired_at' => $at->toIso8601String(),
+                ],
+                reason: (string) __('recordings::messages.retention_expiry_reason'),
+            );
 
             return true;
         });

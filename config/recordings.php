@@ -12,6 +12,12 @@ return [
 
     'retention_days' => env('RECORDING_RETENTION_DAYS', 30),
 
+    'retention_batch_size' => (int) env('RECORDING_RETENTION_BATCH_SIZE', 100),
+
+    'admin_hub' => [
+        'max_items' => 100,
+    ],
+
     /**
      * ماذا يحدث بعد انتهاء مدة الاحتفاظ.
      * archive_then_delete = يُنقل للأرشيف البارد ثم يُحذف من التخزين الساخن.

@@ -14,6 +14,16 @@ export function useLocale(): Locale {
     return locale ?? auth.user?.locale ?? 'ar';
 }
 
+/**
+ * اللغات المتاحة للاختيار — تأتي من `config('app.supported_locales')` عبر
+ * الخصائص المشتركة، فإيقاف لغة يتم من الخادم دون تعديل أي واجهة.
+ */
+export function useSupportedLocales(): readonly Locale[] {
+    const { supportedLocales } = usePage<AppPageProps>().props;
+
+    return supportedLocales?.length ? supportedLocales : ['ar'];
+}
+
 export function formatDate(
     value: string,
     locale: Locale,

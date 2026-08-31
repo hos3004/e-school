@@ -31,6 +31,8 @@ final class AssignmentSubmissionResource extends JsonResource
             'is_late' => (bool) $submission->is_late,
             'content' => $submission->content,
             'attachments' => $submission->attachments,
+            'raw_score' => $submission->raw_score,
+            'penalty_points' => $submission->penalty_points,
             'score' => $submission->score,
             'feedback' => $submission->feedback,
             'graded_by' => $submission->graded_by,

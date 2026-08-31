@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Staff\Domain\Enums\RateScope;
 use Modules\Staff\Domain\Events\TeacherRateCreated;
 use Modules\Staff\Domain\Models\TeacherContract;
@@ -17,6 +18,13 @@ use Shared\ValueObjects\Money;
 
 final readonly class AddTeacherRate
 {
+    public function __construct(
+        private AuditRecorder $audit,
+    ) {}
+
+    /**
+     * إضافة سعر جديد نافذ من تاريخ محدد — الأسعار التاريخية لا تُعدَّل.
+     */
     public function execute(
         TeacherContract $contract,
         RateScope $scope,
@@ -26,6 +34,8 @@ final readonly class AddTeacherRate
         ?string $programId = null,
         ?string $courseId = null,
         ?string $sessionType = null,
+        ?string $actorId = null,
+        ?string $reason = null,
     ): TeacherRate {
         if ($amount->isZero() || $amount->isNegative()) {
             throw BusinessRuleViolation::make(
@@ -112,6 +122,27 @@ final readonly class AddTeacherRate
             effectiveFrom: $from->toDateString(),
             effectiveTo: $to?->toDateString(),
         ));
+
+        if ($actorId !== null) {
+            $this->audit->record(
+                organizationId: (string) $contract->organization_id,
+                actorId: $actorId,
+                actorType: 'user',
+                action: 'staff.rate_created',
+                auditableType: 'teacher_rate',
+                auditableId: (string) $rate->getKey(),
+                oldValues: null,
+                newValues: [
+                    'contract_id' => (string) $contract->getKey(),
+                    'scope' => $scope->value,
+                    'amount' => $amount->minorUnits,
+                    'currency' => $amount->currency,
+                    'effective_from' => $from->toDateString(),
+                    'effective_to' => $to?->toDateString(),
+                ],
+                reason: trim((string) $reason) === '' ? null : trim((string) $reason),
+            );
+        }
 
         return $rate;
     }

@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Guardians\Application\Actions\ArchiveGuardianProfile;
 use Modules\Guardians\Domain\Events\GuardianProfileArchived;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Modules\Guardians\Domain\Models\GuardianProfile;
+
+uses(RefreshDatabase::class);
 
 it('archives the profile without deleting its row', function (): void {
     Event::fake([GuardianProfileArchived::class]);

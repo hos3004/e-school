@@ -9,6 +9,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Assignments\Domain\Enums\AssignmentSubmissionStatus;
 use Modules\Assignments\Domain\Events\SubmissionGraded;
 use Modules\Assignments\Domain\Models\AssignmentSubmission;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -25,13 +26,18 @@ final readonly class GradeSubmissionAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     /**
      * @param array<string, mixed> $data score إلزامي، feedback اختياري
      */
-    public function execute(AssignmentSubmission $submission, array $data): AssignmentSubmission
-    {
+    public function execute(
+        AssignmentSubmission $submission,
+        array $data,
+        string $actorId,
+        string $reason,
+    ): AssignmentSubmission {
         $status = $submission->status;
 
         if (!$status->hasContent()) {
@@ -57,9 +63,9 @@ final readonly class GradeSubmissionAction
         }
 
         $assignment = $submission->assignment()->firstOrFail();
-        $score = (int) $data['score'];
+        $rawScore = (int) $data['score'];
 
-        if ($score < 0 || $score > $assignment->max_score) {
+        if ($rawScore < 0 || $rawScore > $assignment->max_score) {
             throw BusinessRuleViolation::make(
                 'assignments.score_out_of_range',
                 'assignments::errors.score_out_of_range',
@@ -67,14 +73,48 @@ final readonly class GradeSubmissionAction
             );
         }
 
-        $this->transaction->run(function () use ($submission, $data, $score): void {
+        $penaltyPoints = $submission->is_late
+            ? (int) floor($rawScore * ((int) $assignment->late_penalty_percent / 100))
+            : 0;
+        $score = max(0, $rawScore - $penaltyPoints);
+
+        $this->transaction->run(function () use (
+            $submission,
+            $assignment,
+            $data,
+            $rawScore,
+            $penaltyPoints,
+            $score,
+            $actorId,
+            $reason,
+        ): void {
+            $before = $submission->only([
+                'status', 'raw_score', 'penalty_points', 'score', 'feedback', 'graded_by', 'graded_at',
+            ]);
+
             $submission->forceFill([
+                'raw_score' => $rawScore,
+                'penalty_points' => $penaltyPoints,
                 'score' => $score,
                 'feedback' => isset($data['feedback']) ? (string) $data['feedback'] : null,
-                'graded_by' => auth()->id(),
+                'graded_by' => $actorId,
                 'graded_at' => CarbonImmutable::now('UTC'),
                 'status' => AssignmentSubmissionStatus::Graded->value,
             ])->save();
+
+            $this->audit->record(
+                organizationId: (string) $assignment->organization_id,
+                actorId: $actorId,
+                actorType: 'user',
+                action: 'assignments.graded',
+                auditableType: 'assignment_submission',
+                auditableId: (string) $submission->getKey(),
+                oldValues: $before,
+                newValues: $submission->only([
+                    'status', 'raw_score', 'penalty_points', 'score', 'feedback', 'graded_by', 'graded_at',
+                ]),
+                reason: $reason,
+            );
         });
 
         $this->events->dispatch(new SubmissionGraded(

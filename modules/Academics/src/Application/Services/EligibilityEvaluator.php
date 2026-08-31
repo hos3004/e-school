@@ -76,11 +76,8 @@ final class EligibilityEvaluator implements ProgramEligibilityEvaluator
                 'eligibility.region_not_allowed' => 'regions',
                 'eligibility.age_out_of_range' => 'age',
                 'eligibility.gender_mismatch' => 'gender',
-                default => null,
             };
-            $severity = $configKey === null
-                ? 'block'
-                : config("admission.eligibility.on_violation.{$configKey}", 'block');
+            $severity = config("admission.eligibility.on_violation.{$configKey}", 'block');
             if ($severity === 'warn') {
                 $warnings[] = $violation;
             } else {

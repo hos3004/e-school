@@ -13,7 +13,7 @@ final class StartSessionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('sessions.session.start');
+        return $this->user()->can('session.create');
     }
 
     /**
@@ -21,6 +21,6 @@ final class StartSessionRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [];
+        return ['reason' => ['required', 'string', 'min:3', 'max:1000']];
     }
 }

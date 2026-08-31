@@ -36,15 +36,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->name('notifications.mark-as-read');
 });
 
-Route::post('notifications', QueueNotificationController::class)
-    ->middleware('can:create,'.NotificationOutbox::class)
-    ->name('notifications.store');
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::post('notifications', QueueNotificationController::class)
+        ->middleware('can:create,'.NotificationOutbox::class)
+        ->name('notifications.store');
 
-Route::prefix('notifications/{outbox}')->group(function (): void {
-    Route::post('cancel', CancelNotificationController::class)->name('notifications.cancel');
-    Route::post('retry', RetryNotificationController::class)->name('notifications.retry');
-    Route::get('attempts', ListDeliveryAttemptsController::class)->name('notifications.attempts');
+    Route::prefix('notifications/{outbox}')->group(function (): void {
+        Route::post('cancel', CancelNotificationController::class)->name('notifications.cancel');
+        Route::post('retry', RetryNotificationController::class)->name('notifications.retry');
+        Route::get('attempts', ListDeliveryAttemptsController::class)->name('notifications.attempts');
+    });
+
+    Route::get('notification-preferences', ListPreferencesController::class)->name('notification-preferences.index');
+    Route::put('notification-preferences', UpdatePreferenceController::class)->name('notification-preferences.update');
 });
-
-Route::get('notification-preferences', ListPreferencesController::class)->name('notification-preferences.index');
-Route::put('notification-preferences', UpdatePreferenceController::class)->name('notification-preferences.update');

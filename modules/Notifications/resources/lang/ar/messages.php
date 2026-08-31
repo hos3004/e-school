@@ -33,4 +33,7 @@ return [
     'dispatch_due_done' => 'وُزِّعت :count رسالة مستحقة إلى مهام الإرسال.',
 
     'retry_failed_done' => 'أُعيدت جدولة :count رسالة فاشلة.',
+    'not_available' => 'غير متاح',
+    'no_audit_entries' => 'لم تُسجّل قرارات يدوية على هذا الإشعار.',
+    'system_actor' => 'النظام',
 ];

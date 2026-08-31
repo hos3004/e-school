@@ -75,7 +75,7 @@ it('rejects assignments on a completed group', function (): void {
 it('unassigns by closing the record instead of deleting it', function (): void {
     $assignment = $this->action->execute($this->group, assignmentData());
 
-    $closed = app(UnassignTeacherAction::class)->execute($assignment);
+    $closed = app(UnassignTeacherAction::class)->execute($assignment, 'إسناد المعلم انتهى');
 
     expect($closed->isOpen())->toBeFalse()
         ->and($closed->assigned_to)->not->toBeNull()
@@ -85,8 +85,8 @@ it('unassigns by closing the record instead of deleting it', function (): void {
 it('rejects unassigning an already closed assignment', function (): void {
     $assignment = $this->action->execute($this->group, assignmentData());
 
-    app(UnassignTeacherAction::class)->execute($assignment);
-    app(UnassignTeacherAction::class)->execute($assignment->refresh());
+    app(UnassignTeacherAction::class)->execute($assignment, 'المرة الأولى');
+    app(UnassignTeacherAction::class)->execute($assignment->refresh(), 'المرة الثانية');
 })->throws(BusinessRuleViolation::class);
 
 it('keeps planning groups mutable but completed ones frozen', function (): void {

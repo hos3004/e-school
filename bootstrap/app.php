@@ -27,6 +27,11 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Portal pages authenticate with the web session while their JSON
+        // controls use the API routes. Sanctum must restore that session for
+        // configured first-party domains before auth:sanctum is evaluated.
+        $middleware->statefulApi();
+
         $middleware->web(append: [
             SetLocale::class,
             HandleInertiaRequests::class,

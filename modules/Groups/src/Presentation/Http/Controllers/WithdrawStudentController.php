@@ -25,6 +25,7 @@ final class WithdrawStudentController extends Controller
         $membership = $this->action->execute(
             $membership,
             (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
         );
 
         return GroupMembershipResource::make($membership)->response();

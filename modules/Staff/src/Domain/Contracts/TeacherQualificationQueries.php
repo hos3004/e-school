@@ -6,6 +6,9 @@ namespace Modules\Staff\Domain\Contracts;
 
 interface TeacherQualificationQueries
 {
+    /** @return list<string> */
+    public function courseIdsForTeacher(string $staffProfileId): array;
+
     /**
      * @return list<string> معرّفات ملفات المعلمين المؤهلين لتدريس الكورس
      */

@@ -31,6 +31,7 @@ final class SyncRolePermissionsController
             permissionNames: array_values((array) $validated['permissions']),
             actorId: (string) $request->user()?->getAuthIdentifier(),
             organizationId: $organizationId,
+            reason: (string) $validated['reason'],
         );
 
         return response()->json([

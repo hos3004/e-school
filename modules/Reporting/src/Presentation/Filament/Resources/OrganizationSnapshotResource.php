@@ -32,7 +32,7 @@ final class OrganizationSnapshotResource extends Resource
 
     protected static ?int $navigationSort = 90;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('reporting::navigation.group');
     }

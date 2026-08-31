@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Modules\Students\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Organization\Domain\ValueObjects\CountryData;
 use Modules\Students\Domain\Models\StudentProfile;
+use Shared\Support\Locales;
 
 /**
  * طلب تحديث بيانات ملف طالب.
@@ -29,14 +31,15 @@ final class UpdateStudentProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'reason' => ['required', 'string', 'max:2000'],
             'date_of_birth' => ['sometimes', 'nullable', 'date', 'before:today'],
             'gender' => ['sometimes', 'nullable', 'string', 'in:male,female'],
             'nationality' => ['sometimes', 'nullable', 'string', 'size:2'],
-            'country' => ['sometimes', 'nullable', 'string', 'size:2'],
+            'country' => ['prohibited'],
             'country_id' => ['sometimes', 'nullable', 'string', 'size:26'],
             'region_id' => ['sometimes', 'nullable', 'string', 'size:26'],
             'city' => ['sometimes', 'nullable', 'string', 'max:120'],
-            'preferred_language' => ['sometimes', 'nullable', 'string', 'in:ar,en,fr'],
+            'preferred_language' => ['sometimes', 'nullable', 'string', Rule::in(Locales::supported())],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
         ];
     }
@@ -63,10 +66,10 @@ final class UpdateStudentProfileRequest extends FormRequest
     public function attributes(): array
     {
         return collect([
+            'reason',
             'date_of_birth',
             'gender',
             'nationality',
-            'country',
             'country_id',
             'region_id',
             'city',

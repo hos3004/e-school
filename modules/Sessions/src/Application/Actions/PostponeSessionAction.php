@@ -6,9 +6,7 @@ namespace Modules\Sessions\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Support\Facades\DB;
-use Modules\Sessions\Application\Concerns\TransitionsSessionStatus;
-use Modules\Sessions\Domain\Enums\SessionStatus;
+use Modules\Sessions\Domain\Contracts\SessionSchedulingGateway;
 use Modules\Sessions\Domain\Events\SessionPostponed;
 use Modules\Sessions\Domain\Models\Session;
 use Shared\Support\BusinessRuleViolation;
@@ -21,16 +19,13 @@ use Shared\Support\BusinessRuleViolation;
  */
 final readonly class PostponeSessionAction
 {
-    use TransitionsSessionStatus;
-
     public function __construct(
         private Dispatcher $events,
+        private SessionSchedulingGateway $scheduling,
     ) {}
 
-    public function execute(Session $session, string $makeupStart, string $makeupEnd, ?string $reason = null, ?string $actorId = null): Session
+    public function execute(Session $session, string $makeupStart, string $makeupEnd, string $reason, string $actorId): Session
     {
-        $this->guardNotTerminal($session);
-
         $newStart = CarbonImmutable::parse($makeupStart, 'UTC');
         $newEnd = CarbonImmutable::parse($makeupEnd, 'UTC');
 
@@ -48,6 +43,14 @@ final readonly class PostponeSessionAction
             );
         }
 
+        $expectedEnd = $newStart->addMinutes((int) $session->scheduled_start->diffInMinutes($session->scheduled_end));
+        if (!$newEnd->equalTo($expectedEnd)) {
+            throw BusinessRuleViolation::make(
+                'sessions.makeup_duration_changed',
+                'sessions::errors.makeup_duration_changed',
+            );
+        }
+
         $noticeMinutes = (int) config('scheduling.notice.postponement_minutes');
 
         if (CarbonImmutable::now('UTC')->greaterThan(CarbonImmutable::instance($session->scheduled_start)->subMinutes($noticeMinutes))) {
@@ -58,54 +61,25 @@ final readonly class PostponeSessionAction
             );
         }
 
-        [$session, $makeup, $event] = DB::transaction(function () use ($session, $newStart, $newEnd, $reason): array {
-            $makeup = new Session;
-            $makeup->fill([
-                'organization_id' => $session->organization_id,
-                'schedule_id' => $session->schedule_id,
-                'group_id' => $session->group_id,
-                'course_id' => $session->course_id,
-                'staff_profile_id' => $session->staff_profile_id,
-                'substitute_for_staff_id' => $session->substitute_for_staff_id,
-                'makeup_for_session_id' => $session->id,
-                'session_type' => $session->session_type,
-                'status' => SessionStatus::Scheduled,
-                'scheduled_start' => $newStart,
-                'scheduled_end' => $newEnd,
-                'title' => $session->title,
-                'notes' => __('sessions::messages.makeup_of', ['title' => $this->sessionTitle($session)]),
-            ]);
-            $makeup->save();
+        $makeupId = $this->scheduling->scheduleMakeup(
+            organizationId: (string) $session->organization_id,
+            originalSessionId: (string) $session->getKey(),
+            startsAt: $newStart,
+            actorId: $actorId,
+            reason: $reason,
+        );
 
-            $this->applyTransition(
-                $session,
-                SessionStatus::Postponed,
-                [],
-                reason: $reason ?? __('sessions::messages.postpone_default_reason'),
-            );
-
-            return [$session, $makeup, new SessionPostponed(
-                sessionId: $session->id,
-                organizationId: $session->organization_id,
-                courseId: $session->course_id,
-                staffProfileId: $session->staff_profile_id,
-                makeupSessionId: $makeup->id,
-                makeupStart: $newStart->toIso8601String(),
-                makeupEnd: $newEnd->toIso8601String(),
-                reason: $reason,
-            )];
-        });
-
-        $this->events->dispatch($event);
+        $this->events->dispatch(new SessionPostponed(
+            sessionId: (string) $session->id,
+            organizationId: (string) $session->organization_id,
+            courseId: (string) $session->course_id,
+            staffProfileId: (string) $session->staff_profile_id,
+            makeupSessionId: $makeupId,
+            makeupStart: $newStart->toIso8601String(),
+            makeupEnd: $newEnd->toIso8601String(),
+            reason: $reason,
+        ));
 
         return $session->refresh();
-    }
-
-    private function sessionTitle(Session $session): string
-    {
-        /** @var array<string, string> $title */
-        $title = $session->title;
-
-        return $title[app()->getLocale()] ?? reset($title);
     }
 }

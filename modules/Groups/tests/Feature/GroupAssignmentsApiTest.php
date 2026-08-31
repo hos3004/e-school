@@ -16,11 +16,8 @@ use Modules\Identity\Domain\Models\User;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Gate::define('groups.view_any', fn ($user) => true);
-    Gate::define('groups.assign_teacher', fn ($user) => true);
-    Gate::define('groups.unassign_teacher', fn ($user) => true);
-    Gate::define('groups.attach_program', fn ($user) => true);
-    Gate::define('groups.detach_program', fn ($user) => true);
+    Gate::define('group.view', fn ($user) => true);
+    Gate::define('group.manage', fn ($user) => true);
 
     $this->actor = User::factory()->create();
 });
@@ -28,13 +25,14 @@ beforeEach(function (): void {
 it('assigns a teacher through the API and unassigns later', function (): void {
     Event::fake([TeacherAssignedToGroup::class]);
 
-    $group = app(ActivateGroupAction::class)->execute(Group::factory()->create());
+    $group = app(ActivateGroupAction::class)->execute(Group::factory()->activatable()->create());
 
     $assignmentId = $this->actingAs($this->actor)
         ->postJson('/api/groups/'.$group->getKey().'/teachers', [
             'staff_profile_id' => GroupTeacherFactory::ensureStaffProfile(),
             'role' => 'lead',
             'assigned_from' => '2026-03-01',
+            'reason' => 'اعتماد المعلم الأساسي للمجموعة',
         ])
         ->assertCreated()
         ->assertJsonPath('data.role', 'lead')
@@ -43,7 +41,7 @@ it('assigns a teacher through the API and unassigns later', function (): void {
     Event::assertDispatched(TeacherAssignedToGroup::class);
 
     $this->actingAs($this->actor)
-        ->deleteJson('/api/group-teachers/'.$assignmentId)
+        ->deleteJson('/api/group-teachers/'.$assignmentId, ['reason' => 'نهاية إسناد المعلم'])
         ->assertOk()
         ->assertJsonPath('data.role', 'lead');
 });
@@ -53,7 +51,10 @@ it('attaches and detaches programs through the API', function (): void {
     $programId = GroupFactory::ensureProgram();
 
     $this->actingAs($this->actor)
-        ->postJson('/api/groups/'.$group->getKey().'/programs', ['program_id' => $programId])
+        ->postJson('/api/groups/'.$group->getKey().'/programs', [
+            'program_id' => $programId,
+            'reason' => 'ربط الخطة الأكاديمية بالمجموعة',
+        ])
         ->assertOk()
         ->assertJsonPath('data.id', (string) $group->getKey());
 
@@ -63,7 +64,7 @@ it('attaches and detaches programs through the API', function (): void {
         ->getKey();
 
     $this->actingAs($this->actor)
-        ->deleteJson('/api/group-programs/'.$linkId)
+        ->deleteJson('/api/group-programs/'.$linkId, ['reason' => 'تغيير خطة المجموعة'])
         ->assertNoContent();
 });
 
@@ -72,10 +73,16 @@ it('rejects duplicate program attachment through the API', function (): void {
     $programId = GroupFactory::ensureProgram();
 
     $this->actingAs($this->actor)
-        ->postJson('/api/groups/'.$group->getKey().'/programs', ['program_id' => $programId])
+        ->postJson('/api/groups/'.$group->getKey().'/programs', [
+            'program_id' => $programId,
+            'reason' => 'ربط البرنامج بالمجموعة',
+        ])
         ->assertOk();
 
     $this->actingAs($this->actor)
-        ->postJson('/api/groups/'.$group->getKey().'/programs', ['program_id' => $programId])
+        ->postJson('/api/groups/'.$group->getKey().'/programs', [
+            'program_id' => $programId,
+            'reason' => 'محاولة ربط مكررة',
+        ])
         ->assertUnprocessable();
 });

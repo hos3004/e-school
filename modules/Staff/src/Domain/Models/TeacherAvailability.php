@@ -11,6 +11,22 @@ use Modules\Staff\Domain\Enums\TeacherAvailabilityApprovalStatus;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $staff_profile_id
+ * @property int $weekday
+ * @property string $start_time
+ * @property string $end_time
+ * @property string $timezone
+ * @property CarbonImmutable $effective_from
+ * @property CarbonImmutable|null $effective_to
+ * @property TeacherAvailabilityApprovalStatus $approval_status
+ * @property string|null $approved_by
+ * @property CarbonImmutable|null $approved_at
+ * @property string|null $decided_by
+ * @property CarbonImmutable|null $decided_at
+ * @property string|null $decision_reason
+ */
 final class TeacherAvailability extends Model
 {
     use HasModuleFactory;
@@ -31,6 +47,9 @@ final class TeacherAvailability extends Model
         'approval_status',
         'approved_by',
         'approved_at',
+        'decided_by',
+        'decided_at',
+        'decision_reason',
     ];
 
     protected function casts(): array
@@ -43,6 +62,7 @@ final class TeacherAvailability extends Model
             'effective_to' => 'immutable_date',
             'approval_status' => TeacherAvailabilityApprovalStatus::class,
             'approved_at' => 'immutable_datetime',
+            'decided_at' => 'immutable_datetime',
         ];
     }
 

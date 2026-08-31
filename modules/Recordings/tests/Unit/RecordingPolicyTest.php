@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Recordings\Application\Policies\RecordingPolicy;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
@@ -9,14 +10,14 @@ use Modules\Recordings\Domain\Models\Recording;
 use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
 use Modules\Recordings\Tests\Support\ApiUser;
 
-uses(CreatesRecordingContext::class);
+uses(RefreshDatabase::class, CreatesRecordingContext::class);
 
 beforeEach(function (): void {
     $this->context = $this->createSessionWithClassroom();
 });
 
 it('scopes every action to the same organization', function (): void {
-    Gate::define('recordings.recording.view', fn (): bool => true);
+    Gate::define('recording.view', fn (): bool => true);
 
     $policy = new RecordingPolicy;
 
@@ -37,9 +38,8 @@ it('grants abilities only through the gate, never through role names', function 
     $policy = new RecordingPolicy;
     $user = new ApiUser('01POLICYUSER000000000000', '01POLICYORG000000000000');
 
-    Gate::define('recordings.recording.view_any', fn (): bool => false);
-    Gate::define('recordings.recording.create', fn (): bool => false);
-    Gate::define('recordings.recording.update', fn (): bool => true);
+    Gate::define('recording.view.any', fn (): bool => false);
+    Gate::define('recording.delete', fn (): bool => true);
 
     $recording = Recording::factory()->make([
         'organization_id' => $user->organization_id,
@@ -48,5 +48,6 @@ it('grants abilities only through the gate, never through role names', function 
 
     expect($policy->viewAny($user))->toBeFalse()
         ->and($policy->create($user))->toBeFalse()
-        ->and($policy->update($user, $recording))->toBeTrue();
+        ->and($policy->update($user, $recording))->toBeFalse()
+        ->and($policy->delete($user, $recording))->toBeTrue();
 });

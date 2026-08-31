@@ -27,4 +27,11 @@ return [
     'individual_course_requires_empty_group' => 'An individual course group cannot accept more than one active student.',
     'teacher_profile_invalid' => 'An assigned teacher is not active in this organization.',
     'teacher_not_qualified' => 'An assigned teacher is not qualified for course ":course_id".',
+    'program_not_found' => 'The selected program does not exist in this organization.',
+    'course_not_found' => 'The selected course does not exist in this organization.',
+    'unassign_reason_required' => 'A reason is required to end a teacher assignment.',
+    'detach_reason_required' => 'A reason is required to detach a program.',
+    'activation_data_incomplete' => 'The group cannot be activated before completing: :missing.',
+    'capacity_below_members' => 'The capacity entered (:capacity) is lower than the number of students already placed (:members).',
+    'invalid_membership_transition' => 'A membership cannot move from “:from” to “:to”.',
 ];

@@ -29,4 +29,10 @@ return [
         'label' => 'Category setting',
         'plural' => 'Categories & channels',
     ],
+
+
+    'popup' => [
+        'label' => 'Popup campaign',
+        'plural' => 'Popup campaigns',
+    ],
 ];

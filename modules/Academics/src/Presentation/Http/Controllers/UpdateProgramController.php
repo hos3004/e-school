@@ -22,7 +22,12 @@ final class UpdateProgramController extends Controller
 
     public function __invoke(UpdateProgramRequest $request, Program $program): JsonResponse
     {
-        $program = $this->action->execute($program, $request->validated());
+        $program = $this->action->execute(
+            $program,
+            $request->validated(),
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return ProgramResource::make($program)->response();
     }

@@ -27,6 +27,7 @@ final class EditRole extends EditRecord
             name: isset($data['name']) ? (string) $data['name'] : null,
             actorId: (string) auth()->id(),
             scopeOrganizationId: $organizationId,
+            reason: (string) $data['reason'],
         );
 
         app(SyncRolePermissionsAction::class)->execute(
@@ -34,6 +35,7 @@ final class EditRole extends EditRecord
             permissionNames: array_values(array_map('strval', (array) ($data['permission_names'] ?? []))),
             actorId: (string) auth()->id(),
             organizationId: $organizationId,
+            reason: (string) $data['reason'],
         );
 
         return $role;

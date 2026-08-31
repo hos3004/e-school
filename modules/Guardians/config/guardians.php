@@ -8,6 +8,10 @@ declare(strict_types=1);
 
 return [
 
+    'account' => [
+        'guardian_role' => env('GUARDIAN_ACCOUNT_ROLE', 'guardian'),
+    ],
+
     'limits' => [
         // أقصى عدد روابط (أوصياء) مسموح لطالب واحد.
         'max_links_per_student' => 4,

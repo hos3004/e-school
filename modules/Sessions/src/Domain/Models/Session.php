@@ -22,6 +22,7 @@ use Shared\Concerns\HasUlid;
  * @property string $group_id
  * @property string $course_id
  * @property string $staff_profile_id
+ * @property string $original_teacher_id
  * @property string|null $substitute_for_staff_id
  * @property string|null $makeup_for_session_id
  * @property string $session_type
@@ -121,9 +122,9 @@ final class Session extends Model
      * نكشفه بهذا الاسم لأن عقد العميل يتحدث عن «actual teacher»، وترك المعنى
      * ضمنيًا في اسم عمود عام كان سيربك كل من يقرأ الكود لاحقًا.
      */
-    public function actualTeacherId(): ?string
+    public function actualTeacherId(): string
     {
-        return $this->staff_profile_id === null ? null : (string) $this->staff_profile_id;
+        return (string) $this->staff_profile_id;
     }
 
     public function isCoveredBySubstitute(): bool

@@ -12,5 +12,8 @@ interface EnrollmentPlacementGateway
         string $organizationId,
         string $studentProfileId,
         string $programId,
+        string $reason,
+        ?string $actorId = null,
+        ?string $correlationId = null,
     ): EnrollmentPlacementData;
 }

@@ -156,7 +156,7 @@ final class PortalLiveSessionSeeder extends Seeder
         $profileId = DB::table('staff_profiles')->where('user_id', $userId)->value('id');
         $values = [
             'organization_id' => $organizationId,
-            'staff_code' => 'DEMO-LIVE-TEACHER',
+            'staff_code' => 'T900',
             'employment_type' => 'part_time',
             'gender' => 'male',
             'hired_at' => now()->subMonth()->toDateString(),
@@ -184,7 +184,7 @@ final class PortalLiveSessionSeeder extends Seeder
         $profileId = DB::table('student_profiles')->where('user_id', $userId)->value('id');
         $values = [
             'organization_id' => $organizationId,
-            'student_code' => 'DEMO-LIVE-STUDENT',
+            'student_code' => 'E900',
             'nationality' => 'EG',
             'country' => 'EG',
             'city' => 'القاهرة',

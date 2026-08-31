@@ -48,7 +48,10 @@ it('hides archived students from the index and show by default', function (): vo
 
 it('updates the profile through the API', function (): void {
     $this->actingAs($this->actor)
-        ->patchJson('/api/students/'.$this->student->getKey(), ['city' => 'Aswan'])
+        ->patchJson('/api/students/'.$this->student->getKey(), [
+            'city' => 'Aswan',
+            'reason' => 'تحديث المدينة بناءً على طلب ولي الأمر',
+        ])
         ->assertOk()
         ->assertJsonPath('data.city', 'Aswan');
 });
@@ -83,7 +86,10 @@ it('forbids update without any matching ability or ownership', function (): void
     Gate::define('student.update', fn ($user): bool => false);
 
     $this->actingAs($this->actor)
-        ->patchJson('/api/students/'.$this->student->getKey(), ['city' => 'Giza'])
+        ->patchJson('/api/students/'.$this->student->getKey(), [
+            'city' => 'Giza',
+            'reason' => 'محاولة تحديث بلا صلاحية',
+        ])
         ->assertForbidden();
 });
 

@@ -7,4 +7,6 @@ declare(strict_types=1);
 | تُستهلك عبر __('scheduling::messages.key') — ولا نص ظاهر خارج ملفات الترجمة.
 */
 
-return [];
+return [
+    'generated_from_schedule' => 'توليد آلي من قالب الجدول.',
+];

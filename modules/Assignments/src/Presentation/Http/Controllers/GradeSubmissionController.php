@@ -21,6 +21,11 @@ final class GradeSubmissionController extends Controller
 
     public function __invoke(GradeSubmissionRequest $request, AssignmentSubmission $submission): AssignmentSubmissionResource
     {
-        return new AssignmentSubmissionResource($this->action->execute($submission, $request->validated()));
+        return new AssignmentSubmissionResource($this->action->execute(
+            $submission,
+            $request->safe()->except('reason'),
+            (string) $request->user()->getAuthIdentifier(),
+            $request->string('reason')->toString(),
+        ));
     }
 }

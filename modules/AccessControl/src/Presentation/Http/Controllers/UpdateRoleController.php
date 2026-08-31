@@ -29,6 +29,7 @@ final class UpdateRoleController
             name: $validated['name'] ?? null,
             actorId: (string) $request->user()?->getAuthIdentifier(),
             scopeOrganizationId: $organizationId,
+            reason: (string) $validated['reason'],
         );
 
         return new RoleResource($role);

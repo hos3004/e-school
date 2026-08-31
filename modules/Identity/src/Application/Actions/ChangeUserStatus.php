@@ -6,6 +6,7 @@ namespace Modules\Identity\Application\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Identity\Domain\Enums\UserStatus;
 use Modules\Identity\Domain\Events\UserStatusChanged;
 use Modules\Identity\Domain\Models\User;
@@ -19,6 +20,10 @@ use Shared\Support\BusinessRuleViolation;
  */
 final readonly class ChangeUserStatus
 {
+    public function __construct(
+        private AuditRecorder $audit,
+    ) {}
+
     public function execute(User $target, UserStatus $to, string $reason, ?string $actorId = null): User
     {
         if ($reason === '') {
@@ -46,9 +51,21 @@ final readonly class ChangeUserStatus
         }
 
         /** @var User $target */
-        $target = DB::transaction(function () use ($target, $to): User {
+        $target = DB::transaction(function () use ($target, $to, $from, $reason, $currentActorId): User {
             $target->status = $to;
             $target->save();
+
+            $this->audit->record(
+                organizationId: (string) $target->organization_id,
+                actorId: $currentActorId,
+                actorType: 'user',
+                action: 'identity.user_status_changed',
+                auditableType: 'user',
+                auditableId: (string) $target->getKey(),
+                oldValues: ['status' => $from->value],
+                newValues: ['status' => $to->value],
+                reason: $reason,
+            );
 
             return $target;
         });
@@ -59,6 +76,7 @@ final readonly class ChangeUserStatus
             from: $from->value,
             to: $to->value,
             reason: $reason,
+            actorId: $currentActorId,
         ));
 
         return $target;

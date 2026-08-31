@@ -129,7 +129,11 @@ final class Recording extends Model
      */
     public function scopePastRetention(Builder $query, ?CarbonImmutable $at = null): Builder
     {
-        return $this->scopeWithinRetention($query)
+        return $query->whereIn('status', [
+            RecordingStatus::Processing,
+            RecordingStatus::Ready,
+            RecordingStatus::Archived,
+        ])
             ->where('expires_at', '<=', $at ?? CarbonImmutable::now('UTC'));
     }
 

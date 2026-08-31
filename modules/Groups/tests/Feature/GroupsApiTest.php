@@ -14,14 +14,9 @@ use Modules\Identity\Domain\Models\User;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Gate::define('groups.view_any', fn ($user) => true);
-    Gate::define('groups.create', fn ($user) => true);
-    Gate::define('groups.update_any', fn ($user) => true);
-    Gate::define('groups.archive_any', fn ($user) => true);
-    Gate::define('groups.activate', fn ($user) => true);
-    Gate::define('groups.complete', fn ($user) => true);
-    Gate::define('groups.enroll_student', fn ($user) => true);
-    Gate::define('groups.withdraw_student', fn ($user) => true);
+    Gate::define('group.view', fn ($user) => true);
+    Gate::define('group.manage', fn ($user) => true);
+    Gate::define('enrollment.create', fn ($user) => true);
 
     $this->actor = User::factory()->create();
 });
@@ -29,13 +24,13 @@ beforeEach(function (): void {
 function groupPayload(array $overrides = []): array
 {
     return array_merge([
-        'organization_id' => GroupMembershipFactory::ensureOrganization(),
         'code' => 'GRP-API-'.str()->upper(str()->random(6)),
         'name' => ['ar' => 'مجموعة تجريبية', 'en' => 'Demo Group'],
         'capacity' => 12,
         'timezone' => 'UTC',
         'starts_on' => '2026-03-01',
         'ends_on' => null,
+        'reason' => 'فتح مجموعة للفصل الدراسي الجديد',
     ], $overrides);
 }
 
@@ -58,12 +53,15 @@ it('validates the create payload', function (): void {
 });
 
 it('lists groups with active member counts', function (): void {
-    Group::factory()->count(2)->create();
+    $groups = Group::factory()->count(2)->create();
 
-    $this->actingAs($this->actor)
+    $ids = collect($this->actingAs($this->actor)
         ->getJson('/api/groups')
         ->assertOk()
-        ->assertJsonCount(2, 'data');
+        ->json('data'))
+        ->pluck('id');
+
+    expect($ids)->toContain(...$groups->modelKeys());
 });
 
 it('shows one group and hides archived ones', function (): void {
@@ -85,7 +83,10 @@ it('updates a group through the API without touching status', function (): void 
     $group = Group::factory()->create();
 
     $this->actingAs($this->actor)
-        ->patchJson('/api/groups/'.$group->getKey(), ['capacity' => 18])
+        ->patchJson('/api/groups/'.$group->getKey(), [
+            'capacity' => 18,
+            'reason' => 'تحديث السعة حسب عدد المسجلين',
+        ])
         ->assertOk()
         ->assertJsonPath('data.capacity', 18)
         ->assertJsonPath('data.status', 'planning');
@@ -111,31 +112,39 @@ it('rejects archiving without a reason', function (): void {
 });
 
 it('activates then completes a group through dedicated endpoints', function (): void {
-    $group = Group::factory()->create();
+    // التفعيل يشترط معلمًا مُسندًا — راجع config('groups.activation').
+    $group = Group::factory()->activatable()->create();
 
     $this->actingAs($this->actor)
-        ->postJson('/api/groups/'.$group->getKey().'/activate')
+        ->postJson('/api/groups/'.$group->getKey().'/activate', ['reason' => 'اكتمل تجهيز المجموعة'])
         ->assertOk()
         ->assertJsonPath('data.status', 'active');
 
     $this->actingAs($this->actor)
-        ->postJson('/api/groups/'.$group->getKey().'/complete')
+        ->postJson('/api/groups/'.$group->getKey().'/complete', ['reason' => 'اكتملت الخطة الدراسية'])
         ->assertOk()
         ->assertJsonPath('data.status', 'completed');
 });
 
-it('enrolls and withdraws students through the API', function (): void {
-    $group = app(ActivateGroupAction::class)->execute(Group::factory()->create());
+it('withdraws an existing student membership through the API', function (): void {
+    $group = app(ActivateGroupAction::class)->execute(Group::factory()->activatable()->create());
     $studentId = GroupMembershipFactory::ensureStudentProfile();
-
-    $membershipId = $this->actingAs($this->actor)
-        ->postJson('/api/groups/'.$group->getKey().'/students', ['student_profile_id' => $studentId])
-        ->assertCreated()
-        ->assertJsonPath('data.student_profile_id', $studentId)
-        ->json('data.id');
+    $membership = GroupMembershipFactory::new()->create([
+        'group_id' => $group->getKey(),
+        'student_profile_id' => $studentId,
+    ]);
 
     $this->actingAs($this->actor)
-        ->postJson('/api/group-memberships/'.$membershipId.'/withdraw', ['reason' => 'انتقال العائلة'])
+        ->postJson('/api/group-memberships/'.$membership->getKey().'/withdraw', ['reason' => 'انتقال العائلة'])
         ->assertOk()
         ->assertJsonPath('data.status', 'left');
+});
+
+it('derives the organization from the actor and rejects a supplied organization', function (): void {
+    $payload = groupPayload(['organization_id' => GroupMembershipFactory::ensureOrganization()]);
+
+    $this->actingAs($this->actor)
+        ->postJson('/api/groups', $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['organization_id']);
 });

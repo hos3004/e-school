@@ -11,29 +11,40 @@ use Modules\Groups\Domain\Models\GroupMembership;
  */
 final class GroupMembershipPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
-        return $user->can('groups.view_any');
+        return $user->can('group.view');
     }
 
-    public function view($user, GroupMembership $membership): bool
+    public function view(mixed $user, GroupMembership $membership): bool
     {
-        return $user->can('groups.view_any');
+        return $user->can('group.view') && $this->sameOrganization($user, $membership);
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
-        return $user->can('groups.enroll_student');
+        return $user->can('group.manage');
     }
 
-    public function update($user, GroupMembership $membership): bool
+    public function update(mixed $user, GroupMembership $membership): bool
     {
-        return $user->can('groups.update_any');
+        return $user->can('group.manage') && $this->sameOrganization($user, $membership);
     }
 
     /** خروج الطالب من المجموعة — لا حذف للسجل أبدًا. */
-    public function delete($user, GroupMembership $membership): bool
+    public function delete(mixed $user, GroupMembership $membership): bool
     {
-        return $user->can('groups.withdraw_student');
+        return $user->can('group.manage') && $this->sameOrganization($user, $membership);
+    }
+
+    private function sameOrganization(mixed $user, GroupMembership $membership): bool
+    {
+        $organizationId = data_get($user, 'organization_id');
+        $group = $membership->group;
+
+        return is_string($organizationId)
+            && $organizationId !== ''
+            && $group !== null
+            && hash_equals($organizationId, (string) $group->organization_id);
     }
 }

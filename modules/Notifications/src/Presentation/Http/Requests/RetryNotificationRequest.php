@@ -7,7 +7,7 @@ namespace Modules\Notifications\Presentation\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * طلب إعادة محاولة رسالة فاشلة — لا حقول مطلوبة، التفويض فقط.
+ * طلب إعادة محاولة رسالة فاشلة بسبب تشغيلي موثّق.
  */
 final class RetryNotificationRequest extends FormRequest
 {
@@ -22,7 +22,7 @@ final class RetryNotificationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => ['nullable', 'string', 'max:1000'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }
 

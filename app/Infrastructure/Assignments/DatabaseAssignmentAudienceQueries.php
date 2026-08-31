@@ -82,6 +82,117 @@ final readonly class DatabaseAssignmentAudienceQueries implements AssignmentAudi
             ->exists();
     }
 
+    public function targetBelongsToOrganization(
+        string $organizationId,
+        string $courseId,
+        ?string $groupId,
+    ): bool {
+        $course = DB::table('courses')
+            ->join('levels', 'levels.id', '=', 'courses.level_id')
+            ->where('courses.id', $courseId)
+            ->where('courses.organization_id', $organizationId)
+            ->where('courses.is_active', true)
+            ->whereNull('courses.deleted_at')
+            ->first(['levels.program_id']);
+
+        if ($course === null) {
+            return false;
+        }
+
+        if ($groupId === null) {
+            return true;
+        }
+
+        return DB::table('groups')
+            ->join('group_programs', 'group_programs.group_id', '=', 'groups.id')
+            ->where('groups.id', $groupId)
+            ->where('groups.organization_id', $organizationId)
+            ->where('groups.status', 'active')
+            ->whereNull('groups.deleted_at')
+            ->where('group_programs.program_id', (string) $course->program_id)
+            ->exists();
+    }
+
+    public function teacherCanTeachTarget(
+        string $organizationId,
+        string $staffProfileId,
+        string $courseId,
+        ?string $groupId,
+    ): bool {
+        if (!$this->staffProfileBelongsToOrganization($organizationId, $staffProfileId)
+            || !$this->targetBelongsToOrganization($organizationId, $courseId, $groupId)
+            || !DB::table('teacher_courses')
+                ->where('staff_profile_id', $staffProfileId)
+                ->where('course_id', $courseId)
+                ->exists()) {
+            return false;
+        }
+
+        if ($groupId === null) {
+            return true;
+        }
+
+        $today = CarbonImmutable::now('UTC')->toDateString();
+
+        return DB::table('group_teachers')
+            ->where('group_id', $groupId)
+            ->where('staff_profile_id', $staffProfileId)
+            ->where(function ($query) use ($courseId): void {
+                $query->whereNull('course_id')->orWhere('course_id', $courseId);
+            })
+            ->whereDate('assigned_from', '<=', $today)
+            ->where(function ($query) use ($today): void {
+                $query->whereNull('assigned_to')->orWhereDate('assigned_to', '>=', $today);
+            })
+            ->exists();
+    }
+
+    public function studentProfileIdsForTarget(
+        string $organizationId,
+        string $courseId,
+        ?string $groupId,
+    ): array {
+        if (!$this->targetBelongsToOrganization($organizationId, $courseId, $groupId)) {
+            return [];
+        }
+
+        if ($groupId !== null) {
+            return DB::table('group_memberships')
+                ->where('group_id', $groupId)
+                ->where('status', 'active')
+                ->whereNull('left_at')
+                ->whereExists(function ($query) use ($organizationId): void {
+                    $query->selectRaw('1')
+                        ->from('group_programs')
+                        ->join('enrollments', 'enrollments.program_id', '=', 'group_programs.program_id')
+                        ->whereColumn('group_programs.group_id', 'group_memberships.group_id')
+                        ->whereColumn('enrollments.student_profile_id', 'group_memberships.student_profile_id')
+                        ->where('enrollments.organization_id', $organizationId)
+                        ->where('enrollments.status', 'active')
+                        ->whereNull('enrollments.deleted_at');
+                })
+                ->distinct()
+                ->pluck('student_profile_id')
+                ->map(static fn (mixed $id): string => (string) $id)
+                ->values()
+                ->all();
+        }
+
+        return DB::table('enrollments')
+            ->join('levels', 'levels.program_id', '=', 'enrollments.program_id')
+            ->join('courses', 'courses.level_id', '=', 'levels.id')
+            ->where('enrollments.organization_id', $organizationId)
+            ->where('enrollments.status', 'active')
+            ->whereNull('enrollments.deleted_at')
+            ->where('courses.id', $courseId)
+            ->where('courses.organization_id', $organizationId)
+            ->distinct()
+            ->pluck('enrollments.student_profile_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
     public function teacherIsAssignedToTarget(
         string $organizationId,
         string $userId,
@@ -100,30 +211,6 @@ final readonly class DatabaseAssignmentAudienceQueries implements AssignmentAudi
             return false;
         }
 
-        if ($groupId === null) {
-            return DB::table('teacher_courses')
-                ->where('staff_profile_id', $staffProfileId)
-                ->where('course_id', $courseId)
-                ->exists();
-        }
-
-        $today = CarbonImmutable::now('UTC')->toDateString();
-
-        return DB::table('group_teachers')
-            ->join('groups', 'groups.id', '=', 'group_teachers.group_id')
-            ->where('group_teachers.group_id', $groupId)
-            ->where('group_teachers.staff_profile_id', $staffProfileId)
-            ->where(function ($query) use ($courseId): void {
-                $query->whereNull('group_teachers.course_id')
-                    ->orWhere('group_teachers.course_id', $courseId);
-            })
-            ->whereDate('group_teachers.assigned_from', '<=', $today)
-            ->where(function ($query) use ($today): void {
-                $query->whereNull('group_teachers.assigned_to')
-                    ->orWhereDate('group_teachers.assigned_to', '>=', $today);
-            })
-            ->where('groups.organization_id', $organizationId)
-            ->whereNull('groups.deleted_at')
-            ->exists();
+        return $this->teacherCanTeachTarget($organizationId, $staffProfileId, $courseId, $groupId);
     }
 }

@@ -8,14 +8,18 @@ use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupMembership;
 
 it('never inspects role names and decides via declared abilities', function (): void {
-    $group = Group::factory()->make();
-    $membership = GroupMembership::factory()->make(['group_id' => $group]);
+    $group = new Group;
+    $group->forceFill(['organization_id' => '01POLICYORG000000000000000']);
+    $membership = new GroupMembership;
+    $membership->setRelation('group', $group);
 
-    $allowedUser = new class
+    $allowedUser = new class((string) $group->organization_id)
     {
+        public function __construct(public string $organization_id) {}
+
         public function can(string $ability): bool
         {
-            return str_starts_with($ability, 'groups.');
+            return str_starts_with($ability, 'group.');
         }
 
         public function getAuthIdentifier(): int
@@ -24,8 +28,10 @@ it('never inspects role names and decides via declared abilities', function (): 
         }
     };
 
-    $deniedUser = new class
+    $deniedUser = new class((string) $group->organization_id)
     {
+        public function __construct(public string $organization_id) {}
+
         public function can(string $ability): bool
         {
             return false;
@@ -34,6 +40,16 @@ it('never inspects role names and decides via declared abilities', function (): 
         public function getAuthIdentifier(): int
         {
             return 2;
+        }
+    };
+
+    $foreignUser = new class
+    {
+        public string $organization_id = '01FOREIGNORG00000000000000';
+
+        public function can(string $ability): bool
+        {
+            return true;
         }
     };
 
@@ -52,6 +68,8 @@ it('never inspects role names and decides via declared abilities', function (): 
         ->and($policy->create($deniedUser))->toBeFalse()
         ->and($policy->update($deniedUser, $group))->toBeFalse()
         ->and($policy->delete($deniedUser, $group))->toBeFalse()
+        ->and($policy->view($foreignUser, $group))->toBeFalse()
+        ->and($policy->update($foreignUser, $group))->toBeFalse()
 
         ->and($membershipPolicy->viewAny($allowedUser))->toBeTrue()
         ->and($membershipPolicy->create($allowedUser))->toBeTrue()

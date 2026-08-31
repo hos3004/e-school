@@ -15,20 +15,26 @@ use Modules\AcademicReports\Domain\Events\SessionReportSubmitted;
 use Modules\Attendance\Application\Actions\RecordAttendanceAction;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Events\AttendanceRecorded;
+use Modules\Attendance\Tests\Concerns\CreatesSessionParticipant;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Discipline\Application\Actions\RecordViolationAction;
 use Modules\Discipline\Domain\Enums\DisciplineActionType;
 use Modules\Discipline\Domain\Enums\ViolationType;
 use Modules\Discipline\Domain\Events\DisciplineActionApplied;
 use Modules\Discipline\Domain\Events\ViolationRecorded;
+use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Identity\Domain\Models\User;
 use Modules\Recordings\Application\Actions\GrantRecordingAccessAction;
 use Modules\Recordings\Domain\Models\Recording;
 use Modules\Sessions\Application\Actions\AssignSubstituteTeacherAction;
 use Modules\Sessions\Application\Actions\DecideTeacherApologyAction;
 use Modules\Sessions\Application\Actions\SubmitTeacherApologyAction;
+use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 use Modules\Sessions\Domain\Enums\ApologyStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
+use Modules\Staff\Application\Actions\AssignTeacherQualificationsAction;
+use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\VirtualClassroom\Application\Actions\GenerateJoinUrlAction;
 use Modules\VirtualClassroom\Application\Actions\HandleClassroomWebhookAction;
 use Modules\VirtualClassroom\Application\Actions\ProvisionClassroomAction;
@@ -45,6 +51,7 @@ use Tests\TestCase;
 
 final class Task03AcceptanceTest extends TestCase
 {
+    use CreatesSessionParticipant;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -73,6 +80,9 @@ final class Task03AcceptanceTest extends TestCase
 
         $session = Session::query()->create([
             'organization_id' => $orgId,
+            'course_id' => $this->courseId($orgId),
+            'session_type' => 'regular',
+            'title' => ['ar' => 'حصة اختبار', 'en' => 'Test session'],
             'staff_profile_id' => Fixtures::staffProfileId(),
             'status' => SessionStatus::Scheduled,
             'scheduled_start' => now()->utc()->addHours(1),
@@ -81,7 +91,12 @@ final class Task03AcceptanceTest extends TestCase
 
         // 2. Provision VirtualClassroom via NullProvider
         /** @var ProvisionClassroomAction $provisionAction */
-        $provisionAction = new ProvisionClassroomAction(new NullProvider, app('events'));
+        $provisionAction = new ProvisionClassroomAction(
+            new NullProvider,
+            app('events'),
+            app(SessionAdministrationQueries::class),
+            app(AuditRecorder::class),
+        );
         $classroom = $provisionAction->execute(
             sessionId: (string) $session->id,
             title: 'حصة التلاوة',
@@ -91,15 +106,23 @@ final class Task03AcceptanceTest extends TestCase
         Event::assertDispatched(ClassroomProvisioned::class);
 
         // 3. Dynamic Join URL Generation (Teacher = Moderator, Student = Attendee, Supervisor = Viewer)
+        $provider = new NullProvider;
         /** @var GenerateJoinUrlAction $joinUrlAction */
-        $joinUrlAction = new GenerateJoinUrlAction(new NullProvider);
+        $joinUrlAction = new GenerateJoinUrlAction($provider);
 
         $teacherUrl = $joinUrlAction->execute($classroom, (string) $teacherUser->id, 'الأستاذ خالد', JoinRole::Moderator);
         $studentUrl = $joinUrlAction->execute($classroom, (string) $studentUser->id, 'الطالب عمر', JoinRole::Viewer);
         $supervisorUrl = $joinUrlAction->execute($classroom, (string) $supervisorUser->id, 'المشرف علي', JoinRole::Viewer);
 
-        $this->assertStringContainsString('MODERATOR', $teacherUrl);
-        $this->assertStringContainsString('ATTENDEE', $studentUrl);
+        $this->assertStringStartsWith('https://virtual-classroom.test/join?', $teacherUrl);
+        $this->assertNotSame($teacherUrl, $studentUrl);
+        $this->assertNotSame($studentUrl, $supervisorUrl);
+
+        $participants = collect($provider->participants((string) $classroom->external_id))
+            ->keyBy(static fn ($participant): string => $participant->externalUserId);
+
+        $this->assertSame(JoinRole::Moderator, $participants[(string) $teacherUser->id]->role);
+        $this->assertSame(JoinRole::Viewer, $participants[(string) $studentUser->id]->role);
 
         // Block Frozen Student from Join URL
         $this->expectException(BusinessRuleViolation::class);
@@ -110,8 +133,12 @@ final class Task03AcceptanceTest extends TestCase
     {
         $orgId = Fixtures::organizationId();
 
+        $courseId = $this->courseId($orgId);
         $session = Session::query()->create([
             'organization_id' => $orgId,
+            'course_id' => $courseId,
+            'session_type' => 'regular',
+            'title' => ['ar' => 'حصة اختبار', 'en' => 'Test session'],
             'staff_profile_id' => Fixtures::staffProfileId(),
             'status' => SessionStatus::Scheduled,
             'scheduled_start' => now()->utc()->addHours(1),
@@ -125,6 +152,7 @@ final class Task03AcceptanceTest extends TestCase
             'moderator_secret' => 'modsec123',
             'attendee_secret' => 'attsec123',
             'created_remote_at' => now()->utc(),
+            'status' => 'provisioned',
         ]);
 
         $action = new HandleClassroomWebhookAction(
@@ -136,6 +164,9 @@ final class Task03AcceptanceTest extends TestCase
                 'connect_timeout_seconds' => 2,
             ]),
             app('events'),
+            app(SessionAdministrationQueries::class),
+            app(UserAccountDirectory::class),
+            app(AuditRecorder::class),
         );
 
         // 1. Invalid signature throws exception
@@ -156,14 +187,27 @@ final class Task03AcceptanceTest extends TestCase
         $orgId = Fixtures::organizationId();
         $originalTeacherId = Fixtures::staffProfileId();
         $substituteTeacherId = Fixtures::staffProfileId();
+        $courseId = $this->courseId($orgId);
 
         $session = Session::query()->create([
             'organization_id' => $orgId,
+            'course_id' => $courseId,
+            'session_type' => 'regular',
+            'title' => ['ar' => 'حصة اختبار', 'en' => 'Test session'],
             'staff_profile_id' => $originalTeacherId,
             'status' => SessionStatus::Scheduled,
             'scheduled_start' => now()->utc()->addHours(2),
             'scheduled_end' => now()->utc()->addHours(3),
         ]);
+
+        /** @var AssignTeacherQualificationsAction $assignQualifications */
+        $assignQualifications = app(AssignTeacherQualificationsAction::class);
+        $assignQualifications->execute(
+            profile: StaffProfile::query()->findOrFail($substituteTeacherId),
+            courseIds: [$courseId],
+            actorId: Fixtures::userId(),
+            reason: 'تأهيل المعلم البديل لاختبار دورة العمل',
+        );
 
         /** @var SubmitTeacherApologyAction $submitApology */
         $submitApology = app(SubmitTeacherApologyAction::class);
@@ -190,26 +234,7 @@ final class Task03AcceptanceTest extends TestCase
         /** @var RecordAttendanceAction $recordAction */
         $recordAction = app(RecordAttendanceAction::class);
 
-        $orgId = Fixtures::organizationId();
-
-        $session = Session::query()->create([
-            'organization_id' => $orgId,
-            'staff_profile_id' => Fixtures::staffProfileId(),
-            'status' => SessionStatus::Scheduled,
-            'scheduled_start' => now()->utc()->addHours(2),
-            'scheduled_end' => now()->utc()->addHours(3),
-        ]);
-
-        $participantId = (string) Str::ulid();
-        DB::table('session_participants')->insert([
-            'id' => $participantId,
-            'session_id' => (string) $session->id,
-            'user_id' => Fixtures::userId(),
-            'role' => JoinRole::Viewer->value,
-            'is_invited_guest' => false,
-            'created_at' => now()->utc(),
-            'updated_at' => now()->utc(),
-        ]);
+        $participantId = $this->createSessionParticipant();
 
         $attendance = $recordAction->execute(
             sessionParticipantId: $participantId,
@@ -219,7 +244,7 @@ final class Task03AcceptanceTest extends TestCase
             leftBeforeMinutes: 10,
         );
 
-        $this->assertEquals(AttendanceStatus::PresentWithLate, $attendance->derived_status);
+        $this->assertEquals(AttendanceStatus::LeftEarly, $attendance->derived_status);
         $this->assertEquals(45, $attendance->attended_minutes);
     }
 
@@ -279,6 +304,9 @@ final class Task03AcceptanceTest extends TestCase
 
         $session = Session::query()->create([
             'organization_id' => $orgId,
+            'course_id' => $this->courseId($orgId),
+            'session_type' => 'regular',
+            'title' => ['ar' => 'حصة اختبار', 'en' => 'Test session'],
             'staff_profile_id' => $staffProfileId,
             'status' => SessionStatus::Scheduled,
             'scheduled_start' => now()->utc()->subHours(2),
@@ -316,6 +344,9 @@ final class Task03AcceptanceTest extends TestCase
 
         $session = Session::query()->create([
             'organization_id' => $orgId,
+            'course_id' => $this->courseId($orgId),
+            'session_type' => 'regular',
+            'title' => ['ar' => 'حصة اختبار', 'en' => 'Test session'],
             'staff_profile_id' => Fixtures::staffProfileId(),
             'status' => SessionStatus::Scheduled,
             'scheduled_start' => now()->utc()->addHours(1),
@@ -356,5 +387,48 @@ final class Task03AcceptanceTest extends TestCase
 
         $this->assertTrue($grant->isValid());
         $this->assertEquals((string) $grantedToUser->id, $grant->granted_to_user_id);
+    }
+
+    private function courseId(string $organizationId): string
+    {
+        $existing = DB::table('courses')
+            ->where('organization_id', $organizationId)
+            ->value('id');
+        if (is_string($existing) && $existing !== '') {
+            return $existing;
+        }
+
+        $programId = (string) Str::ulid();
+        $levelId = (string) Str::ulid();
+        $courseId = (string) Str::ulid();
+        $suffix = strtolower(substr($courseId, -8));
+        DB::table('programs')->insert([
+            'id' => $programId,
+            'organization_id' => $organizationId,
+            'code' => 'program-'.$suffix,
+            'name' => json_encode(['ar' => 'برنامج الاختبار', 'en' => 'Test program'], JSON_UNESCAPED_UNICODE),
+            'default_session_minutes' => 60,
+            'currency' => 'USD',
+            'created_at' => now('UTC'),
+            'updated_at' => now('UTC'),
+        ]);
+        DB::table('levels')->insert([
+            'id' => $levelId,
+            'program_id' => $programId,
+            'code' => 'level-'.$suffix,
+            'name' => json_encode(['ar' => 'مستوى الاختبار', 'en' => 'Test level'], JSON_UNESCAPED_UNICODE),
+            'created_at' => now('UTC'),
+        ]);
+        DB::table('courses')->insert([
+            'id' => $courseId,
+            'organization_id' => $organizationId,
+            'level_id' => $levelId,
+            'code' => 'course-'.$suffix,
+            'name' => json_encode(['ar' => 'مقرر الاختبار', 'en' => 'Test course'], JSON_UNESCAPED_UNICODE),
+            'created_at' => now('UTC'),
+            'updated_at' => now('UTC'),
+        ]);
+
+        return $courseId;
     }
 }

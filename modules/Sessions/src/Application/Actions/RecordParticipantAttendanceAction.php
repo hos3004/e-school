@@ -7,6 +7,7 @@ namespace Modules\Sessions\Application\Actions;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Sessions\Domain\Events\SessionAttendanceRecorded;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\SessionParticipant;
@@ -19,10 +20,20 @@ final readonly class RecordParticipantAttendanceAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(Session $session, SessionParticipant $participant, string $type, ?string $actorId = null): SessionParticipant
     {
+        if ((string) $participant->session_id !== (string) $session->getKey()
+            || $participant->revoked_at !== null
+            || $participant->trashed()) {
+            throw BusinessRuleViolation::make(
+                'sessions.participant_not_active',
+                'sessions::errors.participant_not_active',
+            );
+        }
+
         if (!in_array($type, ['join', 'leave'], true)) {
             throw BusinessRuleViolation::make(
                 'sessions.attendance_type_invalid',
@@ -31,8 +42,13 @@ final readonly class RecordParticipantAttendanceAction
             );
         }
 
-        [$participant, $event] = DB::transaction(function () use ($session, $participant, $type): array {
+        [$participant, $event] = DB::transaction(function () use ($session, $participant, $type, $actorId): array {
             $now = CarbonImmutable::now('UTC');
+            $before = [
+                'first_joined_at' => $participant->first_joined_at?->toIso8601String(),
+                'last_left_at' => $participant->last_left_at?->toIso8601String(),
+                'attended_minutes' => $participant->attended_minutes,
+            ];
 
             if ($type === 'join') {
                 if (!$session->status->allowsJoining()) {
@@ -73,6 +89,24 @@ final readonly class RecordParticipantAttendanceAction
                     'attended_minutes' => max($minutes, 0),
                 ])->save();
             }
+
+            $this->audit->record(
+                organizationId: (string) $session->organization_id,
+                actorId: $actorId,
+                actorType: $actorId === null ? 'system' : 'user',
+                action: 'sessions.participant_'.$type,
+                auditableType: 'session_participants',
+                auditableId: (string) $participant->getKey(),
+                oldValues: $before,
+                newValues: [
+                    'session_id' => (string) $session->getKey(),
+                    'student_profile_id' => (string) $participant->student_profile_id,
+                    'first_joined_at' => $participant->first_joined_at?->toIso8601String(),
+                    'last_left_at' => $participant->last_left_at?->toIso8601String(),
+                    'attended_minutes' => $participant->attended_minutes,
+                ],
+                reason: __('sessions::messages.attendance_'.$type),
+            );
 
             return [$participant, new SessionAttendanceRecorded(
                 sessionId: $session->id,

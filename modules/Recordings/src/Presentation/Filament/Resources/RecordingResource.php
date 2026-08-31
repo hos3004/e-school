@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace Modules\Recordings\Presentation\Filament\Resources;
 
 use Filament\Actions\Action;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Recordings\Application\Queries\RecordingOperationsQueryService;
+use Modules\Recordings\Domain\Contracts\RecordingAdministrationQueries;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Models\Recording;
 
@@ -29,7 +27,7 @@ final class RecordingResource extends Resource
 
     protected static ?int $navigationSort = 44;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('recordings::navigation.group');
     }
@@ -62,54 +60,33 @@ final class RecordingResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([
-            Select::make('status')
-                ->label(__('recordings::fields.status'))
-                ->options(collect(RecordingStatus::cases())
-                    ->mapWithKeys(fn (RecordingStatus $s): array => [$s->value => $s->label()])
-                    ->all())
-                ->required(),
-            TextInput::make('provider')
-                ->label(__('recordings::fields.provider'))
-                ->required()
-                ->maxLength(50),
-            TextInput::make('external_recording_id')
-                ->label(__('recordings::fields.external_recording_id'))
-                ->required()
-                ->maxLength(255),
-            TextInput::make('duration_seconds')
-                ->label(__('recordings::fields.duration'))
-                ->numeric()
-                ->minValue(0)
-                ->maxValue(86400),
-            TextInput::make('size_bytes')
-                ->label(__('recordings::fields.size'))
-                ->numeric()
-                ->minValue(0),
-            DateTimePicker::make('available_from')
-                ->label(__('recordings::fields.available_from'))
-                ->required(),
-            DateTimePicker::make('expires_at')
-                ->label(__('recordings::fields.expires_at'))
-                ->required(),
-            Textarea::make('deletion_reason')
-                ->label(__('recordings::fields.deletion_reason'))
-                ->columnSpanFull(),
-        ]);
+        return $schema->components([]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('id')
-                    ->label(__('recordings::fields.id'))
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('session_id')
+                TextColumn::make('session_context')
                     ->label(__('recordings::fields.session'))
-                    ->copyable()
-                    ->limit(12),
+                    ->state(fn (Recording $record): string => self::operations()->context(
+                        (string) $record->organization_id,
+                        $record,
+                    )['session']),
+                TextColumn::make('course_context')
+                    ->label(__('recordings::fields.course'))
+                    ->state(fn (Recording $record): string => self::operations()->context(
+                        (string) $record->organization_id,
+                        $record,
+                    )['course'])
+                    ->toggleable(),
+                TextColumn::make('teacher_context')
+                    ->label(__('recordings::fields.teacher'))
+                    ->state(fn (Recording $record): string => self::operations()->context(
+                        (string) $record->organization_id,
+                        $record,
+                    )['teacher'])
+                    ->toggleable(),
                 TextColumn::make('provider')
                     ->label(__('recordings::fields.provider'))
                     ->badge(),
@@ -128,6 +105,28 @@ final class RecordingResource extends Resource
                         ? '—'
                         : __('recordings::messages.duration_minutes', ['minutes' => (int) ceil($state / 60)]))
                     ->sortable(),
+                TextColumn::make('active_grants')
+                    ->label(__('recordings::fields.active_grants'))
+                    ->state(function (Recording $record): int {
+                        $data = self::administration()->findForOrganization(
+                            (string) $record->organization_id,
+                            (string) $record->getKey(),
+                        );
+
+                        return $data === null ? 0 : $data->activeGrantCount;
+                    })
+                    ->badge(),
+                TextColumn::make('views')
+                    ->label(__('recordings::fields.views'))
+                    ->state(function (Recording $record): int {
+                        $data = self::administration()->findForOrganization(
+                            (string) $record->organization_id,
+                            (string) $record->getKey(),
+                        );
+
+                        return $data === null ? 0 : $data->viewCount;
+                    })
+                    ->badge(),
                 TextColumn::make('available_from')
                     ->label(__('recordings::fields.available_from'))
                     ->dateTime()
@@ -136,11 +135,10 @@ final class RecordingResource extends Resource
                     ->label(__('recordings::fields.expires_at'))
                     ->dateTime()
                     ->sortable(),
-                TextColumn::make('deleted_at')
-                    ->label(__('recordings::fields.deleted_at'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(),
+                TextColumn::make('id')
+                    ->label(__('recordings::fields.id'))
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('status')
@@ -164,5 +162,15 @@ final class RecordingResource extends Resource
             'index' => RecordingResource\Pages\ListRecordings::route('/'),
             'view' => RecordingResource\Pages\ViewRecording::route('/{record}'),
         ];
+    }
+
+    private static function operations(): RecordingOperationsQueryService
+    {
+        return app(RecordingOperationsQueryService::class);
+    }
+
+    private static function administration(): RecordingAdministrationQueries
+    {
+        return app(RecordingAdministrationQueries::class);
     }
 }

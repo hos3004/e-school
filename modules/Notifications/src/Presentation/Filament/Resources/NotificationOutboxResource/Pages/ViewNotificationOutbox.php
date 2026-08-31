@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Modules\Notifications\Presentation\Filament\Resources\NotificationOutboxResource\Pages;
 
 use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Modules\Audit\Domain\Contracts\AuditQueryService;
+use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Notifications\Application\Actions\CancelNotificationAction;
 use Modules\Notifications\Application\Actions\RetryNotificationAction;
 use Modules\Notifications\Domain\Enums\Channel;
@@ -36,10 +39,12 @@ final class ViewNotificationOutbox extends ViewRecord
                 ->requiresConfirmation()
                 ->authorize('retry')
                 ->visible(fn (NotificationOutbox $record): bool => $record->status === OutboxStatus::Failed)
-                ->action(function (NotificationOutbox $record): void {
+                ->form([$this->reasonField('retry_reason')])
+                ->action(function (NotificationOutbox $record, array $data): void {
                     app(RetryNotificationAction::class)->executeManually(
                         $record,
                         (string) auth()->id(),
+                        (string) $data['reason'],
                     );
 
                     Notification::make()
@@ -55,10 +60,11 @@ final class ViewNotificationOutbox extends ViewRecord
                 ->requiresConfirmation()
                 ->authorize('cancel')
                 ->visible(fn (NotificationOutbox $record): bool => $record->status === OutboxStatus::Queued)
-                ->action(function (NotificationOutbox $record): void {
+                ->form([$this->reasonField('cancel_reason')])
+                ->action(function (NotificationOutbox $record, array $data): void {
                     app(CancelNotificationAction::class)->execute(
                         $record,
-                        __('notifications::fields.reason'),
+                        (string) $data['reason'],
                         (string) auth()->id(),
                     );
 
@@ -79,8 +85,11 @@ final class ViewNotificationOutbox extends ViewRecord
                         ->label(__('notifications::fields.id'))
                         ->copyable(),
                     TextEntry::make('user_id')
-                        ->label(__('notifications::fields.user_id'))
-                        ->copyable(),
+                        ->label(__('notifications::fields.recipient'))
+                        ->formatStateUsing(fn (mixed $state, NotificationOutbox $record): string => $this->accountName(
+                            (string) $record->organization_id,
+                            (string) $state,
+                        )),
                     TextEntry::make('channel')
                         ->label(__('notifications::fields.channel'))
                         ->badge()
@@ -102,7 +111,7 @@ final class ViewNotificationOutbox extends ViewRecord
                     TextEntry::make('body')
                         ->label(__('notifications::fields.body'))
                         ->formatStateUsing(fn ($state): string => is_array($state)
-                            ? json_encode($state, JSON_UNESCAPED_UNICODE)
+                            ? (string) ($state[app()->getLocale()] ?? reset($state))
                             : (string) $state),
                 ]),
 
@@ -154,6 +163,64 @@ final class ViewNotificationOutbox extends ViewRecord
                                 ->placeholder(__('notifications::fields.error')),
                         ])->columns(4),
                 ]),
+
+            Section::make(__('notifications::fields.audit_history'))
+                ->schema([
+                    RepeatableEntry::make('audit_entries')
+                        ->hiddenLabel()
+                        ->placeholder(__('notifications::messages.no_audit_entries'))
+                        ->getStateUsing(fn (NotificationOutbox $record): array => $this->auditRows($record))
+                        ->schema([
+                            TextEntry::make('action')->label(__('notifications::fields.action')),
+                            TextEntry::make('actor')->label(__('notifications::fields.actor')),
+                            TextEntry::make('reason')->label(__('notifications::fields.reason')),
+                            TextEntry::make('created_at')->label(__('notifications::fields.created_at'))->dateTime(),
+                        ])->columns(4),
+                ]),
         ]);
+    }
+
+    private function reasonField(string $label): Textarea
+    {
+        return Textarea::make('reason')
+            ->label(__('notifications::fields.'.$label))
+            ->required()
+            ->minLength(3)
+            ->maxLength(1000);
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function auditRows(NotificationOutbox $record): array
+    {
+        $entries = app(AuditQueryService::class)->paginateForOrganization(
+            (string) $record->organization_id,
+            ['auditable_type' => 'notification_outbox', 'auditable_id' => (string) $record->getKey()],
+            50,
+        )->items();
+        $actorIds = array_values(array_unique(array_filter(array_map(
+            static fn (mixed $entry): ?string => $entry->actorId,
+            $entries,
+        ))));
+        $actors = app(UserAccountDirectory::class)->findMany((string) $record->organization_id, $actorIds);
+
+        return array_values(array_map(static fn (mixed $entry): array => [
+            'action' => (string) __('notifications::audit_actions.'.str_replace('.', '_', $entry->action)),
+            'actor' => $entry->actorId === null
+                ? (string) __('notifications::messages.system_actor')
+                : (isset($actors[$entry->actorId])
+                    ? $actors[$entry->actorId]->name
+                    : (string) __('notifications::messages.system_actor')),
+            'reason' => $entry->reason,
+            'created_at' => $entry->createdAt,
+        ], $entries));
+    }
+
+    private function accountName(string $organizationId, string $userId): string
+    {
+        $account = app(UserAccountDirectory::class)->find($organizationId, $userId);
+
+        return $account === null
+            ? (string) __('notifications::messages.not_available')
+            : $account->name;
     }
 }

@@ -8,8 +8,14 @@ use Modules\Groups\Application\Policies\GroupMembershipPolicy;
 use Modules\Groups\Application\Policies\GroupPolicy;
 use Modules\Groups\Application\Policies\GroupProgramPolicy;
 use Modules\Groups\Application\Policies\GroupTeacherPolicy;
+use Modules\Groups\Application\Queries\GroupAdministrationQueryService;
+use Modules\Groups\Application\Services\GroupAssignmentOperationService;
 use Modules\Groups\Application\Services\GroupPlacementService;
+use Modules\Groups\Application\Services\GroupProvisioningService;
+use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
+use Modules\Groups\Domain\Contracts\GroupAssignmentOperations;
 use Modules\Groups\Domain\Contracts\GroupPlacementGateway;
+use Modules\Groups\Domain\Contracts\GroupProvisioningGateway;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupMembership;
 use Modules\Groups\Domain\Models\GroupProgram;
@@ -62,7 +68,10 @@ final class GroupsServiceProvider extends BaseModuleServiceProvider
     protected function bindings(): array
     {
         return [
+            GroupAdministrationQueries::class => GroupAdministrationQueryService::class,
             GroupPlacementGateway::class => GroupPlacementService::class,
+            GroupAssignmentOperations::class => GroupAssignmentOperationService::class,
+            GroupProvisioningGateway::class => GroupProvisioningService::class,
         ];
     }
 }

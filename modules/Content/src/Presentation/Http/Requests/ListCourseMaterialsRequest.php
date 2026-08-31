@@ -15,8 +15,7 @@ final class ListCourseMaterialsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('content.material.view_any')
-            || $this->user()->can('content.material.view');
+        return $this->user()->can('content.manage');
     }
 
     /**

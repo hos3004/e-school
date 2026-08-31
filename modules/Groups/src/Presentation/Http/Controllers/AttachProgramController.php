@@ -22,7 +22,12 @@ final class AttachProgramController extends Controller
 
     public function __invoke(AttachProgramRequest $request, Group $group): JsonResponse
     {
-        $this->action->execute($group, (string) $request->validated('program_id'));
+        $this->action->execute(
+            $group,
+            (string) $request->validated('program_id'),
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return GroupResource::make($group->refresh())->response();
     }

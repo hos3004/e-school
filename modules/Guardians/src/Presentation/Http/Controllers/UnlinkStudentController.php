@@ -32,7 +32,11 @@ final class UnlinkStudentController
                 abort(403);
             }
 
-            $this->action->execute($guardianLink, (string) $request->string('reason'));
+            $this->action->execute(
+                $guardianLink,
+                (string) $request->string('reason'),
+                (string) $request->user()->getAuthIdentifier(),
+            );
         }
 
         return response()->json(status: 204);

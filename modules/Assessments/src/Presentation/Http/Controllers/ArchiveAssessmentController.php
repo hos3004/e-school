@@ -9,6 +9,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
 use Modules\Assessments\Application\Actions\ArchiveAssessmentAction;
 use Modules\Assessments\Domain\Models\Assessment;
+use Modules\Assessments\Presentation\Http\Requests\ArchiveAssessmentRequest;
 
 /**
  * أرشفة اختبار.
@@ -19,13 +20,17 @@ final class ArchiveAssessmentController extends Controller
         private readonly ArchiveAssessmentAction $action,
     ) {}
 
-    public function __invoke(string $assessment): JsonResponse
+    public function __invoke(ArchiveAssessmentRequest $request, string $assessment): JsonResponse
     {
         $assessmentModel = Assessment::query()->findOrFail($assessment);
 
         Gate::authorize('delete', $assessmentModel);
 
-        $this->action->execute($assessmentModel);
+        $this->action->execute(
+            $assessmentModel,
+            (string) $request->user()?->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return response()->json(status: 204);
     }

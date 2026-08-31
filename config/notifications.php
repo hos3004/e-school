@@ -304,12 +304,16 @@ return [
         'store_payload_days' => 90,
     ],
 
+    'admin_hub' => [
+        'max_items' => env('NOTIFY_ADMIN_HUB_MAX_ITEMS', 100),
+    ],
+
     /*
      * اللغة: لغة المستلم، ثم لغة المؤسسة، ثم الافتراضية.
      */
     'localization' => [
         'fallback_locale' => 'ar',
-        'supported' => ['ar', 'en', 'fr'],
+        'supported' => array_map('trim', explode(',', (string) env('APP_SUPPORTED_LOCALES', 'ar,en'))),
         'datetime_format' => 'Y-m-d H:i T',
         'datetime_parameters' => [
             'scheduled_start',

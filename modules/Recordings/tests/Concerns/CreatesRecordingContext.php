@@ -96,6 +96,7 @@ trait CreatesRecordingContext
             'organization_id' => $this->organizationId,
             'course_id' => $courseId,
             'staff_profile_id' => $staffProfileId,
+            'original_teacher_id' => $staffProfileId,
             'session_type' => 'regular',
             'status' => 'completed',
             'scheduled_start' => $start,

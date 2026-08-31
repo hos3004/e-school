@@ -86,7 +86,7 @@ final class NullProvider implements VirtualClassroomProvider
         return array_values($this->classrooms[$externalId]['participants'] ?? []);
     }
 
-    public function endClassroom(string $externalId): void
+    public function endClassroom(string $externalId, ?string $moderatorSecret = null): void
     {
         if (isset($this->classrooms[$externalId])) {
             $this->classrooms[$externalId]['running'] = false;

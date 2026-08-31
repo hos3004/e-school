@@ -10,6 +10,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $group_id
+ * @property string $program_id
+ * @property-read Group|null $group
+ */
 final class GroupProgram extends Model
 {
     use HasModuleFactory;

@@ -22,7 +22,7 @@ final class StoreRecordingController extends Controller
     public function __invoke(StoreRecordingRequest $request): JsonResponse
     {
         $recording = $this->action->execute(
-            organizationId: (string) $request->validated('organization_id'),
+            organizationId: (string) $request->user()->getAttribute('organization_id'),
             sessionId: (string) $request->validated('session_id'),
             classroomId: (string) $request->validated('classroom_id'),
             provider: (string) $request->validated('provider'),
@@ -32,6 +32,8 @@ final class StoreRecordingController extends Controller
             thumbnailPath: $request->validated('thumbnail_path'),
             durationSeconds: $request->validated('duration_seconds'),
             sizeBytes: $request->validated('size_bytes'),
+            actorId: (string) $request->user()->getAuthIdentifier(),
+            reason: (string) $request->validated('reason'),
         );
 
         return (new RecordingResource($recording))

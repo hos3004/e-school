@@ -20,4 +20,5 @@ return [
     'no_show' => 'Student no-show',
     'excused' => 'Excused absence',
     'postponed' => 'Postponed — makeup pending',
+    'superseded' => 'Superseded by schedule change',
 ];

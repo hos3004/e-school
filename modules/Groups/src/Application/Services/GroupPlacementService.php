@@ -49,13 +49,17 @@ final readonly class GroupPlacementService implements GroupPlacementGateway
                 );
             }
 
-            if (!$group->status->acceptsEnrollment()) {
+            if (!$group->status->acceptsPlacement()) {
                 throw BusinessRuleViolation::make(
                     'groups.group_not_open',
                     'groups::errors.group_not_accepting_members',
                     ['status' => $group->status->label()],
                 );
             }
+
+            // التسكين في مجموعة قيد التخطيط ينتج انتسابًا معلّقًا: يشغل مقعدًا
+            // ولا يمنح وصولًا، ويترقّى إلى Active عند تفعيل المجموعة.
+            $pendingPlacement = $group->status->acceptsPendingEnrollment();
 
             $programAttached = GroupProgram::query()
                 ->forGroup($groupId)
@@ -79,7 +83,10 @@ final readonly class GroupPlacementService implements GroupPlacementGateway
                 )
                 ->get(['staff_profile_id', 'course_id']);
 
-            if ($courseId !== null && $teachers->isEmpty()) {
+            // المجموعة قيد التخطيط لم يُسند لها معلم بعد بحكم تعريفها؛ اشتراط
+            // إسناد الكورس هنا يجعل إنشاء المسودة مستحيلًا. الشرط يُفرض بدلًا
+            // من ذلك عند التفعيل في ActivateGroupAction.
+            if ($courseId !== null && $teachers->isEmpty() && !$pendingPlacement) {
                 throw BusinessRuleViolation::make(
                     'groups.course_not_assigned',
                     'groups::errors.course_not_assigned',
@@ -98,20 +105,22 @@ final readonly class GroupPlacementService implements GroupPlacementGateway
                 return $this->toData($existing, $group, $programId, $courseId, $teachers->all(), false);
             }
 
-            $activeMembers = GroupMembership::query()
+            // المقعد يشغله المعلّق والنشط معًا — `active()` هنا تعني «لم يغادر».
+            $occupiedSeats = GroupMembership::query()
                 ->forGroup($groupId)
                 ->active()
                 ->count();
+            $capacity = $group->effectiveCapacity();
 
-            if ($activeMembers >= $group->capacity) {
+            if ($occupiedSeats >= $capacity) {
                 throw BusinessRuleViolation::make(
                     'groups.capacity_reached',
                     'groups::errors.capacity_reached',
-                    ['capacity' => $group->capacity],
+                    ['capacity' => $capacity],
                 );
             }
 
-            if ($requiresSingleMember && $activeMembers > 0) {
+            if ($requiresSingleMember && $occupiedSeats > 0) {
                 throw BusinessRuleViolation::make(
                     'groups.individual_course_requires_empty_group',
                     'groups::errors.individual_course_requires_empty_group',
@@ -122,7 +131,7 @@ final readonly class GroupPlacementService implements GroupPlacementGateway
                 'group_id' => (string) $group->getKey(),
                 'student_profile_id' => $studentProfileId,
                 'joined_at' => now()->utc(),
-                'status' => MembershipStatus::Active,
+                'status' => $pendingPlacement ? MembershipStatus::Pending : MembershipStatus::Active,
             ]);
 
             return $this->toData($membership, $group, $programId, $courseId, $teachers->all(), true);
@@ -155,6 +164,7 @@ final readonly class GroupPlacementService implements GroupPlacementGateway
                 $teachers,
             )),
             created: $created,
+            membershipStatus: $membership->status->value,
         );
     }
 }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Recordings\Application\Actions\RegisterRecordingAction;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
@@ -11,7 +12,7 @@ use Modules\Recordings\Domain\Models\Recording;
 use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
 use Shared\Support\BusinessRuleViolation;
 
-uses(CreatesRecordingContext::class);
+uses(RefreshDatabase::class, CreatesRecordingContext::class);
 
 beforeEach(function (): void {
     $this->context = $this->createSessionWithClassroom();

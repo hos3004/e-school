@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Academics\Presentation\Filament\Resources;
 
-use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\KeyValue;
@@ -14,6 +13,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -22,11 +22,13 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Academics\Application\Queries\AcademicAdministrationQueryService;
 use Modules\Academics\Domain\Enums\SessionMode;
 use Modules\Academics\Domain\Enums\TargetGender;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
+use Shared\Codes\EntityCodeGenerator;
 use Shared\Concerns\ScopesFilamentToOrganization;
 use Shared\Support\LocalizedJsonColumn;
 
@@ -40,16 +42,19 @@ final class CourseFilamentResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('academics::filament.group');
     }
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
+        return auth()->user()?->can('viewAny', Course::class) ?? false;
+    }
 
-        return $user !== null && $user->can('course.manage');
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create', Course::class) ?? false;
     }
 
     public static function getModelLabel(): string
@@ -78,12 +83,14 @@ final class CourseFilamentResource extends Resource
                         ->options(fn (): array => self::levelOptions())
                         ->searchable()
                         ->required()
+                        ->live()
                         ->native(false),
 
                     TextInput::make('code')
                         ->label(__('academics::filament.course.fields.code'))
                         ->required()
-                        ->maxLength(32)
+                        ->default(fn (EntityCodeGenerator $codes): string => $codes->next('course'))
+                        ->maxLength(8)
                         ->unique(ignoreRecord: true),
 
                     TextInput::make('name.ar')
@@ -133,29 +140,29 @@ final class CourseFilamentResource extends Resource
                     TextInput::make('age_from')
                         ->label(__('academics::filament.course.fields.age_from'))
                         ->numeric()
-                        ->minValue(3)
-                        ->maxValue(99)
+                        ->minValue((int) config('academics.age.minimum'))
+                        ->maxValue((int) config('academics.age.maximum'))
                         ->lte('age_to'),
 
                     TextInput::make('age_to')
                         ->label(__('academics::filament.course.fields.age_to'))
                         ->numeric()
-                        ->minValue(3)
-                        ->maxValue(99)
+                        ->minValue((int) config('academics.age.minimum'))
+                        ->maxValue((int) config('academics.age.maximum'))
                         ->gte('age_from'),
 
                     TextInput::make('default_duration_minutes')
                         ->label(__('academics::filament.course.fields.default_duration_minutes'))
                         ->numeric()
-                        ->minValue(10)
-                        ->maxValue(480)
+                        ->minValue((int) config('academics.session_minutes.course_minimum'))
+                        ->maxValue((int) config('academics.session_minutes.maximum'))
                         ->helperText(__('academics::filament.course.fields.duration_help')),
 
                     TextInput::make('sessions_per_week')
                         ->label(__('academics::filament.course.fields.sessions_per_week'))
                         ->numeric()
-                        ->minValue(1)
-                        ->maxValue(14),
+                        ->minValue((int) config('academics.sessions_per_week.minimum'))
+                        ->maxValue((int) config('academics.sessions_per_week.maximum')),
 
                     TextInput::make('total_sessions')
                         ->label(__('academics::filament.course.fields.total_sessions'))
@@ -175,9 +182,26 @@ final class CourseFilamentResource extends Resource
                         ->label(__('academics::filament.course.fields.prerequisites'))
                         ->keyLabel(__('academics::filament.course.fields.rule_key'))
                         ->valueLabel(__('academics::filament.course.fields.rule_value')),
+
+                    Select::make('category_ids')
+                        ->label(__('academics::filament.course.fields.categories'))
+                        ->options(fn (Get $get): array => self::categoryOptions(is_string($get('level_id')) ? $get('level_id') : null))
+                        ->multiple()
+                        ->searchable()
+                        ->preload(),
                 ])
                 ->columns(2)
                 ->collapsed(),
+
+            Section::make(__('academics::filament.sections.audit'))
+                ->schema([
+                    Textarea::make('reason')
+                        ->label(__('academics::filament.fields.reason'))
+                        ->helperText(__('academics::filament.fields.reason_help'))
+                        ->required()
+                        ->minLength((int) config('academics.reason.minimum_length'))
+                        ->maxLength((int) config('academics.reason.maximum_length')),
+                ]),
         ]);
     }
 
@@ -287,9 +311,8 @@ final class CourseFilamentResource extends Resource
                     ->visible(static fn (Course $record): bool => auth()->user()?->can('view', $record) === true),
                 EditAction::make()
                     ->visible(static fn (Course $record): bool => auth()->user()?->can('update', $record) === true),
-                DeleteAction::make()
-                    ->visible(static fn (Course $record): bool => auth()->user()?->can('delete', $record) === true),
-            ]);
+            ])
+            ->bulkActions([]);
     }
 
     public static function getPages(): array
@@ -357,6 +380,22 @@ final class CourseFilamentResource extends Resource
                 (string) $program->getKey() => LocalizedJsonColumn::display($program->name),
             ])
             ->all();
+    }
+
+    /** @return array<string, string> */
+    private static function categoryOptions(?string $levelId): array
+    {
+        $organizationId = data_get(auth()->user(), 'organization_id');
+        if (!is_string($organizationId) || $organizationId === '') {
+            return [];
+        }
+
+        $programId = $levelId === null ? null : Level::query()->whereKey($levelId)->value('program_id');
+
+        return app(AcademicAdministrationQueryService::class)->categoryOptions(
+            $organizationId,
+            is_string($programId) ? $programId : null,
+        );
     }
 
     /**

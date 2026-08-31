@@ -6,15 +6,19 @@ namespace Modules\Academics\Infrastructure\Providers;
 
 use Modules\Academics\Application\Policies\CoursePolicy;
 use Modules\Academics\Application\Policies\LevelPolicy;
+use Modules\Academics\Application\Policies\ProgramCategoryPolicy;
 use Modules\Academics\Application\Policies\ProgramPolicy;
+use Modules\Academics\Application\Queries\AcademicCatalogQueryService;
 use Modules\Academics\Application\Queries\ProgramRulesQueryService;
 use Modules\Academics\Application\Queries\RegistrationOfferingQueryService;
 use Modules\Academics\Application\Services\EligibilityEvaluator;
+use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Academics\Domain\Contracts\ProgramEligibilityEvaluator;
 use Modules\Academics\Domain\Contracts\ProgramRulesQueries;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
+use Modules\Academics\Domain\Models\ProgramCategory;
 use Modules\Students\Domain\Contracts\RegistrationOfferingQueries;
 use Shared\Module\BaseModuleServiceProvider;
 
@@ -32,6 +36,7 @@ final class AcademicsServiceProvider extends BaseModuleServiceProvider
     {
         return [
             Program::class => ProgramPolicy::class,
+            ProgramCategory::class => ProgramCategoryPolicy::class,
             Level::class => LevelPolicy::class,
             Course::class => CoursePolicy::class,
         ];
@@ -56,6 +61,7 @@ final class AcademicsServiceProvider extends BaseModuleServiceProvider
     protected function bindings(): array
     {
         return [
+            AcademicCatalogQueries::class => AcademicCatalogQueryService::class,
             ProgramRulesQueries::class => ProgramRulesQueryService::class,
             RegistrationOfferingQueries::class => RegistrationOfferingQueryService::class,
             ProgramEligibilityEvaluator::class => EligibilityEvaluator::class,

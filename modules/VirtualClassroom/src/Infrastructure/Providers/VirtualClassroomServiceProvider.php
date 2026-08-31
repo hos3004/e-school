@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\VirtualClassroom\Infrastructure\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Modules\VirtualClassroom\Application\Console\ManageClassroomWebhook;
+use Modules\VirtualClassroom\Application\Console\ProvisionUpcomingClassrooms;
+use Modules\VirtualClassroom\Application\Console\SmokeTestClassroom;
+use Modules\VirtualClassroom\Application\Queries\ClassroomAdministrationQueryService;
+use Modules\VirtualClassroom\Domain\Contracts\ClassroomAdministrationQueries;
 use Modules\VirtualClassroom\Domain\Contracts\VirtualClassroomProvider;
 use Modules\VirtualClassroom\Domain\Exceptions\ClassroomProviderException;
 use Shared\Module\BaseModuleServiceProvider;
@@ -42,5 +50,29 @@ final class VirtualClassroomServiceProvider extends BaseModuleServiceProvider
 
             return $instance;
         });
+    }
+
+    /** @return array<class-string, class-string> */
+    protected function bindings(): array
+    {
+        return [
+            ClassroomAdministrationQueries::class => ClassroomAdministrationQueryService::class,
+        ];
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        RateLimiter::for('classroom-webhook', static function (Request $request): Limit {
+            return Limit::perMinute((int) config('virtual-classroom.webhook.rate_limit_per_minute'))
+                ->by('classroom-webhook:'.$request->ip());
+        });
+
+        $this->commands([
+            ManageClassroomWebhook::class,
+            ProvisionUpcomingClassrooms::class,
+            SmokeTestClassroom::class,
+        ]);
     }
 }

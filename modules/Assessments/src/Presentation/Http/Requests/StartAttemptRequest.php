@@ -13,7 +13,7 @@ final class StartAttemptRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('assessments.attempt.start');
+        return $this->user()?->can('assessment.take') ?? false;
     }
 
     /**
@@ -21,9 +21,7 @@ final class StartAttemptRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'student_profile_id' => ['required', 'string', 'size:26'],
-        ];
+        return [];
     }
 
     /**
@@ -31,9 +29,6 @@ final class StartAttemptRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
-            'student_profile_id.required' => __('assessments::validation.student_profile_required'),
-            'student_profile_id.size' => __('assessments::validation.student_profile_invalid'),
-        ];
+        return [];
     }
 }

@@ -44,4 +44,6 @@ return [
     'email_recipient_invalid' => 'لا يملك المستلم عنوان بريد إلكتروني صالحًا للتسليم.',
 
     'mail_transport_failed' => 'تعذّر الوصول مؤقتًا إلى ناقل البريد الإلكتروني.',
+    'manual_retry_reason_required' => 'يلزم كتابة سبب واضح لإعادة الإرسال اليدوية.',
+    'cancel_reason_required' => 'يلزم كتابة سبب واضح لإلغاء الرسالة.',
 ];

@@ -6,6 +6,10 @@ namespace Modules\Content\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Content\Application\Services\MaterialVersionRecorder;
+use Modules\Content\Domain\Enums\MaterialStatus;
 use Modules\Content\Domain\Enums\MaterialType;
 use Modules\Content\Domain\Events\CourseMaterialUploaded;
 use Modules\Content\Domain\Models\CourseMaterial;
@@ -22,13 +26,30 @@ final readonly class UploadCourseMaterialAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AcademicCatalogQueries $academics,
+        private MaterialVersionRecorder $versions,
+        private AuditRecorder $audit,
     ) {}
 
     /**
      * @param array<string, mixed> $data
      */
-    public function execute(array $data, ?string $actorId = null): CourseMaterial
-    {
+    public function execute(
+        string $organizationId,
+        array $data,
+        string $reason,
+        ?string $actorId = null,
+    ): CourseMaterial {
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw BusinessRuleViolation::make('content.reason_required', 'content::errors.reason_required');
+        }
+
+        $courseId = (string) ($data['course_id'] ?? '');
+        if (!isset($this->academics->coursesByIds($organizationId, [$courseId])[$courseId])) {
+            throw BusinessRuleViolation::make('content.course_outside_organization', 'content::errors.course_outside_organization');
+        }
+
         $type = MaterialType::from($data['type']);
 
         if ($type->requiresFile()) {
@@ -89,11 +110,14 @@ final readonly class UploadCourseMaterialAction
         }
 
         /** @var array{material: CourseMaterial, event: CourseMaterialUploaded} $result */
-        $result = $this->transaction->run(function () use ($data, $type, $sizeBytes, $visibleFrom, $visibleTo, $actorId): array {
+        $result = $this->transaction->run(function () use ($organizationId, $data, $type, $sizeBytes, $visibleFrom, $visibleTo, $actorId, $reason): array {
             $material = new CourseMaterial;
             $material->fill([
                 ...$data,
+                'organization_id' => $organizationId,
                 'type' => $type,
+                'status' => MaterialStatus::Draft,
+                'revision' => 1,
                 'disk' => $type->requiresFile() ? (string) $data['disk'] : null,
                 'path' => $type->requiresFile() ? (string) $data['path'] : null,
                 'external_url' => $type->requiresExternalUrl() ? (string) $data['external_url'] : null,
@@ -103,6 +127,24 @@ final readonly class UploadCourseMaterialAction
                 'uploaded_by' => $actorId ?? auth()->id(),
             ]);
             $material->save();
+
+            $this->versions->record($material, $reason, $actorId);
+            $this->audit->record(
+                organizationId: $organizationId,
+                actorId: $actorId,
+                actorType: $actorId === null ? 'system' : 'user',
+                action: 'content.material_created',
+                auditableType: 'course_materials',
+                auditableId: (string) $material->getKey(),
+                oldValues: null,
+                newValues: [
+                    'course_id' => (string) $material->course_id,
+                    'type' => $type->value,
+                    'status' => MaterialStatus::Draft->value,
+                    'revision' => 1,
+                ],
+                reason: $reason,
+            );
 
             return [
                 'material' => $material,

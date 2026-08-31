@@ -15,7 +15,7 @@ final class UpdateAssessmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('assessments.assessment.update');
+        return $this->user()?->can('assessment.manage') ?? false;
     }
 
     /**
@@ -36,6 +36,7 @@ final class UpdateAssessmentRequest extends FormRequest
             'max_attempts' => ['sometimes', 'integer', 'min:1'],
             'available_from' => ['sometimes', 'date'],
             'available_to' => ['sometimes', 'date', 'after:available_from'],
+            'reason' => ['required', 'string', 'max:'.(int) config('assessments.reason_max_length', 1000)],
         ];
     }
 

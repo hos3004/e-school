@@ -37,16 +37,13 @@ final class SessionPolicy
     /** @param Authenticatable&object{organization_id: string} $user */
     public function update(Authenticatable $user, Session $session): bool
     {
-        return $user->can('session.create')
-            && $session->organization_id === $user->organization_id;
+        return false;
     }
 
     /** @param Authenticatable&object{organization_id: string} $user */
     public function delete(Authenticatable $user, Session $session): bool
     {
-        return $user->can('session.cancel')
-            && $session->organization_id === $user->organization_id
-            && !$session->status->isTerminal();
+        return false;
     }
 
     /** @param Authenticatable&object{organization_id: string} $user */
@@ -92,7 +89,21 @@ final class SessionPolicy
     }
 
     /** @param Authenticatable&object{organization_id: string} $user */
+    public function assignSubstitute(Authenticatable $user, Session $session): bool
+    {
+        return $user->can('session.assign_substitute')
+            && $session->organization_id === $user->organization_id;
+    }
+
+    /** @param Authenticatable&object{organization_id: string} $user */
     public function markNoShow(Authenticatable $user, Session $session): bool
+    {
+        return $user->can('attendance.record')
+            && $session->organization_id === $user->organization_id;
+    }
+
+    /** @param Authenticatable&object{organization_id: string} $user */
+    public function recordAttendance(Authenticatable $user, Session $session): bool
     {
         return $user->can('attendance.record')
             && $session->organization_id === $user->organization_id;

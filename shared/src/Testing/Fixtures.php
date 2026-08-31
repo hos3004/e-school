@@ -108,6 +108,103 @@ final class Fixtures
     }
 
     /**
+     * معرّف ملف طالب مرتبط بحساب مستخدم معطى — لفحوص الملكية.
+     */
+    public static function studentProfileForUser(string $userId): string
+    {
+        $id = (string) Str::ulid();
+
+        DB::table('student_profiles')->insert([
+            'id' => $id,
+            'organization_id' => self::organizationId(),
+            'user_id' => $userId,
+            'student_code' => 'S'.strtoupper(substr($id, -8)),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $id;
+    }
+
+    /**
+     * معرّف كورس موجود فعلًا، مع البرنامج والمستوى اللذين يتطلبهما مفتاحه الأجنبي.
+     */
+    public static function courseId(): string
+    {
+        $organizationId = self::organizationId();
+
+        $programId = (string) Str::ulid();
+        DB::table('programs')->insert([
+            'id' => $programId,
+            'organization_id' => $organizationId,
+            'code' => 'FX-PROG-'.Str::upper(Str::random(6)),
+            'name' => json_encode(['ar' => 'برنامج الاختبار', 'en' => 'Test Program'], JSON_UNESCAPED_UNICODE),
+            'default_session_minutes' => 60,
+            'currency' => 'EGP',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $levelId = (string) Str::ulid();
+        DB::table('levels')->insert([
+            'id' => $levelId,
+            'program_id' => $programId,
+            'code' => 'FX-L1',
+            'name' => json_encode(['ar' => 'المستوى الأول', 'en' => 'Level one'], JSON_UNESCAPED_UNICODE),
+            'created_at' => now(),
+        ]);
+
+        $courseId = (string) Str::ulid();
+        DB::table('courses')->insert([
+            'id' => $courseId,
+            'organization_id' => $organizationId,
+            'level_id' => $levelId,
+            'code' => 'FX-COURSE-'.Str::upper(Str::random(6)),
+            'name' => json_encode(['ar' => 'كورس الاختبار', 'en' => 'Test Course'], JSON_UNESCAPED_UNICODE),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $courseId;
+    }
+
+    /**
+     * يعتمد ملف معلم على كورس — يجعل `isQualified()` يعيد true في الاختبارات.
+     */
+    public static function qualifyTeacher(string $staffProfileId, string $courseId): void
+    {
+        DB::table('teacher_courses')->insert([
+            'id' => (string) Str::ulid(),
+            'staff_profile_id' => $staffProfileId,
+            'course_id' => $courseId,
+            'qualified_at' => now(),
+            'qualified_by' => self::userId(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * معرّف ملف موظف نشط مرتبط بحساب المستخدم المعطى.
+     */
+    public static function staffProfileForUser(string $userId): string
+    {
+        $id = (string) Str::ulid();
+
+        DB::table('staff_profiles')->insert([
+            'id' => $id,
+            'organization_id' => self::organizationId(),
+            'user_id' => $userId,
+            'staff_code' => 'T'.strtoupper(substr($id, -8)),
+            'employment_type' => 'per_session',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $id;
+    }
+
+    /**
      * يُستدعى بين الاختبارات لأن RefreshDatabase يمسح الجداول.
      */
     public static function flush(): void

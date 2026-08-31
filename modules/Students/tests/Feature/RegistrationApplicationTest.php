@@ -56,7 +56,11 @@ final class RegistrationApplicationTest extends TestCase
         $application = app(SubmitRegistrationApplicationAction::class)->execute($application);
         $this->assertSame(RegistrationStatus::Submitted, $application->status);
 
-        $application = app(AcceptRegistrationApplicationAction::class)->execute($application, Fixtures::userId());
+        $application = app(AcceptRegistrationApplicationAction::class)->execute(
+            $application,
+            Fixtures::userId(),
+            'Meets the configured admission requirements.',
+        );
         $this->assertSame(RegistrationStatus::WaitingAssignment, $application->status);
         $this->assertNotNull($application->student_profile_id);
 
@@ -92,6 +96,21 @@ final class RegistrationApplicationTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors('reason');
 
+        $this->assertDatabaseCount('student_profiles', 0);
+    }
+
+    public function test_accepted_application_without_reason_fails(): void
+    {
+        $application = $this->submittedApplication('accept-without-reason@example.test');
+        $reviewer = User::factory()->create(['organization_id' => $application->organization_id]);
+        Gate::define('student.create', fn (): bool => true);
+
+        $this->actingAs($reviewer)
+            ->postJson("/api/registration-applications/{$application->id}/accept", [])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        self::assertSame(RegistrationStatus::Submitted, $application->fresh()->status);
         $this->assertDatabaseCount('student_profiles', 0);
     }
 
@@ -167,7 +186,11 @@ final class RegistrationApplicationTest extends TestCase
         Event::fake([RegistrationAccepted::class]);
         $application = $this->submittedApplication('accepted-event@example.test');
 
-        app(AcceptRegistrationApplicationAction::class)->execute($application, Fixtures::userId());
+        app(AcceptRegistrationApplicationAction::class)->execute(
+            $application,
+            Fixtures::userId(),
+            'Meets the configured admission requirements.',
+        );
 
         Event::assertDispatched(
             RegistrationAccepted::class,

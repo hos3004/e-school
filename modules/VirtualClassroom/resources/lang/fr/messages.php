@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'smoke_config' => 'Fournisseur : :provider | URL : :base_url | Empreinte du secret : :fingerprint',
+    'smoke_reason' => 'Motif : :reason',
+    'smoke_health_ok' => 'Le contrôle du fournisseur a réussi.',
+    'smoke_health_failed' => 'Le contrôle du fournisseur a échoué : :reason',
+    'smoke_created' => 'Classe de test :meeting créée.',
+    'smoke_ended' => 'Classe de test :meeting terminée.',
+    'smoke_running' => 'La classe est en cours.',
+    'smoke_not_running' => 'La classe n’est pas en cours.',
+    'smoke_participants' => 'Participants actuels : :count.',
+    'smoke_recordings' => 'Enregistrements disponibles : :count.',
+    'smoke_join_moderator' => 'Lien enseignant :',
+    'smoke_join_viewer' => 'Lien élève :',
+    'smoke_default_title' => 'Classe de test de la plateforme',
+    'smoke_default_name' => 'Utilisateur de test',
+    'smoke_meeting_required' => 'L’option --meeting est requise.',
+    'smoke_unknown_action' => 'Action inconnue : :action.',
+    'webhook_unsupported' => 'Le fournisseur :provider ne prend pas en charge l’inscription des webhooks.',
+    'webhook_count' => 'Abonnements webhook : :count.',
+    'webhook_row' => ':hook | :callback | Portée : :meeting',
+    'webhook_scope_global' => 'toutes les classes',
+    'webhook_registered' => 'Webhook :hook inscrit sur :callback.',
+    'webhook_removed' => 'Webhook :hook supprimé.',
+    'webhook_hook_required' => 'L’option --hook est requise.',
+    'default_participant_name' => 'Participant',
+    'default_classroom_title' => 'Séance en direct',
+    'recordings_synced' => ':count enregistrements synchronisés.',
+    'provision_reason' => 'Créer la classe virtuelle avant le début de la séance.',
+    'portal_provision_reason' => 'Le portail a vérifié la disponibilité de la classe lors de la demande d’accès.',
+    'webhook_started_reason' => 'Le fournisseur a signalé le démarrage de la classe.',
+    'webhook_ended_reason' => 'Le fournisseur a signalé la fin de la classe.',
+    'scheduled_provision_reason' => 'Création automatique de la classe avant la séance.',
+    'provisioning_summary' => 'Classes prêtes : :provisioned ; échecs : :failed.',
+];

@@ -7,6 +7,7 @@ namespace Modules\Sessions\Presentation\Filament\Resources\SessionResource\Pages
 use Carbon\CarbonImmutable;
 use Filament\Resources\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Sessions\Application\Queries\SessionOperationsQueryService;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Presentation\Filament\Resources\SessionResource;
@@ -51,6 +52,7 @@ final class CalendarSessions extends Page
         $this->calendarDate = now('UTC')->toDateString();
     }
 
+    /** @return list<array<string, string>> */
     public function getSessions(): array
     {
         $organizationId = data_get(auth()->user(), 'organization_id');
@@ -71,8 +73,14 @@ final class CalendarSessions extends Page
                 'start' => $session->scheduled_start?->format('Y-m-d H:i'),
                 'end' => $session->scheduled_end?->format('H:i'),
                 'status' => $session->status->label(),
-                'group' => (string) $session->group_id,
-                'teacher' => (string) $session->staff_profile_id,
+                'group' => $this->queries()->groupLabel(
+                    $this->organizationId(),
+                    $session->group_id === null ? null : (string) $session->group_id,
+                ),
+                'teacher' => $this->queries()->teacherLabel(
+                    $this->organizationId(),
+                    (string) $session->staff_profile_id,
+                ),
             ])->all();
     }
 
@@ -84,13 +92,17 @@ final class CalendarSessions extends Page
     /** @return array<string, string> */
     public function groupOptions(): array
     {
-        return $this->filterOptions('group_id');
+        $organizationId = $this->organizationId();
+
+        return $this->queries()->groupOptions($organizationId, array_keys($this->filterOptions('group_id')));
     }
 
     /** @return array<string, string> */
     public function teacherOptions(): array
     {
-        return $this->filterOptions('staff_profile_id');
+        $organizationId = $this->organizationId();
+
+        return $this->queries()->teacherOptions($organizationId, array_keys($this->filterOptions('staff_profile_id')));
     }
 
     /** @return array<string, string> */
@@ -129,5 +141,15 @@ final class CalendarSessions extends Page
             ->pluck($column, $column)
             ->mapWithKeys(fn ($value): array => [(string) $value => (string) $value])
             ->all();
+    }
+
+    private function organizationId(): string
+    {
+        return (string) data_get(auth()->user(), 'organization_id');
+    }
+
+    private function queries(): SessionOperationsQueryService
+    {
+        return app(SessionOperationsQueryService::class);
     }
 }

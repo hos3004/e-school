@@ -26,7 +26,11 @@ it('records the administrator and queues a genuinely new delivery attempt on man
         'retryable' => false,
     ]);
 
-    app(RetryNotificationAction::class)->executeManually($failed, $actorId);
+    app(RetryNotificationAction::class)->executeManually(
+        $failed,
+        $actorId,
+        'أُصلح سبب الفشل وأعيد الإرسال',
+    );
 
     $failed->refresh();
 

@@ -26,7 +26,13 @@ final class AddQuestionController extends Controller
 
         Gate::authorize('manageQuestions', $assessmentModel);
 
-        $question = $this->action->execute($assessmentModel, $request->validated());
+        // السبب يخص قيد التدقيق وحده — لا يُمرَّر كسمة على نموذج السؤال.
+        $question = $this->action->execute(
+            $assessmentModel,
+            $request->safe()->except('reason'),
+            (string) $request->user()?->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return new QuestionResource($question);
     }

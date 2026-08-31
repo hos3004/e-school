@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Content\Application\Policies;
 
-use Illuminate\Auth\Access\Response;
 use Modules\Content\Domain\Models\CourseMaterial;
 
 /**
@@ -15,37 +14,44 @@ use Modules\Content\Domain\Models\CourseMaterial;
  */
 final class CourseMaterialPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
-        return $user->can('content.material.view_any');
+        return $user->can('content.view');
     }
 
-    public function view($user, CourseMaterial $material): bool
+    public function view(mixed $user, CourseMaterial $material): bool
     {
-        return $user->can('content.material.view')
-            || $material->uploaded_by === $user->getAuthIdentifier();
+        return $user->can('content.view') && $this->sameOrganization($user, $material);
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
-        return $user->can('content.material.create');
+        return $user->can('content.manage');
     }
 
-    public function update($user, CourseMaterial $material): bool
+    public function update(mixed $user, CourseMaterial $material): bool
     {
-        return $user->can('content.material.manage_all')
-            || ($user->can('content.material.update')
-                && $material->uploaded_by === $user->getAuthIdentifier());
+        return $user->can('content.manage') && $this->sameOrganization($user, $material);
     }
 
-    public function delete($user, CourseMaterial $material): Response|bool
+    public function delete(mixed $user, CourseMaterial $material): bool
     {
-        if ($material->trashed()) {
-            return false;
-        }
+        return !$material->trashed()
+            && $user->can('content.manage')
+            && $this->sameOrganization($user, $material);
+    }
 
-        return $user->can('content.material.manage_all')
-            || ($user->can('content.material.delete')
-                && $material->uploaded_by === $user->getAuthIdentifier());
+    public function publish(mixed $user, CourseMaterial $material): bool
+    {
+        return $user->can('content.manage') && $this->sameOrganization($user, $material);
+    }
+
+    private function sameOrganization(mixed $user, CourseMaterial $material): bool
+    {
+        $organizationId = data_get($user, 'organization_id');
+
+        return is_string($organizationId)
+            && $organizationId !== ''
+            && hash_equals($organizationId, (string) $material->organization_id);
     }
 }

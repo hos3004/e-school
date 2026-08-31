@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Presentation\Filament\Resources;
 
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Modules\Sessions\Application\Queries\SessionOperationsQueryService;
 use Modules\Sessions\Domain\Models\SessionParticipant;
 use Shared\Concerns\ScopesFilamentToOrganizationVia;
 
@@ -36,7 +33,7 @@ final class SessionParticipantResource extends Resource
 
     protected static ?int $navigationSort = 41;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('sessions::navigation.group');
     }
@@ -51,53 +48,30 @@ final class SessionParticipantResource extends Resource
         return __('sessions::navigation.participant.plural');
     }
 
-    public static function form(Schema $schema): Schema
-    {
-        return $schema->components([
-            Section::make(__('sessions::fields.participation'))
-                ->schema([
-                    Grid::make(2)->schema([
-                        TextInput::make('session_id')
-                            ->label(__('sessions::fields.session'))
-                            ->required()
-                            ->maxLength(26),
-                        TextInput::make('student_profile_id')
-                            ->label(__('sessions::fields.student_profile'))
-                            ->required()
-                            ->maxLength(26),
-                        TextInput::make('enrollment_id')
-                            ->label(__('sessions::fields.enrollment'))
-                            ->required()
-                            ->maxLength(26),
-                        TextInput::make('join_url_token')
-                            ->label(__('sessions::fields.join_url_token'))
-                            ->required()
-                            ->maxLength(255),
-                        DateTimePicker::make('invited_at')
-                            ->label(__('sessions::fields.invited_at'))
-                            ->required(),
-                        TextInput::make('attended_minutes')
-                            ->label(__('sessions::fields.attended_minutes'))
-                            ->numeric()
-                            ->minValue(0)
-                            ->default(0),
-                    ]),
-                ]),
-        ]);
-    }
-
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(static fn (Builder $query): Builder => $query->with('session'))
             ->columns([
                 TextColumn::make('session_id')
                     ->label(__('sessions::fields.session'))
-                    ->searchable()
-                    ->copyable(),
+                    ->formatStateUsing(fn (mixed $state, SessionParticipant $record): string => self::queries()->sessionLabel(
+                        (string) $record->session->organization_id,
+                        (string) $state,
+                    )),
                 TextColumn::make('student_profile_id')
                     ->label(__('sessions::fields.student_profile'))
-                    ->searchable()
-                    ->copyable(),
+                    ->formatStateUsing(fn (mixed $state, SessionParticipant $record): string => self::queries()->studentLabel(
+                        (string) $record->session->organization_id,
+                        (string) $state,
+                    )),
+                TextColumn::make('invitation_status')
+                    ->label(__('sessions::fields.invitation_status'))
+                    ->state(fn (SessionParticipant $record): string => $record->revoked_at === null
+                        ? __('sessions::fields.invitation_active')
+                        : __('sessions::fields.invitation_revoked'))
+                    ->badge()
+                    ->color(fn (SessionParticipant $record): string => $record->revoked_at === null ? 'success' : 'danger'),
                 TextColumn::make('invited_at')
                     ->label(__('sessions::fields.invited_at'))
                     ->dateTime()
@@ -114,6 +88,10 @@ final class SessionParticipantResource extends Resource
                     ->label(__('sessions::fields.attended_minutes'))
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('revoked_at')
+                    ->label(__('sessions::fields.revoked_at'))
+                    ->dateTime()
+                    ->toggleable(),
             ])
             ->defaultSort('created_at');
     }
@@ -123,5 +101,10 @@ final class SessionParticipantResource extends Resource
         return [
             'index' => SessionParticipantResource\Pages\ListSessionParticipants::route('/'),
         ];
+    }
+
+    private static function queries(): SessionOperationsQueryService
+    {
+        return app(SessionOperationsQueryService::class);
     }
 }

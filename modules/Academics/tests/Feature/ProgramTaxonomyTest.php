@@ -6,12 +6,12 @@ namespace Modules\Academics\Tests\Feature;
 
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Modules\Academics\Domain\Enums\ProgramType;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
 use Modules\Academics\Domain\Models\ProgramCategory;
+use Shared\Testing\Fixtures;
 use Tests\TestCase;
 
 final class ProgramTaxonomyTest extends TestCase
@@ -20,13 +20,15 @@ final class ProgramTaxonomyTest extends TestCase
 
     public function test_course_can_belong_to_multiple_categories(): void
     {
-        $orgId = (string) Str::ulid();
+        $orgId = Fixtures::organizationId();
 
         $program = Program::create([
             'organization_id' => $orgId,
             'code' => 'PROG-1',
             'name' => ['ar' => 'برنامج 1'],
             'program_type' => ProgramType::Ongoing,
+            'default_session_minutes' => 60,
+            'currency' => 'EGP',
         ]);
 
         $level = Level::create([
@@ -66,12 +68,14 @@ final class ProgramTaxonomyTest extends TestCase
         $this->expectException(QueryException::class);
 
         Program::create([
-            'organization_id' => (string) Str::ulid(),
+            'organization_id' => Fixtures::organizationId(),
             'code' => 'FIX-INVALID',
             'name' => ['ar' => 'برنامج محدد المدة خاطئ'],
             'program_type' => ProgramType::FixedDuration,
             'start_date' => '2026-01-01',
             'end_date' => null, // Should fail PostgreSQL check constraint
+            'default_session_minutes' => 60,
+            'currency' => 'EGP',
         ]);
     }
 }

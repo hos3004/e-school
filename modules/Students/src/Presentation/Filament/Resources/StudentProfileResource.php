@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Students\Presentation\Filament\Resources;
 
+use App\Application\Actions\AssignStudentToGroupAction;
+use App\Application\Queries\ProfileAdministrationQueryService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -13,14 +15,20 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Lang;
+use Modules\Identity\Domain\Contracts\AvatarQueries;
+use Modules\Identity\Domain\Contracts\DTOs\UserSummary;
+use Modules\Identity\Domain\Contracts\UserQueryService;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Organization\Domain\ValueObjects\CountryData;
 use Modules\Organization\Domain\ValueObjects\RegionData;
@@ -28,6 +36,8 @@ use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Enums\StudentGender;
 use Modules\Students\Domain\Models\StudentProfile;
 use Modules\Students\Presentation\Filament\Resources\StudentProfileResource\Pages;
+use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Locales;
 
 /**
  * إدارة ملفات الطلاب في لوحة التحكم — كل النصوص عبر ملفات الترجمة.
@@ -60,7 +70,7 @@ final class StudentProfileResource extends Resource
         return __('students::filament.plural_model_label');
     }
 
-    /** ملفات الطلاب لا تُنشأ إلا من قبول طلب التسجيل. */
+    /** صفحة الإنشاء تنفّذ الحساب والطلب والقبول؛ لا تحفظ StudentProfile مباشرة. */
     public static function canCreate(): bool
     {
         return (bool) auth()->user()?->can('student.create');
@@ -86,7 +96,7 @@ final class StudentProfileResource extends Resource
 
         return $organizationId === ''
             ? $query->whereRaw('1 = 0')
-            : $query->forOrganization($organizationId);
+            : $query->forOrganization($organizationId)->with('registrationApplication');
     }
 
     public static function form(Schema $schema): Schema
@@ -97,23 +107,6 @@ final class StudentProfileResource extends Resource
                     ->label(__('students::attributes.student_code'))
                     ->disabled()
                     ->dehydrated(false),
-
-                Select::make('user_id')
-                    ->label(__('students::attributes.user_id'))
-                    ->options(fn (): array => DB::table('users')
-                        ->where('organization_id', (string) data_get(auth()->user(), 'organization_id'))
-                        ->whereNull('deleted_at')
-                        ->whereNotExists(fn ($query) => $query
-                            ->selectRaw('1')
-                            ->from('student_profiles')
-                            ->whereColumn('student_profiles.user_id', 'users.id')
-                            ->whereNull('student_profiles.deleted_at'))
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all())
-                    ->searchable()
-                    ->required()
-                    ->visibleOn('create'),
 
                 DatePicker::make('date_of_birth')
                     ->label(__('students::attributes.date_of_birth'))
@@ -127,9 +120,11 @@ final class StudentProfileResource extends Resource
                         ->all())
                     ->nullable(),
 
-                TextInput::make('nationality')
+                Select::make('nationality')
                     ->label(__('students::attributes.nationality'))
-                    ->length(2)
+                    ->options(fn (?StudentProfile $record): array => self::nationalityOptions($record?->nationality))
+                    ->searchable()
+                    ->preload()
                     ->nullable(),
 
                 Select::make('country_id')
@@ -158,15 +153,7 @@ final class StudentProfileResource extends Resource
 
                 Select::make('preferred_language')
                     ->label(__('students::attributes.preferred_language'))
-                    ->options([
-                        'ar' => __('students::languages.ar'),
-                        'en' => __('students::languages.en'),
-                        'fr' => __('students::languages.fr'),
-                    ])
-                    ->nullable(),
-
-                DatePicker::make('joined_at')
-                    ->label(__('students::attributes.joined_at'))
+                    ->options(Locales::options('students::languages.'))
                     ->nullable(),
 
                 Textarea::make('notes')
@@ -174,6 +161,14 @@ final class StudentProfileResource extends Resource
                     ->columnSpanFull()
                     ->maxLength(5000)
                     ->nullable(),
+
+                // سبب إداري إلزامي — يُستهلك في التدقيق ولا يُخزَّن مع الملف.
+                Textarea::make('reason')
+                    ->label(__('students::attributes.reason'))
+                    ->helperText(__('students::admin.profile.reason_help'))
+                    ->columnSpanFull()
+                    ->maxLength(2000)
+                    ->required(),
             ]);
     }
 
@@ -181,6 +176,20 @@ final class StudentProfileResource extends Resource
     {
         return $table
             ->columns([
+                ImageColumn::make('avatar')
+                    ->label(__('students::filament.student_name'))
+                    ->circular()
+                    ->state(fn (StudentProfile $record): ?string => self::avatarUrls()[$record->user_id] ?? null)
+                    ->defaultImageUrl(fn (StudentProfile $record): string => app(AvatarQueries::class)
+                        ->defaultUrl($record->gender?->value))
+                    ->alt(function (StudentProfile $record): string {
+                        $name = (string) ($record->registrationApplication?->full_name ?? $record->student_code);
+
+                        return __('identity::avatars.alt', ['name' => $name]);
+                    })
+                    ->extraImgAttributes(['loading' => 'lazy'])
+                    ->grow(false),
+
                 TextColumn::make('student_code')
                     ->label(__('students::attributes.student_code'))
                     ->searchable()
@@ -263,66 +272,92 @@ final class StudentProfileResource extends Resource
             ->actions([
                 ViewAction::make(),
                 EditAction::make(),
-                Action::make('assign_group')
-                    ->label('تسكين في مجموعة')
-                    ->icon('heroicon-o-user-plus')
-                    ->color('info')
-                    ->form([
-                        Select::make('group_id')
-                            ->label('المجموعة الدراسية')
-                            ->options(fn () => DB::table('groups')
-                                ->whereNull('deleted_at')
-                                ->pluck('name', 'id')
-                                ->toArray())
-                            ->required()
-                            ->searchable(),
-                    ])
-                    ->action(function (StudentProfile $record, array $data): void {
-                        DB::table('group_memberships')->updateOrInsert(
-                            [
-                                'group_id' => $data['group_id'],
-                                'student_profile_id' => $record->id,
-                            ],
-                            [
-                                'status' => 'active',
-                                'joined_at' => now(),
-                                'updated_at' => now(),
-                            ],
-                        );
-                        Notification::make()
-                            ->title('تم تسكين الطالب في المجموعة بنجاح')
-                            ->success()
-                            ->send();
-                    }),
-                Action::make('change_status')
-                    ->label('تغيير الحالة / تجميد')
-                    ->icon('heroicon-o-adjustments-horizontal')
-                    ->color('warning')
-                    ->form([
-                        Select::make('status')
-                            ->label('الحالة الجديدة')
-                            ->options([
-                                'active' => 'نشط',
-                                'frozen' => 'مجمَّد',
-                                'suspended' => 'موقوف',
-                                'withdrawn' => 'منسحب',
-                            ])
-                            ->required(),
-                        Textarea::make('reason')
-                            ->label('سبب التغيير')
-                            ->required(),
-                    ])
-                    ->action(function (StudentProfile $record, array $data): void {
-                        $record->registrationApplication()?->update([
-                            'status' => $data['status'],
-                        ]);
-                        Notification::make()
-                            ->title('تم تحديث حالة الطالب والطلب بنجاح')
-                            ->success()
-                            ->send();
-                    }),
+                self::placementAction(),
             ])
             ->bulkActions([]);
+    }
+
+    public static function placementAction(): Action
+    {
+        return Action::make('place_student')
+            ->label(__('students::admin.placement.action'))
+            ->icon('heroicon-o-user-plus')
+            ->color('info')
+            ->authorize(fn (): bool => self::canPlaceStudent())
+            ->visible(fn (StudentProfile $record): bool => $record->registrationApplication?->status === RegistrationStatus::WaitingAssignment)
+            ->form([
+                Select::make('program_id')
+                    ->label(__('students::admin.placement.program'))
+                    ->options(fn (): array => app(ProfileAdministrationQueryService::class)
+                        ->programOptions(self::organizationId()))
+                    ->default(fn (StudentProfile $record): ?string => $record->registrationApplication?->preferred_program_id)
+                    ->searchable()
+                    ->preload()
+                    ->live()
+                    ->afterStateUpdated(function (Set $set): void {
+                        $set('course_id', null);
+                        $set('group_id', null);
+                    })
+                    ->required(),
+
+                Select::make('course_id')
+                    ->label(__('students::admin.placement.course'))
+                    ->options(fn (Get $get): array => app(ProfileAdministrationQueryService::class)->courseOptions(
+                        self::organizationId(),
+                        is_string($get('program_id')) ? $get('program_id') : null,
+                    ))
+                    ->default(fn (StudentProfile $record): ?string => $record->registrationApplication?->preferred_course_id)
+                    ->searchable()
+                    ->preload()
+                    ->live()
+                    ->afterStateUpdated(function (Set $set): void {
+                        $set('group_id', null);
+                    })
+                    ->required(),
+
+                Select::make('group_id')
+                    ->label(__('students::admin.placement.group'))
+                    ->options(fn (Get $get): array => app(ProfileAdministrationQueryService::class)->placementGroupOptions(
+                        self::organizationId(),
+                        is_string($get('program_id')) ? $get('program_id') : null,
+                        is_string($get('course_id')) ? $get('course_id') : null,
+                    ))
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+
+                Textarea::make('reason')
+                    ->label(__('students::admin.placement.reason'))
+                    ->helperText(__('students::admin.placement.reason_help'))
+                    ->maxLength(2000)
+                    ->required(),
+            ])
+            ->action(function (StudentProfile $record, array $data): void {
+                try {
+                    app(AssignStudentToGroupAction::class)->execute(
+                        actorOrganizationId: self::organizationId(),
+                        studentProfileId: (string) $record->getKey(),
+                        programId: (string) $data['program_id'],
+                        groupId: (string) $data['group_id'],
+                        courseId: (string) $data['course_id'],
+                        actorId: (string) auth()->id(),
+                        correlationId: request()->header('X-Correlation-Id'),
+                        reason: (string) $data['reason'],
+                    );
+                } catch (BusinessRuleViolation $violation) {
+                    Notification::make()
+                        ->title($violation->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title(__('students::admin.placement.success'))
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function getPages(): array
@@ -336,7 +371,7 @@ final class StudentProfileResource extends Resource
     }
 
     /** @return array<string, string> */
-    private static function countryOptions(): array
+    public static function countryOptions(): array
     {
         /** @var GeographyQueries $geography */
         $geography = app(GeographyQueries::class);
@@ -348,8 +383,32 @@ final class StudentProfileResource extends Resource
             ->all();
     }
 
+    /**
+     * خيارات الجنسية — المفتاح رمز ISO 3166-1 alpha-2 كما يخزّنه العمود.
+     * $current يُبقي قيمة محفوظة خارج قائمة الدول المفعّلة ظاهرة بدل أن تختفي من الحقل.
+     *
+     * @return array<string, string>
+     */
+    public static function nationalityOptions(?string $current = null): array
+    {
+        /** @var GeographyQueries $geography */
+        $geography = app(GeographyQueries::class);
+
+        $options = collect($geography->countries())
+            ->mapWithKeys(fn (CountryData $country): array => [
+                $country->iso2 => self::nationalityLabel($country),
+            ])
+            ->all();
+
+        if ($current !== null && $current !== '' && !array_key_exists($current, $options)) {
+            $options[$current] = $current;
+        }
+
+        return $options;
+    }
+
     /** @return array<string, string> */
-    private static function regionOptions(?string $countryId = null): array
+    public static function regionOptions(?string $countryId = null): array
     {
         /** @var GeographyQueries $geography */
         $geography = app(GeographyQueries::class);
@@ -372,12 +431,60 @@ final class StudentProfileResource extends Resource
         return $options;
     }
 
+    /**
+     * روابط صور الطلاب المرفوعة فقط (بلا افتراضيات) — استعلامان للقائمة كاملة.
+     *
+     * @return array<string, string> معرّف المستخدم ← رابط الصورة
+     */
+    private static function avatarUrls(): array
+    {
+        static $cache = null;
+
+        if (is_array($cache)) {
+            return $cache;
+        }
+
+        $userIds = self::getEloquentQuery()
+            ->pluck('user_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        /** @var array<string, UserSummary> $users */
+        $users = app(UserQueryService::class)->summariesByIds($userIds);
+        $resolver = app(AvatarQueries::class);
+
+        $urls = [];
+
+        foreach ($users as $summary) {
+            if ($summary->avatarPath === null) {
+                continue;
+            }
+
+            $presentation = $resolver->resolve($summary->avatarPath, null);
+
+            if (!$presentation->isDefault) {
+                $urls[$summary->id] = $presentation->url;
+            }
+        }
+
+        return $cache = $urls;
+    }
+
     /** @return array<string, string> */
     private static function statusOptions(): array
     {
         return collect(RegistrationStatus::cases())
             ->mapWithKeys(fn (RegistrationStatus $status): array => [$status->value => $status->label()])
             ->all();
+    }
+
+    private static function nationalityLabel(CountryData $country): string
+    {
+        $key = 'organization::nationalities.'.$country->iso2;
+
+        return Lang::has($key) ? (string) __($key) : self::localizedName($country->name);
     }
 
     /** @param array<string, string> $name */
@@ -389,5 +496,22 @@ final class StudentProfileResource extends Resource
     private static function localizedRegionName(CountryData $country, RegionData $region): string
     {
         return self::localizedName($country->name).' — '.self::localizedName($region->name);
+    }
+
+    private static function organizationId(): string
+    {
+        $organizationId = data_get(auth()->user(), 'organization_id');
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403);
+
+        return $organizationId;
+    }
+
+    private static function canPlaceStudent(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null
+            && (bool) $user->can('enrollment.create')
+            && (bool) $user->can('group.manage');
     }
 }

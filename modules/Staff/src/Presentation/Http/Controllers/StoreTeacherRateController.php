@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Presentation\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Modules\Staff\Application\Actions\AddTeacherRate;
 use Modules\Staff\Domain\Enums\RateScope;
 use Modules\Staff\Domain\Models\TeacherContract;
@@ -14,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class StoreTeacherRateController
 {
-    public function __invoke(StoreTeacherRateRequest $request, TeacherContract $contract, AddTeacherRate $action): TeacherRateResource
+    public function __invoke(StoreTeacherRateRequest $request, TeacherContract $contract, AddTeacherRate $action): JsonResponse
     {
         $validated = $request->validated();
 
@@ -27,6 +28,8 @@ final class StoreTeacherRateController
             programId: $validated['program_id'] ?? null,
             courseId: $validated['course_id'] ?? null,
             sessionType: $validated['session_type'] ?? null,
+            actorId: auth()->id() === null ? null : (string) auth()->id(),
+            reason: isset($validated['reason']) ? (string) $validated['reason'] : null,
         );
 
         return new TeacherRateResource($rate)->response()->setStatusCode(Response::HTTP_CREATED);

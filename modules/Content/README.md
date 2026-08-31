@@ -2,19 +2,26 @@
 
 ## يملك
 
-`course_materials`
+`course_materials` · `course_material_versions`
 
 ## ينشر
 
-- لا أحداث مسجّلة له في `docs/09` حاليًا.
+- `content.material_uploaded`
+- `content.material_updated`
+- `content.material_removed`
 
 ## يعتمد على
 
 - `Academics` (الكورس المالك للمادة).
-- `Enrollments` عبر أحداثه: يستقبل `enrollments.frozen` فيقطع الوصول، و`enrollments.reactivated` فيعيده.
+- `Identity` عبر دليل الحسابات لعرض فاعل كل إصدار.
 
 ## قواعد خاصة
 
-- الوصول إلى المواد مرهون بحالة القيد: `EnrollmentStatus::grantsCourseAccess()` — الطالب المجمّد لا يرى المحتوى مهما كان الوقت.
-- `visible_from` / `visible_to` تحكم ظهور المادة زمنيًا.
-- أنواع المواد: `pdf | video | link | worksheet`.
+- مورد الإدارة محصور بالمؤسسة ويستدعي Actions؛ لا يقبل `organization_id` من الموظف.
+- حالة المادة `draft | published | unpublished` عبر Enum، و`visible_from` /
+  `visible_to` تضبط النافذة الزمنية بعد النشر.
+- كل إنشاء أو تعديل أو نشر يحفظ snapshot جديدًا في `course_material_versions`؛
+  الأرشفة SoftDelete ولا تمحو الإصدارات أو الملفات.
+- النوعان المدعومان هما `file | link`، والامتدادات والأحجام من `config/content.php`.
+- API الإدارة لا يكشف `disk` أو `path`. تنزيل الطالب يجب أن يمر لاحقًا بعقد يتحقق
+  من القيد النشط والكورس، ولا يُبنى كرابط عام مباشر.

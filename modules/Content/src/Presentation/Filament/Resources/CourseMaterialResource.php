@@ -4,33 +4,43 @@ declare(strict_types=1);
 
 namespace Modules\Content\Presentation\Filament\Resources;
 
+use BackedEnum;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Modules\Content\Application\Queries\ContentAdministrationQueryService;
+use Modules\Content\Domain\Enums\MaterialStatus;
 use Modules\Content\Domain\Enums\MaterialType;
 use Modules\Content\Domain\Models\CourseMaterial;
+use Modules\Content\Presentation\Filament\Resources\CourseMaterialResource\Pages;
+use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Support\Locales;
 use Shared\Support\LocalizedJsonColumn;
 
-/**
- * مورد إدارة المواد التعليمية في لوحة الإدارة.
- */
 final class CourseMaterialResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = CourseMaterial::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-book-open';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-book-open';
 
     protected static ?int $navigationSort = 12;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('content::navigation.group');
     }
@@ -45,46 +55,104 @@ final class CourseMaterialResource extends Resource
         return __('content::navigation.material.plural');
     }
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('viewAny', CourseMaterial::class) ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create', CourseMaterial::class) ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('course_id')
-                ->label(__('content::fields.course'))
+            Section::make(__('content::fields.academic_context'))
+                ->schema([
+                    Select::make('course_id')
+                        ->label(__('content::fields.course'))
+                        ->options(fn (): array => app(ContentAdministrationQueryService::class)
+                            ->courseOptions(self::organizationId()))
+                        ->searchable()
+                        ->preload()
+                        ->disabled(fn (string $operation): bool => $operation === 'edit')
+                        ->required(),
+                    TextInput::make('display_order')
+                        ->label(__('content::fields.display_order'))
+                        ->numeric()
+                        ->minValue(0)
+                        ->default(0)
+                        ->required(),
+                ])->columns(2),
+
+            Section::make(__('content::fields.identity'))
+                ->schema([
+                    TextInput::make('title.ar')
+                        ->label(__('content::fields.title_ar'))
+                        ->required()
+                        ->maxLength(255),
+                    TextInput::make('title.en')
+                        ->label(__('content::fields.title_en'))
+                        ->maxLength(255),
+                    TextInput::make('title.fr')
+                        ->label(__('content::fields.title_fr'))
+                        ->maxLength(255)
+                        ->hidden(!Locales::isSupported('fr'))
+                        ->dehydratedWhenHidden(),
+                    Textarea::make('description.ar')
+                        ->label(__('content::fields.description_ar'))
+                        ->rows(3),
+                    Textarea::make('description.en')
+                        ->label(__('content::fields.description_en'))
+                        ->rows(3),
+                    Textarea::make('description.fr')
+                        ->label(__('content::fields.description_fr'))
+                        ->rows(3)
+                        ->hidden(!Locales::isSupported('fr'))
+                        ->dehydratedWhenHidden(),
+                ])->columns(3),
+
+            Section::make(__('content::fields.source'))
+                ->schema([
+                    Select::make('type')
+                        ->label(__('content::fields.type'))
+                        ->options(MaterialType::options())
+                        ->default(MaterialType::File->value)
+                        ->required()
+                        ->live(),
+                    FileUpload::make('path')
+                        ->label(__('content::fields.file'))
+                        ->disk((string) config('content.uploads.disk'))
+                        ->directory('course-materials')
+                        ->acceptedFileTypes((array) config('content.uploads.accepted_mime_types'))
+                        ->maxSize(((int) config('content.uploads.max_size_mb')) * 1024)
+                        ->visible(fn (Get $get): bool => $get('type') === MaterialType::File->value)
+                        ->required(fn (Get $get, ?CourseMaterial $record): bool => $get('type') === MaterialType::File->value
+                            && ($record === null || blank($record->path))),
+                    TextInput::make('external_url')
+                        ->label(__('content::fields.external_url'))
+                        ->url()
+                        ->maxLength(2048)
+                        ->visible(fn (Get $get): bool => $get('type') === MaterialType::Link->value)
+                        ->required(fn (Get $get): bool => $get('type') === MaterialType::Link->value),
+                ])->columns(2),
+
+            Section::make(__('content::fields.visibility'))
+                ->schema([
+                    DateTimePicker::make('visible_from')
+                        ->label(__('content::fields.visible_from')),
+                    DateTimePicker::make('visible_to')
+                        ->label(__('content::fields.visible_to'))
+                        ->after('visible_from'),
+                ])->columns(2),
+
+            Textarea::make('reason')
+                ->label(__('content::fields.reason'))
+                ->helperText(__('content::messages.reason_help'))
                 ->required()
-                ->maxLength(26),
-            Grid::make(2)->schema([
-                TextInput::make('title.ar')
-                    ->label(__('content::fields.title_ar'))
-                    ->required()
-                    ->maxLength(255),
-                TextInput::make('title.en')
-                    ->label(__('content::fields.title_en'))
-                    ->maxLength(255),
-            ]),
-            Grid::make(2)->schema([
-                Select::make('type')
-                    ->label(__('content::fields.type'))
-                    ->options(MaterialType::options())
-                    ->default(MaterialType::File->value)
-                    ->required()
-                    ->live(),
-                FileUpload::make('path')
-                    ->label(__('content::fields.file'))
-                    ->disk((string) config('content.uploads.disk'))
-                    ->directory('course-materials')
-                    ->maxSize(((int) config('content.uploads.max_size_mb', 100)) * 1024)
-                    ->visible(fn (string $operation, ?CourseMaterial $record): bool => ($record?->type ?? MaterialType::tryFrom((string) request()->input('type')))?->requiresFile() ?? false),
-                TextInput::make('external_url')
-                    ->label(__('content::fields.external_url'))
-                    ->url()
-                    ->maxLength(2048),
-                TextInput::make('size_bytes')
-                    ->label(__('content::fields.size_bytes'))
-                    ->numeric()
-                    ->minValue(0)
-                    ->maxSize?->ignore(),
-            ]),
-            Section_Visibility::make(),
+                ->maxLength((int) config('content.reason_max_length'))
+                ->columnSpanFull(),
         ]);
     }
 
@@ -94,57 +162,93 @@ final class CourseMaterialResource extends Resource
             ->columns([
                 TextColumn::make('title')
                     ->label(__('content::fields.title'))
-                    ->formatStateUsing(static fn ($state): string => LocalizedJsonColumn::display($state))
-                    // عمود jsonb: البحث الافتراضي يبني LIKE عليه فينهار الطلب.
+                    ->formatStateUsing(static fn (mixed $state): string => LocalizedJsonColumn::display($state))
                     ->searchable(query: LocalizedJsonColumn::search('course_materials.title'))
-                    ->limit(40),
+                    ->sortable(query: LocalizedJsonColumn::sort('course_materials.title')),
+                TextColumn::make('course_id')
+                    ->label(__('content::fields.course'))
+                    ->formatStateUsing(fn (mixed $state, CourseMaterial $record): string => app(ContentAdministrationQueryService::class)
+                        ->courseLabel((string) $record->organization_id, (string) $state)),
                 TextColumn::make('type')
                     ->label(__('content::fields.type'))
                     ->badge()
-                    ->formatStateUsing(fn ($state): string => $state instanceof MaterialType
-                        ? $state->label()
-                        : (string) $state),
-                TextColumn::make('course_id')
-                    ->label(__('content::fields.course'))
-                    ->copyable()
-                    ->toggleable(),
+                    ->formatStateUsing(fn (MaterialType $state): string => $state->label()),
+                TextColumn::make('status')
+                    ->label(__('content::fields.status'))
+                    ->badge()
+                    ->formatStateUsing(fn (MaterialStatus $state): string => $state->label())
+                    ->color(fn (MaterialStatus $state): string => $state->color()),
+                TextColumn::make('revision')
+                    ->label(__('content::fields.revision'))
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('display_order')
+                    ->label(__('content::fields.display_order'))
+                    ->numeric()
+                    ->sortable(),
                 IconColumn::make('is_currently_visible')
                     ->label(__('content::fields.visible_now'))
                     ->boolean()
                     ->getStateUsing(fn (CourseMaterial $record): bool => $record->isCurrentlyVisible()),
-                TextColumn::make('size_bytes')
-                    ->label(__('content::fields.size_bytes'))
-                    ->numeric()
-                    ->toggleable(),
-                TextColumn::make('visible_from')
-                    ->label(__('content::fields.visible_from'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(),
-                TextColumn::make('visible_to')
-                    ->label(__('content::fields.visible_to'))
+                TextColumn::make('published_at')
+                    ->label(__('content::fields.published_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('created_at')
                     ->label(__('content::fields.created_at'))
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
             ])
             ->filters([
+                SelectFilter::make('course_id')
+                    ->label(__('content::fields.course'))
+                    ->options(fn (): array => app(ContentAdministrationQueryService::class)->courseOptions(self::organizationId()))
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('type')
                     ->label(__('content::fields.type'))
                     ->options(MaterialType::options()),
+                SelectFilter::make('status')
+                    ->label(__('content::fields.status'))
+                    ->options(collect(MaterialStatus::cases())->mapWithKeys(
+                        static fn (MaterialStatus $status): array => [$status->value => $status->label()],
+                    )->all()),
                 TernaryFilter::make('visible_now')
                     ->label(__('content::filters.visible_now'))
                     ->queries(
                         true: fn ($query) => $query->active(),
                         false: fn ($query) => $query->where(function ($q): void {
-                            $q->where('visible_from', '>', now())
+                            $q->where('status', '!=', MaterialStatus::Published)
+                                ->orWhere('visible_from', '>', now())
                                 ->orWhere('visible_to', '<=', now());
                         }),
                     ),
             ])
-            ->defaultSort('created_at', direction: 'desc');
+            ->recordActions([
+                ViewAction::make()
+                    ->visible(fn (CourseMaterial $record): bool => auth()->user()?->can('view', $record) ?? false),
+                EditAction::make()
+                    ->visible(fn (CourseMaterial $record): bool => auth()->user()?->can('update', $record) ?? false),
+            ])
+            ->bulkActions([])
+            ->defaultSort('display_order');
+    }
+
+    /** @return array<string, mixed> */
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListCourseMaterials::route('/'),
+            'create' => Pages\CreateCourseMaterial::route('/create'),
+            'view' => Pages\ViewCourseMaterial::route('/{record}'),
+            'edit' => Pages\EditCourseMaterial::route('/{record}/edit'),
+        ];
+    }
+
+    private static function organizationId(): string
+    {
+        return (string) auth()->user()?->getAttribute('organization_id');
     }
 }

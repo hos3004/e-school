@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Recordings\Application\Actions\LogRecordingViewAction;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
@@ -12,7 +13,7 @@ use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
-uses(CreatesRecordingContext::class);
+uses(RefreshDatabase::class, CreatesRecordingContext::class);
 
 beforeEach(function (): void {
     $this->context = $this->createSessionWithClassroom();

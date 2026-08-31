@@ -34,7 +34,7 @@ final readonly class UserAccountProvisioningService implements UserAccountProvis
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email:rfc', 'max:255'],
             'username' => ['required', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', 'string', 'max:32'],
             'password' => ['required', Password::defaults()],
         ])->validate();
 

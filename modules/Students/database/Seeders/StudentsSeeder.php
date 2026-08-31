@@ -45,7 +45,7 @@ final class StudentsSeeder extends Seeder
                 ['user_id' => $userId],
                 [
                     'organization_id' => $organizationId,
-                    'student_code' => sprintf('STU-%04d', $index + 1),
+                    'student_code' => sprintf('E%03d', $index + 1),
                     'date_of_birth' => now()->subYears(12 + $index)->toDateString(),
                     'gender' => $index % 2 === 0 ? StudentGender::Male : StudentGender::Female,
                     'nationality' => 'EG',
@@ -56,6 +56,8 @@ final class StudentsSeeder extends Seeder
                 ],
             );
         }
+
+        $this->call(RegistrationFormsSeeder::class);
     }
 
     /**

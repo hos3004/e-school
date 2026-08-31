@@ -20,7 +20,7 @@ final class DeleteCourseMaterialRequest extends FormRequest
             return $this->user()->can('delete', $material);
         }
 
-        return $this->user()->can('content.material.delete');
+        return false;
     }
 
     /**
@@ -29,7 +29,7 @@ final class DeleteCourseMaterialRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => ['required', 'string', 'min:3', 'max:500'],
+            'reason' => ['required', 'string', 'min:3', 'max:'.config('content.reason_max_length')],
         ];
     }
 

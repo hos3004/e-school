@@ -33,4 +33,7 @@ return [
     'dispatch_due_done' => 'Dispatched :count due notifications to sender jobs.',
 
     'retry_failed_done' => 'Rescheduled :count failed notifications.',
+    'not_available' => 'Not available',
+    'no_audit_entries' => 'No manual decisions have been recorded for this notification.',
+    'system_actor' => 'System',
 ];

@@ -11,6 +11,15 @@ use Modules\Staff\Domain\Enums\TeacherLeaveStatus;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $staff_profile_id
+ * @property CarbonImmutable $starts_at
+ * @property CarbonImmutable $ends_at
+ * @property string|null $reason
+ * @property TeacherLeaveStatus $status
+ * @property string|null $approved_by
+ * @property CarbonImmutable|null $approved_at
+ */
 final class TeacherLeave extends Model
 {
     use HasModuleFactory;

@@ -19,6 +19,15 @@ use Modules\VirtualClassroom\Infrastructure\Providers\NullProvider;
  */
 return [
 
+    'admin_hub' => [
+        'max_events' => 25,
+    ],
+
+    'provisioning' => [
+        'before_minutes' => 20,
+        'batch_size' => 100,
+    ],
+
     'default' => env('CLASSROOM_PROVIDER', 'bigbluebutton'),
 
     'providers' => [
@@ -27,6 +36,7 @@ return [
             'driver' => BigBlueButtonProvider::class,
             'base_url' => env('BBB_BASE_URL'),
             'secret' => env('BBB_SECRET'),
+            'checksum_algorithm' => env('BBB_CHECKSUM_ALGORITHM', 'sha1'),
             'webhook_secret' => env('BBB_WEBHOOK_SECRET'),
             'webhook_callback_url' => env('BBB_WEBHOOK_CALLBACK_URL'),
             'timeout_seconds' => env('BBB_TIMEOUT_SECONDS', 10),
@@ -57,6 +67,11 @@ return [
                 'runtime_recording_control' => true,
             ],
         ],
+    ],
+
+    'webhook' => [
+        // حماية endpoint العام؛ التوقيع يتحقق قبل تفسير أي حدث.
+        'rate_limit_per_minute' => env('BBB_WEBHOOK_RATE_LIMIT_PER_MINUTE', 120),
     ],
 
     /**

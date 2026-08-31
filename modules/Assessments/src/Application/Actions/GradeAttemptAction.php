@@ -9,6 +9,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Assessments\Domain\Events\AttemptGraded;
 use Modules\Assessments\Domain\Models\Assessment;
 use Modules\Assessments\Domain\Models\AssessmentAttempt;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -23,10 +24,16 @@ final readonly class GradeAttemptAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
-    public function execute(AssessmentAttempt $attempt, int $score, ?string $actorId = null): AssessmentAttempt
-    {
+    public function execute(
+        AssessmentAttempt $attempt,
+        int $score,
+        string $actorId,
+        string $reason,
+        ?string $feedback = null,
+    ): AssessmentAttempt {
         /** @var Assessment $assessment */
         $assessment = $attempt->assessment;
 
@@ -54,15 +61,42 @@ final readonly class GradeAttemptAction
 
         $passed = $score >= $assessment->passing_score;
         $gradedAt = CarbonImmutable::now('UTC');
-        $graderId = $actorId ?? auth()->id();
+        $graderId = $actorId;
 
-        $this->transaction->run(function () use ($attempt, $score, $passed, $gradedAt, $graderId): void {
+        $this->transaction->run(function () use (
+            $attempt,
+            $assessment,
+            $score,
+            $passed,
+            $gradedAt,
+            $graderId,
+            $reason,
+            $feedback,
+        ): void {
             $attempt->forceFill([
                 'score' => $score,
                 'passed' => $passed,
                 'graded_by' => $graderId,
                 'graded_at' => $gradedAt,
+                'feedback' => $feedback,
             ])->save();
+
+            $this->audit->record(
+                organizationId: (string) $assessment->organization_id,
+                actorId: $graderId,
+                actorType: 'user',
+                action: 'assessments.attempt_graded',
+                auditableType: 'assessment_attempt',
+                auditableId: (string) $attempt->getKey(),
+                oldValues: ['score' => null, 'passed' => null, 'graded_at' => null],
+                newValues: [
+                    'score' => $score,
+                    'passed' => $passed,
+                    'graded_at' => $gradedAt->toIso8601String(),
+                    'feedback' => $feedback,
+                ],
+                reason: $reason,
+            );
         });
 
         $this->events->dispatch(new AttemptGraded(

@@ -6,8 +6,8 @@ namespace Modules\AccessControl\Infrastructure\Persistence;
 
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
-use Modules\AccessControl\Application\Queries\RoleData;
 use Modules\AccessControl\Domain\Contracts\AccessControlQuerier;
+use Modules\AccessControl\Domain\ValueObjects\RoleData;
 
 /**
  * تنفيذ قراءة فقط فوق جداول هذا الموديول — يُرجع DTOs حصرًا.
@@ -19,6 +19,24 @@ final class AccessControlQueryService implements AccessControlQuerier
 
     /** @var array<string, array<string, true>> */
     private array $effectivePermissions = [];
+
+    public function rolesAvailableToOrganization(string $organizationId): array
+    {
+        return DB::table('roles')
+            ->where(function (Builder $query) use ($organizationId): void {
+                $query->whereNull('organization_id')->orWhere('organization_id', $organizationId);
+            })
+            ->orderBy('name')
+            ->get(['id', 'organization_id', 'name', 'guard_name', 'is_system'])
+            ->map(static fn (object $row): RoleData => new RoleData(
+                id: (string) $row->id,
+                organizationId: $row->organization_id !== null ? (string) $row->organization_id : null,
+                name: (string) $row->name,
+                guardName: (string) $row->guard_name,
+                isSystem: (bool) $row->is_system,
+            ))
+            ->all();
+    }
 
     public function permissionNamesForRole(string $roleId): array
     {

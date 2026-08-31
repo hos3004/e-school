@@ -52,7 +52,7 @@ it('detaches without deleting group data', function (): void {
     $programId = programId();
 
     $link = $this->action->execute($this->group, $programId);
-    app(DetachProgramAction::class)->execute($link);
+    app(DetachProgramAction::class)->execute($link, 'لم يعد البرنامج ضمن خطة المجموعة');
 
     expect(GroupProgram::query()->forGroup((string) $this->group->getKey())->exists())->toBeFalse()
         ->and($this->group->refresh()->exists)->toBeTrue();

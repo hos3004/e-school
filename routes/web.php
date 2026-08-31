@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\PublicStudentRegistrationController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Portal\ClassroomJoinController;
 use App\Http\Controllers\Portal\GuardianAttendanceController;
 use App\Http\Controllers\Portal\GuardianChildController;
 use App\Http\Controllers\Portal\GuardianDashboardController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Portal\GuardianReportsController;
 use App\Http\Controllers\Portal\GuardianScheduleController;
 use App\Http\Controllers\Portal\PortalNotificationsController;
 use App\Http\Controllers\Portal\PortalProfileController;
+use App\Http\Controllers\Portal\RecordingPlaybackController;
 use App\Http\Controllers\Portal\StudentAssignmentsController;
 use App\Http\Controllers\Portal\StudentAssignmentSubmissionController;
 use App\Http\Controllers\Portal\StudentDashboardController;
@@ -36,13 +38,26 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 
 Route::get('/register/student', [PublicStudentRegistrationController::class, 'showForm'])->name('register.student');
-Route::post('/register/student', [PublicStudentRegistrationController::class, 'store'])->name('register.student.store');
+Route::post('/register/student', [PublicStudentRegistrationController::class, 'store'])
+    ->middleware('throttle:'.(int) config('admission.self_registration.rate_limit_per_minute').',1')
+    ->name('register.student.store');
+Route::get('/register/student/{formSlug}', [PublicStudentRegistrationController::class, 'showForm'])
+    ->where('formSlug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('register.student.form');
+Route::post('/register/student/{formSlug}', [PublicStudentRegistrationController::class, 'store'])
+    ->where('formSlug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->middleware('throttle:'.(int) config('admission.self_registration.rate_limit_per_minute').',1')
+    ->name('register.student.form.store');
 Route::get('/register/submitted', [PublicStudentRegistrationController::class, 'showSubmitted'])->name('register.submitted');
 Route::get('/register/status/{id}', [PublicStudentRegistrationController::class, 'showStatus'])->name('register.status');
 
 Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::post('/locale', UpdateLocaleController::class)
         ->name('locale.update');
+    Route::get('/recordings/{recording}/watch', RecordingPlaybackController::class)
+        ->whereUlid('recording')
+        ->middleware('signed')
+        ->name('portal.recordings.watch');
 
     Route::get('/student', StudentDashboardController::class)
         ->middleware('can:session.view')
@@ -53,6 +68,10 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::get('/student/sessions/{id}', StudentSessionController::class)
         ->middleware('can:session.view')
         ->name('portal.student.sessions.show');
+    Route::get('/student/sessions/{session}/join', [ClassroomJoinController::class, 'student'])
+        ->whereUlid('session')
+        ->middleware('can:session.join')
+        ->name('portal.student.sessions.join');
     Route::get('/student/assignments', StudentAssignmentsController::class)
         ->middleware('can:assignment.submit')
         ->name('portal.student.assignments.index');
@@ -96,6 +115,10 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::get('/teacher/sessions/{id}', TeacherSessionController::class)
         ->middleware('can:attendance.record')
         ->name('portal.teacher.sessions.show');
+    Route::get('/teacher/sessions/{session}/join', [ClassroomJoinController::class, 'teacher'])
+        ->whereUlid('session')
+        ->middleware('can:session.join')
+        ->name('portal.teacher.sessions.join');
     Route::get('/teacher/postponements', TeacherPostponementsController::class)
         ->middleware('can:session.postpone.approve')
         ->name('portal.teacher.postponements.index');

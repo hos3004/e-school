@@ -15,7 +15,7 @@ final class StoreAssessmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('assessments.assessment.create');
+        return $this->user()?->can('assessment.manage') ?? false;
     }
 
     /**
@@ -36,6 +36,7 @@ final class StoreAssessmentRequest extends FormRequest
             'max_attempts' => ['required', 'integer', 'min:1'],
             'available_from' => ['required', 'date'],
             'available_to' => ['required', 'date', 'after:available_from'],
+            'reason' => ['required', 'string', 'max:'.(int) config('assessments.reason_max_length', 1000)],
         ];
     }
 

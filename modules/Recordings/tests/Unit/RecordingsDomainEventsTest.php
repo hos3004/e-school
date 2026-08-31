@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Events\RecordingArchived;
 use Modules\Recordings\Domain\Events\RecordingBecameReady;
@@ -10,6 +11,8 @@ use Modules\Recordings\Domain\Events\RecordingExpired;
 use Modules\Recordings\Domain\Events\RecordingRegistered;
 use Modules\Recordings\Domain\Events\RecordingViewed;
 use Modules\Recordings\Domain\Models\Recording;
+
+uses(RefreshDatabase::class);
 
 it('exposes stable names, the owning module and primitive payloads', function (): void {
     $payloadOnlyPrimitives = fn (array $payload): bool => collect($payload)

@@ -21,7 +21,13 @@ final class UploadCourseMaterialController extends Controller
 
     public function __invoke(StoreCourseMaterialRequest $request): JsonResponse
     {
-        $material = $this->action->execute($request->validated());
+        $data = $request->validated();
+        $material = $this->action->execute(
+            organizationId: (string) $request->user()->organization_id,
+            data: $data,
+            reason: (string) $data['reason'],
+            actorId: (string) $request->user()->getAuthIdentifier(),
+        );
 
         return CourseMaterialResource::make($material)
             ->response()

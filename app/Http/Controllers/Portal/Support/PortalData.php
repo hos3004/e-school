@@ -213,7 +213,7 @@ final readonly class PortalData
                 'group_memberships.joined_at',
             ]);
 
-        return $groups->map(function (object $row) use ($locale, $studentProfileId): array {
+        return $groups->map(function (object $row) use ($locale, $organizationId, $studentProfileId): array {
             $groupId = (string) $row->id;
 
             return [
@@ -1047,12 +1047,10 @@ final readonly class PortalData
     public function teacherInitialReport(
         string $sessionId,
         string $staffProfileId,
-        string $organizationId,
     ): ?array {
         $row = DB::table('session_reports')
             ->where('session_id', $sessionId)
             ->where('staff_profile_id', $staffProfileId)
-            ->where('organization_id', $organizationId)
             ->first(['topics_covered', 'general_notes']);
 
         if ($row === null) {
@@ -1321,7 +1319,9 @@ final readonly class PortalData
     {
         return $this->baseSessionsQuery($organizationId)
             ->join('session_participants', 'session_participants.session_id', '=', 'sessions.id')
-            ->where('session_participants.student_profile_id', $studentProfileId);
+            ->where('session_participants.student_profile_id', $studentProfileId)
+            ->whereNull('session_participants.revoked_at')
+            ->whereNull('session_participants.deleted_at');
     }
 
     private function teacherSessionsQuery(string $staffProfileId, string $organizationId): Builder
@@ -1354,6 +1354,15 @@ final readonly class PortalData
         $endsAt = CarbonImmutable::parse((string) $row->scheduled_end, 'UTC')->utc();
         $joinBefore = max(0, (int) config('virtual-classroom.join_window.before_minutes', 0));
         $canJoinAt = $startsAt->subMinutes($joinBefore);
+        $canJoinUntil = $endsAt->addMinutes(
+            max(0, (int) config('virtual-classroom.join_window.after_minutes', 0)),
+        );
+        $status = SessionStatus::tryFrom((string) $row->status);
+        $canJoin = $status?->allowsJoining() === true
+            && CarbonImmutable::now('UTC')->betweenIncluded(
+                $canJoinAt,
+                $canJoinUntil,
+            );
 
         return [
             'id' => (string) $row->id,
@@ -1371,7 +1380,8 @@ final readonly class PortalData
             'location' => null,
             'joinUrl' => null,
             'canJoinAt' => $canJoinAt->toIso8601String(),
-            'canJoin' => false,
+            'canJoinUntil' => $canJoinUntil->toIso8601String(),
+            'canJoin' => $canJoin,
             'recordingUrl' => null,
         ];
     }

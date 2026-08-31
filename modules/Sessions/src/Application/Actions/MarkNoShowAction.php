@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Sessions\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
-use Modules\Sessions\Application\Concerns\TransitionsSessionStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\SessionNoShowRecorded;
 use Modules\Sessions\Domain\Models\Session;
@@ -15,20 +14,19 @@ use Modules\Sessions\Domain\Models\Session;
  */
 final readonly class MarkNoShowAction
 {
-    use TransitionsSessionStatus;
-
     public function __construct(
         private Dispatcher $events,
+        private TransitionSessionStatusAction $transition,
     ) {}
 
-    public function execute(Session $session, ?string $reason = null, ?string $actorId = null): Session
+    public function execute(Session $session, string $reason, string $actorId): Session
     {
-        $this->guardNotTerminal($session);
-
-        $this->applyTransition(
+        $session = $this->transition->execute(
             $session,
             SessionStatus::NoShow,
-            reason: $reason,
+            $actorId,
+            $reason,
+            'sessions.session_no_show',
         );
 
         $this->events->dispatch(new SessionNoShowRecorded(
@@ -39,6 +37,6 @@ final readonly class MarkNoShowAction
             reason: $reason,
         ));
 
-        return $session->refresh();
+        return $session;
     }
 }

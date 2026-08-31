@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Guardians\Application\Actions\VerifyGuardianLink;
 use Modules\Guardians\Domain\Events\GuardianLinkVerified;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Shared\Support\BusinessRuleViolation;
+
+uses(RefreshDatabase::class);
 
 it('verifies a link and dispatches GuardianLinkVerified', function (): void {
     Event::fake([GuardianLinkVerified::class]);

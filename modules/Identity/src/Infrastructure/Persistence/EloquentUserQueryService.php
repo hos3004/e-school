@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Identity\Infrastructure\Persistence;
 
-use Modules\Identity\Application\Queries\DTOs\UserSummary;
+use Modules\Identity\Domain\Contracts\DTOs\UserSummary;
 use Modules\Identity\Domain\Contracts\UserQueryService;
 use Modules\Identity\Domain\Models\User;
 
@@ -40,6 +40,30 @@ final readonly class EloquentUserQueryService implements UserQueryService
     public function emailExists(string $email): bool
     {
         return User::query()->where('email', $email)->exists();
+    }
+
+    public function searchUserIdsForOrganization(string $organizationId, string $term, int $limit = 100): array
+    {
+        $term = trim($term);
+
+        if ($term === '') {
+            return [];
+        }
+
+        return User::query()
+            ->forOrganization($organizationId)
+            ->where(static function ($query) use ($term): void {
+                $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
+                $query->where('name', 'ilike', $like)
+                    ->orWhere('email', 'ilike', $like)
+                    ->orWhere('username', 'ilike', $like)
+                    ->orWhere('phone', 'ilike', $like);
+            })
+            ->limit(max(1, $limit))
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
     }
 
     private static function toDto(User $user): UserSummary

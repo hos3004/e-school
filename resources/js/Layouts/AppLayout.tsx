@@ -8,6 +8,7 @@ import {
 } from 'react';
 
 import NotificationBell from '@/Components/NotificationBell';
+import { useSupportedLocales } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 
 export type AppRole = 'student' | 'teacher' | 'guardian';
@@ -104,12 +105,6 @@ const navigationByRole: Record<AppRole, readonly NavigationItem[]> = {
         { href: '/guardian/notifications', labelKey: 'navigation.notifications', icon: 'notifications' },
     ],
 };
-
-const localeOptions: ReadonlyArray<{ value: Locale; labelKey: string }> = [
-    { value: 'ar', labelKey: 'locales.ar' },
-    { value: 'en', labelKey: 'locales.en' },
-    { value: 'fr', labelKey: 'locales.fr' },
-];
 
 const focusRing =
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]';
@@ -283,6 +278,7 @@ export default function AppLayout({
     const t = useI18n();
     const { user } = page.props.auth;
     const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+    const localeOptions = useSupportedLocales();
 
     const requestedLocale = page.props.locale ?? user.locale;
     const locale: Locale = isLocale(requestedLocale) ? requestedLocale : 'ar';
@@ -434,8 +430,8 @@ export default function AppLayout({
                             value={locale}
                         >
                             {localeOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {t(option.labelKey)}
+                                <option key={option} value={option}>
+                                    {t(`locales.${option}`)}
                                 </option>
                             ))}
                         </select>

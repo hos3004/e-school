@@ -43,6 +43,9 @@ return [
 
         'rate_limit_per_minute' => (int) env('ADMISSION_REGISTRATION_RATE_LIMIT', 6),
 
+        // يُستخدم فقط لمسار التسجيل القديم بلا slug؛ روابط الحملات تحمل slug النموذج.
+        'default_form_slug' => env('ADMISSION_DEFAULT_REGISTRATION_FORM_SLUG'),
+
         // منع الطلبات المكررة لنفس الشخص.
         'duplicate_detection' => [
             'enabled' => true,
@@ -70,7 +73,7 @@ return [
 
         // الرفض بلا سبب مكتوب مرفوض على مستوى الـFormRequest.
         'rejection_requires_reason' => true,
-        'acceptance_requires_reason' => false,
+        'acceptance_requires_reason' => true,
 
         // مهلة مراجعة الطلب قبل تنبيه الإدارة (بالساعات) — 0 يعني بلا تنبيه.
         'review_sla_hours' => (int) env('ADMISSION_REVIEW_SLA_HOURS', 48),
@@ -188,6 +191,8 @@ return [
      * ربط الحساب واستعادته.
      */
     'account' => [
+        'student_role' => env('ADMISSION_STUDENT_ROLE', 'student'),
+
         // أحدهما على الأقل مطلوب للاستعادة.
         'allow_email_link' => true,
         'allow_phone_link' => true,

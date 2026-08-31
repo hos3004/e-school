@@ -11,29 +11,40 @@ use Modules\Groups\Domain\Models\GroupTeacher;
  */
 final class GroupTeacherPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
-        return $user->can('groups.view_any');
+        return $user->can('group.view');
     }
 
-    public function view($user, GroupTeacher $assignment): bool
+    public function view(mixed $user, GroupTeacher $assignment): bool
     {
-        return $user->can('groups.view_any');
+        return $user->can('group.view') && $this->sameOrganization($user, $assignment);
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
-        return $user->can('groups.assign_teacher');
+        return $user->can('group.manage');
     }
 
-    public function update($user, GroupTeacher $assignment): bool
+    public function update(mixed $user, GroupTeacher $assignment): bool
     {
-        return $user->can('groups.assign_teacher');
+        return $user->can('group.manage') && $this->sameOrganization($user, $assignment);
     }
 
     /** إلغاء الإسناد — تثبيت تاريخ النهاية دون حذف السجل. */
-    public function delete($user, GroupTeacher $assignment): bool
+    public function delete(mixed $user, GroupTeacher $assignment): bool
     {
-        return $user->can('groups.unassign_teacher');
+        return $user->can('group.manage') && $this->sameOrganization($user, $assignment);
+    }
+
+    private function sameOrganization(mixed $user, GroupTeacher $assignment): bool
+    {
+        $organizationId = data_get($user, 'organization_id');
+        $group = $assignment->group;
+
+        return is_string($organizationId)
+            && $organizationId !== ''
+            && $group !== null
+            && hash_equals($organizationId, (string) $group->organization_id);
     }
 }

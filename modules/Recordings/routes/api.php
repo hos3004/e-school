@@ -22,7 +22,7 @@ use Modules\Recordings\Presentation\Http\Controllers\StoreRecordingController;
 Route::get('/recordings', ListRecordingsController::class)->name('recordings.index');
 
 Route::post('/recordings', StoreRecordingController::class)
-    ->middleware('can:recordings.recording.create')
+    ->middleware('can:recording.delete')
     ->name('recordings.store');
 
 Route::get('/recordings/{recording}', ShowRecordingController::class)

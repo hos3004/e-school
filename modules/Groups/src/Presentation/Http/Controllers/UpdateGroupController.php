@@ -22,7 +22,13 @@ final class UpdateGroupController extends Controller
 
     public function __invoke(UpdateGroupRequest $request, Group $group): JsonResponse
     {
-        $group = $this->action->execute($group, $request->validated());
+        $data = $request->validated();
+        $group = $this->action->execute(
+            $group,
+            $data,
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $data['reason'],
+        );
 
         return GroupResource::make($group)->response();
     }

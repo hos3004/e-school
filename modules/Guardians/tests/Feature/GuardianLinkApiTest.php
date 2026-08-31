@@ -13,7 +13,9 @@ use Shared\Testing\Fixtures;
 
 function guardianLinkApiUser(): ApiUser
 {
-    return new ApiUser((string) Str::ulid());
+    return (new ApiUser((string) Str::ulid()))->forceFill([
+        'organization_id' => Fixtures::organizationId(),
+    ]);
 }
 
 it('links a student over the api and returns 201', function (): void {
@@ -29,6 +31,7 @@ it('links a student over the api and returns 201', function (): void {
             'relationship' => 'father',
             'is_primary' => true,
             'can_act_for' => true,
+            'reason' => 'verified relationship documents',
         ]);
 
     $response->assertCreated()
@@ -48,6 +51,7 @@ it('rejects an unknown relationship over the api', function (): void {
         ->postJson("/api/guardians/profiles/{$guardian->id}/students", [
             'student_profile_id' => Fixtures::studentProfileId(),
             'relationship' => 'cousin_twice_removed',
+            'reason' => 'relationship validation test',
         ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['relationship']);
@@ -59,7 +63,9 @@ it('verifies a link over the api', function (): void {
     $link = GuardianLink::factory()->create();
 
     $this->actingAs(guardianLinkApiUser())
-        ->postJson("/api/guardians/links/{$link->id}/verify")
+        ->postJson("/api/guardians/links/{$link->id}/verify", [
+            'reason' => 'reviewed relationship documents',
+        ])
         ->assertOk()
         ->assertJsonPath('data.verified_at', fn ($value): bool => is_string($value) && $value !== '');
 
@@ -74,7 +80,9 @@ it('sets a link as primary over the api and demotes the old primary', function (
     $newPrimary = GuardianLink::factory()->create(['student_profile_id' => $studentId]);
 
     $this->actingAs(guardianLinkApiUser())
-        ->postJson("/api/guardians/links/{$newPrimary->id}/primary")
+        ->postJson("/api/guardians/links/{$newPrimary->id}/primary", [
+            'reason' => 'the family selected a new primary contact',
+        ])
         ->assertOk()
         ->assertJsonPath('data.is_primary', true);
 
@@ -90,11 +98,12 @@ it('unlinks a student over the api with a mandatory reason', function (): void {
         ->deleteJson("/api/guardians/links/{$link->id}", ['reason' => 'custody changed'])
         ->assertNoContent();
 
-    expect(GuardianLink::query()->whereKey($link->id)->exists())->toBeFalse();
+    expect(GuardianLink::query()->whereKey($link->id)->exists())->toBeFalse()
+        ->and(GuardianLink::withTrashed()->whereKey($link->id)->exists())->toBeTrue();
 });
 
 it('scopes the links list to the caller when lacking view_any', function (): void {
-    Gate::define('guardians.view_any', fn (): bool => false);
+    Gate::define('guardian.view', fn (): bool => false);
 
     $userId = Fixtures::userId();
     $own = GuardianProfile::factory()->create(['user_id' => $userId]);
@@ -103,7 +112,9 @@ it('scopes the links list to the caller when lacking view_any', function (): voi
     GuardianLink::factory()->count(2)->create(['guardian_profile_id' => $own->id]);
     GuardianLink::factory()->create(['guardian_profile_id' => $other->id]);
 
-    $this->actingAs(new ApiUser($userId))
+    $this->actingAs((new ApiUser($userId))->forceFill([
+        'organization_id' => Fixtures::organizationId(),
+    ]))
         ->getJson('/api/guardians/links')
         ->assertOk()
         ->assertJsonCount(2, 'data');

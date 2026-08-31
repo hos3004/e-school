@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Enrollments\Application\Concerns;
 
 use Carbon\CarbonImmutable;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Enrollments\Domain\Models\Enrollment;
 use Modules\Enrollments\Domain\Models\EnrollmentStatusHistory;
@@ -23,8 +24,11 @@ trait TransitionsEnrollmentStatus
         Enrollment $enrollment,
         EnrollmentStatus $to,
         string $reason,
+        AuditRecorder $audit,
         ?string $actorId = null,
     ): void {
+        $reason = trim($reason);
+
         if ($reason === '') {
             throw BusinessRuleViolation::make(
                 'enrollments.transition_reason_required',
@@ -53,13 +57,27 @@ trait TransitionsEnrollmentStatus
 
         $enrollment->save();
 
+        $resolvedActorId = $actorId ?? (auth()->id() === null ? 'system' : (string) auth()->id());
+
         EnrollmentStatusHistory::create([
             'enrollment_id' => $enrollment->id,
             'from_status' => $from->value,
             'to_status' => $to->value,
             'reason' => $reason,
-            'changed_by' => $actorId ?? (string) auth()->id(),
+            'changed_by' => $resolvedActorId,
             'changed_at' => CarbonImmutable::now('UTC'),
         ]);
+
+        $audit->record(
+            organizationId: (string) $enrollment->organization_id,
+            actorId: $actorId,
+            actorType: $actorId === null ? 'system' : 'user',
+            action: 'enrollments.status_changed',
+            auditableType: 'enrollments',
+            auditableId: (string) $enrollment->getKey(),
+            oldValues: ['status' => $from->value],
+            newValues: ['status' => $to->value],
+            reason: $reason,
+        );
     }
 }

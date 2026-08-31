@@ -13,6 +13,7 @@ use Modules\Academics\Domain\Enums\ProgramType;
 use Modules\Academics\Domain\Models\Program;
 use Modules\Academics\Domain\Models\ProgramEligibility;
 use Modules\Academics\Domain\ValueObjects\ApplicantFacts;
+use Shared\Testing\Fixtures;
 use Tests\TestCase;
 
 final class ProgramEligibilityTest extends TestCase
@@ -22,10 +23,12 @@ final class ProgramEligibilityTest extends TestCase
     public function test_empty_countries_list_means_all_countries_eligible(): void
     {
         $program = Program::create([
-            'organization_id' => (string) Str::ulid(),
+            'organization_id' => Fixtures::organizationId(),
             'code' => 'PROG-ALL',
             'name' => ['ar' => 'عام للجميع'],
             'program_type' => ProgramType::Ongoing,
+            'default_session_minutes' => 60,
+            'currency' => 'EGP',
         ]);
 
         ProgramEligibility::create([
@@ -52,10 +55,12 @@ final class ProgramEligibilityTest extends TestCase
     public function test_unlisted_country_triggers_violation(): void
     {
         $program = Program::create([
-            'organization_id' => (string) Str::ulid(),
+            'organization_id' => Fixtures::organizationId(),
             'code' => 'PROG-RESTRICTED',
             'name' => ['ar' => 'محدد بالدولة'],
             'program_type' => ProgramType::Ongoing,
+            'default_session_minutes' => 60,
+            'currency' => 'EGP',
         ]);
 
         $allowedCountryId = (string) Str::ulid();
@@ -82,10 +87,12 @@ final class ProgramEligibilityTest extends TestCase
     public function test_age_out_of_range_triggers_violation(): void
     {
         $program = Program::create([
-            'organization_id' => (string) Str::ulid(),
+            'organization_id' => Fixtures::organizationId(),
             'code' => 'PROG-AGE',
             'name' => ['ar' => 'محدد بالعمر'],
             'program_type' => ProgramType::Ongoing,
+            'default_session_minutes' => 60,
+            'currency' => 'EGP',
         ]);
 
         ProgramEligibility::create([
@@ -110,10 +117,12 @@ final class ProgramEligibilityTest extends TestCase
     public function test_teacher_gender_rule_retrieved_via_contract(): void
     {
         $program = Program::create([
-            'organization_id' => (string) Str::ulid(),
+            'organization_id' => Fixtures::organizationId(),
             'code' => 'PROG-GENDER',
             'name' => ['ar' => 'محدد بالجنس'],
             'program_type' => ProgramType::Ongoing,
+            'default_session_minutes' => 60,
+            'currency' => 'EGP',
         ]);
 
         ProgramEligibility::create([

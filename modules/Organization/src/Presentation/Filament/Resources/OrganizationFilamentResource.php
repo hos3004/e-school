@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Modules\Organization\Domain\Enums\Weekday;
 use Modules\Organization\Domain\Models\Organization;
+use Shared\Support\Locales;
 
 final class OrganizationFilamentResource extends Resource
 {
@@ -67,11 +68,7 @@ final class OrganizationFilamentResource extends Resource
                 ->schema([
                     Select::make('default_locale')
                         ->label(__('organization::fields.default_locale'))
-                        ->options([
-                            'ar' => 'العربية',
-                            'en' => 'English',
-                            'fr' => 'Français',
-                        ])
+                        ->options(Locales::options('identity::locales.'))
                         ->required(),
                     Select::make('week_starts_on')
                         ->label(__('organization::fields.week_starts_on'))

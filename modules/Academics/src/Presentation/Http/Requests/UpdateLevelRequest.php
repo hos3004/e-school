@@ -37,6 +37,7 @@ final class UpdateLevelRequest extends FormRequest
             'name.ar' => ['required_with:name', 'string', 'max:255'],
             'name.en' => ['nullable', 'string', 'max:255'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'reason' => ['required', 'string', 'min:'.(int) config('academics.reason.minimum_length'), 'max:'.(int) config('academics.reason.maximum_length')],
         ];
     }
 }

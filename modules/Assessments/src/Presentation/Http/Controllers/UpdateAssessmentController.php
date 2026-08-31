@@ -26,7 +26,13 @@ final class UpdateAssessmentController extends Controller
 
         Gate::authorize('update', $assessmentModel);
 
-        $this->action->execute($assessmentModel, $request->validated());
+        // السبب يخص قيد التدقيق وحده — لا يُمرَّر كسمة على نموذج الاختبار.
+        $this->action->execute(
+            $assessmentModel,
+            $request->safe()->except('reason'),
+            (string) $request->user()?->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return new AssessmentResource($assessmentModel->refresh());
     }

@@ -17,54 +17,55 @@ use Modules\Enrollments\Domain\Models\Enrollment;
  */
 final class EnrollmentPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
         return $user->can('enrollment.view');
     }
 
-    public function view($user, Enrollment $enrollment): bool
+    public function view(mixed $user, Enrollment $enrollment): bool
     {
         return $user->can('enrollment.view')
             && $enrollment->organization_id === $user->organization_id;
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
         return $user->can('enrollment.create');
     }
 
-    public function update($user, Enrollment $enrollment): bool
+    public function update(mixed $user, Enrollment $enrollment): bool
     {
         return $user->can('enrollment.create')
             && $enrollment->organization_id === $user->organization_id;
     }
 
-    public function delete($user, Enrollment $enrollment): bool
+    public function delete(mixed $user, Enrollment $enrollment): bool
     {
         return false;
     }
 
-    public function pause($user, Enrollment $enrollment): bool
+    public function pause(mixed $user, Enrollment $enrollment): bool
     {
         return $user->can('enrollment.pause')
             && $enrollment->organization_id === $user->organization_id;
     }
 
-    public function freeze($user, Enrollment $enrollment): bool
+    public function freeze(mixed $user, Enrollment $enrollment): bool
     {
         return $user->can('enrollment.freeze')
             && $enrollment->organization_id === $user->organization_id;
     }
 
     /** طلب فك التجميد: الطالب صاحب القيد أو من يملك الصلاحية. */
-    public function requestReactivation($user, Enrollment $enrollment): bool
+    public function requestReactivation(mixed $user, Enrollment $enrollment): bool
     {
-        return ($enrollment->student_profile_id === $user->profile?->id)
-            || $user->can('enrollment.pause');
+        return $enrollment->organization_id === $user->organization_id
+            && (($enrollment->student_profile_id === data_get($user, 'profile.id'))
+                || $user->can('enrollment.pause'));
     }
 
     /** الاعتماد النهائي لفك التجميد — بصلاحية enrollment.reactivate حصريًا. */
-    public function reactivate($user, Enrollment $enrollment): bool
+    public function reactivate(mixed $user, Enrollment $enrollment): bool
     {
         return $user->can('enrollment.reactivate')
             && $enrollment->organization_id === $user->organization_id;

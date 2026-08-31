@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Domain\Events\RolePermissionsSynced;
 use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Domain\Models\Role;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -25,6 +26,7 @@ final readonly class SyncRolePermissionsAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     /**
@@ -35,6 +37,7 @@ final readonly class SyncRolePermissionsAction
         array $permissionNames,
         ?string $actorId = null,
         ?string $organizationId = null,
+        ?string $reason = null,
     ): void {
         /** @var Role|null $role */
         $role = Role::query()
@@ -68,7 +71,7 @@ final readonly class SyncRolePermissionsAction
         /** @var list<string> $detached */
         $detached = [];
 
-        DB::transaction(function () use ($role, $permissions, &$attached, &$detached): void {
+        DB::transaction(function () use ($role, $permissions, $actorId, $organizationId, $reason, &$attached, &$detached): void {
             $existing = DB::table('role_has_permissions')
                 ->where('role_id', $role->getKey())
                 ->pluck('permission_id')
@@ -92,6 +95,20 @@ final readonly class SyncRolePermissionsAction
                     ->delete();
 
                 $detached[] = (string) $toDetach;
+            }
+
+            if (($attached !== [] || $detached !== []) && $actorId !== null && $organizationId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: $organizationId,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'accesscontrol.role_permissions_synced',
+                    auditableType: 'roles',
+                    auditableId: (string) $role->getKey(),
+                    oldValues: ['permission_ids' => array_values(array_diff($permissions->modelKeys(), $attached))],
+                    newValues: ['permission_ids' => $permissions->modelKeys()],
+                    reason: $reason,
+                );
             }
         });
 

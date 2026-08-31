@@ -103,8 +103,7 @@ final class ReportingSeeder extends Seeder
 
     private function seedTodaySnapshot(string $organizationId): void
     {
-        app(RecordOrganizationSnapshotAction::class)->execute([
-            'organization_id' => $organizationId,
+        app(RecordOrganizationSnapshotAction::class)->execute($organizationId, [
             'snapshot_date' => CarbonImmutable::now('UTC')->toDateString(),
             'students_active' => StudentDashboard::query()
                 ->forOrganization($organizationId)

@@ -6,6 +6,7 @@ use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Modules\VirtualClassroom\Domain\Contracts\SupportsWebhookRegistration;
 use Modules\VirtualClassroom\Domain\Enums\ClassroomEventType;
 use Modules\VirtualClassroom\Domain\Enums\JoinRole;
 use Modules\VirtualClassroom\Domain\Exceptions\ClassroomProviderException;
@@ -234,6 +235,52 @@ it('verifies the official webhook checksum before parsing the event', function (
 
     expect(fn () => $provider->parseWebhook($invalid))
         ->toThrow(ClassroomProviderException::class);
+});
+
+it('registers, lists, and removes provider webhooks through the BBB API', function (): void {
+    Http::fake(function (ClientRequest $request) {
+        return match (true) {
+            str_contains($request->url(), '/hooks/create?') => Http::response(<<<'XML'
+                <response>
+                    <returncode>SUCCESS</returncode>
+                    <hookID>hook-1</hookID>
+                    <permanentHook>false</permanentHook>
+                </response>
+                XML),
+            str_contains($request->url(), '/hooks/list?') => Http::response(<<<'XML'
+                <response>
+                    <returncode>SUCCESS</returncode>
+                    <hooks>
+                        <hook>
+                            <hookID>hook-1</hookID>
+                            <callbackURL>https://eschool.test/api/webhooks/classroom</callbackURL>
+                            <meetingID>meeting-1</meetingID>
+                            <permanentHook>false</permanentHook>
+                        </hook>
+                    </hooks>
+                </response>
+                XML),
+            str_contains($request->url(), '/hooks/destroy?') => Http::response(
+                '<response><returncode>SUCCESS</returncode><removed>true</removed></response>',
+            ),
+            default => Http::response('not found', 404),
+        };
+    });
+
+    $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
+
+    expect($provider)->toBeInstanceOf(SupportsWebhookRegistration::class);
+
+    $registered = $provider->registerWebhook('https://eschool.test/api/webhooks/classroom', 'meeting-1');
+    $hooks = $provider->registeredWebhooks('meeting-1');
+    $provider->removeWebhook('hook-1');
+
+    expect($registered->hookId)->toBe('hook-1')
+        ->and($registered->externalId)->toBe('meeting-1')
+        ->and($hooks)->toHaveCount(1)
+        ->and($hooks[0]->callbackUrl)->toBe('https://eschool.test/api/webhooks/classroom');
+
+    Http::assertSentCount(3);
 });
 
 it('declares runtime recording control unsupported instead of calling a fake API', function (): void {

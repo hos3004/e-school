@@ -8,7 +8,15 @@ declare(strict_types=1);
 */
 
 return [
+    'admin_hub' => [
+        'max_items' => 25,
+    ],
+
     'pagination' => [
         'per_page' => 15,
+    ],
+
+    'reporting' => [
+        'max_items' => 10001,
     ],
 ];

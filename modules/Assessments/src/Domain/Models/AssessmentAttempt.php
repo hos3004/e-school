@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -23,14 +24,17 @@ use Shared\Concerns\HasUlid;
  * @property bool|null $passed
  * @property string|null $graded_by
  * @property CarbonImmutable|null $graded_at
+ * @property string|null $feedback
  * @property array<string, mixed> $answers
  * @property CarbonImmutable $created_at
+ * @property CarbonImmutable|null $deleted_at
  * @property-read Assessment $assessment
  */
 final class AssessmentAttempt extends Model
 {
     use HasModuleFactory;
     use HasUlid;
+    use SoftDeletes;
 
     public $timestamps = false;
 
@@ -47,6 +51,7 @@ final class AssessmentAttempt extends Model
         'passed',
         'graded_by',
         'graded_at',
+        'feedback',
         'answers',
         'created_at',
     ];

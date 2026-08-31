@@ -8,6 +8,8 @@ use Modules\Guardians\Application\Listeners\DeactivateLinksWhenGuardianArchived;
 use Modules\Guardians\Application\Policies\GuardianLinkPolicy;
 use Modules\Guardians\Application\Policies\GuardianProfilePolicy;
 use Modules\Guardians\Application\Queries\GuardianQueryService;
+use Modules\Guardians\Application\Services\GuardianLinkOperationService;
+use Modules\Guardians\Domain\Contracts\GuardianLinkOperations;
 use Modules\Guardians\Domain\Contracts\GuardianQuery;
 use Modules\Guardians\Domain\Events\GuardianProfileArchived;
 use Modules\Guardians\Domain\Models\GuardianLink;
@@ -51,6 +53,7 @@ final class GuardiansServiceProvider extends BaseModuleServiceProvider
     {
         return [
             GuardianQuery::class => GuardianQueryService::class,
+            GuardianLinkOperations::class => GuardianLinkOperationService::class,
         ];
     }
 }

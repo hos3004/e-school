@@ -14,6 +14,7 @@ return [
         'completed' => 'مُختمة',
     ],
     'membership' => [
+        'pending' => 'معلّق',
         'active' => 'منتسب',
         'left' => 'غادر',
     ],

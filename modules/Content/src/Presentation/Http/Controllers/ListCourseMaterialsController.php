@@ -19,7 +19,7 @@ final class ListCourseMaterialsController extends Controller
 {
     public function __invoke(ListCourseMaterialsRequest $request): AnonymousResourceCollection
     {
-        $query = CourseMaterial::query();
+        $query = CourseMaterial::query()->forOrganization((string) $request->user()->organization_id);
 
         if ($courseId = $request->validated('course_id')) {
             $query->forCourse((string) $courseId);
@@ -33,7 +33,7 @@ final class ListCourseMaterialsController extends Controller
             $query->active();
         }
 
-        /** @var LengthAwarePaginator $page */
+        /** @var LengthAwarePaginator<int, CourseMaterial> $page */
         $page = $query
             ->orderByDesc('created_at')
             ->paginate((int) ($request->validated('per_page') ?? 15));

@@ -21,6 +21,7 @@ final class AcceptRegistrationApplicationController extends Controller
         return RegistrationApplicationResource::make($this->action->execute(
             $registrationApplication,
             (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
         ));
     }
 }

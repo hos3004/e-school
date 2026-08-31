@@ -16,7 +16,8 @@ final class MonthlyReportPolicy
 {
     public function viewAny($user): bool
     {
-        return $user->can('academicreports.monthly_report.view_any');
+        return $user->can('report.view')
+            || $user->can('academicreports.monthly_report.view_any');
     }
 
     public function view($user, MonthlyReport $report): bool

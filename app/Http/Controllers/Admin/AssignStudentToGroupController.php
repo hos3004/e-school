@@ -25,6 +25,7 @@ final class AssignStudentToGroupController extends Controller
             courseId: (string) $data['course_id'],
             actorId: (string) $user->getAuthIdentifier(),
             correlationId: $request->header('X-Correlation-Id'),
+            reason: (string) $data['reason'],
         );
 
         return response()->json([

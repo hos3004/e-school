@@ -27,7 +27,7 @@ final readonly class CreateGuardianProfile
      */
     public function execute(array $data): GuardianProfile
     {
-        $existing = GuardianProfile::query()
+        $existing = GuardianProfile::query()->withTrashed()
             ->where('user_id', $data['user_id'])
             ->exists();
 

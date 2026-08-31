@@ -14,6 +14,7 @@ return [
         'completed' => 'Completed',
     ],
     'membership' => [
+        'pending' => 'Pending',
         'active' => 'Enrolled',
         'left' => 'Left',
     ],

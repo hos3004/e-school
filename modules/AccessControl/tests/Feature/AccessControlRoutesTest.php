@@ -79,6 +79,7 @@ it('forces new roles into the actor tenant and rejects a supplied tenant', funct
     $response = $this->actingAs($this->actor)->postJson('/api/access-control/roles', [
         'name' => 'tenant-custom',
         'guard_name' => 'web',
+        'reason' => 'new academic operations role approved',
     ])->assertCreated();
 
     expect(Role::query()->findOrFail($response->json('data.id'))->organization_id)
@@ -87,6 +88,7 @@ it('forces new roles into the actor tenant and rejects a supplied tenant', funct
     $this->actingAs($this->actor)->postJson('/api/access-control/roles', [
         'name' => 'spoofed-custom',
         'organization_id' => $this->otherOrganizationId,
+        'reason' => 'cross-tenant attempt',
     ])->assertUnprocessable()->assertJsonValidationErrors(['organization_id']);
 });
 
@@ -99,14 +101,37 @@ it('returns not found for cross-tenant role update delete and sync', function ()
     ]);
 
     $this->actingAs($this->actor)
-        ->putJson("/api/access-control/roles/{$role->id}", ['name' => 'hijacked'])
+        ->putJson("/api/access-control/roles/{$role->id}", [
+            'name' => 'hijacked',
+            'reason' => 'cross-tenant attempt',
+        ])
         ->assertNotFound();
     $this->actingAs($this->actor)
-        ->deleteJson("/api/access-control/roles/{$role->id}")
+        ->deleteJson("/api/access-control/roles/{$role->id}", ['reason' => 'cross-tenant attempt'])
         ->assertNotFound();
     $this->actingAs($this->actor)
-        ->putJson("/api/access-control/roles/{$role->id}/permissions", ['permissions' => []])
+        ->putJson("/api/access-control/roles/{$role->id}/permissions", [
+            'permissions' => [],
+            'reason' => 'cross-tenant attempt',
+        ])
         ->assertNotFound();
+});
+
+it('requires a written reason for every access mutation', function (): void {
+    $target = User::factory()->inOrganization($this->organizationId)->create();
+
+    $this->actingAs($this->actor)
+        ->postJson('/api/access-control/roles', ['name' => 'missing-reason'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['reason']);
+
+    $this->actingAs($this->actor)
+        ->postJson('/api/access-control/assignments/permissions', [
+            'permission' => 'admin.panel.access',
+            'model_id' => $target->id,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['reason']);
 });
 
 it('assigns and revokes roles only for users in the actor tenant', function (): void {
@@ -118,7 +143,12 @@ it('assigns and revokes roles only for users in the actor tenant', function (): 
         'guard_name' => GuardName::Web,
         'is_system' => false,
     ]);
-    $payload = ['role_id' => $role->id, 'model_id' => $target->id, 'model_type' => 'attacker-controlled'];
+    $payload = [
+        'role_id' => $role->id,
+        'model_id' => $target->id,
+        'model_type' => 'attacker-controlled',
+        'reason' => 'approved assignment request',
+    ];
 
     $this->actingAs($this->actor)
         ->postJson('/api/access-control/assignments/roles', $payload)
@@ -135,7 +165,11 @@ it('assigns and revokes roles only for users in the actor tenant', function (): 
         ->assertNoContent();
 
     $this->actingAs($this->actor)
-        ->postJson('/api/access-control/assignments/roles', ['role_id' => $role->id, 'model_id' => $foreign->id])
+        ->postJson('/api/access-control/assignments/roles', [
+            'role_id' => $role->id,
+            'model_id' => $foreign->id,
+            'reason' => 'cross-tenant attempt',
+        ])
         ->assertNotFound();
 });
 
@@ -149,7 +183,11 @@ it('assigns and revokes a global system role only to a same-tenant user', functi
         'is_system' => true,
     ]);
 
-    $payload = ['role_id' => $role->id, 'model_id' => $target->id];
+    $payload = [
+        'role_id' => $role->id,
+        'model_id' => $target->id,
+        'reason' => 'approved global role assignment',
+    ];
     $this->actingAs($this->actor)
         ->postJson('/api/access-control/assignments/roles', $payload)
         ->assertCreated();
@@ -161,13 +199,18 @@ it('assigns and revokes a global system role only to a same-tenant user', functi
         ->postJson('/api/access-control/assignments/roles', [
             'role_id' => $role->id,
             'model_id' => $foreign->id,
+            'reason' => 'cross-tenant attempt',
         ])->assertNotFound();
 });
 
 it('grants then revokes a direct permission only for a same-tenant account', function (): void {
     $target = User::factory()->inOrganization($this->organizationId)->create();
     $foreign = User::factory()->inOrganization($this->otherOrganizationId)->create();
-    $payload = ['permission' => 'admin.panel.access', 'model_id' => $target->id];
+    $payload = [
+        'permission' => 'admin.panel.access',
+        'model_id' => $target->id,
+        'reason' => 'temporary operational access request AC-2026-108',
+    ];
 
     $this->actingAs($this->actor)
         ->postJson('/api/access-control/assignments/permissions', $payload)
@@ -186,6 +229,7 @@ it('grants then revokes a direct permission only for a same-tenant account', fun
         ->postJson('/api/access-control/assignments/permissions', [
             'permission' => 'admin.panel.access',
             'model_id' => $foreign->id,
+            'reason' => 'cross-tenant attempt',
         ])->assertNotFound();
 });
 

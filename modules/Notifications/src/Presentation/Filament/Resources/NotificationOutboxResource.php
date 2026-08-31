@@ -18,6 +18,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Notifications\Application\Actions\CancelNotificationAction;
 use Modules\Notifications\Application\Actions\MarkNotificationAsReadAction;
 use Modules\Notifications\Application\Actions\RetryNotificationAction;
@@ -194,10 +195,16 @@ final class NotificationOutboxResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('user_id')
-                    ->label(__('notifications::fields.user_id'))
-                    ->searchable(),
+                    ->label(__('notifications::fields.recipient'))
+                    ->formatStateUsing(fn (mixed $state, NotificationOutbox $record): string => self::accountName(
+                        (string) $record->organization_id,
+                        (string) $state,
+                    )),
                 TextColumn::make('category')
                     ->label(__('notifications::fields.category'))
+                    // كان يظهر المفتاح الخام — يُعرض الاسم المترجم للفئة.
+                    ->formatStateUsing(fn ($state): string => (string) (__('notifications::categories.'.(string) $state))
+                        ?: (string) $state)
                     ->badge()
                     ->sortable(),
                 TextColumn::make('channel')
@@ -250,6 +257,9 @@ final class NotificationOutboxResource extends Resource
                     ->toggleable(),
                 TextColumn::make('last_manual_retry_by')
                     ->label(__('notifications::fields.last_manual_retry_by'))
+                    ->formatStateUsing(fn (mixed $state, NotificationOutbox $record): string => $state === null
+                        ? (string) __('notifications::messages.not_available')
+                        : self::accountName((string) $record->organization_id, (string) $state))
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('last_manual_retry_at')
                     ->label(__('notifications::fields.last_manual_retry_at'))
@@ -347,10 +357,18 @@ final class NotificationOutboxResource extends Resource
             ->modalDescription(__('notifications::actions.manual_retry_description'))
             ->authorize('retry')
             ->visible(fn (NotificationOutbox $record): bool => $record->status === OutboxStatus::Failed)
-            ->action(function (NotificationOutbox $record): void {
+            ->form([
+                Textarea::make('reason')
+                    ->label(__('notifications::fields.retry_reason'))
+                    ->required()
+                    ->minLength(3)
+                    ->maxLength(1000),
+            ])
+            ->action(function (NotificationOutbox $record, array $data): void {
                 app(RetryNotificationAction::class)->executeManually(
                     $record,
                     (string) auth()->id(),
+                    (string) $data['reason'],
                 );
 
                 Notification::make()
@@ -388,5 +406,14 @@ final class NotificationOutboxResource extends Resource
                     ->success()
                     ->send();
             });
+    }
+
+    private static function accountName(string $organizationId, string $userId): string
+    {
+        $account = app(UserAccountDirectory::class)->find($organizationId, $userId);
+
+        return $account === null
+            ? (string) __('notifications::messages.not_available')
+            : $account->name;
     }
 }

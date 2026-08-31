@@ -7,11 +7,13 @@ namespace Modules\Sessions\Application\Actions;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Sessions\Domain\Enums\ApologyStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\TeacherApologySubmitted;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\TeacherApology;
+use Modules\Staff\Domain\Contracts\StaffQueries;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -28,6 +30,8 @@ final readonly class SubmitTeacherApologyAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
+        private StaffQueries $staff,
     ) {}
 
     public function execute(
@@ -77,7 +81,8 @@ final readonly class SubmitTeacherApologyAction
 
         $minNotice = (int) config('scheduling.apology.min_notice_minutes', 120);
 
-        $apology = DB::transaction(function () use ($session, $staffProfileId, $reason, $now, $noticeMinutes, $minNotice): TeacherApology {
+        $actorId = $this->teacherUserId((string) $session->organization_id, $staffProfileId);
+        $apology = DB::transaction(function () use ($session, $staffProfileId, $reason, $now, $noticeMinutes, $minNotice, $actorId): TeacherApology {
             $apology = new TeacherApology;
             $apology->fill([
                 'organization_id' => (string) $session->organization_id,
@@ -91,6 +96,24 @@ final readonly class SubmitTeacherApologyAction
             ]);
             $apology->save();
 
+            $this->audit->record(
+                organizationId: (string) $session->organization_id,
+                actorId: $actorId,
+                actorType: $actorId === null ? 'system' : 'user',
+                action: 'sessions.teacher_apology_submitted',
+                auditableType: 'teacher_apologies',
+                auditableId: (string) $apology->getKey(),
+                oldValues: null,
+                newValues: [
+                    'session_id' => (string) $session->getKey(),
+                    'staff_profile_id' => $staffProfileId,
+                    'status' => ApologyStatus::Submitted->value,
+                    'is_late_notice' => $noticeMinutes < $minNotice,
+                    'notice_minutes' => $noticeMinutes,
+                ],
+                reason: trim($reason),
+            );
+
             return $apology;
         });
 
@@ -100,11 +123,11 @@ final readonly class SubmitTeacherApologyAction
             courseId: (string) $session->course_id,
             staffProfileId: $staffProfileId,
             apologyId: (string) $apology->id,
-            teacherUserId: $this->teacherUserId($staffProfileId),
+            teacherUserId: $actorId,
             isLateNotice: (bool) $apology->is_late_notice,
             noticeMinutes: $noticeMinutes,
             scheduledStart: CarbonImmutable::instance($session->scheduled_start)->toIso8601String(),
-            actorId: $this->teacherUserId($staffProfileId),
+            actorId: $actorId,
         ));
 
         return $apology;
@@ -113,16 +136,11 @@ final readonly class SubmitTeacherApologyAction
     /**
      * معرّف مستخدم المعلم — يحتاجه موديول Notifications ليعرف لمن يرسل.
      *
-     * نقرأ بالجدول لا بنموذج موديول Staff: استيراد نماذج الموديولات الأخرى
-     * ممنوع وتفرضه اختبارات المعمارية.
+     * عقد Staff يعيد هوية المستخدم دون تسريب نموذج أو جدول الموديول المالك.
      */
-    private function teacherUserId(string $staffProfileId): ?string
+    private function teacherUserId(string $organizationId, string $staffProfileId): ?string
     {
-        $id = DB::table('staff_profiles')
-            ->where('id', $staffProfileId)
-            ->value('user_id');
-
-        return is_string($id) && $id !== '' ? $id : null;
+        return $this->staff->userIdForProfile($organizationId, $staffProfileId);
     }
 
     /**

@@ -21,7 +21,11 @@ final class StoreOrganizationSnapshotController extends Controller
 
     public function __invoke(StoreOrganizationSnapshotRequest $request): JsonResponse
     {
-        $snapshot = $this->action->execute($request->validated());
+        $organizationId = data_get($request->user(), 'organization_id');
+
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403);
+
+        $snapshot = $this->action->execute($organizationId, $request->validated());
 
         return OrganizationSnapshotResource::make($snapshot)
             ->response()

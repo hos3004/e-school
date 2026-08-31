@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Groups\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Groups\Domain\Events\GroupArchived;
 use Modules\Groups\Domain\Models\Group;
 use Shared\Support\BusinessRuleViolation;
@@ -18,15 +19,30 @@ final readonly class ArchiveGroupAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
-    public function execute(Group $group, string $reason): Group
+    public function execute(Group $group, string $reason, ?string $actorId = null): Group
     {
         $this->assertReasonGiven($reason);
         $this->assertNotArchived($group);
 
-        $this->transaction->run(function () use ($group): void {
+        $this->transaction->run(function () use ($group, $reason, $actorId): void {
             $group->delete();
+
+            if ($actorId !== null) {
+                $this->audit->record(
+                    organizationId: (string) $group->organization_id,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'groups.group_archived',
+                    auditableType: 'groups',
+                    auditableId: (string) $group->getKey(),
+                    oldValues: ['archived_at' => null],
+                    newValues: ['archived_at' => now()->utc()->toIso8601String()],
+                    reason: trim($reason),
+                );
+            }
         });
 
         $this->events->dispatch(new GroupArchived(

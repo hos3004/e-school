@@ -29,14 +29,12 @@ final class RecordingPolicy
 
     public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('recording.view')
-            && data_get($user, 'organization_id') !== null;
+        return false;
     }
 
     public function update(Authenticatable&Authorizable $user, Recording $recording): bool
     {
-        return $user->can('recording.delete')
-            && $recording->organization_id === data_get($user, 'organization_id');
+        return false;
     }
 
     public function delete(Authenticatable&Authorizable $user, Recording $recording): bool

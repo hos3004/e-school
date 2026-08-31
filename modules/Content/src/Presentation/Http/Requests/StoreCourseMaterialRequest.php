@@ -15,7 +15,7 @@ final class StoreCourseMaterialRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('content.material.create');
+        return $this->user()->can('content.manage');
     }
 
     /**
@@ -32,6 +32,11 @@ final class StoreCourseMaterialRequest extends FormRequest
             'title' => ['required', 'array'],
             'title.ar' => ['required_with:title', 'string', 'max:255'],
             'title.en' => ['nullable', 'string', 'max:255'],
+            'title.fr' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'array'],
+            'description.ar' => ['nullable', 'string'],
+            'description.en' => ['nullable', 'string'],
+            'description.fr' => ['nullable', 'string'],
             'type' => ['required', 'string', Rule::enum(MaterialType::class)],
             'disk' => ['required_if:type,'.MaterialType::File->value, 'nullable', 'string', 'max:64'],
             'path' => [
@@ -53,6 +58,8 @@ final class StoreCourseMaterialRequest extends FormRequest
             'size_bytes' => ['nullable', 'integer', 'min:0', 'max:'.($maxSizeMb * 1024 * 1024)],
             'visible_from' => ['nullable', 'date'],
             'visible_to' => ['nullable', 'date', 'after_or_equal:visible_from'],
+            'display_order' => ['nullable', 'integer', 'min:0'],
+            'reason' => ['required', 'string', 'max:'.config('content.reason_max_length')],
         ];
     }
 

@@ -73,6 +73,38 @@ student_profiles (
 -- INDEX (organization_id, student_code)
 -- INDEX USING GIN (to_tsvector) على الاسم للبحث التقريبي
 
+registration_forms (
+  id, organization_id, slug UNIQUE,
+  title JSONB, description JSONB NULL,
+  is_active BOOLEAN,
+  created_at, updated_at, deleted_at
+)
+-- INDEX (organization_id, is_active)
+
+registration_questions (
+  id, organization_id, registration_form_id NULL,
+  question JSONB, type, options JSONB NULL,
+  is_required BOOLEAN, is_active BOOLEAN, is_filterable BOOLEAN,
+  sort_order INT,
+  created_at, updated_at, deleted_at
+)
+-- CHECK type IN (text, textarea, select, radio, checkbox, number)
+-- CHECK is_filterable = false OR type IN (select, radio, number)
+-- INDEX (registration_form_id, is_active, sort_order)
+
+registration_applications (
+  id, organization_id, registration_form_id NULL,
+  user_id NULL, student_profile_id NULL,
+  status, full_name, date_of_birth, gender,
+  country_id, region_id, email NULL, phone NULL,
+  evaluation_answers JSONB NULL,
+  submitted_at NULL, reviewed_by NULL, reviewed_at NULL,
+  decision_reason NULL, duplicate_of_application_id NULL,
+  created_at, updated_at, deleted_at
+)
+-- INDEX (organization_id, registration_form_id, submitted_at)
+-- INDEX USING GIN (evaluation_answers jsonb_path_ops)
+
 guardian_profiles (
   id, organization_id, user_id UNIQUE,
   national_id_last4, occupation, preferred_contact_channel,

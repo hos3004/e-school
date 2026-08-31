@@ -12,8 +12,11 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
+use Modules\Scheduling\Application\Queries\SchedulingAdministrationQueryService;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
+use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
  * طلبات التأجيل — الطريق الوحيد المتاح للطالب لتغيير موعد حصة،
@@ -24,20 +27,22 @@ use Modules\Scheduling\Domain\Models\PostponementRequest;
  */
 final class PostponementRequestResource extends Resource
 {
+    use ScopesFilamentToOrganization;
+
     protected static ?string $model = PostponementRequest::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clock';
 
     protected static ?int $navigationSort = 40;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('scheduling::filament.group');
     }
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('session.postpone.approve') ?? false;
+        return auth()->user()?->can('viewAny', PostponementRequest::class) ?? false;
     }
 
     public static function canCreate(): bool
@@ -46,7 +51,7 @@ final class PostponementRequestResource extends Resource
         return false;
     }
 
-    public static function canDelete($record): bool
+    public static function canDelete(Model $record): bool
     {
         return false;
     }
@@ -72,11 +77,13 @@ final class PostponementRequestResource extends Resource
             ->columns([
                 TextColumn::make('session_id')
                     ->label(__('scheduling::filament.postponement.session'))
-                    ->searchable(),
+                    ->formatStateUsing(fn (mixed $state, PostponementRequest $record): string => (string) self::details($record)['session'])
+                    ->wrap(),
 
                 TextColumn::make('requested_for_student_id')
                     ->label(__('scheduling::filament.postponement.student'))
-                    ->searchable(),
+                    ->formatStateUsing(fn (mixed $state, PostponementRequest $record): string => (string) self::details($record)['student'])
+                    ->wrap(),
 
                 TextColumn::make('status')
                     ->label(__('scheduling::filament.postponement.status'))
@@ -95,7 +102,7 @@ final class PostponementRequestResource extends Resource
 
                 TextColumn::make('awaiting')
                     ->label(__('scheduling::filament.postponement.awaiting'))
-                    ->state(fn (PostponementRequest $record): string => match ($record->status->awaitingActionFrom()) {
+                    ->state(fn (PostponementRequest $record): string => match ($record->requires_admin_review ? 'admin' : $record->status->awaitingActionFrom()) {
                         'teacher' => __('scheduling::filament.awaiting.teacher'),
                         'student' => __('scheduling::filament.awaiting.student'),
                         'admin' => __('scheduling::filament.awaiting.admin'),
@@ -157,5 +164,14 @@ final class PostponementRequestResource extends Resource
             'index' => PostponementRequestResource\Pages\ListPostponementRequests::route('/'),
             'view' => PostponementRequestResource\Pages\ViewPostponementRequest::route('/{record}'),
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private static function details(PostponementRequest $record): array
+    {
+        return app(SchedulingAdministrationQueryService::class)->postponementDetails(
+            (string) $record->organization_id,
+            $record,
+        );
     }
 }

@@ -6,7 +6,9 @@ namespace Modules\AccessControl\Infrastructure\Providers;
 
 use Modules\AccessControl\Application\Policies\PermissionPolicy;
 use Modules\AccessControl\Application\Policies\RolePolicy;
+use Modules\AccessControl\Application\Services\RoleAssignmentService;
 use Modules\AccessControl\Domain\Contracts\AccessControlQuerier;
+use Modules\AccessControl\Domain\Contracts\RoleAssignmentGateway;
 use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Domain\Models\Role;
 use Modules\AccessControl\Infrastructure\Authorization\PermissionGateRegistrar;
@@ -55,6 +57,14 @@ final class AccessControlServiceProvider extends BaseModuleServiceProvider
     {
         return [
             AccessControlQuerier::class => AccessControlQueryService::class,
+        ];
+    }
+
+    /** @return array<class-string, class-string> */
+    protected function bindings(): array
+    {
+        return [
+            RoleAssignmentGateway::class => RoleAssignmentService::class,
         ];
     }
 }

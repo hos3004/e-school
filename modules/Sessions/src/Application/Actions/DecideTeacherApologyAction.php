@@ -7,11 +7,13 @@ namespace Modules\Sessions\Application\Actions;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Sessions\Domain\Enums\ApologyStatus;
 use Modules\Sessions\Domain\Events\TeacherApologyDecided;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\TeacherApology;
 use Modules\Sessions\Domain\Services\ApologyEscalationEvaluator;
+use Modules\Staff\Domain\Contracts\StaffQueries;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -33,6 +35,8 @@ final readonly class DecideTeacherApologyAction
     public function __construct(
         private Dispatcher $events,
         private ApologyEscalationEvaluator $escalation,
+        private AuditRecorder $audit,
+        private StaffQueries $staff,
     ) {}
 
     public function approve(
@@ -40,8 +44,18 @@ final readonly class DecideTeacherApologyAction
         string $decidedBy,
         ?string $decisionReason = null,
         ?CarbonImmutable $now = null,
+        ?string $expectedOrganizationId = null,
+        ?string $expectedSessionId = null,
     ): TeacherApology {
-        return $this->decide($apologyId, ApologyStatus::Approved, $decidedBy, $decisionReason, $now);
+        return $this->decide(
+            $apologyId,
+            ApologyStatus::Approved,
+            $decidedBy,
+            $decisionReason,
+            $now,
+            $expectedOrganizationId,
+            $expectedSessionId,
+        );
     }
 
     public function reject(
@@ -49,6 +63,8 @@ final readonly class DecideTeacherApologyAction
         string $decidedBy,
         string $decisionReason,
         ?CarbonImmutable $now = null,
+        ?string $expectedOrganizationId = null,
+        ?string $expectedSessionId = null,
     ): TeacherApology {
         if (trim($decisionReason) === '') {
             throw BusinessRuleViolation::make(
@@ -57,7 +73,15 @@ final readonly class DecideTeacherApologyAction
             );
         }
 
-        return $this->decide($apologyId, ApologyStatus::Rejected, $decidedBy, $decisionReason, $now);
+        return $this->decide(
+            $apologyId,
+            ApologyStatus::Rejected,
+            $decidedBy,
+            $decisionReason,
+            $now,
+            $expectedOrganizationId,
+            $expectedSessionId,
+        );
     }
 
     private function decide(
@@ -66,10 +90,20 @@ final readonly class DecideTeacherApologyAction
         string $decidedBy,
         ?string $decisionReason,
         ?CarbonImmutable $now,
+        ?string $expectedOrganizationId,
+        ?string $expectedSessionId,
     ): TeacherApology {
         $now ??= CarbonImmutable::now('UTC');
 
         $apology = TeacherApology::query()->findOrFail($apologyId);
+
+        if (($expectedOrganizationId !== null && (string) $apology->organization_id !== $expectedOrganizationId)
+            || ($expectedSessionId !== null && (string) $apology->session_id !== $expectedSessionId)) {
+            throw BusinessRuleViolation::make(
+                'sessions.apology_context_mismatch',
+                'sessions::errors.apology_context_mismatch',
+            );
+        }
 
         if (!$apology->status->canTransitionTo($target)) {
             throw BusinessRuleViolation::make(
@@ -90,7 +124,8 @@ final readonly class DecideTeacherApologyAction
             ? $this->escalation->evaluate((string) $apology->staff_profile_id, $now)
             : null;
 
-        DB::transaction(function () use ($apology, $target, $decidedBy, $decisionReason, $now, $verdict): void {
+        DB::transaction(function () use ($apology, $session, $target, $decidedBy, $decisionReason, $now, $verdict): void {
+            $from = $apology->status;
             $apology->status = $target;
             $apology->decided_by = $decidedBy;
             $apology->decided_at = $now;
@@ -102,6 +137,22 @@ final readonly class DecideTeacherApologyAction
             }
 
             $apology->save();
+
+            $this->audit->record(
+                organizationId: (string) $session->organization_id,
+                actorId: $decidedBy,
+                actorType: 'user',
+                action: 'sessions.teacher_apology_'.$target->value,
+                auditableType: 'teacher_apologies',
+                auditableId: (string) $apology->getKey(),
+                oldValues: ['status' => $from->value],
+                newValues: [
+                    'status' => $target->value,
+                    'occurrence_in_window' => $verdict['occurrence'] ?? null,
+                    'window_days' => $verdict['window_days'] ?? null,
+                ],
+                reason: trim((string) ($decisionReason ?? __('sessions::messages.apology_approved_reason'))),
+            );
         });
 
         /*
@@ -124,7 +175,10 @@ final readonly class DecideTeacherApologyAction
             courseId: (string) $session->course_id,
             staffProfileId: (string) $apology->staff_profile_id,
             apologyId: (string) $apology->id,
-            teacherUserId: $this->teacherUserId((string) $apology->staff_profile_id),
+            teacherUserId: $this->teacherUserId(
+                (string) $session->organization_id,
+                (string) $apology->staff_profile_id,
+            ),
             decision: $target->value,
             substituteRequired: $target === ApologyStatus::Approved,
             occurrenceInWindow: $verdict['occurrence'] ?? null,
@@ -139,12 +193,10 @@ final readonly class DecideTeacherApologyAction
     }
 
     /**
-     * نقرأ بالجدول لا بنموذج موديول Staff — الاستيراد عبر الحدود ممنوع.
+     * عقد Staff يعيد هوية المستخدم دون قراءة جدول موديول آخر.
      */
-    private function teacherUserId(string $staffProfileId): ?string
+    private function teacherUserId(string $organizationId, string $staffProfileId): ?string
     {
-        $id = DB::table('staff_profiles')->where('id', $staffProfileId)->value('user_id');
-
-        return is_string($id) && $id !== '' ? $id : null;
+        return $this->staff->userIdForProfile($organizationId, $staffProfileId);
     }
 }

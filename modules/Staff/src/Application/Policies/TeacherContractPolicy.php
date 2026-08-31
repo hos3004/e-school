@@ -4,22 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Domain\Models\TeacherContract;
 
 final class TeacherContractPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user !== null && $user->can('staff.contract.view');
+        return $user->can('staff.contract.view');
     }
 
-    public function view($user, TeacherContract $contract): bool
+    public function view(Authenticatable&Authorizable $user, TeacherContract $contract): bool
     {
-        if ($user === null) {
-            return false;
-        }
-
         if ($user->can('staff.contract.view')) {
             return true;
         }
@@ -32,23 +30,23 @@ final class TeacherContractPolicy
             && (string) $profile->user_id === (string) $user->getAuthIdentifier();
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user !== null && $user->can('staff.contract.update');
+        return $user->can('staff.contract.update');
     }
 
-    public function update($user, TeacherContract $contract): bool
+    public function update(Authenticatable&Authorizable $user, TeacherContract $contract): bool
     {
-        return $user !== null && $user->can('staff.contract.update');
+        return $user->can('staff.contract.update');
     }
 
-    public function delete($user, TeacherContract $contract): bool
+    public function delete(Authenticatable&Authorizable $user, TeacherContract $contract): bool
     {
         return false;
     }
 
-    public function addRate($user, TeacherContract $contract): bool
+    public function addRate(Authenticatable&Authorizable $user, TeacherContract $contract): bool
     {
-        return $user !== null && $user->can('staff.contract.update');
+        return $user->can('staff.contract.update');
     }
 }

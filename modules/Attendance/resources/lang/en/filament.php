@@ -25,4 +25,17 @@ return [
         'override' => 'Override status',
         'reason_helper' => 'The reason is written to the audit log along with your name and the change time.',
     ],
+
+    'messages' => [
+        'confirmed' => 'Attendance confirmed and written to the audit trail.',
+        'overridden' => 'Attendance status overridden with the documented reason.',
+    ],
+
+    'hub' => [
+        'title' => 'Attendance hub',
+        'attendance_summary' => 'Attendance record summary',
+        'participant' => 'Student and session',
+        'audit' => 'Audit trail',
+        'empty' => 'No records yet.',
+    ],
 ];

@@ -4,31 +4,34 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Staff\Domain\Models\TeacherRate;
 
 final class TeacherRatePolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user !== null && $user->can('staff.contract.view');
+        return $user->can('staff.contract.view');
     }
 
-    public function view($user, TeacherRate $rate): bool
+    public function view(Authenticatable&Authorizable $user, TeacherRate $rate): bool
     {
-        return $user !== null && $user->can('staff.contract.view');
+        return $user->can('staff.contract.view');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user !== null && $user->can('staff.contract.update');
+        return $user->can('staff.contract.update');
     }
 
-    public function update($user, TeacherRate $rate): bool
+    /** الأسعار دفتر append-only — التصحيح بسعر جديد نافذ لا بتعديل سجل قائم. */
+    public function update(Authenticatable&Authorizable $user, TeacherRate $rate): bool
     {
         return false;
     }
 
-    public function delete($user, TeacherRate $rate): bool
+    public function delete(Authenticatable&Authorizable $user, TeacherRate $rate): bool
     {
         return false;
     }

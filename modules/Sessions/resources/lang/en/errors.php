@@ -3,6 +3,23 @@
 declare(strict_types=1);
 
 return [
+    'reason_required' => 'A written reason is required for this operation.',
+    'terminal_status' => 'A session in terminal status :status cannot be changed.',
+    'start_in_past' => 'The session must be scheduled in the future.',
+    'end_before_start' => 'The end time must be after the start time.',
+    'teacher_double_booking' => 'The teacher or group already has an overlapping session (:conflicting_session_id).',
+    'invalid_scheduling_context' => 'The course, group, or teacher does not belong to this organization or cannot be scheduled.',
+    'invalid_session_type' => 'The selected session type is not supported.',
+    'cancel_target_invalid' => 'The selected cancellation party is invalid.',
+    'cancellation_window_passed' => 'The student cancellation window closes :minutes minutes before the session.',
+    'postponement_window_passed' => 'The postponement window closes :minutes minutes before the session.',
+    'makeup_duration_changed' => 'A makeup session must keep the original session duration.',
+    'attendance_type_invalid' => 'Attendance operation :type is invalid.',
+    'participant_not_active' => 'The participant does not belong to this session or the invitation is no longer active.',
+    'not_joinable' => 'A session in status :status cannot be joined.',
+    'already_joined' => 'The participant has already joined.',
+    'leave_without_join' => 'A participant cannot leave before joining.',
+    'already_left' => 'The participant has already left.',
     'substitute_same_teacher' => 'The substitute is the teacher already assigned to this session.',
     'substitute_reason_required' => 'A reason for the substitution is required.',
     'substitute_not_qualified' => 'This teacher is not qualified for this course. An administrative override with a written reason is required.',
@@ -18,4 +35,5 @@ return [
     'apology_rejection_reason_required' => 'Rejecting an apology requires a written reason.',
     'apology_invalid_transition' => 'Apology transition from :from to :to is not allowed.',
     'apology_must_not_change_session' => 'Internal error: approving the apology changed the session status. An apology never cancels a session.',
+    'apology_context_mismatch' => 'The selected apology does not belong to this session or organization.',
 ];

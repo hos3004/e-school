@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 return [
     'code_taken' => 'This group code is already in use.',
-    'capacity_too_large' => 'The maximum group capacity is 25 students.',
+    'capacity_too_large' => 'The maximum group capacity is :max students.',
     'ends_before_starts' => 'The end date must be on or after the start date.',
     'reason_required' => 'A written reason is required for this operation.',
 ];

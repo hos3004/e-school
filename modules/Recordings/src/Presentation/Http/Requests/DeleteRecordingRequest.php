@@ -13,7 +13,7 @@ final class DeleteRecordingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('recordings.recording.delete');
+        return $this->user()->can('recording.delete');
     }
 
     /**

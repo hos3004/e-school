@@ -39,12 +39,16 @@ const sessionStatusColors: StatusColorMap = {
     cancelled: 'danger',
 };
 
+function statusAllowsJoining(status: string): boolean {
+    return ['scheduled', 'confirmed', 'in_progress'].includes(status);
+}
+
 function joinIsAvailable(session: Session, now: number): boolean {
-    if (!session.joinUrl) {
+    if (!session.joinUrl || !statusAllowsJoining(session.status)) {
         return false;
     }
 
-    if (typeof session.canJoin === 'boolean') {
+    if (session.canJoin === true) {
         return session.canJoin;
     }
 
@@ -54,7 +58,13 @@ function joinIsAvailable(session: Session, now: number): boolean {
 
     const threshold = Date.parse(session.canJoinAt);
 
-    return Number.isFinite(threshold) && now >= threshold;
+    const closesAt = session.canJoinUntil
+        ? Date.parse(session.canJoinUntil)
+        : Number.POSITIVE_INFINITY;
+
+    return Number.isFinite(threshold)
+        && now >= threshold
+        && (!Number.isFinite(closesAt) || now <= closesAt);
 }
 
 function useJoinClock(session: Session | null): number {
@@ -63,7 +73,7 @@ function useJoinClock(session: Session | null): number {
     useEffect(() => {
         if (
             !session?.canJoinAt ||
-            session.canJoin !== undefined
+            session.canJoin === true
         ) {
             return;
         }

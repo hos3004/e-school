@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rule;
+use Modules\Attendance\Application\Queries\AttendanceOperationsQueryService;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Models\Attendance;
 use Modules\Attendance\Presentation\Http\Resources\AttendanceResource;
@@ -20,14 +21,20 @@ use Modules\Attendance\Presentation\Http\Resources\AttendanceResource;
  */
 final class ListAttendancesController extends Controller
 {
+    public function __construct(private readonly AttendanceOperationsQueryService $operations) {}
+
     public function __invoke(Request $request): AnonymousResourceCollection
     {
         abort_unless(auth()->user()?->can('viewAny', Attendance::class) ?? false, 403);
 
         $filters = $this->validateFilters($request);
+        $organizationId = (string) $request->user()?->getAttribute('organization_id');
+        abort_if($organizationId === '', 403);
+        $participantIds = $this->operations->participantIdsForOrganization($organizationId);
 
         /** @var LengthAwarePaginator<int, Attendance> $page */
         $page = Attendance::query()
+            ->forParticipants($participantIds)
             ->when(
                 isset($filters['status']),
                 fn ($query) => $query->withStatus(AttendanceStatus::from((string) $filters['status'])),

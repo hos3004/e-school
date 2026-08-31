@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Presentation\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Modules\Staff\Application\Actions\CreateTeacherContract;
 use Modules\Staff\Domain\Enums\ContractBasis;
 use Modules\Staff\Domain\Models\StaffProfile;
@@ -14,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class StoreTeacherContractController
 {
-    public function __invoke(StoreTeacherContractRequest $request, CreateTeacherContract $action): TeacherContractResource
+    public function __invoke(StoreTeacherContractRequest $request, CreateTeacherContract $action): JsonResponse
     {
         $validated = $request->validated();
 
@@ -35,6 +36,8 @@ final class StoreTeacherContractController
             targetAdminTasks: $validated['target_admin_tasks'] ?? null,
             targetTrainingSessions: $validated['target_training_sessions'] ?? null,
             terms: $validated['terms'] ?? null,
+            actorId: auth()->id() === null ? null : (string) auth()->id(),
+            reason: isset($validated['reason']) ? (string) $validated['reason'] : null,
         );
 
         return new TeacherContractResource($contract)->response()->setStatusCode(Response::HTTP_CREATED);

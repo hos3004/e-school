@@ -5,83 +5,113 @@ declare(strict_types=1);
 namespace Modules\Scheduling\Application\Actions;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Modules\Scheduling\Domain\Events\PostponementRequested;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
+use Modules\Sessions\Domain\Contracts\SessionSchedulingQueries;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
-/**
- * طلب تأجيل حصة.
- *
- * قرار العميل: التأجيل هو المسار الوحيد المتاح للطالب لتغيير موعد حصة —
- * زر الإلغاء مطفأ. ولذلك هذا الإجراء هو بوابة الطالب الأساسية.
- *
- * الحراس هنا ثلاثة: المهلة، وحالة الحصة، والحد الشهري.
- */
 final readonly class RequestPostponement
 {
     public function __construct(
         private Transaction $transaction,
+        private SessionSchedulingQueries $sessions,
+        private AuditRecorder $audit,
     ) {}
 
-    /**
-     * @param array{reason?: string|null} $data
-     */
     public function execute(
+        string $organizationId,
         string $sessionId,
         string $requestedBy,
         string $studentProfileId,
         CarbonImmutable $proposedStart,
-        array $data = [],
+        string $reason,
     ): PostponementRequest {
-        $session = DB::table('sessions')
-            ->where('id', $sessionId)
-            ->whereNull('deleted_at')
-            ->first(['id', 'status', 'scheduled_start']);
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw BusinessRuleViolation::make('scheduling.reason_required', 'scheduling::errors.reason_required');
+        }
 
+        $session = $this->sessions->find($organizationId, $sessionId);
         if ($session === null) {
+            throw BusinessRuleViolation::make('session.not_found', 'scheduling::errors.session_not_found');
+        }
+        if (!in_array($studentProfileId, $session->studentProfileIds, true)) {
+            throw BusinessRuleViolation::make('postponement.student_not_participant', 'scheduling::errors.student_not_participant');
+        }
+        if (!in_array($session->status, ['scheduled', 'confirmed'], true)) {
             throw BusinessRuleViolation::make(
-                'session.not_found',
-                'scheduling::errors.session_not_found',
+                'session.not_postponable',
+                'scheduling::errors.session_not_postponable',
+                ['status' => $session->status],
             );
         }
 
-        $this->assertSessionIsPostponable((string) $session->status);
-        $this->assertNoticeMet(CarbonImmutable::parse($session->scheduled_start));
-        $this->assertNoPendingRequest($sessionId);
-        $this->assertMonthlyLimitNotExceeded($studentProfileId);
-        $this->assertProposedStartIsInFuture($proposedStart);
+        $required = (int) config('scheduling.notice.postponement_minutes');
+        $actual = (int) CarbonImmutable::now('UTC')->diffInMinutes($session->scheduledStart, false);
+        if ($actual < $required) {
+            throw BusinessRuleViolation::make(
+                'postponement.notice_not_met',
+                'scheduling::errors.postponement_notice_not_met',
+                ['required' => $required, 'actual' => max($actual, 0)],
+            );
+        }
+        if ($proposedStart->lessThanOrEqualTo(CarbonImmutable::now('UTC'))) {
+            throw BusinessRuleViolation::make('postponement.proposed_start_in_past', 'scheduling::errors.proposed_start_in_past');
+        }
+        if (PostponementRequest::query()->forOrganization($organizationId)
+            ->where('session_id', $sessionId)
+            ->whereIn('status', [PostponementStatus::Requested->value, PostponementStatus::AlternativeProposed->value])
+            ->exists()) {
+            throw BusinessRuleViolation::make('postponement.already_pending', 'scheduling::errors.postponement_already_pending');
+        }
 
-        $slaHours = (int) config('scheduling.postponement.teacher_response_sla_hours', 12);
-
+        $requiresAdminReview = $this->monthlyLimitReached($organizationId, $studentProfileId);
         $request = $this->transaction->run(function () use (
+            $organizationId,
             $sessionId,
             $requestedBy,
             $studentProfileId,
             $proposedStart,
-            $data,
-            $slaHours,
+            $reason,
+            $requiresAdminReview,
         ): PostponementRequest {
-            $request = new PostponementRequest;
-
-            $request->fill([
+            $request = PostponementRequest::query()->create([
+                'organization_id' => $organizationId,
                 'session_id' => $sessionId,
                 'requested_by' => $requestedBy,
                 'requested_for_student_id' => $studentProfileId,
                 'status' => PostponementStatus::Requested,
+                'requires_admin_review' => $requiresAdminReview,
                 'proposed_start' => $proposedStart,
-                'reason' => $data['reason'] ?? null,
-                'expires_at' => CarbonImmutable::now('UTC')->addHours($slaHours),
+                'reason' => $reason,
+                'expires_at' => CarbonImmutable::now('UTC')->addHours(
+                    (int) config('scheduling.postponement.teacher_response_sla_hours'),
+                ),
             ]);
-
-            $request->save();
+            $this->audit->record(
+                organizationId: $organizationId,
+                actorId: $requestedBy,
+                actorType: 'user',
+                action: 'scheduling.postponement_requested',
+                auditableType: 'postponement_requests',
+                auditableId: (string) $request->getKey(),
+                oldValues: null,
+                newValues: [
+                    'session_id' => $sessionId,
+                    'student_profile_id' => $studentProfileId,
+                    'status' => PostponementStatus::Requested->value,
+                    'proposed_start' => $proposedStart->toIso8601String(),
+                    'requires_admin_review' => $requiresAdminReview,
+                ],
+                reason: $reason,
+            );
 
             return $request;
         });
 
-        // إشعار المعلم والإدارة يتم عبر مستمعي هذا الحدث — لا نستدعي قناة إرسال هنا.
         event(new PostponementRequested(
             requestId: (string) $request->getKey(),
             sessionId: $sessionId,
@@ -93,97 +123,19 @@ final readonly class RequestPostponement
         return $request;
     }
 
-    /**
-     * الحصة المنتهية أو الملغاة أو المؤجَّلة سلفًا لا تُؤجَّل.
-     */
-    private function assertSessionIsPostponable(string $status): void
+    private function monthlyLimitReached(string $organizationId, string $studentProfileId): bool
     {
-        $open = ['scheduled', 'confirmed'];
-
-        if (!in_array($status, $open, true)) {
-            throw BusinessRuleViolation::make(
-                'session.not_postponable',
-                'scheduling::errors.session_not_postponable',
-                ['status' => $status],
-            );
-        }
-    }
-
-    /**
-     * مهلة التأجيل — ربع ساعة قبل الموعد في الإعداد الحالي.
-     * ما دونها يُعامل تغيّبًا، لا تأجيلًا.
-     */
-    private function assertNoticeMet(CarbonImmutable $scheduledStart): void
-    {
-        $required = (int) config('scheduling.notice.postponement_minutes', 15);
-        $actual = (int) CarbonImmutable::now('UTC')->diffInMinutes($scheduledStart, false);
-
-        if ($actual < $required) {
-            throw BusinessRuleViolation::make(
-                'postponement.notice_not_met',
-                'scheduling::errors.postponement_notice_not_met',
-                ['required' => $required, 'actual' => max($actual, 0)],
-            );
-        }
-    }
-
-    private function assertNoPendingRequest(string $sessionId): void
-    {
-        $pending = PostponementRequest::query()
-            ->where('session_id', $sessionId)
-            ->whereIn('status', [
-                PostponementStatus::Requested->value,
-                PostponementStatus::AlternativeProposed->value,
-            ])
-            ->exists();
-
-        if ($pending) {
-            throw BusinessRuleViolation::make(
-                'postponement.already_pending',
-                'scheduling::errors.postponement_already_pending',
-            );
-        }
-    }
-
-    /**
-     * تجاوز الحد الشهري لا يمنع الطلب — الإدارة هي من تبتّ فيه بدل المعلم.
-     * لكن حتى ذلك الحين نرفضه من مسار الطالب المباشر.
-     */
-    private function assertMonthlyLimitNotExceeded(string $studentProfileId): void
-    {
-        $max = (int) config('scheduling.postponement.max_per_student_per_month', 4);
-
+        $max = (int) config('scheduling.postponement.max_per_student_per_month');
         if ($max === 0) {
-            return;
+            return false;
         }
-
         $now = CarbonImmutable::now('UTC');
 
-        $used = PostponementRequest::query()
+        return PostponementRequest::query()
+            ->forOrganization($organizationId)
             ->where('requested_for_student_id', $studentProfileId)
-            ->whereNotIn('status', [
-                PostponementStatus::Rejected->value,
-                PostponementStatus::Withdrawn->value,
-            ])
+            ->whereNotIn('status', [PostponementStatus::Rejected->value, PostponementStatus::Withdrawn->value])
             ->whereBetween('created_at', [$now->startOfMonth(), $now->endOfMonth()])
-            ->count();
-
-        if ($used >= $max) {
-            throw BusinessRuleViolation::make(
-                'postponement.monthly_limit_reached',
-                'scheduling::errors.postponement_monthly_limit',
-                ['max' => $max],
-            );
-        }
-    }
-
-    private function assertProposedStartIsInFuture(CarbonImmutable $proposedStart): void
-    {
-        if ($proposedStart->lessThanOrEqualTo(CarbonImmutable::now('UTC'))) {
-            throw BusinessRuleViolation::make(
-                'postponement.proposed_start_in_past',
-                'scheduling::errors.proposed_start_in_past',
-            );
-        }
+            ->count() >= $max;
     }
 }

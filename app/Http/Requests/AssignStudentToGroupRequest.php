@@ -24,6 +24,7 @@ final class AssignStudentToGroupRequest extends FormRequest
             'student_profile_id' => ['required', 'ulid'],
             'program_id' => ['required', 'ulid'],
             'course_id' => ['required', 'ulid'],
+            'reason' => ['required', 'string', 'max:2000'],
         ];
     }
 }

@@ -13,7 +13,12 @@ import PageHeader from '@/Components/PageHeader';
 import StatusPill from '@/Components/StatusPill';
 import type { StatusColorMap } from '@/Components/StatusPill';
 import AppLayout from '@/Layouts/AppLayout';
-import { formatDate, formatDateTime, useLocale } from '@/lib/format';
+import {
+    formatDate,
+    formatDateTime,
+    useLocale,
+    useSupportedLocales,
+} from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import type { LoadablePageProps } from '@/types';
 
@@ -67,8 +72,6 @@ interface Props extends LoadablePageProps {
     availabilityUrl?: string;
 }
 
-const localeOptions = ['ar', 'en', 'fr'] as const;
-
 const approvalColors: StatusColorMap<string> = {
     pending: 'warning',
     approved: 'success',
@@ -92,6 +95,7 @@ export default function Profile({
 }: Props) {
     const t = useI18n();
     const locale = useLocale();
+    const localeOptions = useSupportedLocales();
 
     const profileForm = useForm({
         name: account?.name ?? '',

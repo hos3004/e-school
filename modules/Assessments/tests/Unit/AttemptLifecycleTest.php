@@ -13,15 +13,45 @@ use Modules\Assessments\Domain\Events\AttemptStarted;
 use Modules\Assessments\Domain\Events\AttemptSubmitted;
 use Modules\Assessments\Domain\Models\Assessment;
 use Modules\Assessments\Domain\Models\AssessmentAttempt;
+use Modules\Assessments\Domain\Models\Question;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
+/**
+ * اختبار ببنك أسئلة مكتمل — مجموع درجات الأسئلة يساوي الدرجة الكلية،
+ * وهو الشرط الذي يفتح بدء المحاولة.
+ *
+ * @param array<string, mixed> $attributes
+ * @return array{0: Assessment, 1: list<string>} [الاختبار, معرّفات الأسئلة]
+ */
+function assessmentWithQuestionBank(array $attributes = []): array
+{
+    $assessment = Assessment::factory()->create($attributes);
+    $total = (int) $assessment->total_score;
+    $half = intdiv($total, 2);
+
+    $questionIds = [];
+    foreach ([$half, $total - $half] as $index => $score) {
+        $questionIds[] = (string) Question::factory()->create([
+            'assessment_id' => $assessment->getKey(),
+            'score' => $score,
+            'sort_order' => $index + 1,
+        ])->getKey();
+    }
+
+    return [$assessment->refresh(), $questionIds];
+}
+
 it('starts an attempt inside the availability window and publishes AttemptStarted', function (): void {
     Event::fake([AttemptStarted::class]);
 
-    $assessment = Assessment::factory()->availableNow()->create(['max_attempts' => 2]);
+    [$assessment] = assessmentWithQuestionBank([
+        'max_attempts' => 2,
+        'available_from' => CarbonImmutable::now('UTC')->subHour(),
+        'available_to' => CarbonImmutable::now('UTC')->addDays(7),
+    ]);
     $studentProfileId = Fixtures::studentProfileId();
 
     $attempt = app(StartAttemptAction::class)->execute($assessment, $studentProfileId);
@@ -33,7 +63,7 @@ it('starts an attempt inside the availability window and publishes AttemptStarte
 });
 
 it('rejects starting an attempt outside the availability window', function (): void {
-    $assessment = Assessment::factory()->create([
+    [$assessment] = assessmentWithQuestionBank([
         'available_from' => CarbonImmutable::now('UTC')->addDay(),
         'available_to' => CarbonImmutable::now('UTC')->addWeek(),
     ]);
@@ -45,7 +75,11 @@ it('rejects starting an attempt outside the availability window', function (): v
 })->throws(BusinessRuleViolation::class);
 
 it('rejects attempts beyond the configured maximum', function (): void {
-    $assessment = Assessment::factory()->availableNow()->create(['max_attempts' => 1]);
+    [$assessment] = assessmentWithQuestionBank([
+        'max_attempts' => 1,
+        'available_from' => CarbonImmutable::now('UTC')->subHour(),
+        'available_to' => CarbonImmutable::now('UTC')->addDays(7),
+    ]);
     $action = app(StartAttemptAction::class);
     $studentProfileId = Fixtures::studentProfileId();
 
@@ -61,20 +95,45 @@ it('rejects attempts beyond the configured maximum', function (): void {
 it('submits answers once and locks them afterwards', function (): void {
     Event::fake([AttemptSubmitted::class]);
 
-    $attempt = AssessmentAttempt::factory()
-        ->for(Assessment::factory()->create(['duration_minutes' => 60]))
-        ->create(['started_at' => CarbonImmutable::now('UTC')->subMinutes(10)]);
+    [$assessment, $questionIds] = assessmentWithQuestionBank(['duration_minutes' => 60]);
 
-    $updated = app(SubmitAttemptAction::class)->execute($attempt, ['q1' => ['key' => 'a']]);
+    $attempt = AssessmentAttempt::factory()->create([
+        'assessment_id' => $assessment->getKey(),
+        'started_at' => CarbonImmutable::now('UTC')->subMinutes(10),
+    ]);
 
-    expect($updated->answers)->toBe(['q1' => ['key' => 'a']])
+    $answers = [
+        $questionIds[0] => ['key' => 'a'],
+        $questionIds[1] => ['key' => 'b'],
+    ];
+
+    $updated = app(SubmitAttemptAction::class)->execute($attempt, $answers);
+
+    expect($updated->answers)->toBe($answers)
         ->and($updated->submitted_at)->not->toBeNull();
 
     expect(fn (): AssessmentAttempt => app(SubmitAttemptAction::class)->execute(
         $attempt->refresh(),
-        ['q1' => ['key' => 'b']],
+        $answers,
     ))->toThrow(BusinessRuleViolation::class);
 });
+
+it('rejects a submission whose answers do not cover every question', function (): void {
+    [$assessment, $questionIds] = assessmentWithQuestionBank(['duration_minutes' => 60]);
+
+    $attempt = AssessmentAttempt::factory()->create([
+        'assessment_id' => $assessment->getKey(),
+        'started_at' => CarbonImmutable::now('UTC')->subMinutes(10),
+    ]);
+
+    app(SubmitAttemptAction::class)->execute($attempt, [$questionIds[0] => ['key' => 'a']]);
+})->throws(BusinessRuleViolation::class);
+
+it('refuses to start an attempt while the question bank is incomplete', function (): void {
+    $assessment = Assessment::factory()->availableNow()->create(['total_score' => 100]);
+
+    app(StartAttemptAction::class)->execute($assessment, Fixtures::studentProfileId());
+})->throws(BusinessRuleViolation::class);
 
 it('rejects submissions after the duration plus grace window', function (): void {
     config()->set('assessments.submission.grace_minutes', 5);
@@ -99,7 +158,12 @@ it('grades a submitted attempt and derives the pass result from the stored passi
         'assessment_id' => $assessment->id,
     ]);
 
-    $graded = app(GradeAttemptAction::class)->execute($attempt, 70, actorId: $actorId);
+    $graded = app(GradeAttemptAction::class)->execute(
+        $attempt,
+        70,
+        actorId: $actorId,
+        reason: 'تصحيح المحاولة وفق نموذج الإجابة',
+    );
 
     expect($graded->score)->toBe(70)
         ->and($graded->passed)->toBeTrue()
@@ -115,7 +179,12 @@ it('marks the attempt as failed below the passing score', function (): void {
         'assessment_id' => $assessment->id,
     ]);
 
-    $graded = app(GradeAttemptAction::class)->execute($attempt, 55);
+    $graded = app(GradeAttemptAction::class)->execute(
+        $attempt,
+        55,
+        actorId: Fixtures::userId(),
+        reason: 'تصحيح المحاولة وفق نموذج الإجابة',
+    );
 
     expect($graded->passed)->toBeFalse();
 });
@@ -123,13 +192,23 @@ it('marks the attempt as failed below the passing score', function (): void {
 it('refuses to grade before submission', function (): void {
     $attempt = AssessmentAttempt::factory()->create();
 
-    app(GradeAttemptAction::class)->execute($attempt, 90);
+    app(GradeAttemptAction::class)->execute(
+        $attempt,
+        90,
+        actorId: Fixtures::userId(),
+        reason: 'محاولة تصحيح قبل التسليم',
+    );
 })->throws(BusinessRuleViolation::class);
 
 it('locks the grade after the first grading', function (): void {
     $attempt = AssessmentAttempt::factory()->graded(70, true)->create();
 
-    app(GradeAttemptAction::class)->execute($attempt->refresh(), 90);
+    app(GradeAttemptAction::class)->execute(
+        $attempt->refresh(),
+        90,
+        actorId: Fixtures::userId(),
+        reason: 'محاولة إعادة تصحيح بعد الاعتماد',
+    );
 })->throws(BusinessRuleViolation::class);
 
 it('rejects scores outside the assessment total range', function (): void {
@@ -139,5 +218,10 @@ it('rejects scores outside the assessment total range', function (): void {
         'assessment_id' => $assessment->id,
     ]);
 
-    app(GradeAttemptAction::class)->execute($attempt, 51);
+    app(GradeAttemptAction::class)->execute(
+        $attempt,
+        51,
+        actorId: Fixtures::userId(),
+        reason: 'درجة أعلى من الدرجة الكلية',
+    );
 })->throws(BusinessRuleViolation::class);

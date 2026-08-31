@@ -8,6 +8,8 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Events\AttendanceConfirmed;
 use Modules\Attendance\Domain\Models\Attendance;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -22,18 +24,63 @@ final readonly class ConfirmAttendanceAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private SessionParticipantAdministrationQueries $participants,
+        private AuditRecorder $audit,
     ) {}
 
-    public function execute(Attendance $attendance, string $confirmedBy): Attendance
-    {
+    public function execute(
+        Attendance $attendance,
+        string $confirmedBy,
+        ?string $reason = null,
+        ?string $organizationId = null,
+    ): Attendance {
         $this->assertConfirmerGiven($confirmedBy);
-        $this->assertNotAlreadyConfirmed($attendance);
+        $reason = trim($reason ?? (string) __('attendance::messages.confirm_reason'));
 
-        $this->transaction->run(function () use ($attendance, $confirmedBy): void {
-            $attendance->forceFill([
+        $attendance = $this->transaction->run(function () use (
+            $attendance,
+            $confirmedBy,
+            $reason,
+            $organizationId,
+        ): Attendance {
+            /** @var Attendance $locked */
+            $locked = Attendance::query()->lockForUpdate()->findOrFail((string) $attendance->getKey());
+            $participant = $organizationId === null
+                ? $this->participants->find((string) $locked->session_participant_id)
+                : $this->participants->findForOrganization(
+                    $organizationId,
+                    (string) $locked->session_participant_id,
+                );
+            if ($participant === null || !$participant->invitationActive) {
+                throw BusinessRuleViolation::make(
+                    'attendance.participant_not_active',
+                    'attendance::errors.participant_not_active',
+                );
+            }
+
+            $this->assertNotAlreadyConfirmed($locked);
+            $locked->forceFill([
                 'confirmed_by' => $confirmedBy,
                 'confirmed_at' => now()->utc(),
             ])->save();
+
+            $this->audit->record(
+                organizationId: $participant->organizationId,
+                actorId: $confirmedBy,
+                actorType: 'user',
+                action: 'attendance.confirmed',
+                auditableType: 'attendances',
+                auditableId: (string) $locked->getKey(),
+                oldValues: ['confirmed_by' => null, 'confirmed_at' => null],
+                newValues: [
+                    'status' => $locked->status->value,
+                    'confirmed_by' => $confirmedBy,
+                    'confirmed_at' => $locked->confirmed_at?->toIso8601String(),
+                ],
+                reason: $reason,
+            );
+
+            return $locked;
         });
 
         /** @var AttendanceStatus $status */

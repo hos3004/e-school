@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Models\NotificationCategorySetting;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationCategorySettingResource\Pages;
+use Modules\Notifications\Presentation\Support\CategoryLabel;
 
 /**
  * مورد إعدادات فئات الإشعارات — تحكم الأدمن في: أي قنوات لكل فئة، وهل الفئة
@@ -63,6 +64,7 @@ final class NotificationCategorySettingResource extends Resource
                 ->schema([
                     TextInput::make('category')
                         ->label(__('notifications::fields.category'))
+                        ->formatStateUsing(fn (?string $state): string => CategoryLabel::for($state))
                         ->disabled()
                         ->dehydrated(false),
                     Select::make('channels')
@@ -93,6 +95,8 @@ final class NotificationCategorySettingResource extends Resource
             ->columns([
                 TextColumn::make('category')
                     ->label(__('notifications::fields.category'))
+                    // اسم الفئة بالعربية؛ المفتاح المخزَّن لا يتغيّر.
+                    ->formatStateUsing(fn (?string $state): string => CategoryLabel::for($state))
                     ->badge()
                     ->searchable()
                     ->sortable(),

@@ -66,7 +66,7 @@ interface VirtualClassroomProvider
     /**
      * إنهاء الفصل وطرد كل المشاركين.
      */
-    public function endClassroom(string $externalId): void;
+    public function endClassroom(string $externalId, ?string $moderatorSecret = null): void;
 
     /**
      * بدء أو استئناف التسجيل أثناء الحصة.

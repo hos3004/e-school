@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Groups\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Events\GroupCompleted;
 use Modules\Groups\Domain\Models\Group;
@@ -19,16 +20,32 @@ final readonly class CompleteGroupAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
-    public function execute(Group $group): Group
+    public function execute(Group $group, ?string $actorId = null, ?string $reason = null): Group
     {
         $this->assertNotArchived($group);
         $this->assertTransitionAllowed($group);
 
-        $group = $this->transaction->run(function () use ($group): Group {
+        $group = $this->transaction->run(function () use ($group, $actorId, $reason): Group {
+            $oldStatus = $group->status->value;
             $group->status = GroupStatus::Completed;
             $group->save();
+
+            if ($actorId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: (string) $group->organization_id,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'groups.group_completed',
+                    auditableType: 'groups',
+                    auditableId: (string) $group->getKey(),
+                    oldValues: ['status' => $oldStatus],
+                    newValues: ['status' => GroupStatus::Completed->value],
+                    reason: trim($reason),
+                );
+            }
 
             return $group;
         });

@@ -16,12 +16,13 @@ final class SessionReportPolicy
 {
     public function viewAny($user): bool
     {
-        return $user->can('academicreports.session_report.view_any');
+        return $user->can('session_report.view')
+            || $user->can('academicreports.session_report.view_any');
     }
 
     public function view($user, SessionReport $report): bool
     {
-        return $user->can('academicreports.session_report.view');
+        return $user->can('session_report.view');
     }
 
     public function create($user): bool

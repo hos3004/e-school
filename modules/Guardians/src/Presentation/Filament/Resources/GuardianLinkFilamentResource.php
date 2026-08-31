@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Guardians\Presentation\Filament\Resources;
 
+use App\Application\Queries\ProfileAdministrationQueryService;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
@@ -14,6 +18,10 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Modules\Guardians\Application\Actions\SetPrimaryGuardianLink;
+use Modules\Guardians\Application\Actions\UnlinkStudentFromGuardian;
+use Modules\Guardians\Application\Actions\VerifyGuardianLink;
+use Modules\Guardians\Application\Queries\GuardianAdministrationQueryService;
 use Modules\Guardians\Domain\Enums\GuardianRelationship;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Modules\Guardians\Presentation\Filament\Resources\Pages\ManageGuardianLinks;
@@ -23,17 +31,21 @@ final class GuardianLinkFilamentResource extends Resource
 {
     use ScopesFilamentToOrganizationVia;
 
-    /**
-     * الجدول لا يحمل `organization_id`؛ ينتمي عبر أبيه.
-     */
+    protected static ?string $model = GuardianLink::class;
+
+    protected static ?string $slug = 'guardian-links';
+
+    protected static ?int $navigationSort = 31;
+
     protected static function organizationRelation(): string
     {
         return 'guardian';
     }
 
-    protected static ?string $model = GuardianLink::class;
-
-    protected static bool $shouldRegisterNavigation = true;
+    public static function getNavigationGroup(): string
+    {
+        return __('guardians::filament.navigation_group');
+    }
 
     public static function getModelLabel(): string
     {
@@ -45,22 +57,24 @@ final class GuardianLinkFilamentResource extends Resource
         return __('guardians::filament.link.plural_label');
     }
 
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return $schema->schema([
+        return $schema->components([
             Select::make('relationship')
                 ->label(__('guardians::filament.link.fields.relationship'))
                 ->options(collect(GuardianRelationship::cases())->mapWithKeys(
                     fn (GuardianRelationship $relationship): array => [$relationship->value => $relationship->label()],
                 )->all())
                 ->required(),
-
             Checkbox::make('is_primary')
                 ->label(__('guardians::filament.link.fields.is_primary')),
-
             Checkbox::make('can_act_for')
                 ->label(__('guardians::filament.link.fields.can_act_for')),
-
             TagsInput::make('visible_sections')
                 ->label(__('guardians::filament.link.fields.visible_sections'))
                 ->suggestions((array) config('guardians.links.allowed_visible_sections', [])),
@@ -71,14 +85,15 @@ final class GuardianLinkFilamentResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('guardian_profile_id')
+                TextColumn::make('guardian_name')
                     ->label(__('guardians::filament.link.fields.guardian'))
-                    ->sortable()
-                    ->copyable(),
-                TextColumn::make('student_profile_id')
+                    ->state(fn (GuardianLink $record): string => app(GuardianAdministrationQueryService::class)->accountName($record->guardian)),
+                TextColumn::make('student_name')
                     ->label(__('guardians::filament.link.fields.student'))
-                    ->sortable()
-                    ->copyable(),
+                    ->state(fn (GuardianLink $record): string => app(ProfileAdministrationQueryService::class)->studentOptionLabel(
+                        (string) $record->guardian->organization_id,
+                        (string) $record->student_profile_id,
+                    ) ?? (string) $record->student_profile_id),
                 TextColumn::make('relationship')
                     ->label(__('guardians::filament.link.fields.relationship'))
                     ->badge()
@@ -107,8 +122,52 @@ final class GuardianLinkFilamentResource extends Resource
                         fn (GuardianRelationship $relationship): array => [$relationship->value => $relationship->label()],
                     )->all()),
             ])
-            ->actions([])
-            ->bulkActions([]);
+            ->recordActions([
+                Action::make('verify')
+                    ->label(__('guardians::admin.actions.verify'))
+                    ->icon('heroicon-o-check-badge')
+                    ->visible(fn (GuardianLink $record): bool => $record->verified_at === null
+                        && (auth()->user()?->can('verify', $record) ?? false))
+                    ->schema([self::reasonField()])
+                    ->action(function (GuardianLink $record, array $data): void {
+                        app(VerifyGuardianLink::class)->execute(
+                            (string) $record->getKey(),
+                            (string) auth()->id(),
+                            (string) $data['reason'],
+                        );
+                        self::success(__('guardians::admin.actions.verified'));
+                    }),
+                Action::make('set_primary')
+                    ->label(__('guardians::admin.actions.set_primary'))
+                    ->icon('heroicon-o-star')
+                    ->color('warning')
+                    ->visible(fn (GuardianLink $record): bool => !$record->is_primary
+                        && (auth()->user()?->can('setPrimary', $record) ?? false))
+                    ->schema([self::reasonField()])
+                    ->action(function (GuardianLink $record, array $data): void {
+                        app(SetPrimaryGuardianLink::class)->execute(
+                            (string) $record->getKey(),
+                            (string) auth()->id(),
+                            (string) $data['reason'],
+                        );
+                        self::success(__('guardians::admin.actions.primary_set'));
+                    }),
+                Action::make('unlink')
+                    ->label(__('guardians::admin.actions.unlink'))
+                    ->icon('heroicon-o-link-slash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(fn (GuardianLink $record): bool => auth()->user()?->can('delete', $record) ?? false)
+                    ->schema([self::reasonField()])
+                    ->action(function (GuardianLink $record, array $data): void {
+                        app(UnlinkStudentFromGuardian::class)->execute(
+                            (string) $record->getKey(),
+                            (string) $data['reason'],
+                            (string) auth()->id(),
+                        );
+                        self::success(__('guardians::admin.actions.unlinked'));
+                    }),
+            ]);
     }
 
     public static function getPages(): array
@@ -116,5 +175,18 @@ final class GuardianLinkFilamentResource extends Resource
         return [
             'index' => ManageGuardianLinks::route('/'),
         ];
+    }
+
+    private static function reasonField(): Textarea
+    {
+        return Textarea::make('reason')
+            ->label(__('guardians::admin.fields.reason'))
+            ->maxLength(2000)
+            ->required();
+    }
+
+    private static function success(string $title): void
+    {
+        Notification::make()->title($title)->success()->send();
     }
 }

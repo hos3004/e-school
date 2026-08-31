@@ -7,8 +7,8 @@ namespace Modules\Groups\Presentation\Filament\Resources;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -19,7 +19,9 @@ use Filament\Tables\Table;
 use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Presentation\Filament\Resources\GroupResource\Pages;
+use Shared\Codes\EntityCodeGenerator;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Support\Locales;
 
 /**
  * إدارة المجموعات في لوحة التحكم — كل النصوص عبر ملفات الترجمة.
@@ -34,7 +36,7 @@ final class GroupResource extends Resource
 
     protected static ?int $navigationSort = 11;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('groups::filament.navigation_group');
     }
@@ -54,37 +56,50 @@ final class GroupResource extends Resource
         return __('groups::filament.plural_model_label');
     }
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('viewAny', Group::class) ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create', Group::class) ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->schema([
-                TextInput::make('organization_id')
-                    ->label(__('groups::attributes.organization_id'))
-                    ->required()
-                    ->length(26),
-
                 TextInput::make('code')
                     ->label(__('groups::attributes.code'))
                     ->required()
-                    ->maxLength(32)
+                    ->default(fn (EntityCodeGenerator $codes): string => $codes->next('group'))
+                    ->maxLength(8)
                     ->unique(ignoreRecord: true),
 
-                KeyValue::make('name')
-                    ->label(__('groups::attributes.name'))
-                    ->keyLabel(__('groups::filament.name_locale_key'))
-                    ->valueLabel(__('groups::filament.name_value_label'))
+                TextInput::make('name.ar')
+                    ->label(__('groups::filament.fields.name_ar'))
                     ->required(),
+
+                TextInput::make('name.en')
+                    ->label(__('groups::filament.fields.name_en')),
+
+                TextInput::make('name.fr')
+                    ->label(__('groups::filament.fields.name_fr'))
+                    ->hidden(!Locales::isSupported('fr'))
+                    ->dehydratedWhenHidden(),
 
                 TextInput::make('capacity')
                     ->label(__('groups::attributes.capacity'))
                     ->required()
                     ->numeric()
-                    ->minValue(1)
-                    ->maxValue(25),
+                    ->minValue((int) config('groups.capacity.minimum'))
+                    ->maxValue((int) config('groups.capacity.maximum')),
 
                 TextInput::make('timezone')
                     ->label(__('groups::attributes.timezone'))
                     ->required()
+                    ->default(fn (): string => (string) (auth()->user()?->getAttribute('timezone') ?? config('app.timezone')))
                     ->maxLength(64),
 
                 Select::make('status')
@@ -103,6 +118,13 @@ final class GroupResource extends Resource
                     ->label(__('groups::attributes.ends_on'))
                     ->afterOrEqual('starts_on')
                     ->nullable(),
+
+                Textarea::make('reason')
+                    ->label(__('groups::attributes.reason'))
+                    ->helperText(__('groups::filament.fields.reason_help'))
+                    ->required()
+                    ->maxLength(1000)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -153,9 +175,11 @@ final class GroupResource extends Resource
 
                 TrashedFilter::make(),
             ])
-            ->actions([
-                ViewAction::make(),
-                EditAction::make(),
+            ->recordActions([
+                ViewAction::make()
+                    ->visible(fn (Group $record): bool => auth()->user()?->can('view', $record) ?? false),
+                EditAction::make()
+                    ->visible(fn (Group $record): bool => auth()->user()?->can('update', $record) ?? false),
             ])
             ->bulkActions([]);
     }

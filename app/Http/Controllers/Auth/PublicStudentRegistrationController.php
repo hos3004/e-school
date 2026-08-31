@@ -7,19 +7,21 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
-use Modules\Students\Domain\Enums\StudentGender;
+use Modules\Students\Application\Actions\SubmitPublicRegistrationFormAction;
 use Modules\Students\Domain\Models\RegistrationApplication;
+use Modules\Students\Domain\Models\RegistrationForm;
+use Modules\Students\Domain\Models\RegistrationQuestion;
+use Modules\Students\Presentation\Http\Requests\PublicStudentFormSubmissionRequest;
 
 final class PublicStudentRegistrationController extends Controller
 {
-    public function showForm(GeographyQueries $geography): Response
+    public function showForm(GeographyQueries $geography, ?string $formSlug = null): Response
     {
+        $form = $this->registrationForm($formSlug);
         $locale = app()->getLocale();
         $countries = array_map(static fn ($country): array => [
             'id' => $country->id, 'iso2' => $country->iso2,
@@ -32,46 +34,71 @@ final class PublicStudentRegistrationController extends Controller
             ], $geography->regionsOf($country['id']));
         }
 
-        return Inertia::render('Auth/RegisterStudent', compact('countries', 'regions'));
+        return Inertia::render('Auth/RegisterStudent', [
+            'countries' => $countries,
+            'regions' => $regions,
+            'registrationForm' => [
+                'slug' => $form->slug,
+                'title' => $form->localizedTitle(),
+                'description' => $form->localizedDescription(),
+            ],
+            'questions' => $this->activeQuestions($form),
+            'submitUrl' => route('register.student.form.store', ['formSlug' => $form->slug]),
+        ]);
     }
 
-    public function store(Request $request, GeographyQueries $geography): RedirectResponse
-    {
-        $key = 'student-registration:'.$request->ip();
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            abort(429, __('auth.register.rate_limited'));
-        }
-        RateLimiter::hit($key, 60);
-
-        $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email:rfc', 'max:255', 'required_without:phone', Rule::unique('registration_applications', 'email')->whereNull('deleted_at')],
-            'phone' => ['nullable', 'string', 'max:32', 'required_without:email'],
-            'date_of_birth' => ['required', 'date', 'before:today'],
-            'gender' => ['required', Rule::enum(StudentGender::class)],
-            'country_id' => ['required', 'string', 'size:26'],
-            'region_id' => ['required', 'string', 'size:26'],
-            'notes' => ['nullable', 'string', 'max:5000'],
-        ]);
-        abort_unless($geography->regionExistsIn($validated['region_id'], $validated['country_id']), 422, __('auth.register.invalid_region'));
-
-        $organizationId = (string) config('app.default_organization_id');
-        if ($organizationId === '') {
-            $organizationId = (string) DB::table('organizations')->orderBy('created_at')->value('id');
-        }
-        abort_if($organizationId === '', 500, __('auth.register.organization_unavailable'));
-
-        $application = RegistrationApplication::query()->create([
-            'organization_id' => $organizationId,
-            'full_name' => trim($validated['full_name']),
-            'email' => isset($validated['email']) ? mb_strtolower(trim((string) $validated['email'])) : null,
-            'phone' => $validated['phone'] ?? null,
-            'date_of_birth' => $validated['date_of_birth'], 'gender' => $validated['gender'],
-            'country_id' => $validated['country_id'], 'region_id' => $validated['region_id'],
-            'status' => 'submitted', 'submitted_at' => now(), 'notes' => $validated['notes'] ?? null,
-        ]);
+    public function store(
+        PublicStudentFormSubmissionRequest $request,
+        SubmitPublicRegistrationFormAction $submit,
+        ?string $formSlug = null,
+    ): RedirectResponse {
+        $application = $submit->execute($request->registrationForm(), $request->validated());
 
         return redirect()->route('register.submitted', ['id' => $application->id]);
+    }
+
+    /**
+     * أسئلة التقييم المفعّلة تُعرض على النموذج، وإجاباتها تُخزَّن كلقطة
+     * (نص السؤال + الإجابة) حتى لا يمس تعديل الأسئلة لاحقًا ما قُدم سابقًا.
+     *
+     * @return list<array{id: string, question: string, type: string, options: list<string>|null, required: bool}>
+     */
+    private function activeQuestions(RegistrationForm $form): array
+    {
+        $form->loadMissing(['questions' => static fn ($query) => $query->active()]);
+
+        return $form->questions
+            ->map(static fn (RegistrationQuestion $question): array => [
+                'id' => $question->id,
+                'question' => $question->localizedQuestion(),
+                'type' => $question->type->value,
+                'options' => $question->options,
+                'required' => $question->is_required,
+            ])
+            ->all();
+    }
+
+    private function registrationForm(?string $slug): RegistrationForm
+    {
+        abort_unless((bool) config('admission.self_registration.enabled', false), 404);
+
+        $query = RegistrationForm::query()->published();
+
+        if (is_string($slug) && $slug !== '') {
+            return $query->where('slug', $slug)->firstOrFail();
+        }
+
+        $organizationId = (string) config('app.default_organization_id');
+        if ($organizationId !== '') {
+            $query->forOrganization($organizationId);
+        }
+
+        $defaultSlug = (string) config('admission.self_registration.default_form_slug', '');
+        if ($defaultSlug !== '') {
+            $query->where('slug', $defaultSlug);
+        }
+
+        return $query->oldest('created_at')->firstOrFail();
     }
 
     public function showSubmitted(Request $request): Response

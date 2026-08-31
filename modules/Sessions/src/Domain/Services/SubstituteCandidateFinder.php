@@ -6,6 +6,8 @@ namespace Modules\Sessions\Domain\Services;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Modules\Staff\Domain\Contracts\StaffQueries;
+use Modules\Staff\Domain\Contracts\TeacherQualificationQueries;
 use Shared\ValueObjects\TimeRange;
 
 /**
@@ -15,11 +17,16 @@ use Shared\ValueObjects\TimeRange;
  * أخرى في نفس الوقت. المشرف يستطيع تجاوز الشروط بصلاحية خاصة، لكن التجاوز
  * يُسجَّل بسببه في session_substitutions ولا يمر صامتًا.
  *
- * نستعلم بأسماء الجداول لا بنماذج الموديولات الأخرى — الاستيراد عبر الحدود
- * ممنوع وتفرضه اختبارات المعمارية.
+ * بيانات الموظفين والتأهيلات والإجازات تعبر من العقود العامة لموديول Staff؛
+ * موديول Sessions لا يعرف جداول الموديولات الأخرى.
  */
 final readonly class SubstituteCandidateFinder
 {
+    public function __construct(
+        private StaffQueries $staff,
+        private TeacherQualificationQueries $qualifications,
+    ) {}
+
     /**
      * الحالات التي لا تحجز وقت المعلم فعليًا.
      *
@@ -61,7 +68,6 @@ final readonly class SubstituteCandidateFinder
         );
 
         $qualified = $this->qualifiedForCourse(
-            (string) $session->organization_id,
             $session->course_id === null ? null : (string) $session->course_id,
         );
 
@@ -126,7 +132,6 @@ final readonly class SubstituteCandidateFinder
         $qualified = in_array(
             $staffProfileId,
             $this->qualifiedForCourse(
-                (string) $session->organization_id,
                 $session->course_id === null ? null : (string) $session->course_id,
             ),
             true,
@@ -144,30 +149,15 @@ final readonly class SubstituteCandidateFinder
     }
 
     /**
-     * التأهيل مستنبط من إسناد المعلم للمادة في أي مجموعة سارية.
-     *
-     * ملاحظة: عند إضافة جدول تأهيل صريح للمعلم بالمواد (teacher_courses)
-     * يُستبدل هذا الاستنباط به، والتوقيع هنا لا يتغير.
-     *
      * @return list<string>
      */
-    private function qualifiedForCourse(string $organizationId, ?string $courseId): array
+    private function qualifiedForCourse(?string $courseId): array
     {
         if ($courseId === null) {
             return [];
         }
 
-        $today = CarbonImmutable::now('UTC')->toDateString();
-
-        return DB::table('group_teachers')
-            ->where('course_id', $courseId)
-            ->where(function ($q) use ($today): void {
-                $q->whereNull('assigned_to')->orWhere('assigned_to', '>=', $today);
-            })
-            ->distinct()
-            ->pluck('staff_profile_id')
-            ->map(static fn ($id): string => (string) $id)
-            ->all();
+        return $this->qualifications->qualifiedTeacherIdsForCourse($courseId);
     }
 
     /**
@@ -175,24 +165,7 @@ final readonly class SubstituteCandidateFinder
      */
     private function activeTeachers(string $organizationId): array
     {
-        return DB::table('staff_profiles')
-            ->join('users', 'users.id', '=', 'staff_profiles.user_id')
-            ->where('staff_profiles.organization_id', $organizationId)
-            ->whereNull('staff_profiles.deleted_at')
-            ->whereNull('staff_profiles.terminated_at')
-            ->where('users.status', 'active')
-            ->orderBy('users.name')
-            ->get([
-                'staff_profiles.id as staff_profile_id',
-                'users.name as name',
-                'staff_profiles.staff_code as staff_code',
-            ])
-            ->map(static fn (object $r): array => [
-                'staff_profile_id' => (string) $r->staff_profile_id,
-                'name' => (string) $r->name,
-                'staff_code' => (string) $r->staff_code,
-            ])
-            ->all();
+        return $this->staff->activeTeacherSummariesForOrganization($organizationId);
     }
 
     private function conflictCount(string $staffProfileId, TimeRange $range, string $ignoreSessionId): int
@@ -210,11 +183,6 @@ final readonly class SubstituteCandidateFinder
 
     private function isOnLeave(string $staffProfileId, TimeRange $range): bool
     {
-        return DB::table('teacher_leaves')
-            ->where('staff_profile_id', $staffProfileId)
-            ->where('status', 'approved')
-            ->where('starts_at', '<', $range->end)
-            ->where('ends_at', '>', $range->start)
-            ->exists();
+        return $this->staff->isOnApprovedLeave($staffProfileId, $range->start, $range->end);
     }
 }

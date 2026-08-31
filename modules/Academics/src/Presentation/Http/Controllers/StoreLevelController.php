@@ -21,7 +21,13 @@ final class StoreLevelController extends Controller
 
     public function __invoke(StoreLevelRequest $request): JsonResponse
     {
-        $level = $this->action->execute($request->validated());
+        $data = $request->validated();
+        $data['organization_id'] = (string) $request->user()->organization_id;
+        $level = $this->action->execute(
+            $data,
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return LevelResource::make($level)
             ->response()

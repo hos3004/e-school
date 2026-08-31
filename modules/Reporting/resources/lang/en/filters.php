@@ -9,5 +9,6 @@ declare(strict_types=1);
 return [
 
     'has_violations' => 'Has violations?',
+    'at_risk' => 'At risk (low attendance)',
 
 ];

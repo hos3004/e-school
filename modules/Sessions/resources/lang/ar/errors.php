@@ -3,6 +3,23 @@
 declare(strict_types=1);
 
 return [
+    'reason_required' => 'كتابة السبب مطلوبة لإتمام هذا الإجراء.',
+    'terminal_status' => 'لا يمكن تعديل حصة في الحالة النهائية :status.',
+    'start_in_past' => 'يجب أن يكون موعد الحصة في المستقبل.',
+    'end_before_start' => 'يجب أن يكون وقت الانتهاء بعد وقت البدء.',
+    'teacher_double_booking' => 'المعلم أو المجموعة مرتبط بحصة أخرى في الوقت نفسه (:conflicting_session_id).',
+    'invalid_scheduling_context' => 'المقرر أو المجموعة أو المعلم لا ينتمي إلى المؤسسة أو غير صالح للجدولة.',
+    'invalid_session_type' => 'نوع الحصة المحدد غير معتمد.',
+    'cancel_target_invalid' => 'جهة الإلغاء المحددة غير صالحة.',
+    'cancellation_window_passed' => 'انتهت مهلة إلغاء الطالب قبل :minutes دقيقة من الحصة.',
+    'postponement_window_passed' => 'انتهت مهلة التأجيل قبل :minutes دقيقة من الحصة.',
+    'makeup_duration_changed' => 'يجب أن تحتفظ حصة التلافي بمدة الحصة الأصلية.',
+    'attendance_type_invalid' => 'نوع تسجيل الحضور :type غير صالح.',
+    'participant_not_active' => 'المشارك لا ينتمي إلى هذه الحصة أو أن دعوته لم تعد نشطة.',
+    'not_joinable' => 'لا يمكن الانضمام إلى حصة حالتها :status.',
+    'already_joined' => 'تم تسجيل دخول المشارك من قبل.',
+    'leave_without_join' => 'لا يمكن تسجيل المغادرة قبل تسجيل الدخول.',
+    'already_left' => 'تم تسجيل مغادرة المشارك من قبل.',
     'substitute_same_teacher' => 'المعلم البديل هو نفسه المعلم المسنَد للحصة.',
     'substitute_reason_required' => 'سبب الاستبدال مطلوب.',
     'substitute_not_qualified' => 'هذا المعلم غير مؤهل لتدريس هذه المادة. يلزم تجاوز إداري بسبب مكتوب.',
@@ -18,4 +35,5 @@ return [
     'apology_rejection_reason_required' => 'رفض الاعتذار يتطلب كتابة سببه.',
     'apology_invalid_transition' => 'انتقال غير مسموح للاعتذار من :from إلى :to.',
     'apology_must_not_change_session' => 'خطأ داخلي: اعتماد الاعتذار غيّر حالة الحصة. الاعتذار لا يُلغي الحصة أبدًا.',
+    'apology_context_mismatch' => 'الاعتذار المحدد لا ينتمي إلى هذه الحصة أو المؤسسة.',
 ];

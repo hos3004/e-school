@@ -8,6 +8,9 @@ declare(strict_types=1);
 
 return [
     'registration_offering_invalid' => 'The selected course is not available in this organization and program.',
+    'registration_answers_invalid' => 'The answers contain a question that does not belong to this form.',
+    'registration_answer_required' => 'This question is required.',
+    'registration_answer_invalid' => 'The selected value is not available for this question.',
 
     'user_already_student' => 'This user is already linked to a student profile.',
     'code_taken' => 'The student code is already taken — it must be unique.',

@@ -13,7 +13,7 @@ final class SubmitAttemptRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('assessments.attempt.submit');
+        return $this->user()?->can('assessment.take') ?? false;
     }
 
     /**

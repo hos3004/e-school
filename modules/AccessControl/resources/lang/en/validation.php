@@ -5,6 +5,7 @@ declare(strict_types=1);
 /* Input validation messages — consumed from FormRequests. */
 
 return [
+    'reason_required' => 'A reason for the access change is required for audit.',
 
     'role_name_required' => 'The role name is required.',
     'permission_name_required' => 'The permission name is required.',

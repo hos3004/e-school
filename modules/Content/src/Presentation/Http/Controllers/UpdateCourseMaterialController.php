@@ -22,7 +22,13 @@ final class UpdateCourseMaterialController extends Controller
 
     public function __invoke(UpdateCourseMaterialRequest $request, CourseMaterial $material): JsonResponse
     {
-        $updated = $this->action->execute($material->id, $request->validated());
+        $data = $request->validated();
+        $updated = $this->action->execute(
+            material: $material,
+            data: $data,
+            reason: (string) $data['reason'],
+            actorId: (string) $request->user()->getAuthIdentifier(),
+        );
 
         return CourseMaterialResource::make($updated)->response();
     }

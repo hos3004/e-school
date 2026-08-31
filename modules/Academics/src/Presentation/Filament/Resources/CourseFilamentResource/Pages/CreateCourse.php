@@ -5,51 +5,21 @@ declare(strict_types=1);
 namespace Modules\Academics\Presentation\Filament\Resources\CourseFilamentResource\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Validation\ValidationException;
-use Modules\Academics\Domain\Models\Level;
+use Illuminate\Database\Eloquent\Model;
+use Modules\Academics\Application\Actions\CreateCourseAction;
 use Modules\Academics\Presentation\Filament\Resources\CourseFilamentResource;
 
 final class CreateCourse extends CreateRecord
 {
     protected static string $resource = CourseFilamentResource::class;
 
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    protected function mutateFormDataBeforeCreate(array $data): array
+    /** @param array<string, mixed> $data */
+    protected function handleRecordCreation(array $data): Model
     {
-        $organizationId = data_get($this->getUser(), 'organization_id');
-
-        if (!is_string($organizationId) || $organizationId === '') {
-            throw ValidationException::withMessages([
-                'level_id' => __('academics::filament.course.errors.no_organization'),
-            ]);
-        }
-
-        /*
-         * المستوى يأتي من قائمة مُصفّاة بالفعل، لكن القائمة تُبنى في المتصفح
-         * ويمكن التلاعب بقيمتها في الطلب. التحقق هنا خادمي: لا يُربط كورس
-         * بمستوى برنامجٍ من مؤسسة أخرى مهما كانت القيمة المرسلة.
-         */
-        $levelId = $data['level_id'] ?? null;
-
-        $belongsToOrganization = is_string($levelId) && Level::query()
-            ->whereKey($levelId)
-            ->whereHas(
-                'program',
-                static fn ($program) => $program->where('organization_id', $organizationId),
-            )
-            ->exists();
-
-        if (!$belongsToOrganization) {
-            throw ValidationException::withMessages([
-                'level_id' => __('academics::filament.course.errors.level_outside_organization'),
-            ]);
-        }
-
+        $organizationId = auth()->user()?->getAttribute('organization_id');
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403);
         $data['organization_id'] = $organizationId;
 
-        return $data;
+        return app(CreateCourseAction::class)->execute($data, (string) auth()->id(), (string) $data['reason']);
     }
 }

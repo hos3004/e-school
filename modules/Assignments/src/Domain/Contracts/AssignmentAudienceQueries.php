@@ -12,6 +12,26 @@ interface AssignmentAudienceQueries
 
     public function staffProfileBelongsToOrganization(string $organizationId, string $staffProfileId): bool;
 
+    public function targetBelongsToOrganization(
+        string $organizationId,
+        string $courseId,
+        ?string $groupId,
+    ): bool;
+
+    public function teacherCanTeachTarget(
+        string $organizationId,
+        string $staffProfileId,
+        string $courseId,
+        ?string $groupId,
+    ): bool;
+
+    /** @return list<string> */
+    public function studentProfileIdsForTarget(
+        string $organizationId,
+        string $courseId,
+        ?string $groupId,
+    ): array;
+
     public function teacherIsAssignedToTarget(
         string $organizationId,
         string $userId,

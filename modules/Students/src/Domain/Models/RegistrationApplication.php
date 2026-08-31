@@ -18,6 +18,7 @@ use Shared\Concerns\HasUlid;
  *
  * @property string $id
  * @property string $organization_id
+ * @property string|null $registration_form_id
  * @property string|null $user_id
  * @property string|null $student_profile_id
  * @property RegistrationStatus $status
@@ -31,6 +32,7 @@ use Shared\Concerns\HasUlid;
  * @property string|null $preferred_program_id
  * @property string|null $preferred_course_id
  * @property string|null $notes
+ * @property list<array{question_id: string, question: string, type?: string, answer?: string|list<string>}>|null $evaluation_answers
  * @property CarbonImmutable|null $submitted_at
  * @property string|null $reviewed_by
  * @property CarbonImmutable|null $reviewed_at
@@ -52,6 +54,7 @@ final class RegistrationApplication extends Model
      */
     protected $fillable = [
         'organization_id',
+        'registration_form_id',
         'user_id',
         'student_profile_id',
         'status',
@@ -65,6 +68,7 @@ final class RegistrationApplication extends Model
         'preferred_program_id',
         'preferred_course_id',
         'notes',
+        'evaluation_answers',
         'submitted_at',
         'reviewed_by',
         'reviewed_at',
@@ -80,6 +84,7 @@ final class RegistrationApplication extends Model
         return [
             'status' => RegistrationStatus::class,
             'gender' => StudentGender::class,
+            'evaluation_answers' => 'array',
             'date_of_birth' => 'immutable_date',
             'submitted_at' => 'immutable_datetime',
             'reviewed_at' => 'immutable_datetime',
@@ -95,6 +100,12 @@ final class RegistrationApplication extends Model
     public function studentProfile(): BelongsTo
     {
         return $this->belongsTo(StudentProfile::class, 'student_profile_id');
+    }
+
+    /** @return BelongsTo<RegistrationForm, $this> */
+    public function registrationForm(): BelongsTo
+    {
+        return $this->belongsTo(RegistrationForm::class);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\AccessControl\Application\Actions\CreatePermissionAction;
 use Modules\AccessControl\Application\Actions\CreateRoleAction;
@@ -11,6 +12,7 @@ use Modules\AccessControl\Domain\Enums\GuardName;
 use Modules\AccessControl\Domain\Events\RolePermissionsSynced;
 use Modules\AccessControl\Domain\Models\Role;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 function acRoleWithPermissions(string $name, array $permissionNames): Role
 {
@@ -112,4 +114,25 @@ it('answers cross-module queries through the querier only', function (): void {
 
     expect($querier->modelHasDirectPermission('users', '01USER0000000000000000000', 'query.me'))->toBeFalse()
         ->and($querier->rolesForModel('users', '01USER0000000000000000000'))->toBeArray();
+});
+
+it('audits a changed role permission set with the written reason', function (): void {
+    $organizationId = Fixtures::organizationId();
+    $actorId = Fixtures::userId();
+    $role = app(CreateRoleAction::class)->execute('audited-sync', GuardName::Web, $organizationId);
+    app(CreatePermissionAction::class)->execute('reports.audit', GuardName::Web);
+
+    app(SyncRolePermissionsAction::class)->execute(
+        roleId: (string) $role->getKey(),
+        permissionNames: ['reports.audit'],
+        actorId: $actorId,
+        organizationId: $organizationId,
+        reason: 'reporting responsibilities approved',
+    );
+
+    expect(DB::table('audit_log')->where([
+        'action' => 'accesscontrol.role_permissions_synced',
+        'auditable_id' => $role->getKey(),
+        'reason' => 'reporting responsibilities approved',
+    ])->exists())->toBeTrue();
 });

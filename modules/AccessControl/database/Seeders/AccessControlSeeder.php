@@ -23,7 +23,10 @@ final class AccessControlSeeder extends Seeder
     private const PERMISSIONS = [
         'Students' => ['student.view', 'student.view.any', 'student.create', 'student.update'],
         'Guardians' => ['guardian.view', 'guardian.link'],
-        'Staff' => ['staff.view', 'staff.view.any', 'staff.contract.view', 'staff.contract.update', 'staff.leave.approve'],
+        'Staff' => [
+            'staff.view', 'staff.view.any', 'staff.contract.view', 'staff.contract.update',
+            'staff.availability.create', 'staff.availability.approve', 'staff.leave.approve',
+        ],
         'Enrollments' => [
             'enrollment.view', 'enrollment.create', 'enrollment.pause',
             'enrollment.freeze', 'enrollment.reactivate',
@@ -63,6 +66,11 @@ final class AccessControlSeeder extends Seeder
         ],
         'Reporting' => ['report.view', 'report.export'],
         'Audit' => ['audit.view'],
+        'Popups' => [
+            'popup_campaign.view_any', 'popup_campaign.view', 'popup_campaign.view_analytics',
+            'popup_campaign.create', 'popup_campaign.update',
+            'popup_campaign.publish', 'popup_campaign.pause', 'popup_campaign.archive',
+        ],
         'Organization' => ['settings.manage', 'system.alerts'],
         'Identity' => [
             'admin.panel.access',
@@ -97,7 +105,8 @@ final class AccessControlSeeder extends Seeder
             'accesscontrol.roles.view_any', 'accesscontrol.roles.view',
             'accesscontrol.permissions.view_any', 'accesscontrol.permissions.view',
             'student.view', 'student.view.any', 'student.update', 'guardian.view',
-            'staff.view', 'staff.view.any', 'staff.contract.view', 'staff.leave.approve',
+            'staff.view', 'staff.view.any', 'staff.contract.view',
+            'staff.availability.approve', 'staff.leave.approve',
             'enrollment.view', 'enrollment.create', 'enrollment.pause',
             'enrollment.freeze', 'enrollment.reactivate',
             'program.manage', 'course.manage', 'group.view', 'group.manage',
@@ -158,11 +167,15 @@ final class AccessControlSeeder extends Seeder
             'attendance.view', 'enrollment.view',
             'message.send', 'message.moderate', 'messaging.inbound.view',
             'announcement.publish', 'report.view',
+            'popup_campaign.view_any', 'popup_campaign.view', 'popup_campaign.view_analytics',
+            'popup_campaign.create', 'popup_campaign.update',
+            'popup_campaign.publish', 'popup_campaign.pause', 'popup_campaign.archive',
         ],
 
         'teacher' => [
             'student.view', 'guardian.view',
             'staff.view', 'staff.contract.view',
+            'staff.availability.create',
             'enrollment.view', 'group.view', 'content.view', 'content.manage',
             'schedule.view',
             'session.view', 'session.create', 'session.cancel',

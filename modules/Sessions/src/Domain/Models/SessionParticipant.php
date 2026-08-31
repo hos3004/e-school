@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
@@ -21,14 +22,19 @@ use Shared\Concerns\HasUlid;
  * @property CarbonImmutable|null $invited_at
  * @property CarbonImmutable|null $first_joined_at
  * @property CarbonImmutable|null $last_left_at
+ * @property CarbonImmutable|null $revoked_at
+ * @property string|null $revoked_by
+ * @property string|null $revocation_reason
  * @property int $attended_minutes
  * @property Carbon|null $created_at
+ * @property Carbon|null $deleted_at
  * @property-read Session $session
  */
 final class SessionParticipant extends Model
 {
     use HasModuleFactory;
     use HasUlid;
+    use SoftDeletes;
 
     public const UPDATED_AT = null;
 
@@ -40,6 +46,9 @@ final class SessionParticipant extends Model
         'enrollment_id',
         'join_url_token',
         'invited_at',
+        'revoked_at',
+        'revoked_by',
+        'revocation_reason',
         'first_joined_at',
         'last_left_at',
         'attended_minutes',
@@ -49,6 +58,7 @@ final class SessionParticipant extends Model
     {
         return [
             'invited_at' => 'immutable_datetime',
+            'revoked_at' => 'immutable_datetime',
             'first_joined_at' => 'immutable_datetime',
             'last_left_at' => 'immutable_datetime',
             'attended_minutes' => 'int',
@@ -68,5 +78,14 @@ final class SessionParticipant extends Model
     public function scopeForStudent(Builder $query, string $studentProfileId): Builder
     {
         return $query->where('student_profile_id', $studentProfileId);
+    }
+
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
+    public function scopeActiveInvitation(Builder $query): Builder
+    {
+        return $query->whereNull('revoked_at');
     }
 }

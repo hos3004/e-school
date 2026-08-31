@@ -62,22 +62,28 @@ use Modules\Notifications\Presentation\Filament\Resources\NotificationCategorySe
 use Modules\Notifications\Presentation\Filament\Resources\NotificationOutboxResource;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationPreferenceResource;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationTemplateResource;
+use Modules\Notifications\Presentation\Filament\Resources\PopupCampaignResource;
 use Modules\Organization\Presentation\Filament\Resources\AcademicCalendarFilamentResource;
 use Modules\Organization\Presentation\Filament\Resources\HolidayFilamentResource;
 use Modules\Organization\Presentation\Filament\Resources\OrganizationFilamentResource;
 use Modules\Payroll\Presentation\Filament\Resources\PayrollEntryResource;
 use Modules\Payroll\Presentation\Filament\Resources\PayrollPeriodResource;
 use Modules\Recordings\Presentation\Filament\Resources\RecordingResource;
+use Modules\Reporting\Presentation\Filament\Pages\OperationalReports;
 use Modules\Reporting\Presentation\Filament\Resources\OrganizationSnapshotResource;
 use Modules\Reporting\Presentation\Filament\Resources\ReportEventLogResource;
 use Modules\Reporting\Presentation\Filament\Resources\StudentDashboardResource;
 use Modules\Reporting\Presentation\Filament\Resources\TeacherDashboardResource;
 use Modules\Scheduling\Presentation\Filament\Resources\PostponementRequestResource;
+use Modules\Scheduling\Presentation\Filament\Resources\ScheduleResource;
 use Modules\Sessions\Presentation\Filament\Resources\SessionParticipantResource;
 use Modules\Sessions\Presentation\Filament\Resources\SessionResource;
+use Modules\Staff\Presentation\Filament\Pages\TeachersDirectory;
 use Modules\Staff\Presentation\Filament\Resources\StaffProfileResource;
 use Modules\Students\Presentation\Filament\Resources\RegistrationApplicationResource;
+use Modules\Students\Presentation\Filament\Resources\RegistrationFormResource;
 use Modules\Students\Presentation\Filament\Resources\StudentProfileResource;
+use Modules\VirtualClassroom\Presentation\Filament\Pages\ClassroomConnectionSettings;
 
 final class AdminPanelProvider extends PanelProvider
 {
@@ -148,6 +154,7 @@ final class AdminPanelProvider extends PanelProvider
                 NotificationPreferenceResource::class,
                 NotificationTemplateResource::class,
                 NotificationCategorySettingResource::class,
+                PopupCampaignResource::class,
                 AcademicCalendarFilamentResource::class,
                 HolidayFilamentResource::class,
                 OrganizationFilamentResource::class,
@@ -161,10 +168,12 @@ final class AdminPanelProvider extends PanelProvider
                 StudentDashboardResource::class,
                 TeacherDashboardResource::class,
                 PostponementRequestResource::class,
+                ScheduleResource::class,
                 SessionParticipantResource::class,
                 SessionResource::class,
                 StaffProfileResource::class,
                 RegistrationApplicationResource::class,
+                RegistrationFormResource::class,
                 StudentProfileResource::class,
             ])
             // في هذه التركيبة يبدأ Livewire محرّك Alpine قبل تنفيذ سكربتات
@@ -176,6 +185,11 @@ final class AdminPanelProvider extends PanelProvider
                 'panels::body.end',
                 fn () => view('filament.hooks.alpine-boot'),
             )
+            // طبقة النوافذ المنبثقة داخل لوحة الإدارة — نفس المكوّن الموحد.
+            ->renderHook(
+                'panels::body.end',
+                fn () => view('notifications::popups.layer'),
+            )
             ->widgets([
                 PlatformOverview::class,
                 NeedsAttention::class,
@@ -185,6 +199,9 @@ final class AdminPanelProvider extends PanelProvider
             ])
             ->pages([
                 Dashboard::class,
+                ClassroomConnectionSettings::class,
+                TeachersDirectory::class,
+                OperationalReports::class,
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -7,21 +7,17 @@ namespace Modules\Sessions\Presentation\Filament\Resources;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Sessions\Application\Actions\AssignSubstituteTeacherAction;
+use Modules\Sessions\Application\Queries\SessionOperationsQueryService;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Services\SubstituteCandidateFinder;
@@ -41,7 +37,7 @@ final class SessionResource extends Resource
 
     protected static ?int $navigationSort = 41;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('sessions::navigation.group');
     }
@@ -54,49 +50,6 @@ final class SessionResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('sessions::navigation.session.plural');
-    }
-
-    public static function form(Schema $schema): Schema
-    {
-        return $schema->components([
-            Section::make(__('sessions::fields.scheduling'))
-                ->schema([
-                    Grid::make(2)->schema([
-                        Select::make('course_id')
-                            ->label(__('sessions::fields.course'))
-                            ->required(),
-                        Select::make('staff_profile_id')
-                            ->label(__('sessions::fields.staff_profile'))
-                            ->required(),
-                        DateTimePicker::make('scheduled_start')
-                            ->label(__('sessions::fields.scheduled_start'))
-                            ->required(),
-                        DateTimePicker::make('scheduled_end')
-                            ->label(__('sessions::fields.scheduled_end'))
-                            ->required(),
-                        TextInput::make('session_type')
-                            ->label(__('sessions::fields.session_type'))
-                            ->required()
-                            ->maxLength(50),
-                        Select::make('status')
-                            ->label(__('sessions::fields.status'))
-                            ->options(collect(SessionStatus::cases())
-                                ->mapWithKeys(fn (SessionStatus $s): array => [$s->value => $s->label()])
-                                ->all())
-                            ->required(),
-                    ]),
-                ]),
-            Section::make(__('sessions::fields.details'))
-                ->schema([
-                    Textarea::make('title')
-                        ->label(__('sessions::fields.title'))
-                        ->required()
-                        ->columnSpanFull(),
-                    Textarea::make('notes')
-                        ->label(__('sessions::fields.notes'))
-                        ->columnSpanFull(),
-                ]),
-        ]);
     }
 
     public static function table(Table $table): Table
@@ -122,6 +75,20 @@ final class SessionResource extends Resource
                     ->color(fn ($state): string => $state instanceof SessionStatus
                         ? $state->color()
                         : 'gray'),
+                TextColumn::make('course_id')
+                    ->label(__('sessions::fields.course'))
+                    ->formatStateUsing(fn (mixed $state, Session $record): string => self::queries()->courseLabel(
+                        (string) $record->organization_id,
+                        (string) $state,
+                    ))
+                    ->toggleable(),
+                TextColumn::make('group_id')
+                    ->label(__('sessions::fields.group'))
+                    ->formatStateUsing(fn (mixed $state, Session $record): string => self::queries()->groupLabel(
+                        (string) $record->organization_id,
+                        $state === null ? null : (string) $state,
+                    ))
+                    ->toggleable(),
                 TextColumn::make('staff_profile_id')
                     ->label(__('sessions::fields.staff_profile'))
                     /*
@@ -132,6 +99,10 @@ final class SessionResource extends Resource
                     ->formatStateUsing(static fn ($state): string => self::teacherNames()[(string) $state]
                         ?? (string) $state)
                     ->toggleable(),
+                TextColumn::make('active_participants_count')
+                    ->label(__('sessions::fields.participants_count'))
+                    ->counts(['participants' => static fn (Builder $query): Builder => $query->whereNull('revoked_at')])
+                    ->numeric(),
                 TextColumn::make('scheduled_start')
                     ->label(__('sessions::fields.scheduled_start'))
                     ->dateTime()
@@ -253,12 +224,13 @@ final class SessionResource extends Resource
         return $options;
     }
 
-    private static function assignSubstituteAction(): Action
+    public static function assignSubstituteAction(): Action
     {
         return Action::make('assign_substitute')
             ->label(__('sessions::actions.assign_substitute'))
             ->icon('heroicon-m-user-plus')
             ->color('warning')
+            ->authorize('assignSubstitute')
             ->modalHeading(__('sessions::actions.assign_substitute_heading'))
             ->modalDescription(__('sessions::actions.assign_substitute_description'))
             ->visible(fn (Session $record): bool => in_array($record->status, [
@@ -337,6 +309,11 @@ final class SessionResource extends Resource
                     ->success()
                     ->send();
             });
+    }
+
+    private static function queries(): SessionOperationsQueryService
+    {
+        return app(SessionOperationsQueryService::class);
     }
 
     public static function getPages(): array

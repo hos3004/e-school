@@ -13,5 +13,8 @@
     </head>
     <body>
         @inertia
+
+        {{-- طبقة النوافذ المنبثقة — مرة واحدة لكل الواجهات (Inertia) --}}
+        @include('notifications::popups.layer')
     </body>
 </html>

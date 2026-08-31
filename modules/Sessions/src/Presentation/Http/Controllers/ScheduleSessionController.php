@@ -21,7 +21,13 @@ final class ScheduleSessionController extends Controller
 
     public function __invoke(StoreSessionRequest $request): JsonResponse
     {
-        $session = $this->action->execute($request->validated());
+        $data = $request->safe()->except(['reason']);
+        $data['organization_id'] = (string) $request->user()->getAttribute('organization_id');
+        $session = $this->action->execute(
+            $data,
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return SessionResource::make($session)
             ->response()

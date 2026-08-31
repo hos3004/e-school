@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\AccessControl\Application\Actions\CreatePermissionAction;
 use Modules\AccessControl\Application\Actions\GrantModelPermissionAction;
@@ -12,6 +13,7 @@ use Modules\AccessControl\Domain\Events\ModelPermissionGranted;
 use Modules\AccessControl\Domain\Events\ModelPermissionRevoked;
 use Modules\AccessControl\Domain\Models\ModelHasPermission;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 const AC_DIRECT_TYPE = 'staff_profiles';
 const AC_DIRECT_ID = '01STAFF0000000000000000000';
@@ -68,4 +70,40 @@ it('refuses revoking a permission that was never granted', function (): void {
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.permission.not_granted');
     }
+});
+
+it('audits direct permission grant and revocation with written reasons', function (): void {
+    $organizationId = Fixtures::organizationId();
+    $actorId = Fixtures::userId();
+    $targetId = Fixtures::userId();
+    acDirectPermission('sessions.override');
+
+    app(GrantModelPermissionAction::class)->execute(
+        'sessions.override',
+        AC_DIRECT_TYPE,
+        $targetId,
+        $actorId,
+        $organizationId,
+        'approved emergency classroom support request',
+    );
+
+    app(RevokeModelPermissionAction::class)->execute(
+        'sessions.override',
+        AC_DIRECT_TYPE,
+        $targetId,
+        $actorId,
+        $organizationId,
+        'emergency support request has expired',
+    );
+
+    expect(DB::table('audit_log')->where([
+        'action' => 'accesscontrol.permission_granted_directly',
+        'auditable_id' => $targetId,
+        'reason' => 'approved emergency classroom support request',
+    ])->exists())->toBeTrue()
+        ->and(DB::table('audit_log')->where([
+            'action' => 'accesscontrol.permission_revoked_directly',
+            'auditable_id' => $targetId,
+            'reason' => 'emergency support request has expired',
+        ])->exists())->toBeTrue();
 });

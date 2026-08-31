@@ -19,6 +19,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Certificates\Domain\Enums\BadgeTier;
 use Modules\Certificates\Domain\Models\Badge;
+use Shared\Codes\EntityCodeGenerator;
 use Shared\Concerns\ScopesFilamentToOrganization;
 
 /**
@@ -63,7 +64,8 @@ final class BadgeFilamentResource extends Resource
                             ->label(__('certificates::fields.code'))
                             ->required()
                             ->alphaDash()
-                            ->maxLength(100),
+                            ->default(fn (EntityCodeGenerator $codes): string => $codes->next('badge'))
+                            ->maxLength(8),
                         Select::make('tier')
                             ->label(__('certificates::fields.tier'))
                             ->options(collect(BadgeTier::cases())

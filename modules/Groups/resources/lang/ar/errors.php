@@ -27,4 +27,11 @@ return [
     'individual_course_requires_empty_group' => 'مجموعة الكورس الفردي لا تقبل أكثر من طالب نشط واحد.',
     'teacher_profile_invalid' => 'أحد المعلمين المسندين غير نشط داخل هذه المؤسسة.',
     'teacher_not_qualified' => 'أحد المعلمين المسندين غير مؤهل للكورس «:course_id».',
+    'program_not_found' => 'البرنامج المحدد غير موجود داخل هذه المؤسسة.',
+    'course_not_found' => 'الكورس المحدد غير موجود داخل هذه المؤسسة.',
+    'unassign_reason_required' => 'لا يمكن إنهاء إسناد المعلم دون كتابة سبب.',
+    'detach_reason_required' => 'لا يمكن فك ربط البرنامج دون كتابة سبب.',
+    'activation_data_incomplete' => 'لا يمكن تفعيل المجموعة قبل استكمال: :missing.',
+    'capacity_below_members' => 'السعة المدخلة (:capacity) أقل من عدد الطلاب المسكَّنين بالفعل (:members).',
+    'invalid_membership_transition' => 'لا يمكن نقل الانتساب من حالة «:from» إلى «:to».',
 ];

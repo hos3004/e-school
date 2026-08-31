@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\AccessControl\Domain\Contracts;
 
-use Modules\AccessControl\Application\Queries\RoleData;
+use Modules\AccessControl\Domain\ValueObjects\RoleData;
 
 /**
  * قراءة فقط — الواجهة العامة لموديول AccessControl لبقية الموديولات.
@@ -14,6 +14,9 @@ use Modules\AccessControl\Application\Queries\RoleData;
  */
 interface AccessControlQuerier
 {
+    /** @return list<RoleData> */
+    public function rolesAvailableToOrganization(string $organizationId): array;
+
     /**
      * أسماء صلاحيات الدور (عبر role_has_permissions).
      *

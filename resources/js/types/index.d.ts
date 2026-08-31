@@ -32,6 +32,7 @@ export interface AppPageProps extends Record<string, unknown> {
     flash: FlashMessages;
     translations: TranslationDictionary;
     locale?: Locale;
+    supportedLocales?: Locale[];
 }
 
 export interface LoadablePageProps {
@@ -57,6 +58,7 @@ export interface Session {
     location?: string | null;
     joinUrl?: string | null;
     canJoinAt?: IsoDateTime | null;
+    canJoinUntil?: IsoDateTime | null;
     canJoin?: boolean;
     recordingUrl?: string | null;
     attendanceConfirmed?: boolean;

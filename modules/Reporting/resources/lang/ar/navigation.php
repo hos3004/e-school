@@ -8,7 +8,9 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'التقارير واللوحات',
+    'group' => 'التقارير',
+
+    'operational' => 'تقارير الحصص',
 
     'student' => [
         'label' => 'لوحة طالب',

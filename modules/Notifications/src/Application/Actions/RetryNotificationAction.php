@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Notifications\Application\Actions;
 
 use Carbon\CarbonImmutable;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Notifications\Application\Jobs\SendQueuedNotification;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
@@ -21,11 +22,15 @@ final readonly class RetryNotificationAction
 {
     public function __construct(
         private Transaction $transaction,
+        private AuditRecorder $audit,
     ) {}
 
-    public function execute(NotificationOutbox $outbox, ?string $actorId = null): NotificationOutbox
-    {
-        return $this->transaction->run(function () use ($outbox, $actorId): NotificationOutbox {
+    public function execute(
+        NotificationOutbox $outbox,
+        ?string $actorId = null,
+        ?string $reason = null,
+    ): NotificationOutbox {
+        return $this->transaction->run(function () use ($outbox, $actorId, $reason): NotificationOutbox {
             /** @var NotificationOutbox $current */
             $current = NotificationOutbox::query()->lockForUpdate()->findOrFail($outbox->getKey());
 
@@ -46,6 +51,20 @@ final readonly class RetryNotificationAction
                 );
             }
 
+            if ($actorId !== null && trim((string) $reason) === '') {
+                throw BusinessRuleViolation::make(
+                    'notifications.manual_retry_reason_required',
+                    'notifications::errors.manual_retry_reason_required',
+                );
+            }
+
+            $oldValues = [
+                'status' => $current->status->value,
+                'attempts' => $current->attempts,
+                'last_error' => $current->last_error,
+                'last_error_retryable' => $current->last_error_retryable,
+            ];
+
             $changes = [
                 'status' => OutboxStatus::Queued,
                 'attempts' => 0,
@@ -61,6 +80,24 @@ final readonly class RetryNotificationAction
 
             $current->forceFill($changes)->save();
 
+            if ($actorId !== null) {
+                $this->audit->record(
+                    organizationId: (string) $current->organization_id,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'notifications.manual_retry',
+                    auditableType: 'notification_outbox',
+                    auditableId: (string) $current->getKey(),
+                    oldValues: $oldValues,
+                    newValues: [
+                        'status' => OutboxStatus::Queued->value,
+                        'attempts' => 0,
+                        'scheduled_for' => $current->scheduled_for->toIso8601String(),
+                    ],
+                    reason: trim((string) $reason),
+                );
+            }
+
             return $current;
         });
     }
@@ -71,8 +108,11 @@ final readonly class RetryNotificationAction
      * المحاولات السابقة لا تُحذف، ولذلك يسجّل الـworker المحاولة التالية
      * برقم تاريخي جديد في notification_delivery_attempts.
      */
-    public function executeManually(NotificationOutbox $outbox, string $actorId): NotificationOutbox
-    {
+    public function executeManually(
+        NotificationOutbox $outbox,
+        string $actorId,
+        string $reason,
+    ): NotificationOutbox {
         if (trim($actorId) === '') {
             throw BusinessRuleViolation::make(
                 'notifications.manual_retry_actor_required',
@@ -80,7 +120,7 @@ final readonly class RetryNotificationAction
             );
         }
 
-        $retried = $this->execute($outbox, $actorId);
+        $retried = $this->execute($outbox, $actorId, $reason);
 
         SendQueuedNotification::dispatch($retried->id)
             ->onQueue((string) config('notifications.delivery.queue'));

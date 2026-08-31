@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Presentation\Filament\Resources\StaffProfileResource\Pages;
 
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Modules\Staff\Presentation\Filament\Resources\StaffProfileResource;
 
@@ -13,6 +14,9 @@ final class ListStaffProfiles extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            CreateAction::make()
+                ->label(__('staff::admin.onboarding.create_action')),
+        ];
     }
 }

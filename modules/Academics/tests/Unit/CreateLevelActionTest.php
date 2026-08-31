@@ -8,12 +8,14 @@ use Modules\Academics\Application\Actions\CreateLevelAction;
 use Modules\Academics\Domain\Events\LevelCreated;
 use Modules\Academics\Domain\Models\Program;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 function levelData(array $overrides = []): array
 {
     return array_merge([
+        'organization_id' => Fixtures::organizationId(),
         'program_id' => Program::factory()->create()->getKey(),
         'code' => 'L1',
         'name' => ['ar' => 'المستوى الأول', 'en' => 'Level One'],

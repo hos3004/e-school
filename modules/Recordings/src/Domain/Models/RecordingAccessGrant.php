@@ -4,10 +4,22 @@ declare(strict_types=1);
 
 namespace Modules\Recordings\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $organization_id
+ * @property string $recording_id
+ * @property string|null $granted_to_user_id
+ * @property string|null $granted_to_group_id
+ * @property string $granted_by_user_id
+ * @property CarbonImmutable $expires_at
+ * @property CarbonImmutable|null $revoked_at
+ * @property string $reason
+ */
 final class RecordingAccessGrant extends Model
 {
     use HasModuleFactory;

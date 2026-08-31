@@ -28,6 +28,8 @@ final class GrantModelPermissionController
             modelType: $this->targets->modelTypeFor($organizationId, $modelId),
             modelId: $modelId,
             actorId: (string) $request->user()?->getAuthIdentifier(),
+            organizationId: $organizationId,
+            reason: (string) $validated['reason'],
         );
 
         return response()->json(status: 201);

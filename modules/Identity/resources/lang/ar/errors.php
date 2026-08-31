@@ -8,12 +8,15 @@ declare(strict_types=1);
 */
 
 return [
+    'managed_role_requires_profile' => 'استخدم معالج الطالب أو المعلم أو ولي الأمر لإنشاء هذا النوع من الحسابات.',
     'email_taken' => 'هذا البريد الإلكتروني مسجّل بالفعل.',
     'username_taken' => 'اسم المستخدم محجوز لمستخدم آخر.',
 
     'status_reason_required' => 'تغيير حالة الحساب يتطلب سببًا مكتوبًا.',
     'self_status_change' => 'لا يمكنك تغيير حالة حسابك بنفسك.',
     'invalid_status_transition' => 'لا يمكن الانتقال من حالة «:from» إلى «:to».',
+    'organization_mismatch' => 'الحساب المطلوب لا ينتمي إلى مؤسستك.',
+    'update_reason_required' => 'تعديل بيانات الحساب يتطلب سببًا مكتوبًا.',
 
     'current_password_wrong' => 'كلمة المرور الحالية غير صحيحة.',
     'password_unchanged' => 'كلمة المرور الجديدة يجب أن تختلف عن الحالية.',
@@ -25,4 +28,7 @@ return [
 
     'push_token_in_use' => 'رمز الإشعارات مسجّل على جهاز آخر نشط.',
     'device_already_revoked' => 'الجهاز مسحوب مسبقًا.',
+
+    'avatar_not_uploaded' => 'لم يتم رفع أي صورة، أو فُقد الملف قبل الحفظ. حاول من جديد.',
+    'avatar_invalid_image' => 'الملف المرفوع ليس صورة صالحة. المسموح: JPEG أو PNG أو WebP فقط.',
 ];

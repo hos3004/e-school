@@ -21,6 +21,7 @@ final class RevokeRoleRequest extends FormRequest
         return [
             'role_id' => ['required', 'string', 'size:26'],
             'model_id' => ['required', 'string', 'size:26'],
+            'reason' => ['required', 'string', 'max:2000'],
         ];
     }
 
@@ -32,6 +33,7 @@ final class RevokeRoleRequest extends FormRequest
         return [
             'role_id.required' => __('accesscontrol::validation.role_required'),
             'model_id.required' => __('accesscontrol::validation.model_id_required'),
+            'reason.required' => __('accesscontrol::validation.reason_required'),
         ];
     }
 }

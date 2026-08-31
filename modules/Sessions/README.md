@@ -15,6 +15,7 @@
 - `sessions.postponed`
 - `sessions.substitute_assigned`
 - `sessions.makeup_completed`
+- `SessionAdministrationQueries` يعيد آخر حصص الطالب أو المعلم كـDTOs محدودة العدد.
 
 ## يعتمد على
 

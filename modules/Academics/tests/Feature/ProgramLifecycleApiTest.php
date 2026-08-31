@@ -12,8 +12,7 @@ use Modules\Identity\Domain\Models\User;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Gate::define('academics.programs.update', fn ($user) => true);
-    Gate::define('academics.programs.archive', fn ($user) => true);
+    Gate::define('program.manage', fn ($user) => true);
 });
 
 it('updates a program through the API', function (): void {
@@ -23,6 +22,7 @@ it('updates a program through the API', function (): void {
     $this->actingAs($user)
         ->putJson("/api/academics/programs/{$program->getKey()}", [
             'duration_weeks' => 20,
+            'reason' => 'تعديل مدة البرنامج',
         ])
         ->assertOk()
         ->assertJsonPath('data.duration_weeks', 20);

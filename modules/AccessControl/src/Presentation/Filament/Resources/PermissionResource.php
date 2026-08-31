@@ -15,6 +15,7 @@ use Filament\Tables\Table;
 use Modules\AccessControl\Domain\Enums\GuardName;
 use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Presentation\Filament\Resources\PermissionResource\Pages\ListPermissions;
+use Modules\AccessControl\Presentation\Support\AccessControlLabels;
 
 final class PermissionResource extends Resource
 {
@@ -79,13 +80,17 @@ final class PermissionResource extends Resource
             ->columns([
                 TextColumn::make('name')
                     ->label(__('accesscontrol::filament.permission.fields.name'))
+                    // البحث والفرز على المفتاح الأصلي؛ المعروض هو الترجمة.
+                    ->formatStateUsing(fn (?string $state): string => AccessControlLabels::permission($state))
+                    ->description(fn (Permission $record): string => (string) $record->name)
                     ->searchable()
                     ->sortable()
-                    ->badge()
-                    ->copyable(),
+                    ->copyable()
+                    ->copyableState(fn (Permission $record): string => (string) $record->name),
 
                 TextColumn::make('module')
                     ->label(__('accesscontrol::filament.permission.fields.module'))
+                    ->formatStateUsing(fn (?string $state): string => AccessControlLabels::module($state))
                     ->badge()
                     ->sortable(),
 
@@ -107,12 +112,15 @@ final class PermissionResource extends Resource
                 SelectFilter::make('module')
                     ->label(__('accesscontrol::filament.permission.fields.module'))
                     ->options(
-                        fn (): array => Permission::query()
-                            ->whereNotNull('module')
-                            ->distinct()
-                            ->orderBy('module')
-                            ->pluck('module', 'module')
-                            ->all(),
+                        fn (): array => AccessControlLabels::options(
+                            'modules',
+                            Permission::query()
+                                ->whereNotNull('module')
+                                ->distinct()
+                                ->orderBy('module')
+                                ->pluck('module')
+                                ->all(),
+                        ),
                     ),
             ])
             ->paginated([25, 50, 100]);

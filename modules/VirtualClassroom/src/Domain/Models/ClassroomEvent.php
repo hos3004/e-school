@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VirtualClassroom\Domain\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,15 @@ use Modules\VirtualClassroom\Domain\Enums\ClassroomEventType;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $classroom_id
+ * @property ClassroomEventType $event_type
+ * @property string|null $external_user_id
+ * @property string|null $user_id
+ * @property CarbonInterface|null $occurred_at
+ * @property array<string, mixed>|null $payload
+ */
 final class ClassroomEvent extends Model
 {
     use HasModuleFactory;

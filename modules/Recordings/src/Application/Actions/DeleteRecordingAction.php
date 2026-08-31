@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Recordings\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Events\RecordingDeleted;
 use Modules\Recordings\Domain\Models\Recording;
@@ -21,10 +22,19 @@ final readonly class DeleteRecordingAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(Recording $recording, string $reason, ?string $actorId = null): Recording
     {
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw BusinessRuleViolation::make(
+                'recordings.deletion_reason_required',
+                'recordings::errors.deletion_reason_required',
+            );
+        }
+
         if ($recording->trashed()) {
             throw BusinessRuleViolation::make(
                 'recordings.already_deleted',
@@ -40,7 +50,7 @@ final readonly class DeleteRecordingAction
             );
         }
 
-        $deletedById = $actorId ?? auth()->id();
+        $deletedById = $actorId;
 
         if ($deletedById === null || $deletedById === '') {
             throw BusinessRuleViolation::make(
@@ -54,6 +64,18 @@ final readonly class DeleteRecordingAction
                 'deleted_by' => $deletedById,
                 'deletion_reason' => $reason,
             ])->save();
+
+            $this->audit->record(
+                organizationId: (string) $recording->organization_id,
+                actorId: $deletedById,
+                actorType: 'user',
+                action: 'recordings.deleted',
+                auditableType: 'recordings',
+                auditableId: (string) $recording->getKey(),
+                oldValues: ['deleted_at' => null],
+                newValues: ['deleted_by' => $deletedById],
+                reason: $reason,
+            );
 
             $recording->delete();
         });

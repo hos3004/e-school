@@ -14,7 +14,7 @@ final class CancelSessionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('sessions.session.cancel');
+        return $this->user()->can('session.cancel');
     }
 
     /**

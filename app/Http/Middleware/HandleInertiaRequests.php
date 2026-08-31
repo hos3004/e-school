@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Lang;
 use Inertia\Middleware;
 use Modules\AccessControl\Domain\Contracts\AccessControlQuerier;
+use Shared\Support\Locales;
 
 final class HandleInertiaRequests extends Middleware
 {
@@ -54,6 +55,7 @@ final class HandleInertiaRequests extends Middleware
                 'payroll' => (bool) config('features.payroll'),
             ],
             'locale' => $locale,
+            'supportedLocales' => Locales::supported(),
             'direction' => in_array($locale, (array) config('app.rtl_locales', ['ar']), true)
                 ? 'rtl'
                 : 'ltr',

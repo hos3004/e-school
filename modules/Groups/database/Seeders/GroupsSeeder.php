@@ -27,19 +27,19 @@ final class GroupsSeeder extends Seeder
 
         $groups = [
             [
-                'code' => 'GRP-2026-001',
+                'code' => 'G001',
                 'name' => ['ar' => __('groups::messages.demo_group_name', ['n' => 1]), 'en' => 'Demo Group 1'],
                 'capacity' => 12,
                 'status' => GroupStatus::Active,
             ],
             [
-                'code' => 'GRP-2026-002',
+                'code' => 'G002',
                 'name' => ['ar' => __('groups::messages.demo_group_name', ['n' => 2]), 'en' => 'Demo Group 2'],
                 'capacity' => 16,
                 'status' => GroupStatus::Active,
             ],
             [
-                'code' => 'GRP-2026-003',
+                'code' => 'G003',
                 'name' => ['ar' => __('groups::messages.demo_group_name', ['n' => 3]), 'en' => 'Demo Group 3'],
                 'capacity' => 20,
                 'status' => GroupStatus::Planning,

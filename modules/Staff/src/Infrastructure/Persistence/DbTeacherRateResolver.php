@@ -30,7 +30,7 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
             return null;
         }
 
-        /** @var list<array{scope: RateScope, query: callable(Builder): Builder}> $candidates */
+        /** @var list<array{scope: RateScope, query: callable(Builder<TeacherRate>): Builder<TeacherRate>}> $candidates */
         $candidates = [
             [
                 'scope' => RateScope::Course,

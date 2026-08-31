@@ -29,6 +29,7 @@ final class CancelNotificationController extends Controller
         $this->action->execute(
             $notification,
             (string) $request->validated('reason'),
+            (string) $request->user()?->getAuthIdentifier(),
         );
 
         return new NotificationOutboxResource($notification->refresh());

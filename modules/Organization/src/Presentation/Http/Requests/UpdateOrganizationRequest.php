@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Modules\Organization\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\Organization\Domain\Enums\Weekday;
 use Modules\Organization\Domain\Models\Organization;
+use Shared\Support\Locales;
 
 final class UpdateOrganizationRequest extends FormRequest
 {
@@ -32,9 +34,9 @@ final class UpdateOrganizationRequest extends FormRequest
             'logo_path' => ['nullable', 'string', 'max:512'],
             'default_timezone' => ['sometimes', 'string', 'timezone'],
             'default_currency' => ['sometimes', 'string', 'size:3', 'alpha'],
-            'default_locale' => ['sometimes', 'string', 'in:ar,en,fr'],
+            'default_locale' => ['sometimes', 'string', Rule::in(Locales::supported())],
             'supported_locales' => ['nullable', 'array'],
-            'supported_locales.*' => ['string', 'in:ar,en,fr'],
+            'supported_locales.*' => ['string', Rule::in(Locales::supported())],
             'week_starts_on' => ['sometimes', 'string', 'in:'.implode(',', array_column(Weekday::cases(), 'value'))],
             'settings' => ['prohibited'],
             'feature_overrides' => ['sometimes', 'array'],

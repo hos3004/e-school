@@ -43,6 +43,7 @@ final class TeacherAvailabilityWriteController extends Controller
             timezone: (string) $validated['timezone'],
             effectiveFrom: (string) $validated['effective_from'],
             effectiveTo: $validated['effective_to'] ?? null,
+            actorId: (string) $request->user()?->getAuthIdentifier(),
         );
 
         return back()->with('success', __('portal.availability.created'));
@@ -60,7 +61,11 @@ final class TeacherAvailabilityWriteController extends Controller
 
         abort_if($row === null, 404);
 
-        $this->remove->execute($row);
+        $this->remove->execute(
+            availability: $row,
+            actorId: (string) $request->user()?->getAuthIdentifier(),
+            reason: is_string($request->input('reason')) ? trim((string) $request->input('reason')) : null,
+        );
 
         return back()->with('success', __('portal.availability.removed'));
     }

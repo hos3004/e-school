@@ -20,8 +20,6 @@ final class DemoDataSeeder extends Seeder
 {
     private const EMAIL_MARKER = '@demo.eschool.local';
 
-    private const GROUP_PREFIX = 'DEMO-';
-
     public function run(): void
     {
         $organizationId = DB::table('organizations')->orderBy('created_at')->value('id');
@@ -92,15 +90,15 @@ final class DemoDataSeeder extends Seeder
             ? []
             : DB::table('teacher_contracts')->whereIn('staff_profile_id', $staffIds)->pluck('id')->all();
 
-        $groupIds = DB::table('groups')
-            ->where('code', 'like', self::GROUP_PREFIX.'%')
-            ->pluck('id')
-            ->all();
+        // المجموعات والبرامج تُعرَّف عبر ارتباطها بمعلمي البذرة، لا عبر بادئة الكود:
+        // الأكواد صارت قصيرة ومتسلسلة (G001) ولم تعد صالحة كعلامة تمييز.
+        $groupIds = $staffIds === []
+            ? []
+            : DB::table('group_teachers')->whereIn('staff_profile_id', $staffIds)->pluck('group_id')->unique()->all();
 
-        $programIds = DB::table('programs')
-            ->where('code', 'like', self::GROUP_PREFIX.'%')
-            ->pluck('id')
-            ->all();
+        $programIds = $groupIds === []
+            ? []
+            : DB::table('group_programs')->whereIn('group_id', $groupIds)->pluck('program_id')->unique()->all();
 
         $sessionIds = $staffIds === []
             ? []
@@ -201,7 +199,7 @@ final class DemoDataSeeder extends Seeder
             't1' => [
                 'name' => 'أ. أحمد عبد الرحمن',
                 'local' => 'ahmed.abdelrahman',
-                'code' => 'DEMO-T01',
+                'code' => 'T101',
                 'employment' => 'part_time',
                 'basis' => 'per_session',
                 'base' => null,
@@ -214,7 +212,7 @@ final class DemoDataSeeder extends Seeder
             't2' => [
                 'name' => 'أ. محمود سعيد',
                 'local' => 'mahmoud.saeed',
-                'code' => 'DEMO-T02',
+                'code' => 'T102',
                 'employment' => 'part_time',
                 'basis' => 'per_session',
                 'base' => null,
@@ -227,7 +225,7 @@ final class DemoDataSeeder extends Seeder
             't3' => [
                 'name' => 'أ. فاطمة الحسيني',
                 'local' => 'fatima.elhusseiny',
-                'code' => 'DEMO-T03',
+                'code' => 'T103',
                 'employment' => 'part_time',
                 'basis' => 'monthly_with_deductions',
                 'base' => 60000,
@@ -240,7 +238,7 @@ final class DemoDataSeeder extends Seeder
             't4' => [
                 'name' => 'أ. سارة منصور',
                 'local' => 'sara.mansour',
-                'code' => 'DEMO-T04',
+                'code' => 'T104',
                 'employment' => 'full_time',
                 'basis' => 'per_session',
                 'base' => null,
@@ -253,7 +251,7 @@ final class DemoDataSeeder extends Seeder
             't5' => [
                 'name' => 'أ. عمر خليل',
                 'local' => 'omar.khalil',
-                'code' => 'DEMO-T05',
+                'code' => 'T105',
                 'employment' => 'contractor',
                 'basis' => 'per_session',
                 'base' => null,
@@ -266,7 +264,7 @@ final class DemoDataSeeder extends Seeder
             't6' => [
                 'name' => 'أ. ليلى إبراهيم',
                 'local' => 'laila.ibrahim',
-                'code' => 'DEMO-T06',
+                'code' => 'T106',
                 'employment' => 'full_time',
                 'basis' => 'salaried',
                 'base' => 800000,
@@ -366,7 +364,7 @@ final class DemoDataSeeder extends Seeder
     {
         $programs = [
             'quran' => [
-                'code' => 'DEMO-QURAN',
+                'code' => 'P101',
                 'name' => ['ar' => 'القرآن الكريم', 'en' => 'Holy Quran'],
                 'description' => ['ar' => 'برنامج تحفيظ وتجويد متدرج لكل الأعمار.', 'en' => 'Graduated memorization and tajweed program.'],
                 'weeks' => 36,
@@ -380,18 +378,18 @@ final class DemoDataSeeder extends Seeder
                 'courses' => [
                     'quran_hifz' => [
                         'level' => 'L1',
-                        'code' => 'DEMO-QURAN-L1-HIFZ',
+                        'code' => 'C101',
                         'name' => ['ar' => 'حفظ جزء عمّ', 'en' => 'Juz Amma Memorization'],
                     ],
                     'quran_tajwid' => [
                         'level' => 'L2',
-                        'code' => 'DEMO-QURAN-L2-TAJWID',
+                        'code' => 'C102',
                         'name' => ['ar' => 'تجويد متقدم', 'en' => 'Advanced Tajweed'],
                     ],
                 ],
             ],
             'english' => [
-                'code' => 'DEMO-ENG',
+                'code' => 'P102',
                 'name' => ['ar' => 'اللغة الإنجليزية', 'en' => 'English Language'],
                 'description' => ['ar' => 'مسار قواعد ومحادثة حتى الطلاقة.', 'en' => 'Grammar and conversation track towards fluency.'],
                 'weeks' => 24,
@@ -405,18 +403,18 @@ final class DemoDataSeeder extends Seeder
                 'courses' => [
                     'eng_basic' => [
                         'level' => 'L1',
-                        'code' => 'DEMO-ENG-L1-BASIC',
+                        'code' => 'C103',
                         'name' => ['ar' => 'إنجليزيات الأساس', 'en' => 'Foundation English'],
                     ],
                     'eng_conv' => [
                         'level' => 'L2',
-                        'code' => 'DEMO-ENG-L2-CONV',
+                        'code' => 'C104',
                         'name' => ['ar' => 'محادثة متقدمة', 'en' => 'Advanced Conversation'],
                     ],
                 ],
             ],
             'coding' => [
-                'code' => 'DEMO-CODE',
+                'code' => 'P103',
                 'name' => ['ar' => 'البرمجة', 'en' => 'Programming'],
                 'description' => ['ar' => 'من أوامر بايثون الأولى إلى بناء صفحات ويب.', 'en' => 'From first Python commands to building web pages.'],
                 'weeks' => 24,
@@ -430,12 +428,12 @@ final class DemoDataSeeder extends Seeder
                 'courses' => [
                     'code_py' => [
                         'level' => 'L1',
-                        'code' => 'DEMO-CODE-L1-PY',
+                        'code' => 'C105',
                         'name' => ['ar' => 'أساسيات بايثون', 'en' => 'Python Basics'],
                     ],
                     'code_web' => [
                         'level' => 'L2',
-                        'code' => 'DEMO-CODE-L2-WEB',
+                        'code' => 'C106',
                         'name' => ['ar' => 'تطوير الويب', 'en' => 'Web Development'],
                     ],
                 ],
@@ -520,22 +518,22 @@ final class DemoDataSeeder extends Seeder
     ): array {
         $definitions = [
             'g1' => [
-                'code' => 'DEMO-G1',
+                'code' => 'G101',
                 'name' => ['ar' => 'حلقة القرآن — المبتدئون', 'en' => 'Quran Circle — Beginners'],
                 'capacity' => 4,
             ],
             'g2' => [
-                'code' => 'DEMO-G2',
+                'code' => 'G102',
                 'name' => ['ar' => 'حلقة القرآن — المتقدمون', 'en' => 'Quran Circle — Advanced'],
                 'capacity' => 6,
             ],
             'g3' => [
-                'code' => 'DEMO-G3',
+                'code' => 'G103',
                 'name' => ['ar' => 'مجموعة الإنجليزية المسائية', 'en' => 'Evening English Group'],
                 'capacity' => 8,
             ],
             'g4' => [
-                'code' => 'DEMO-G4',
+                'code' => 'G104',
                 'name' => ['ar' => 'مجموعة البرمجة', 'en' => 'Programming Group'],
                 'capacity' => 8,
             ],

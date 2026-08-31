@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Academics\Domain\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -15,11 +17,32 @@ use Modules\Academics\Domain\Enums\TargetGender;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $organization_id
+ * @property string $level_id
+ * @property string $code
+ * @property array<string, string> $name
+ * @property array<string, string>|null $description
+ * @property int|null $total_sessions
+ * @property array<string, mixed>|null $completion_rules
+ * @property bool $is_active
+ * @property SessionMode $session_mode
+ * @property TargetGender|null $target_gender
+ * @property int|null $age_from
+ * @property int|null $age_to
+ * @property int|null $default_duration_minutes
+ * @property int|null $sessions_per_week
+ * @property array<string, mixed>|null $prerequisites
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
+ * @property CarbonInterface|null $deleted_at
+ * @property-read Level|null $level
+ * @property-read Collection<int, ProgramCategory> $categories
+ */
 final class Course extends Model
 {
-    /** @use HasFactory<CourseFactory> */
     use HasModuleFactory;
-
     use HasUlid;
     use SoftDeletes;
 
@@ -74,17 +97,26 @@ final class Course extends Model
         return $this->belongsTo(Level::class);
     }
 
+    /** @return BelongsToMany<ProgramCategory, $this> */
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(ProgramCategory::class, 'course_category', 'course_id', 'category_id')
             ->withTimestamps();
     }
 
+    /**
+     * @param Builder<Course> $query
+     * @return Builder<Course>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * @param Builder<Course> $query
+     * @return Builder<Course>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);

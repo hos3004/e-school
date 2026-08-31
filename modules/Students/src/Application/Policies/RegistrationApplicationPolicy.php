@@ -51,6 +51,34 @@ final class RegistrationApplicationPolicy
         return $this->canDecide($user, $application);
     }
 
+    /**
+     * تسكين الطالب في مجموعة.
+     *
+     * ثلاث صلاحيات مجتمعة لأن العملية تمس ثلاثة موارد: قراءة ملف الطالب،
+     * إنشاء القيد الدراسي، وإدارة عضوية المجموعة. من يملك واحدة فقط لا يملك
+     * الرحلة كاملة.
+     */
+    public function assign(Authenticatable&Authorizable $user, RegistrationApplication $application): bool
+    {
+        return $this->sameOrganization($user, $application)
+            && $application->status->isClearedForAssignment()
+            && $user->can('student.view')
+            && $user->can('enrollment.create')
+            && $user->can('group.manage');
+    }
+
+    /**
+     * فتح الإجراء الجماعي من شريط الأدوات — تفويض على مستوى الشاشة.
+     *
+     * التفويض على مستوى كل طالب على حدة يبقى إلزاميًا ويُنفَّذ عبر `assign`.
+     */
+    public function assignAny(Authenticatable&Authorizable $user): bool
+    {
+        return $user->can('student.view.any')
+            && $user->can('enrollment.create')
+            && $user->can('group.manage');
+    }
+
     public function update(Authenticatable&Authorizable $user, RegistrationApplication $application): bool
     {
         return false;

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Academics\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Academics\Domain\Models\Level;
 
 /**
@@ -13,29 +15,40 @@ use Modules\Academics\Domain\Models\Level;
  */
 final class LevelPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('program.manage');
     }
 
-    public function view($user, Level $level): bool
+    public function view(Authenticatable&Authorizable $user, Level $level): bool
+    {
+        return $user->can('program.manage') && $this->belongsToOrganization($user, $level);
+    }
+
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('program.manage');
     }
 
-    public function create($user): bool
+    public function update(Authenticatable&Authorizable $user, Level $level): bool
     {
-        return $user->can('program.manage');
-    }
-
-    public function update($user, Level $level): bool
-    {
-        return $user->can('program.manage');
+        return $user->can('program.manage') && $this->belongsToOrganization($user, $level);
     }
 
     /** إعادة ترتيب مستويات برنامج. */
-    public function reorder($user): bool
+    public function reorder(Authenticatable&Authorizable $user): bool
     {
         return $user->can('program.manage');
+    }
+
+    private function belongsToOrganization(Authenticatable&Authorizable $user, Level $level): bool
+    {
+        $actorOrganizationId = data_get($user, 'organization_id');
+        $levelOrganizationId = $level->program?->organization_id;
+
+        return is_string($actorOrganizationId)
+            && $actorOrganizationId !== ''
+            && is_string($levelOrganizationId)
+            && hash_equals($actorOrganizationId, $levelOrganizationId);
     }
 }

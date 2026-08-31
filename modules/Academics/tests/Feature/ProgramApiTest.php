@@ -6,23 +6,24 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Models\Program;
 use Modules\Identity\Domain\Models\User;
-use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Gate::define('academics.programs.create', fn ($user) => true);
+    Gate::define('program.manage', fn ($user) => true);
 });
 
 function programPayload(array $overrides = []): array
 {
     return array_merge([
-        'organization_id' => Fixtures::organizationId(),
         'code' => 'PRG-'.strtoupper(str()->random(5)),
         'name' => ['ar' => 'برنامج جديد', 'en' => 'New Program'],
         'default_session_minutes' => 60,
         'default_rate' => 5000,
         'currency' => 'EGP',
+        'program_type' => 'ongoing',
+        'target_gender' => 'all',
+        'reason' => 'إنشاء برنامج للاختبار',
     ], $overrides);
 }
 
@@ -58,7 +59,7 @@ it('validates the currency size on program creation', function (): void {
 });
 
 it('forbids program creation without the create ability', function (): void {
-    Gate::define('academics.programs.create', fn ($user) => false);
+    Gate::define('program.manage', fn ($user) => false);
     $user = User::factory()->create();
 
     $this->actingAs($user)

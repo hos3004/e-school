@@ -8,6 +8,9 @@ declare(strict_types=1);
 
 return [
     'registration_offering_invalid' => 'الكورس المحدد غير متاح داخل هذه المؤسسة والبرنامج.',
+    'registration_answers_invalid' => 'تحتوي الإجابات على سؤال غير تابع لهذا النموذج.',
+    'registration_answer_required' => 'هذا السؤال مطلوب.',
+    'registration_answer_invalid' => 'القيمة المحددة غير متاحة لهذا السؤال.',
 
     'user_already_student' => 'هذا المستخدم مرتبط بملف طالب بالفعل.',
     'code_taken' => 'رقم الطالب مستخدم — يجب أن يكون فريدًا.',

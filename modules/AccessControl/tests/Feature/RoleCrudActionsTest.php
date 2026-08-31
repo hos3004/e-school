@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\AccessControl\Application\Actions\CreateRoleAction;
 use Modules\AccessControl\Application\Actions\DeleteRoleAction;
@@ -12,6 +13,7 @@ use Modules\AccessControl\Domain\Events\RoleDeleted;
 use Modules\AccessControl\Domain\Events\RoleUpdated;
 use Modules\AccessControl\Domain\Models\Role;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 it('creates a role and dispatches RoleCreated', function (): void {
     Event::fake([RoleCreated::class]);
@@ -106,4 +108,48 @@ it('refuses deleting a system role', function (): void {
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.role.system_locked');
     }
+});
+
+it('audits the tenant role lifecycle with written reasons', function (): void {
+    $organizationId = Fixtures::organizationId();
+    $actorId = Fixtures::userId();
+
+    $role = app(CreateRoleAction::class)->execute(
+        name: 'audited-lifecycle',
+        guard: GuardName::Web,
+        organizationId: $organizationId,
+        actorId: $actorId,
+        reason: 'approved access-control role request',
+    );
+
+    app(UpdateRoleAction::class)->execute(
+        roleId: (string) $role->getKey(),
+        name: 'audited-lifecycle-updated',
+        actorId: $actorId,
+        scopeOrganizationId: $organizationId,
+        reason: 'role naming convention correction',
+    );
+
+    app(DeleteRoleAction::class)->execute(
+        roleId: (string) $role->getKey(),
+        actorId: $actorId,
+        organizationId: $organizationId,
+        reason: 'role is no longer required',
+    );
+
+    expect(DB::table('audit_log')->where([
+        'action' => 'accesscontrol.role_created',
+        'auditable_id' => $role->getKey(),
+        'reason' => 'approved access-control role request',
+    ])->exists())->toBeTrue()
+        ->and(DB::table('audit_log')->where([
+            'action' => 'accesscontrol.role_updated',
+            'auditable_id' => $role->getKey(),
+            'reason' => 'role naming convention correction',
+        ])->exists())->toBeTrue()
+        ->and(DB::table('audit_log')->where([
+            'action' => 'accesscontrol.role_deleted',
+            'auditable_id' => $role->getKey(),
+            'reason' => 'role is no longer required',
+        ])->exists())->toBeTrue();
 });

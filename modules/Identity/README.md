@@ -11,6 +11,8 @@
 - `identity.login_failed`
 - `identity.password_changed`
 - `identity.two_factor_enabled`
+- `UserAccountDirectory` للبحث الإداري المعزول بالمؤسسة وإرجاع `UserAccountData` فقط.
+- `UsernameSuggestionGateway` لتوليد أسماء مستخدمين متاحة دون كشف خدمة التطبيق الداخلية.
 
 ## يعتمد على
 

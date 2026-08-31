@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Identity\Domain\Contracts;
 
-use Modules\Identity\Application\Queries\DTOs\UserSummary;
+use Modules\Identity\Domain\Contracts\DTOs\UserSummary;
 
 /**
  * عقد القراءة العام لموديول Identity — الباب الوحيد الذي تستخدمه
@@ -24,4 +24,13 @@ interface UserQueryService
     public function summariesByIds(array $userIds): array;
 
     public function emailExists(string $email): bool;
+
+    /**
+     * بحث نصي عن مستخدمي مؤسسة في الحقول المسموح بها فقط
+     * (الاسم، البريد، اسم المستخدم، الهاتف) — يُستخدم للقوائم
+     * التي لا يجوز فيها ربط جدول users مباشرة.
+     *
+     * @return list<string> معرّفات المستخدمين المطابقة
+     */
+    public function searchUserIdsForOrganization(string $organizationId, string $term, int $limit = 100): array;
 }

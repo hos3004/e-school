@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Modules\Assessments\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Assessments\Application\Concerns\ValidatesAssessmentRules;
 use Modules\Assessments\Domain\Enums\AssessmentType;
 use Modules\Assessments\Domain\Events\AssessmentUpdated;
 use Modules\Assessments\Domain\Models\Assessment;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -22,12 +24,14 @@ final readonly class UpdateAssessmentAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AcademicCatalogQueries $catalog,
+        private AuditRecorder $audit,
     ) {}
 
     /**
      * @param array<string, mixed> $data
      */
-    public function execute(Assessment $assessment, array $data, ?string $actorId = null): Assessment
+    public function execute(Assessment $assessment, array $data, string $actorId, string $reason): Assessment
     {
         $merged = [
             'type' => $data['type'] ?? $assessment->type,
@@ -51,12 +55,59 @@ final readonly class UpdateAssessmentAction
             );
         }
 
-        $this->transaction->run(function () use ($assessment, $data): void {
+        $courseId = array_key_exists('course_id', $data)
+            ? ($data['course_id'] === null || $data['course_id'] === '' ? null : (string) $data['course_id'])
+            : ($assessment->course_id === null ? null : (string) $assessment->course_id);
+        $type = $merged['type'] instanceof AssessmentType
+            ? $merged['type']
+            : AssessmentType::from((string) $merged['type']);
+
+        if (in_array($type, [AssessmentType::Quiz, AssessmentType::Exam], true) && $courseId === null) {
+            throw BusinessRuleViolation::make('assessments.course_required', 'assessments::errors.course_required');
+        }
+
+        if ($courseId !== null && !isset($this->catalog->coursesByIds(
+            (string) $assessment->organization_id,
+            [$courseId],
+        )[$courseId])) {
+            throw BusinessRuleViolation::make('assessments.invalid_course', 'assessments::errors.invalid_course');
+        }
+
+        $lockedFields = [
+            'course_id', 'type', 'total_score', 'passing_score', 'duration_minutes',
+            'max_attempts', 'available_from',
+        ];
+
+        if ($assessment->attempts()->exists() && array_intersect(array_keys($data), $lockedFields) !== []) {
+            throw BusinessRuleViolation::make(
+                'assessments.settings_locked_after_attempts',
+                'assessments::errors.settings_locked_after_attempts',
+            );
+        }
+
+        $oldValues = $assessment->only([
+            'course_id', 'type', 'title', 'instructions', 'total_score', 'passing_score',
+            'duration_minutes', 'max_attempts', 'available_from', 'available_to',
+        ]);
+
+        $this->transaction->run(function () use ($assessment, $data, $actorId, $reason, $oldValues): void {
             if (\array_key_exists('type', $data) && !$data['type'] instanceof AssessmentType) {
                 $data['type'] = AssessmentType::from((string) $data['type']);
             }
 
             $assessment->fill($data)->save();
+
+            $this->audit->record(
+                organizationId: (string) $assessment->organization_id,
+                actorId: $actorId,
+                actorType: 'user',
+                action: 'assessments.updated',
+                auditableType: 'assessment',
+                auditableId: (string) $assessment->getKey(),
+                oldValues: $oldValues,
+                newValues: $assessment->only(array_keys($oldValues)),
+                reason: $reason,
+            );
         });
 
         $changed = array_values(array_intersect(

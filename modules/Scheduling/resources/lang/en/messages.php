@@ -7,4 +7,6 @@ declare(strict_types=1);
 | Consumed via __('scheduling::messages.key') — no user-facing text outside translation files.
 */
 
-return [];
+return [
+    'generated_from_schedule' => 'Automatically generated from a schedule template.',
+];

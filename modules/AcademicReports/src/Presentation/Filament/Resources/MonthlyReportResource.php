@@ -18,6 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\AcademicReports\Domain\Enums\MonthlyReportStatus;
 use Modules\AcademicReports\Domain\Models\MonthlyReport;
+use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
 
 /**
  * مورد إدارة التقارير الشهرية في لوحة الإدارة.
@@ -102,8 +103,10 @@ final class MonthlyReportResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('student_profile_id')
                     ->label(__('academicreports::fields.student_profile'))
-                    ->searchable()
-                    ->copyable(),
+                    // كان ULID خامًا — يُعرض اسم الطالب عبر عقد Students المعلن.
+                    ->formatStateUsing(static fn ($state): string => self::studentNames()[(string) $state]
+                        ?? (string) $state)
+                    ->searchable(),
                 TextColumn::make('period_year')
                     ->label(__('academicreports::fields.period_year'))
                     ->sortable(),
@@ -132,6 +135,36 @@ final class MonthlyReportResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
+                SelectFilter::make('student_profile_id')
+                    ->label(__('academicreports::fields.student_profile'))
+                    ->options(fn (): array => self::studentNames())
+                    ->searchable(),
+
+                SelectFilter::make('period_year')
+                    ->label(__('academicreports::fields.period_year'))
+                    ->options(function (): array {
+                        $organizationId = self::organizationId();
+
+                        if ($organizationId === null) {
+                            return [];
+                        }
+
+                        return MonthlyReport::query()
+                            ->forOrganization($organizationId)
+                            ->pluck('period_year')
+                            ->unique()
+                            ->sortDesc()
+                            ->mapWithKeys(static fn ($year): array => [(string) $year => (string) $year])
+                            ->all();
+                    }),
+
+                SelectFilter::make('period_month')
+                    ->label(__('academicreports::fields.period_month'))
+                    ->options(array_combine(range(1, 12), array_map(
+                        static fn (int $m): string => __('academicreports::months.'.$m),
+                        range(1, 12),
+                    ))),
+
                 SelectFilter::make('status')
                     ->label(__('academicreports::fields.status'))
                     ->options(collect(MonthlyReportStatus::cases())
@@ -148,9 +181,44 @@ final class MonthlyReportResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->when(
-            auth()->user()?->organization_id !== null,
-            fn (Builder $query): Builder => $query->forOrganization((string) auth()->user()?->organization_id),
+        $query = parent::getEloquentQuery();
+        $organizationId = self::organizationId();
+
+        return $organizationId === null
+            ? $query->whereRaw('1 = 0')
+            : $query->forOrganization($organizationId);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => MonthlyReportResource\Pages\ListMonthlyReports::route('/'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function studentNames(): array
+    {
+        $organizationId = self::organizationId();
+
+        if ($organizationId === null) {
+            return [];
+        }
+
+        return app(StudentDirectoryQueries::class)->namesForProfiles(
+            $organizationId,
+            MonthlyReport::query()->forOrganization($organizationId)->pluck('student_profile_id')->all(),
         );
+    }
+
+    private static function organizationId(): ?string
+    {
+        $organizationId = data_get(auth()->user(), 'organization_id');
+
+        return is_string($organizationId) && $organizationId !== ''
+            ? $organizationId
+            : null;
     }
 }

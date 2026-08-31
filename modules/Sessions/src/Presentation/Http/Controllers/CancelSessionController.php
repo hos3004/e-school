@@ -31,6 +31,7 @@ final class CancelSessionController extends Controller
             $sessionModel,
             SessionStatus::from($request->validated('as')),
             (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
         );
 
         return new SessionResource($sessionModel->refresh());

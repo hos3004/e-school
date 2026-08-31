@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Academics\Domain\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -15,11 +17,35 @@ use Modules\Academics\Domain\Enums\TargetGender;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $organization_id
+ * @property string $code
+ * @property array<string, string> $name
+ * @property array<string, string>|null $description
+ * @property int|null $duration_weeks
+ * @property int $default_session_minutes
+ * @property int|null $default_rate
+ * @property string $currency
+ * @property bool $is_active
+ * @property int $sort_order
+ * @property ProgramType $program_type
+ * @property CarbonInterface|null $start_date
+ * @property CarbonInterface|null $end_date
+ * @property TargetGender $target_gender
+ * @property int|null $age_from
+ * @property int|null $age_to
+ * @property array<string, mixed>|null $objectives
+ * @property string|null $language
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
+ * @property CarbonInterface|null $deleted_at
+ * @property-read Collection<int, Level> $levels
+ * @property-read ProgramEligibility|null $eligibility
+ */
 final class Program extends Model
 {
-    /** @use HasFactory<ProgramFactory> */
     use HasModuleFactory;
-
     use HasUlid;
     use SoftDeletes;
 
@@ -71,11 +97,19 @@ final class Program extends Model
         return ProgramFactory::new();
     }
 
+    /**
+     * @param Builder<Program> $query
+     * @return Builder<Program>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * @param Builder<Program> $query
+     * @return Builder<Program>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);
@@ -89,6 +123,7 @@ final class Program extends Model
         return $this->hasMany(Level::class);
     }
 
+    /** @return HasOne<ProgramEligibility, $this> */
     public function eligibility(): HasOne
     {
         return $this->hasOne(ProgramEligibility::class, 'program_id');

@@ -13,7 +13,7 @@ final class ExcuseAbsenceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('sessions.session.excuse');
+        return $this->user()->can('session.cancel');
     }
 
     /**

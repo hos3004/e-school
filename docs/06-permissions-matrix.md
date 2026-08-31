@@ -64,11 +64,16 @@
 | `staff.view.any` | ● | ● | ○ | ○ | — | — | — | — | ○ |
 | `staff.contract.view` | ● | ○ | ● | — | — | ◐own | — | — | ○ |
 | `staff.contract.update` | ● | — | — | — | — | — | — | — | — |
+| `staff.availability.create` | ● | — | — | — | — | ◐own | — | — | — |
+| `staff.availability.approve` | ● | ● | — | — | — | — | — | — | — |
 | `enrollment.view` | ● | ● | ○ | ● | ○ | ◐ | ◐own | ◐children | ○ |
 | `enrollment.create` | ● | ● | — | ● | — | — | — | — | — |
 | `enrollment.pause` | ● | ● | — | ● | — | — | ◐request | ◐request | — |
 | `enrollment.freeze` | ● | ● | — | — | — | — | — | — | — |
 | **`enrollment.reactivate`** | ● | ● | — | — | — | — | — | — | — |
+
+> تشمل `student.create` إنشاء نماذج التسجيل العامة وتعديل أسئلتها داخل مؤسسة
+> المستخدم. النماذج نفسها لا تُحذف؛ تُعطّل للحفاظ على مصدر الطلبات التاريخية.
 
 ### الأكاديمي
 

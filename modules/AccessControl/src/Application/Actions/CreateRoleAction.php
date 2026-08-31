@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Domain\Enums\GuardName;
 use Modules\AccessControl\Domain\Events\RoleCreated;
 use Modules\AccessControl\Domain\Models\Role;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -24,6 +25,7 @@ final readonly class CreateRoleAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(
@@ -32,16 +34,39 @@ final readonly class CreateRoleAction
         ?string $organizationId = null,
         bool $isSystem = false,
         ?string $actorId = null,
+        ?string $reason = null,
     ): Role {
         $this->guard($name, $guard, $organizationId);
 
         /** @var Role $role */
-        $role = DB::transaction(fn (): Role => Role::query()->create([
-            'organization_id' => $organizationId,
-            'name' => $name,
-            'guard_name' => $guard,
-            'is_system' => $isSystem,
-        ]));
+        $role = DB::transaction(function () use ($name, $guard, $organizationId, $isSystem, $actorId, $reason): Role {
+            /** @var Role $created */
+            $created = Role::query()->create([
+                'organization_id' => $organizationId,
+                'name' => $name,
+                'guard_name' => $guard,
+                'is_system' => $isSystem,
+            ]);
+
+            if ($actorId !== null && $organizationId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: $organizationId,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'accesscontrol.role_created',
+                    auditableType: 'roles',
+                    auditableId: (string) $created->getKey(),
+                    oldValues: null,
+                    newValues: [
+                        'name' => $created->name,
+                        'guard_name' => $created->guard_name->value,
+                    ],
+                    reason: $reason,
+                );
+            }
+
+            return $created;
+        });
 
         $this->events->dispatch(new RoleCreated(
             roleId: (string) $role->getKey(),

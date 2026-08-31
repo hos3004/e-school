@@ -11,7 +11,12 @@ import ErrorState from '@/Components/ErrorState';
 import LoadingState from '@/Components/LoadingState';
 import PageHeader from '@/Components/PageHeader';
 import AppLayout from '@/Layouts/AppLayout';
-import { formatDateTime, formatPercent, useLocale } from '@/lib/format';
+import {
+    formatDateTime,
+    formatPercent,
+    useLocale,
+    useSupportedLocales,
+} from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import type { LoadablePageProps } from '@/types';
 
@@ -46,8 +51,6 @@ interface Props extends LoadablePageProps {
     passwordUrl?: string;
 }
 
-const localeOptions = ['ar', 'en', 'fr'] as const;
-
 const fieldClasses =
     'mt-1 min-h-11 w-full rounded-lg border border-[var(--ink-muted)] bg-[var(--surface)] px-3 text-[var(--ink)] ' +
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]';
@@ -64,6 +67,7 @@ export default function Profile({
 }: Props) {
     const t = useI18n();
     const locale = useLocale();
+    const localeOptions = useSupportedLocales();
 
     const profileForm = useForm({
         name: account?.name ?? '',

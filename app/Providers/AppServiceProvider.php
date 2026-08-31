@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Infrastructure\Identity\OrganizationUsernamePrefixAdapter;
+use App\Listeners\SyncClassroomRecordings;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Modules\Identity\Domain\Contracts\OrganizationUsernamePrefixProvider;
+use Modules\VirtualClassroom\Domain\Events\ClassroomEnded;
 use Shared\Support\DatabaseTransaction;
 use Shared\Support\Transaction;
 
@@ -25,6 +28,8 @@ final class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Event::listen(ClassroomEnded::class, SyncClassroomRecordings::class);
+
         // التواريخ دائمًا UTC داخليًا — العرض بتوقيت المستخدم فقط.
         Date::use(CarbonImmutable::class);
 

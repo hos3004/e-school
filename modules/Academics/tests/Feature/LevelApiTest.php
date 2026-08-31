@@ -11,9 +11,7 @@ use Modules\Identity\Domain\Models\User;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Gate::define('academics.levels.create', fn ($user) => true);
-    Gate::define('academics.levels.update', fn ($user) => true);
-    Gate::define('academics.levels.reorder', fn ($user) => true);
+    Gate::define('program.manage', fn ($user) => true);
 });
 
 function levelPayload(array $overrides = []): array
@@ -23,6 +21,7 @@ function levelPayload(array $overrides = []): array
         'code' => 'LVL-'.strtoupper(str()->random(4)),
         'name' => ['ar' => 'مستوى جديد', 'en' => 'New Level'],
         'sort_order' => 1,
+        'reason' => 'إنشاء مستوى للاختبار',
     ], $overrides);
 }
 
@@ -56,6 +55,7 @@ it('updates a level through the API', function (): void {
     $this->actingAs($user)
         ->putJson("/api/academics/levels/{$level->getKey()}", [
             'sort_order' => 7,
+            'reason' => 'تعديل ترتيب المستوى',
         ])
         ->assertOk()
         ->assertJsonPath('data.sort_order', 7);

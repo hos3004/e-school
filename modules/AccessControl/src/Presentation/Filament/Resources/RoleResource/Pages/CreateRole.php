@@ -25,6 +25,7 @@ final class CreateRole extends CreateRecord
             guard: GuardName::from((string) $data['guard_name']),
             organizationId: $organizationId,
             actorId: (string) auth()->id(),
+            reason: (string) $data['reason'],
         );
     }
 }

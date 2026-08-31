@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Assignments\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,21 @@ use Shared\Concerns\HasUlid;
  *
  * الحالة دورة حياة عبر AssignmentSubmissionStatus، والانتقال دائمًا
  * عبر canTransitionTo داخل إجراءات التطبيق لا مباشرة.
+ *
+ * @property string $id
+ * @property string $assignment_id
+ * @property string $student_profile_id
+ * @property CarbonImmutable|null $submitted_at
+ * @property bool $is_late
+ * @property string|null $content
+ * @property list<string> $attachments
+ * @property int|null $raw_score
+ * @property int $penalty_points
+ * @property int|null $score
+ * @property string|null $feedback
+ * @property string|null $graded_by
+ * @property CarbonImmutable|null $graded_at
+ * @property AssignmentSubmissionStatus $status
  */
 final class AssignmentSubmission extends Model
 {
@@ -44,6 +60,8 @@ final class AssignmentSubmission extends Model
         'is_late',
         'content',
         'attachments',
+        'raw_score',
+        'penalty_points',
         'score',
         'feedback',
         'graded_by',
@@ -57,6 +75,8 @@ final class AssignmentSubmission extends Model
             'submitted_at' => 'immutable_datetime',
             'is_late' => 'bool',
             'attachments' => 'array',
+            'raw_score' => 'int',
+            'penalty_points' => 'int',
             'score' => 'int',
             'graded_at' => 'immutable_datetime',
             'status' => AssignmentSubmissionStatus::class,
@@ -69,11 +89,19 @@ final class AssignmentSubmission extends Model
         return $this->belongsTo(Assignment::class);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->whereHas('assignment', fn (Builder $q): Builder => $q->where('organization_id', $organizationId));
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeOfStatus(Builder $query, mixed $status): Builder
     {
         $value = $status instanceof AssignmentSubmissionStatus ? $status->value : $status;
@@ -81,13 +109,21 @@ final class AssignmentSubmission extends Model
         return $query->where('status', $value);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopeGraded(Builder $query): Builder
     {
-        return $query->ofStatus(AssignmentSubmissionStatus::Graded);
+        return $query->where('status', AssignmentSubmissionStatus::Graded->value);
     }
 
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
     public function scopePending(Builder $query): Builder
     {
-        return $query->ofStatus(AssignmentSubmissionStatus::Pending);
+        return $query->where('status', AssignmentSubmissionStatus::Pending->value);
     }
 }

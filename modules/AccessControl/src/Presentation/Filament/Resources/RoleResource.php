@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\AccessControl\Presentation\Filament\Resources;
 
+use App\Application\Queries\ProfileAdministrationQueryService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -26,6 +29,7 @@ use Modules\AccessControl\Domain\Models\Role;
 use Modules\AccessControl\Presentation\Filament\Resources\RoleResource\Pages\CreateRole;
 use Modules\AccessControl\Presentation\Filament\Resources\RoleResource\Pages\EditRole;
 use Modules\AccessControl\Presentation\Filament\Resources\RoleResource\Pages\ListRoles;
+use Modules\AccessControl\Presentation\Support\AccessControlLabels;
 
 final class RoleResource extends Resource
 {
@@ -35,7 +39,7 @@ final class RoleResource extends Resource
 
     protected static ?int $navigationSort = 101;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('accesscontrol::filament.group');
     }
@@ -52,7 +56,7 @@ final class RoleResource extends Resource
     {
         $organizationId = auth()->user()?->getAttribute('organization_id');
 
-        return parent::getEloquentQuery()
+        return Role::query()
             ->when(
                 is_string($organizationId) && $organizationId !== '',
                 fn (Builder $query): Builder => $query->includingGlobal($organizationId),
@@ -92,11 +96,15 @@ final class RoleResource extends Resource
 
                 Select::make('permission_names')
                     ->label(__('accesscontrol::filament.role.fields.permissions'))
-                    ->options(fn (?Role $record): array => Permission::query()
-                        ->where('guard_name', $record?->guard_name->value ?? GuardName::Web->value)
-                        ->orderBy('name')
-                        ->pluck('name', 'name')
-                        ->all())
+                    // القيمة المحفوظة هي مفتاح الصلاحية؛ المعروض اسمها بالعربية.
+                    ->options(fn (?Role $record): array => AccessControlLabels::options(
+                        'names',
+                        Permission::query()
+                            ->where('guard_name', $record?->guard_name->value ?? GuardName::Web->value)
+                            ->orderBy('name')
+                            ->pluck('name')
+                            ->all(),
+                    ))
                     ->multiple()
                     ->searchable()
                     ->preload()
@@ -106,6 +114,12 @@ final class RoleResource extends Resource
                         }
                     })
                     ->visible(fn (?Role $record): bool => $record !== null && !$record->is_system),
+
+                Textarea::make('reason')
+                    ->label(__('accesscontrol::filament.role.fields.reason'))
+                    ->maxLength(2000)
+                    ->required()
+                    ->columnSpanFull(),
 
             ])->columns(2),
         ]);
@@ -117,12 +131,22 @@ final class RoleResource extends Resource
             ->columns([
                 TextColumn::make('name')
                     ->label(__('accesscontrol::filament.role.fields.name'))
+                    ->formatStateUsing(fn (?string $state): string => AccessControlLabels::role($state))
+                    ->description(fn (Role $record): string => (string) $record->name)
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('organization_id')
-                    ->label(__('accesscontrol::filament.role.fields.organization'))
-                    ->limit(12),
+                    ->label(__('accesscontrol::filament.role.fields.scope'))
+                    // نطاق الدور بدل ULID مقصوص لا يقرأه أحد. لا نعرض اسم المؤسسة
+                    // هنا لأن ذلك يستدعي موديول Organization عبر الحدود (CLAUDE.md §2)،
+                    // واللوحة أصلًا محصورة في مؤسسة المستخدم.
+                    ->badge()
+                    ->state(fn (Role $record): string => $record->organization_id === null
+                        ? __('accesscontrol::filament.role.fields.scope_global')
+                        : __('accesscontrol::filament.role.fields.scope_organization'))
+                    ->color(fn (Role $record): string => $record->organization_id === null ? 'gray' : 'success')
+                    ->toggleable(),
 
                 TextColumn::make('guard_name')
                     ->label(__('accesscontrol::filament.role.fields.guard'))
@@ -151,7 +175,7 @@ final class RoleResource extends Resource
                         array_map(static fn (GuardName $g): string => $g->label(), GuardName::all()),
                     )),
             ])
-            ->actions([
+            ->recordActions([
                 self::assignUserAction(),
                 self::revokeUserAction(),
                 EditAction::make()
@@ -166,11 +190,23 @@ final class RoleResource extends Resource
             ->label(__('accesscontrol::filament.role.actions.assign_user'))
             ->icon('heroicon-m-user-plus')
             ->visible(fn (Role $record): bool => auth()->user()?->can('assign', $record) === true)
-            ->form([
-                TextInput::make('user_id')
+            ->schema([
+                Select::make('user_id')
                     ->label(__('accesscontrol::filament.role.fields.user_id'))
+                    ->searchable()
+                    ->getSearchResultsUsing(fn (string $search): array => app(ProfileAdministrationQueryService::class)->accountOptions(
+                        self::actorOrganizationId(),
+                        $search,
+                    ))
+                    ->getOptionLabelUsing(fn (mixed $value): ?string => is_string($value)
+                        ? app(ProfileAdministrationQueryService::class)->accountOptionLabel(self::actorOrganizationId(), $value)
+                        : null)
                     ->required()
-                    ->length(26),
+                    ->helperText(__('accesscontrol::filament.role.actions.user_search_help')),
+                Textarea::make('reason')
+                    ->label(__('accesscontrol::filament.role.fields.reason'))
+                    ->maxLength(2000)
+                    ->required(),
             ])
             ->action(function (array $data, Role $record): void {
                 $organizationId = self::actorOrganizationId();
@@ -183,7 +219,13 @@ final class RoleResource extends Resource
                     modelId: $userId,
                     actorId: (string) auth()->id(),
                     organizationId: $organizationId,
+                    reason: (string) $data['reason'],
                 );
+
+                Notification::make()
+                    ->title(__('accesscontrol::filament.role.actions.assigned'))
+                    ->success()
+                    ->send();
             });
     }
 
@@ -194,11 +236,23 @@ final class RoleResource extends Resource
             ->icon('heroicon-m-user-minus')
             ->color('warning')
             ->visible(fn (Role $record): bool => auth()->user()?->can('revoke', $record) === true)
-            ->form([
-                TextInput::make('user_id')
+            ->schema([
+                Select::make('user_id')
                     ->label(__('accesscontrol::filament.role.fields.user_id'))
+                    ->searchable()
+                    ->getSearchResultsUsing(fn (string $search): array => app(ProfileAdministrationQueryService::class)->accountOptions(
+                        self::actorOrganizationId(),
+                        $search,
+                    ))
+                    ->getOptionLabelUsing(fn (mixed $value): ?string => is_string($value)
+                        ? app(ProfileAdministrationQueryService::class)->accountOptionLabel(self::actorOrganizationId(), $value)
+                        : null)
                     ->required()
-                    ->length(26),
+                    ->helperText(__('accesscontrol::filament.role.actions.user_search_help')),
+                Textarea::make('reason')
+                    ->label(__('accesscontrol::filament.role.fields.reason'))
+                    ->maxLength(2000)
+                    ->required(),
             ])
             ->action(function (array $data, Role $record): void {
                 $organizationId = self::actorOrganizationId();
@@ -211,7 +265,13 @@ final class RoleResource extends Resource
                     modelId: $userId,
                     actorId: (string) auth()->id(),
                     organizationId: $organizationId,
+                    reason: (string) $data['reason'],
                 );
+
+                Notification::make()
+                    ->title(__('accesscontrol::filament.role.actions.revoked'))
+                    ->success()
+                    ->send();
             });
     }
 

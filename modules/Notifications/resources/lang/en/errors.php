@@ -44,4 +44,6 @@ return [
     'email_recipient_invalid' => 'The recipient does not have a valid email address for delivery.',
 
     'mail_transport_failed' => 'The email transport is temporarily unavailable.',
+    'manual_retry_reason_required' => 'A clear reason is required for a manual resend.',
+    'cancel_reason_required' => 'A clear reason is required to cancel the notification.',
 ];

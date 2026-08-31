@@ -38,6 +38,8 @@ stateDiagram-v2
     Confirmed --> CancelledBySchool
     Confirmed --> NoShow
     Confirmed --> Excused
+    Scheduled --> Superseded : تعديل قالب بعد نافذة الحماية
+    Confirmed --> Superseded : تعديل قالب بعد نافذة الحماية
 
     InProgress --> AwaitingReview : إغلاق الفصل
     InProgress --> CancelledBySchool : عطل تقني
@@ -53,6 +55,7 @@ stateDiagram-v2
     NoShow --> [*]
     Excused --> [*]
     Postponed --> [*]
+    Superseded --> [*]
 ```
 
 ### ما يترتب على كل حالة نهائية
@@ -69,6 +72,7 @@ stateDiagram-v2
 | `CancelledByTeacher` | **خصم حصة** | لا | **استرداد** | لا |
 | `CancelledBySchool` | لا شيء | لا | لا تُخصم | لا |
 | `Postponed` | **مؤجَّل** | لا | لا تُخصم | **نعم** |
+| `Superseded` | لا قيدة — حدث مستقبلي استُبدل | لا | لا تتغير | لا |
 
 ### الانتقالات الآلية
 

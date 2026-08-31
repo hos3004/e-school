@@ -8,9 +8,12 @@ declare(strict_types=1);
 */
 
 return [
+    'existing_account_not_found' => 'الحساب المحدد غير موجود داخل المؤسسة أو لم يعد متاحًا للربط.',
+    'qualification_invalid_course' => 'أحد الكورسات المحددة غير نشط أو لا ينتمي إلى المؤسسة.',
     'amount_negative' => 'المبلغ لا يقبل قيمة سالبة.',
     'availability_approved_not_removable' => 'الإتاحة المعتمدة داخلة في الجدولة، ولا تُحذف إلا بقرار الإشراف.',
-    'availability_invalid_approval_transition' => 'لا يمكن اعتماد الإتاحة من حالتها الحالية.',
+    'availability_decision_invalid' => 'قرار الإتاحة المحدد غير صالح.',
+    'availability_invalid_approval_transition' => 'لا يمكن اتخاذ قرار جديد على الإتاحة من حالتها الحالية.',
     'availability_time_invalid' => 'وقت بداية الإتاحة يجب أن يسبق وقت نهايتها.',
     'availability_timezone_invalid' => 'المنطقة الزمنية المختارة غير معروفة.',
     'availability_weekday_invalid' => 'يوم الأسبوع يجب أن يكون بين الأحد والسبت.',
@@ -26,4 +29,11 @@ return [
     'rate_overlaps' => 'يوجد سعر ساري يتقاطع مع هذه الفترة لنفس النطاق.',
     'rate_scope_course_required' => 'تحديد الدورة مطلوب عندما يكون نطاق السعر دورة.',
     'rate_scope_program_required' => 'تحديد البرنامج مطلوب عندما يكون نطاق السعر برنامجًا.',
+    'update_reason_required' => 'تعديل بيانات ملف المعلم يتطلب سببًا مكتوبًا.',
+    'organization_mismatch' => 'الملف المطلوب لا ينتمي إلى مؤسستك.',
+    'archived_read_only' => 'لا يمكن تعديل ملف معلم مؤرشف؛ استرجعه أولًا.',
+    'revocation_reason_required' => 'إلغاء الاعتماد يتطلب سببًا مكتوبًا.',
+    'qualification_already_revoked' => 'اعتماد هذا الكورس ملغى بالفعل.',
+    'qualification_active_assignment' => 'لا يمكن إلغاء الاعتماد بينما يوجد إسناد نشط على الكورس؛ أنّه الإسناد أولًا.',
+    'availability_overlaps' => 'توجد فترة إتاحة تتقاطع مع هذه الفترة في نفس اليوم.',
 ];

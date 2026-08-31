@@ -52,4 +52,25 @@ return [
         'at_risk_list_limit' => 50,
     ],
 
+    // التقارير التشغيلية الحية عبر عقود القراءة العامة.
+    'operational' => [
+        'default_preset' => 'this_week',
+        'week_starts_at' => 6,
+        'max_period_days' => 366,
+        'max_rows' => 10000,
+        'export_max_rows' => 1000,
+        'scan_page_size' => 250,
+        'search_max_chars' => 120,
+        'default_per_page' => 25,
+        'per_page_options' => [10, 25, 50, 100],
+        'datetime_format' => 'Y-m-d H:i',
+    ],
+
+    // تصدير PDF محلي عبر mPDF؛ لا متصفح ولا عملية خارجية ولا طلبات شبكة.
+    'pdf' => [
+        'temporary_directory' => env('REPORTING_PDF_TEMP_DIRECTORY', storage_path('app/reporting/pdf')),
+        'format' => env('REPORTING_PDF_FORMAT', 'A4-L'),
+        'default_font' => env('REPORTING_PDF_DEFAULT_FONT', 'dejavusans'),
+    ],
+
 ];

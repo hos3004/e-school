@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Modules\Academics\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Arr;
 use Modules\Academics\Domain\Events\CourseCreated;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
+use Modules\Academics\Domain\Models\ProgramCategory;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -19,24 +22,50 @@ final readonly class CreateCourseAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     /**
      * @param array<string, mixed> $data بيانات الكورس بعد تحقّق FormRequest
      */
-    public function execute(array $data): Course
+    public function execute(array $data, ?string $actorId = null, ?string $reason = null): Course
     {
         $levelId = (string) $data['level_id'];
         $code = (string) $data['code'];
+        $organizationId = (string) $data['organization_id'];
 
-        $this->assertLevelExists($levelId);
+        $level = $this->assertLevelBelongsToOrganization($levelId, $organizationId);
         $this->assertCodeAvailable($code);
         $this->assertTotalSessionsValid($data);
+        $categoryIds = $this->validatedCategoryIds($data, $organizationId, (string) $level->program_id);
 
-        $course = $this->transaction->run(function () use ($data): Course {
+        $course = $this->transaction->run(function () use ($data, $categoryIds, $actorId, $reason): Course {
             $course = new Course;
-            $course->fill($data);
+            $course->fill(Arr::except($data, ['category_ids', 'reason']));
             $course->save();
+
+            if ($categoryIds !== []) {
+                $course->categories()->sync($categoryIds);
+            }
+
+            if ($actorId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: (string) $course->organization_id,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'academics.course_created',
+                    auditableType: 'courses',
+                    auditableId: (string) $course->getKey(),
+                    oldValues: null,
+                    newValues: [
+                        'code' => $course->code,
+                        'level_id' => $course->level_id,
+                        'is_active' => $course->is_active,
+                        'category_ids' => $categoryIds,
+                    ],
+                    reason: trim($reason),
+                );
+            }
 
             return $course;
         });
@@ -53,17 +82,22 @@ final readonly class CreateCourseAction
         return $course;
     }
 
-    private function assertLevelExists(string $levelId): void
+    private function assertLevelBelongsToOrganization(string $levelId, string $organizationId): Level
     {
-        $exists = Level::query()->whereKey($levelId)->exists();
+        $level = Level::query()
+            ->whereKey($levelId)
+            ->whereHas('program', static fn ($query) => $query->where('organization_id', $organizationId))
+            ->first();
 
-        if (!$exists) {
+        if ($level === null) {
             throw BusinessRuleViolation::make(
                 'academics.level_not_found',
                 'academics::errors.level_not_found',
                 ['level_id' => $levelId],
             );
         }
+
+        return $level;
     }
 
     private function assertCodeAvailable(string $code): void
@@ -95,5 +129,31 @@ final readonly class CreateCourseAction
                 );
             }
         }
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return list<string>
+     */
+    private function validatedCategoryIds(array $data, string $organizationId, string $programId): array
+    {
+        $ids = array_values(array_unique(array_map('strval', (array) ($data['category_ids'] ?? []))));
+        if ($ids === []) {
+            return [];
+        }
+
+        $count = ProgramCategory::query()
+            ->where('organization_id', $organizationId)
+            ->where(static fn ($query) => $query
+                ->whereNull('program_id')
+                ->orWhere('program_id', $programId))
+            ->whereKey($ids)
+            ->count();
+
+        if ($count !== count($ids)) {
+            throw BusinessRuleViolation::make('academics.category_outside_course_program', 'academics::errors.category_outside_course_program');
+        }
+
+        return $ids;
     }
 }

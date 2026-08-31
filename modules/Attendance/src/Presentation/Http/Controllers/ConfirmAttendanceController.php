@@ -22,7 +22,12 @@ final class ConfirmAttendanceController extends Controller
     public function __invoke(ConfirmAttendanceRequest $request, Attendance $attendance): AttendanceResource
     {
         return AttendanceResource::make(
-            $this->action->execute($attendance, (string) $request->user()?->getAuthIdentifier()),
+            $this->action->execute(
+                attendance: $attendance,
+                confirmedBy: (string) $request->user()?->getAuthIdentifier(),
+                reason: (string) $request->validated('reason'),
+                organizationId: (string) $request->user()?->getAttribute('organization_id'),
+            ),
         );
     }
 }

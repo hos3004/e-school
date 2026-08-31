@@ -30,7 +30,8 @@ final class PostponeSessionController extends Controller
             $sessionModel,
             (string) $request->validated('makeup_start'),
             (string) $request->validated('makeup_end'),
-            $request->validated('reason'),
+            (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
         );
 
         return new SessionResource($sessionModel->refresh());
