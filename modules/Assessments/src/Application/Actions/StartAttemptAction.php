@@ -16,9 +16,6 @@ use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
-/**
- * بدء محاولة اختبار لطالب — يفرض نافذة التوفر وسقف المحاولات.
- */
 final readonly class StartAttemptAction
 {
     use ValidatesAssessmentRules;
@@ -31,8 +28,12 @@ final readonly class StartAttemptAction
         private AuditRecorder $audit,
     ) {}
 
-    public function execute(Assessment $assessment, string $studentProfileId, ?string $actorId = null): AssessmentAttempt
-    {
+    public function execute(
+        Assessment $assessment,
+        string $studentProfileId,
+        ?string $actorId = null,
+        ?string $reactivationRequestId = null,
+    ): AssessmentAttempt {
         if (!$assessment->hasCompleteQuestionBank()) {
             throw BusinessRuleViolation::make(
                 'assessments.question_bank_incomplete',
@@ -66,6 +67,7 @@ final readonly class StartAttemptAction
             $studentProfileId,
             $actorId,
             $startedAt,
+            $reactivationRequestId,
         ): AssessmentAttempt {
             $lockedAssessment = Assessment::query()->whereKey($assessment->getKey())->lockForUpdate()->firstOrFail();
             $this->guardWithinAvailabilityWindow($lockedAssessment);
@@ -91,6 +93,7 @@ final readonly class StartAttemptAction
 
             $attempt = $lockedAssessment->attempts()->create([
                 'student_profile_id' => $studentProfileId,
+                'reactivation_request_id' => $reactivationRequestId,
                 'attempt_number' => $usedAttempts + 1,
                 'started_at' => $startedAt,
                 'answers' => [],
@@ -108,6 +111,7 @@ final readonly class StartAttemptAction
                 newValues: [
                     'assessment_id' => (string) $lockedAssessment->getKey(),
                     'student_profile_id' => $studentProfileId,
+                    'reactivation_request_id' => $reactivationRequestId,
                     'attempt_number' => $attempt->attempt_number,
                 ],
                 reason: __('assessments::messages.attempt_started_reason'),

@@ -40,7 +40,7 @@ final class AssessmentAttemptResource extends Resource
 
     protected static ?int $navigationSort = 51;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('assessments::navigation.group');
     }
@@ -53,6 +53,18 @@ final class AssessmentAttemptResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('assessments::navigation.attempt.plural');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('features.assessments', false)
+            && parent::shouldRegisterNavigation();
+    }
+
+    public static function canAccess(): bool
+    {
+        return (bool) config('features.assessments', false)
+            && (auth()->user()?->can('viewAny', AssessmentAttempt::class) ?? false);
     }
 
     public static function form(Schema $schema): Schema

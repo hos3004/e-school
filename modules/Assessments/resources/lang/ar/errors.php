@@ -34,4 +34,7 @@ return [
     'student_profile_required' => 'لا يوجد ملف طالب نشط مرتبط بهذا الحساب.',
     'attempt_in_progress' => 'توجد محاولة مفتوحة بالفعل؛ أكملها قبل بدء محاولة جديدة.',
     'answers_do_not_match_questions' => 'يجب إرسال إجابة لكل سؤال دون أسئلة أو معرّفات إضافية.',
+    'reactivation_request_required' => 'طلب إعادة التفعيل مطلوب لهذا الاختبار.',
+    'reactivation_request_not_found' => 'طلب إعادة التفعيل غير موجود.',
+    'reactivation_request_invalid_state' => 'لا يمكن بدء هذا الاختبار إلا بطلب إعادة تفعيل قيد الانتظار.',
 ];

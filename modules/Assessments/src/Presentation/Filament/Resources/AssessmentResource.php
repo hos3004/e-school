@@ -56,9 +56,16 @@ final class AssessmentResource extends Resource
         return __('assessments::navigation.assessment.plural');
     }
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('features.assessments', false)
+            && parent::shouldRegisterNavigation();
+    }
+
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('viewAny', Assessment::class) ?? false;
+        return (bool) config('features.assessments', false)
+            && (auth()->user()?->can('viewAny', Assessment::class) ?? false);
     }
 
     public static function canCreate(): bool

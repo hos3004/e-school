@@ -7,6 +7,8 @@ namespace Modules\Discipline\Infrastructure\Providers;
 use Modules\Discipline\Application\Policies\DisciplineActionPolicy;
 use Modules\Discipline\Application\Policies\ReactivationRequestPolicy;
 use Modules\Discipline\Application\Policies\ViolationEventPolicy;
+use Modules\Discipline\Application\Queries\ReactivationRequestQueryService;
+use Modules\Discipline\Domain\Contracts\ReactivationRequestQueries;
 use Modules\Discipline\Domain\Models\DisciplineAction;
 use Modules\Discipline\Domain\Models\ReactivationRequest;
 use Modules\Discipline\Domain\Models\ViolationEvent;
@@ -50,6 +52,7 @@ final class DisciplineServiceProvider extends BaseModuleServiceProvider
     {
         return [
             EscalationLadder::class => EscalationLadder::class,
+            ReactivationRequestQueries::class => ReactivationRequestQueryService::class,
         ];
     }
 }

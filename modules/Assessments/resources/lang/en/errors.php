@@ -34,4 +34,7 @@ return [
     'student_profile_required' => 'No active student profile is linked to this account.',
     'attempt_in_progress' => 'An attempt is already in progress. Complete it before starting another.',
     'answers_do_not_match_questions' => 'Submit exactly one answer for every assessment question.',
+    'reactivation_request_required' => 'A reactivation request is required for this assessment.',
+    'reactivation_request_not_found' => 'The reactivation request was not found.',
+    'reactivation_request_invalid_state' => 'Only a pending reactivation request can start this assessment.',
 ];
