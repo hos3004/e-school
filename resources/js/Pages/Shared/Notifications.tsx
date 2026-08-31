@@ -45,7 +45,11 @@ export default function Notifications({ role }: Props) {
   const [nextPage, setNextPage] = useState<string | null>(null);
 
   const requestPage = useCallback(async (url: string, append: boolean) => {
-    append ? setIsLoadingMore(true) : setIsLoading(true);
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+    }
     setHasError(false);
 
     try {

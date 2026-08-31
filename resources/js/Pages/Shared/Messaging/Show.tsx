@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 
 import AppLayout from '@/Layouts/AppLayout';
@@ -21,7 +21,7 @@ export default function Show({ conversationId }: Props) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -41,11 +41,11 @@ export default function Show({ conversationId }: Props) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [conversationId]);
 
     useEffect(() => {
-        fetchMessages();
-    }, [conversationId]);
+        void fetchMessages();
+    }, [fetchMessages]);
 
     const sendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,7 +64,7 @@ export default function Show({ conversationId }: Props) {
 
             if (res.ok) {
                 setNewMessage('');
-                fetchMessages();
+                void fetchMessages();
             } else {
                 const data = await res.json();
                 setError(data.message || 'تعذر إرسال الرسالة');

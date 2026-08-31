@@ -24,8 +24,8 @@ final class EntityCodeGenerator
     /**
      * الكود التالي المتاح للكيان.
      *
-     * @param  string      $entity مفتاح من `codes.entities`
-     * @param  string|null $scope  قيمة عمود النطاق حين يكون التفرّد مركّبًا (مثل levels.program_id)
+     * @param string $entity مفتاح من `codes.entities`
+     * @param string|null $scope قيمة عمود النطاق حين يكون التفرّد مركّبًا (مثل levels.program_id)
      */
     public function next(string $entity, ?string $scope = null): string
     {

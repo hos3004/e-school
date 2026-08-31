@@ -33,7 +33,7 @@ final class AccessControlLabels
     /**
      * خيارات الفلاتر: المفتاح كما هو في قاعدة البيانات، والقيمة مترجمة.
      *
-     * @param  iterable<int, string|null> $keys
+     * @param iterable<int, string|null> $keys
      * @return array<string, string>
      */
     public static function options(string $group, iterable $keys): array

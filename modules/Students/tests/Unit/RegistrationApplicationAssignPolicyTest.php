@@ -40,7 +40,7 @@ final class RegistrationApplicationAssignPolicyTest extends TestCase
 
             $this->assertFalse(
                 $policy->assign($this->user('org-1', $abilities), $application),
-                "توقّعنا الرفض عند غياب الصلاحية «{$missing}»."
+                "توقّعنا الرفض عند غياب الصلاحية «{$missing}».",
             );
         }
     }

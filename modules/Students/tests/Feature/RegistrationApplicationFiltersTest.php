@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Students\Tests\Feature;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Modules\Organization\Database\Seeders\GeographySeeder;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Organization\Domain\ValueObjects\RegionData;
@@ -237,7 +239,7 @@ final class RegistrationApplicationFiltersTest extends TestCase
     public function test_free_text_questions_can_never_become_filterable(): void
     {
         // القيد على مستوى قاعدة البيانات هو الحارس الأخير، لا الواجهة وحدها.
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         $this->question(RegistrationQuestionType::Textarea, true);
     }
@@ -246,7 +248,7 @@ final class RegistrationApplicationFiltersTest extends TestCase
     {
         $this->question(RegistrationQuestionType::Select, true, ['نعم', 'لا']);
 
-        $this->assertSame([], $this->filters()->filterableQuestions((string) \Illuminate\Support\Str::ulid()));
+        $this->assertSame([], $this->filters()->filterableQuestions((string) Str::ulid()));
     }
 
     private function filters(): RegistrationApplicationFilterService
@@ -281,7 +283,7 @@ final class RegistrationApplicationFiltersTest extends TestCase
         $profile = StudentProfile::query()->create([
             'organization_id' => $this->organizationId,
             'user_id' => $userId,
-            'student_code' => 'E'.mb_substr((string) \Illuminate\Support\Str::ulid(), -6),
+            'student_code' => 'E'.mb_substr((string) Str::ulid(), -6),
             'preferred_language' => $language,
             'joined_at' => now()->toDateString(),
         ]);

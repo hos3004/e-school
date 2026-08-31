@@ -19,7 +19,7 @@ final class CreateRegistrationQuestion extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         /** @var RegistrationQuestion */
-        return static::getModel()::query()->create([
+        return self::getModel()::query()->create([
             ...$data,
             'organization_id' => (string) data_get(auth()->user(), 'organization_id'),
         ]);

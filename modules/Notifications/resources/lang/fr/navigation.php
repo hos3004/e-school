@@ -9,7 +9,6 @@ return [
     'template' => ['label' => 'Modèle de notification', 'plural' => 'Modèles de notification'],
     'category_setting' => ['label' => 'Paramètre de catégorie', 'plural' => 'Catégories et canaux'],
 
-
     'popup' => [
         'label' => 'Campagne popup',
         'plural' => 'Popups',

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Enrollments\Domain\Models\Enrollment;
+use Modules\Groups\Application\Actions\ActivateGroupAction;
 use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Groups\Domain\Models\Group;
@@ -384,7 +385,7 @@ final class BulkAssignStudentsToGroupTest extends TestCase
         $group = Group::query()->findOrFail($result->groupId);
 
         $this->expectException(BusinessRuleViolation::class);
-        app(\Modules\Groups\Application\Actions\ActivateGroupAction::class)->execute(
+        app(ActivateGroupAction::class)->execute(
             $group,
             $this->actorId,
             'محاولة تفعيل ناقصة',
@@ -408,7 +409,7 @@ final class BulkAssignStudentsToGroupTest extends TestCase
         $group = Group::query()->findOrFail($result->groupId);
         $this->completeDraft($group, capacity: 4);
 
-        app(\Modules\Groups\Application\Actions\ActivateGroupAction::class)->execute(
+        app(ActivateGroupAction::class)->execute(
             $group->refresh(),
             $this->actorId,
             'اكتملت البيانات',
@@ -454,7 +455,7 @@ final class BulkAssignStudentsToGroupTest extends TestCase
         $this->completeDraft($group, capacity: 2);
 
         $this->expectException(BusinessRuleViolation::class);
-        app(\Modules\Groups\Application\Actions\ActivateGroupAction::class)->execute(
+        app(ActivateGroupAction::class)->execute(
             $group->refresh(),
             $this->actorId,
             'محاولة تفعيل بسعة ناقصة',

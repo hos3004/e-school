@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Students\Tests\Feature;
 
+use Filament\Support\Contracts\TranslatableContentDriver;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Component;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Database\Seeders\GeographySeeder;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
@@ -65,7 +70,7 @@ final class RegistrationApplicationScreenTest extends TestCase
         $this->actingAsAdmin();
 
         $table = RegistrationApplicationResource::table(
-            \Filament\Tables\Table::make($this->tableLivewireStub()),
+            Table::make($this->tableLivewireStub()),
         );
 
         $names = array_map(
@@ -108,7 +113,7 @@ final class RegistrationApplicationScreenTest extends TestCase
     private function filterNames(): array
     {
         $table = RegistrationApplicationResource::table(
-            \Filament\Tables\Table::make($this->tableLivewireStub()),
+            Table::make($this->tableLivewireStub()),
         );
 
         return array_map(
@@ -165,18 +170,18 @@ final class RegistrationApplicationScreenTest extends TestCase
     }
 
     /** كائن Livewire أدنى ما يقبله Filament لبناء الجدول خارج الصفحة. */
-    private function tableLivewireStub(): \Filament\Tables\Contracts\HasTable
+    private function tableLivewireStub(): HasTable
     {
-        return new class extends \Livewire\Component implements \Filament\Tables\Contracts\HasTable
+        return new class extends Component implements HasTable
         {
-            use \Filament\Tables\Concerns\InteractsWithTable;
+            use InteractsWithTable;
 
-            public function getTable(): \Filament\Tables\Table
+            public function getTable(): Table
             {
-                return RegistrationApplicationResource::table(\Filament\Tables\Table::make($this));
+                return RegistrationApplicationResource::table(Table::make($this));
             }
 
-            public function makeFilamentTranslatableContentDriver(): ?\Filament\Support\Contracts\TranslatableContentDriver
+            public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
             {
                 return null;
             }

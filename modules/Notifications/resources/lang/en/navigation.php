@@ -30,7 +30,6 @@ return [
         'plural' => 'Categories & channels',
     ],
 
-
     'popup' => [
         'label' => 'Popup campaign',
         'plural' => 'Popup campaigns',
