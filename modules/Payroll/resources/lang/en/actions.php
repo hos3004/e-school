@@ -16,6 +16,8 @@ return [
         'duplicate' => 'An entry already exists for this session, staff member, and entry type.',
     ],
     'propose_adjustment' => [
+        'reference_period_not_found' => 'The referenced payroll period was not found in this organization.',
+        'staff_not_found' => 'The selected staff profile was not found in this organization.',
         'unknown_type' => 'Adjustment type ":type" is not among the allowed types.',
         'reason_required' => 'An adjustment requires a clearly written reason.',
         'invalid_amount' => 'Invalid adjustment amount: it must be non-zero; bonuses positive and deductions negative.',
@@ -23,11 +25,13 @@ return [
         'period_frozen' => 'The period is financially frozen (status ":status") and accepts no adjustments.',
     ],
     'approve_adjustment' => [
+        'not_found' => 'The requested payroll adjustment was not found in this organization.',
         'already_decided' => 'This adjustment has already been decided and cannot be approved again.',
         'period_frozen' => 'The adjustment period is financially frozen and accepts no approvals.',
         'self_approval' => 'Whoever proposed the adjustment cannot approve it — another supervisor must.',
     ],
     'reject_adjustment' => [
+        'not_found' => 'The requested payroll adjustment was not found in this organization.',
         'already_decided' => 'This adjustment has already been decided and cannot be rejected again.',
         'reason_required' => 'Rejecting an adjustment requires a clearly written reason.',
         'period_frozen' => 'The adjustment period is financially frozen.',

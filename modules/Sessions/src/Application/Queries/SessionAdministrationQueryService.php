@@ -36,6 +36,17 @@ final readonly class SessionAdministrationQueryService implements SessionAdminis
             ->all();
     }
 
+    public function sessionIdsForTeacher(string $organizationId, string $staffProfileId): array
+    {
+        return Session::query()
+            ->forOrganization($organizationId)
+            ->forStaff($staffProfileId)
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
     public function organizationIdForSession(string $sessionId): ?string
     {
         $organizationId = Session::query()->whereKey($sessionId)->value('organization_id');

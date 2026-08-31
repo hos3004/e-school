@@ -6,6 +6,7 @@ namespace Modules\Recordings\Application\Policies;
 
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Modules\Recordings\Application\Services\RecordingAccessDecision;
 use Modules\Recordings\Domain\Models\Recording;
 
 /**
@@ -16,6 +17,8 @@ use Modules\Recordings\Domain\Models\Recording;
  */
 final class RecordingPolicy
 {
+    public function __construct(private readonly RecordingAccessDecision $access) {}
+
     public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('recording.view') || $user->can('recording.view.any');
@@ -23,8 +26,7 @@ final class RecordingPolicy
 
     public function view(Authenticatable&Authorizable $user, Recording $recording): bool
     {
-        return ($user->can('recording.view') || $user->can('recording.view.any'))
-            && $recording->organization_id === data_get($user, 'organization_id');
+        return $this->access->canView($user, $recording);
     }
 
     public function create(Authenticatable&Authorizable $user): bool
@@ -53,7 +55,6 @@ final class RecordingPolicy
     /** مشاهدة المحتوى نفسه (توليد رابط موقّع). */
     public function watch(Authenticatable&Authorizable $user, Recording $recording): bool
     {
-        return ($user->can('recording.view') || $user->can('recording.view.any'))
-            && $recording->organization_id === data_get($user, 'organization_id');
+        return $this->access->canView($user, $recording);
     }
 }

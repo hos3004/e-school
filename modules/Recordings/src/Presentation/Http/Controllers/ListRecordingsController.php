@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
+use Modules\Recordings\Application\Services\RecordingAccessDecision;
 use Modules\Recordings\Domain\Models\Recording;
 use Modules\Recordings\Presentation\Http\Resources\RecordingResource;
 
@@ -16,12 +17,13 @@ use Modules\Recordings\Presentation\Http\Resources\RecordingResource;
  */
 final class ListRecordingsController extends Controller
 {
+    public function __construct(private readonly RecordingAccessDecision $access) {}
+
     public function __invoke(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', Recording::class);
 
-        $recordings = Recording::query()
-            ->forOrganization((string) $request->user()->organization_id)
+        $recordings = $this->access->scopeVisible(Recording::query(), $request->user())
             ->orderByDesc('available_from')
             ->paginate((int) $request->integer('per_page', 20));
 

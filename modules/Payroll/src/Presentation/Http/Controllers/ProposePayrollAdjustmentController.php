@@ -36,6 +36,7 @@ final class ProposePayrollAdjustmentController extends Controller
             ),
             reason: (string) $request->validated('reason'),
             referencesPeriodId: $request->validated('references_period_id'),
+            actorId: (string) $request->user()->getAuthIdentifier(),
         );
 
         return new PayrollAdjustmentResource($adjustment);

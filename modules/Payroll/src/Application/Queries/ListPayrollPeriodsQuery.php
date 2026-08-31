@@ -26,7 +26,11 @@ final readonly class ListPayrollPeriodsQuery
         $organizationId = (string) $this->auth->user()?->getAttribute('organization_id');
 
         return PayrollPeriod::query()
-            ->when($organizationId !== '', fn (Builder $q): Builder => $q->forOrganization($organizationId))
+            ->when(
+                $organizationId !== '',
+                fn (Builder $q): Builder => $q->forOrganization($organizationId),
+                fn (Builder $q): Builder => $q->whereRaw('1 = 0'),
+            )
             ->orderByDesc('year')
             ->orderByDesc('month')
             ->get();

@@ -23,6 +23,8 @@ use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Events\StudentLeftGroup;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupProgram;
+use Modules\Guardians\Domain\Models\GuardianLink;
+use Modules\Guardians\Domain\Models\GuardianProfile;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Sessions\Application\Actions\CompleteSessionAction;
@@ -155,6 +157,95 @@ it('revokes future invitations when a student leaves a group and blocks the port
     expect($reactivated)->toBe(1)
         ->and($participant->revoked_at)->toBeNull()
         ->and($participant->join_url_token)->not->toBe($oldToken);
+});
+
+it('enforces assigned own children and tenant scopes on session APIs', function (): void {
+    $fixture = sessionOperationsFixture();
+    $organizationId = (string) $fixture['organization']->id;
+    $broad = User::factory()->inOrganization($organizationId)->create();
+    $auditor = User::factory()->inOrganization($organizationId)->create();
+    $finance = User::factory()->inOrganization($organizationId)->create();
+    $unrelated = User::factory()->inOrganization($organizationId)->create();
+    $foreignOrganization = Organization::factory()->create();
+    $foreign = User::factory()->inOrganization((string) $foreignOrganization->id)->create();
+
+    Gate::define('session.view', static fn (): bool => true);
+    Gate::define('student.view.any', static fn (User $user): bool => in_array((string) $user->id, [
+        (string) $broad->id,
+        (string) $auditor->id,
+        (string) $finance->id,
+    ], true));
+    Gate::define('session.create', static fn (User $user): bool => in_array((string) $user->id, [
+        (string) $broad->id,
+        (string) $fixture['teacherUser']->id,
+    ], true));
+
+    $this->actingAs($fixture['teacherUser'])
+        ->getJson('/api/sessions/'.$fixture['session']->id)
+        ->assertOk();
+    $this->actingAs($fixture['studentUser'])
+        ->getJson('/api/sessions/'.$fixture['session']->id)
+        ->assertOk();
+    $this->actingAs($unrelated)
+        ->getJson('/api/sessions/'.$fixture['session']->id)
+        ->assertForbidden();
+    $this->actingAs($foreign)
+        ->getJson('/api/sessions/'.$fixture['session']->id)
+        ->assertForbidden();
+    $this->actingAs($broad)
+        ->getJson('/api/sessions/'.$fixture['session']->id)
+        ->assertOk();
+
+    $this->actingAs($unrelated)
+        ->getJson('/api/sessions')
+        ->assertOk()
+        ->assertJsonCount(0, 'data');
+    $this->actingAs($fixture['studentUser'])
+        ->getJson('/api/sessions')
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+
+    $this->actingAs($fixture['studentUser'])
+        ->postJson('/api/sessions/'.$fixture['session']->id.'/confirm', ['reason' => 'student cannot confirm'])
+        ->assertForbidden();
+    $this->actingAs($auditor)
+        ->postJson('/api/sessions/'.$fixture['session']->id.'/confirm', ['reason' => 'auditor is read only'])
+        ->assertForbidden();
+    $this->actingAs($finance)
+        ->postJson('/api/sessions/'.$fixture['session']->id.'/confirm', ['reason' => 'finance is read only'])
+        ->assertForbidden();
+    $this->actingAs($fixture['teacherUser'])
+        ->postJson('/api/sessions/'.$fixture['session']->id.'/confirm', ['reason' => 'assigned teacher confirmation'])
+        ->assertOk();
+});
+
+it('allows verified guardian child visibility but requires acting authority for postponement', function (): void {
+    $fixture = sessionOperationsFixture();
+    $guardianUser = User::factory()
+        ->inOrganization((string) $fixture['organization']->id)
+        ->create();
+    $guardian = GuardianProfile::factory()->create([
+        'organization_id' => $fixture['organization']->id,
+        'user_id' => $guardianUser->id,
+    ]);
+    $link = GuardianLink::factory()->verified()->create([
+        'guardian_profile_id' => $guardian->id,
+        'student_profile_id' => $fixture['student']->id,
+        'can_act_for' => false,
+        'visible_sections' => ['schedule'],
+    ]);
+
+    Gate::define('session.view', static fn (): bool => true);
+    Gate::define('session.postpone.request', static fn (): bool => true);
+    Gate::define('student.view.any', static fn (): bool => false);
+
+    $this->actingAs($guardianUser)
+        ->getJson('/api/sessions/'.$fixture['session']->id)
+        ->assertOk();
+    expect(Gate::forUser($guardianUser)->denies('postpone', $fixture['session']))->toBeTrue();
+
+    $link->forceFill(['can_act_for' => true])->save();
+    expect(Gate::forUser($guardianUser)->allows('postpone', $fixture['session']))->toBeTrue();
 });
 
 it('rolls the participant lifecycle migration down and reapplies it cleanly', function (): void {

@@ -13,7 +13,7 @@ final class ReleaseDeferredEntriesRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('payroll.entries.release');
+        return $this->user()->can('payroll.calculate');
     }
 
     /**
@@ -23,6 +23,7 @@ final class ReleaseDeferredEntriesRequest extends FormRequest
     {
         return [
             'staff_profile_id' => ['required', 'string', 'size:26'],
+            'reason' => ['required', 'string', 'min:3', 'max:2000'],
         ];
     }
 
@@ -33,6 +34,7 @@ final class ReleaseDeferredEntriesRequest extends FormRequest
     {
         return [
             'staff_profile_id' => __('payroll::fields.staff_profile'),
+            'reason' => __('payroll::fields.reason'),
         ];
     }
 }

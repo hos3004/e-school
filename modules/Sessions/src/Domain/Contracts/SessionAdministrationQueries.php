@@ -17,6 +17,9 @@ interface SessionAdministrationQueries
     /** @return list<string> */
     public function sessionIdsForOrganization(string $organizationId): array;
 
+    /** @return list<string> */
+    public function sessionIdsForTeacher(string $organizationId, string $staffProfileId): array;
+
     public function organizationIdForSession(string $sessionId): ?string;
 
     /** @return list<SessionAdministrationData> */

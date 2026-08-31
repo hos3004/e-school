@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Recordings\Presentation\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Gate;
+use Modules\Recordings\Application\Services\RecordingAccessDecision;
 use Modules\Recordings\Domain\Models\Recording;
 use Modules\Recordings\Presentation\Http\Resources\RecordingResource;
 
@@ -14,11 +15,15 @@ use Modules\Recordings\Presentation\Http\Resources\RecordingResource;
  */
 final class ShowRecordingController extends Controller
 {
-    public function __invoke(string $recording): RecordingResource
-    {
-        $recordingModel = Recording::query()->findOrFail($recording);
+    public function __construct(private readonly RecordingAccessDecision $access) {}
 
-        Gate::authorize('view', $recordingModel);
+    public function __invoke(Request $request, string $recording): RecordingResource
+    {
+        $recordingModel = Recording::query()
+            ->forOrganization((string) $request->user()->getAttribute('organization_id'))
+            ->findOrFail($recording);
+
+        abort_unless($this->access->canView($request->user(), $recordingModel), 403);
 
         return new RecordingResource($recordingModel);
     }
