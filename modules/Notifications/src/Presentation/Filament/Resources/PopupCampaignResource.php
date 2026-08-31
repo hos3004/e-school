@@ -393,7 +393,7 @@ final class PopupCampaignResource extends Resource
                             ->required()
                             ->maxLength(2000),
                     ])
-                    ->visible(static fn (): bool => auth()->user()?->can('pause', PopupCampaign::class) ?? false)
+                    ->visible(static fn (): bool => auth()->user()?->can('popup_campaign.pause') ?? false)
                     ->deselectRecordsAfterCompletion()
                     ->action(static function (Collection $records, array $data): void {
                         foreach ($records as $record) {
@@ -419,7 +419,7 @@ final class PopupCampaignResource extends Resource
                             ->required()
                             ->maxLength(2000),
                     ])
-                    ->visible(static fn (): bool => auth()->user()?->can('archive', PopupCampaign::class) ?? false)
+                    ->visible(static fn (): bool => auth()->user()?->can('popup_campaign.archive') ?? false)
                     ->deselectRecordsAfterCompletion()
                     ->action(static function (Collection $records, array $data): void {
                         foreach ($records as $record) {

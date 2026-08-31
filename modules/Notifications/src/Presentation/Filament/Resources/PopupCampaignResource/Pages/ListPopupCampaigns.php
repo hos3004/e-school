@@ -48,7 +48,7 @@ final class ListPopupCampaigns extends ListRecords
             Action::make('edit_campaign')
                 ->label(__('notifications::popups.actions.edit'))
                 ->icon('heroicon-o-pencil-square')
-                ->visible(static fn (PopupCampaign $record): bool => auth()->user()?->can('update', PopupCampaign::class) ?? false
+                ->visible(static fn (PopupCampaign $record): bool => auth()->user()?->can('update', $record) ?? false
                     && in_array($record->status, [PopupCampaignStatus::Draft, PopupCampaignStatus::Paused], true))
                 ->url(static fn (PopupCampaign $record): string => PopupCampaignResource::getUrl('edit', ['record' => $record])),
             Action::make('publish_campaign')
@@ -57,7 +57,7 @@ final class ListPopupCampaigns extends ListRecords
                 ->color('success')
                 ->requiresConfirmation()
                 ->modalDescription(__('notifications::popups.confirm.publish_description'))
-                ->visible(static fn (PopupCampaign $record): bool => auth()->user()?->can('publish', PopupCampaign::class) ?? false
+                ->visible(static fn (PopupCampaign $record): bool => auth()->user()?->can('publish', $record) ?? false
                     && $record->status === PopupCampaignStatus::Draft)
                 ->form([
                     Textarea::make('reason')
@@ -73,7 +73,7 @@ final class ListPopupCampaigns extends ListRecords
                 ->icon('heroicon-o-pause-circle')
                 ->color('warning')
                 ->requiresConfirmation()
-                ->visible(static fn (PopupCampaign $record): bool => auth()->user()?->can('pause', PopupCampaign::class) ?? false
+                ->visible(static fn (PopupCampaign $record): bool => auth()->user()?->can('pause', $record) ?? false
                     && $record->status === PopupCampaignStatus::Published)
                 ->form([
                     Textarea::make('reason')
@@ -89,7 +89,7 @@ final class ListPopupCampaigns extends ListRecords
                 ->icon('heroicon-o-play-circle')
                 ->color('success')
                 ->requiresConfirmation()
-                ->visible(static fn (PopupCampaign $record): bool => auth()->user()?->can('publish', PopupCampaign::class) ?? false
+                ->visible(static fn (PopupCampaign $record): bool => auth()->user()?->can('publish', $record) ?? false
                     && $record->status === PopupCampaignStatus::Paused)
                 ->form([
                     Textarea::make('reason')
@@ -132,7 +132,7 @@ final class ListPopupCampaigns extends ListRecords
                 ->color('danger')
                 ->requiresConfirmation()
                 ->modalDescription(__('notifications::popups.confirm.archive_description'))
-                ->visible(static fn (PopupCampaign $record): bool => auth()->user()?->can('archive', PopupCampaign::class) ?? false
+                ->visible(static fn (PopupCampaign $record): bool => auth()->user()?->can('archive', $record) ?? false
                     && $record->status !== PopupCampaignStatus::Archived)
                 ->form([
                     Textarea::make('reason')

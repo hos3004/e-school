@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\PageCompletion\Comms;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Modules\Notifications\Domain\Models\NotificationOutbox;
-use Shared\Models\User;
+use Modules\Identity\Domain\Models\User;
+use Shared\Testing\Fixtures;
 use Tests\TestCase;
 
 final class NotificationBellTest extends TestCase
@@ -16,7 +16,7 @@ final class NotificationBellTest extends TestCase
     public function test_authenticated_user_can_fetch_unread_notification_count(): void
     {
         $user = User::factory()->create([
-            'organization_id' => '01HKEYORGANIZATION00000000',
+            'organization_id' => Fixtures::organizationId(),
         ]);
 
         $response = $this->actingAs($user)->getJson('/api/notifications/unread-count');
@@ -27,7 +27,7 @@ final class NotificationBellTest extends TestCase
     public function test_authenticated_user_can_list_notifications(): void
     {
         $user = User::factory()->create([
-            'organization_id' => '01HKEYORGANIZATION00000000',
+            'organization_id' => Fixtures::organizationId(),
         ]);
 
         $response = $this->actingAs($user)->getJson('/api/notifications');

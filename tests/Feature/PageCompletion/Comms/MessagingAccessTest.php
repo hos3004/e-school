@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\PageCompletion\Comms;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Shared\Models\User;
 use Tests\TestCase;
 
 final class MessagingAccessTest extends TestCase

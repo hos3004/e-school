@@ -45,7 +45,7 @@ final class ConversationPolicy
         // never grants a guardian access to a Student<->Teacher direct thread.
         if ($conversation->type === ConversationType::Direct->value
             && $this->audience->isGuardian((string) $conversation->organization_id, $userId)
-            && $this->audience->isStudentTeacherConversation(
+            && $this->containsStudentTeacherPair(
                 (string) $conversation->organization_id,
                 $participantIds,
             )) {
@@ -89,8 +89,35 @@ final class ConversationPolicy
             return false;
         }
 
-        return $user->can('message.send')
+        return $this->view($user, $conversation)
+            && $user->can('message.send')
             && $this->isParticipant((string) $user->getAuthIdentifier(), (string) $conversation->id);
+    }
+
+    /**
+     * Legacy data may contain an extra participant in a direct conversation.
+     * Inspect pairs so that such a row cannot bypass the student-teacher privacy
+     * barrier merely because the participant count is no longer exactly two.
+     *
+     * @param list<string> $participantIds
+     */
+    private function containsStudentTeacherPair(string $organizationId, array $participantIds): bool
+    {
+        $ids = array_values(array_unique($participantIds));
+        $count = count($ids);
+
+        for ($left = 0; $left < $count; $left++) {
+            for ($right = $left + 1; $right < $count; $right++) {
+                if ($this->audience->isStudentTeacherConversation(
+                    $organizationId,
+                    [$ids[$left], $ids[$right]],
+                )) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private function isParticipant(string $userId, string $conversationId): bool

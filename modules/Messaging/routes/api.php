@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Messaging\Presentation\Http\Controllers\FlagMessageController;
 use Modules\Messaging\Presentation\Http\Controllers\HandleWhatsappInboundController;
 use Modules\Messaging\Presentation\Http\Controllers\ListConversationMessagesController;
+use Modules\Messaging\Presentation\Http\Controllers\ListConversationsController;
 use Modules\Messaging\Presentation\Http\Controllers\ShowConversationController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreConversationController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreMessageController;
@@ -20,6 +21,7 @@ use Modules\Messaging\Presentation\Http\Controllers\WhatsappWebhookController;
 Route::post('webhooks/whatsapp', WhatsappWebhookController::class)->name('whatsapp.webhook');
 
 Route::middleware('auth:sanctum')->group(function (): void {
+    Route::get('conversations', ListConversationsController::class)->name('conversations.index');
     Route::post('conversations', StoreConversationController::class)->name('conversations.store');
     Route::get('messaging/conversations/{conversation}', ShowConversationController::class)
         ->name('messaging.conversations.show');

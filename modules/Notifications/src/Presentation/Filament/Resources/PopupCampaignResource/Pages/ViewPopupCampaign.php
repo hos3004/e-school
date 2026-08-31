@@ -93,7 +93,7 @@ final class ViewPopupCampaign extends ViewRecord
 
                     Tab::make(__('notifications::popups.view.analytics'))
                         ->icon('heroicon-o-chart-bar')
-                        ->visible(static fn (): bool => auth()->user()?->can('viewAnalytics', PopupCampaign::class) ?? false)
+                        ->visible(fn (): bool => auth()->user()?->can('viewAnalytics', $this->record) ?? false)
                         ->schema([
                             ...self::analyticsEntries(),
                         ])->columns(3),
