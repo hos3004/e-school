@@ -6,6 +6,7 @@ namespace Modules\AccessControl\Infrastructure\Authorization;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Modules\AccessControl\Domain\Contracts\AccessControlQuerier;
@@ -19,7 +20,14 @@ final class PermissionGateRegistrar
 {
     public function register(): void
     {
-        if (!Schema::hasTable('permissions')) {
+        // قد يُقلع التطبيق قبل وجود قاعدة بيانات أصلًا: composer install في CI،
+        // أو بناء صورة Docker، أو قبل أول migrate. الصلاحيات عندئذ غير معرّفة،
+        // وهذا ليس خطأ يستوجب إسقاط الإقلاع.
+        try {
+            if (!Schema::hasTable('permissions')) {
+                return;
+            }
+        } catch (QueryException) {
             return;
         }
 
