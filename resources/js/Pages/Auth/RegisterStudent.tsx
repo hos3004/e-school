@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { FormEvent } from 'react';
+import { useEffect, useRef, type FormEvent } from 'react';
 
 import Button from '@/Components/Button';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -50,7 +50,7 @@ interface Data {
 type CoreField = Exclude<keyof Data, 'evaluation'>;
 
 const inputClass =
-    'mt-1 min-h-11 w-full rounded-lg border border-[var(--ink-muted)]/50 bg-[var(--surface)] px-3 text-[var(--ink)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20';
+    'mt-1 min-h-12 w-full rounded-[var(--radius-md)] border border-[var(--line-strong)] bg-[var(--surface)] px-4 text-base text-[var(--ink)] shadow-[0_1px_2px_rgb(20_37_54/0.04)] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--surface)] sm:text-sm';
 
 export default function RegisterStudent({
     registrationForm,
@@ -60,6 +60,7 @@ export default function RegisterStudent({
     questions = [],
 }: Props) {
     const t = useI18n();
+    const errorSummaryRef = useRef<HTMLDivElement>(null);
     const form = useForm<Data>({
         full_name: '',
         email: '',
@@ -72,6 +73,12 @@ export default function RegisterStudent({
         evaluation: {},
     });
     const errors = form.errors as Record<string, string | undefined>;
+
+    useEffect(() => {
+        if (form.hasErrors) {
+            errorSummaryRef.current?.focus();
+        }
+    }, [form.hasErrors]);
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -150,7 +157,7 @@ export default function RegisterStudent({
                     <legend className="text-sm font-semibold text-[var(--ink)]">{legend}</legend>
                     <div className="space-y-2">
                         {(question.options ?? []).map((option) => (
-                            <label key={option} className="flex min-h-11 items-center gap-3 rounded-lg border border-[var(--ink-muted)]/30 px-3 text-sm text-[var(--ink)]">
+                            <label key={option} className="flex min-h-11 items-center gap-3 rounded-[var(--radius-md)] border border-[var(--line)] px-3 text-sm text-[var(--ink)] hover:bg-[var(--surface-subtle)] focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[var(--focus-ring)]">
                                 <input
                                     type={question.type}
                                     name={`evaluation.${question.id}`}
@@ -230,59 +237,59 @@ export default function RegisterStudent({
         <GuestLayout>
             <Head title={registrationForm.title} />
             <div className="text-center">
-                <h1 className="text-2xl font-bold text-[var(--ink)]">{registrationForm.title}</h1>
+                <h1 className="text-2xl font-semibold leading-tight tracking-[-0.02em] text-[var(--ink)] [text-wrap:balance]">{registrationForm.title}</h1>
                 {registrationForm.description && (
-                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-[var(--ink-muted)]">
+                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-[var(--ink-muted)] [text-wrap:pretty]">
                         {registrationForm.description}
                     </p>
                 )}
             </div>
 
             {form.hasErrors && (
-                <div role="alert" tabIndex={-1} className="mt-5 rounded-lg bg-[var(--surface-muted)] p-3 text-sm text-[var(--danger)]">
+                <div ref={errorSummaryRef} role="alert" tabIndex={-1} className="mt-5 rounded-[var(--radius-md)] border border-[color:var(--danger)]/30 bg-[var(--danger-soft)] p-3 text-sm font-medium text-[var(--danger)]">
                     {t('auth.register.validation_error')}
                 </div>
             )}
 
             <form className="mt-7 space-y-6" onSubmit={submit}>
-                <fieldset className="space-y-4 rounded-xl border border-[var(--ink-muted)]/30 p-4">
-                    <legend className="px-2 text-sm font-bold text-[var(--ink)]">
+                <fieldset className="space-y-4 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-subtle)] p-5">
+                    <legend className="px-2 text-sm font-semibold text-[var(--ink)]">
                         {t('auth.register.student_information')}
                     </legend>
                     {field('full_name', t('auth.register.full_name'))}
                     {field('date_of_birth', t('auth.register.date_of_birth'), 'date')}
                     <label className="block text-sm font-semibold text-[var(--ink)]" htmlFor="gender">
                         {t('auth.register.gender')}
-                        <select id="gender" className={inputClass} value={form.data.gender} required onChange={(event) => form.setData('gender', event.target.value)}>
+                        <select id="gender" className={inputClass} value={form.data.gender} required aria-invalid={Boolean(errors.gender)} aria-describedby={errors.gender ? 'gender-error' : undefined} onChange={(event) => form.setData('gender', event.target.value)}>
                             <option value="">{t('auth.register.choose')}</option>
                             <option value="male">{t('auth.register.male')}</option>
                             <option value="female">{t('auth.register.female')}</option>
                         </select>
-                        {errors.gender && <span className="mt-1 block text-xs text-[var(--danger)]">{errors.gender}</span>}
+                        {errors.gender && <span id="gender-error" className="mt-1 block text-xs text-[var(--danger)]">{errors.gender}</span>}
                     </label>
                     <label className="block text-sm font-semibold text-[var(--ink)]" htmlFor="country_id">
                         {t('auth.register.country')}
-                        <select id="country_id" className={inputClass} value={form.data.country_id} required onChange={(event) => {
+                        <select id="country_id" className={inputClass} value={form.data.country_id} required aria-invalid={Boolean(errors.country_id)} aria-describedby={errors.country_id ? 'country-error' : undefined} onChange={(event) => {
                             form.setData('country_id', event.target.value);
                             form.setData('region_id', '');
                         }}>
                             <option value="">{t('auth.register.choose')}</option>
                             {countries.map((country) => <option key={country.id} value={country.id}>{country.name}</option>)}
                         </select>
-                        {errors.country_id && <span className="mt-1 block text-xs text-[var(--danger)]">{errors.country_id}</span>}
+                        {errors.country_id && <span id="country-error" className="mt-1 block text-xs text-[var(--danger)]">{errors.country_id}</span>}
                     </label>
                     <label className="block text-sm font-semibold text-[var(--ink)]" htmlFor="region_id">
                         {t('auth.register.region')}
-                        <select id="region_id" className={inputClass} value={form.data.region_id} required onChange={(event) => form.setData('region_id', event.target.value)}>
+                        <select id="region_id" className={inputClass} value={form.data.region_id} required aria-invalid={Boolean(errors.region_id)} aria-describedby={errors.region_id ? 'region-error' : undefined} onChange={(event) => form.setData('region_id', event.target.value)}>
                             <option value="">{t('auth.register.choose')}</option>
                             {(regions[form.data.country_id] ?? []).map((region) => <option key={region.id} value={region.id}>{region.name}</option>)}
                         </select>
-                        {errors.region_id && <span className="mt-1 block text-xs text-[var(--danger)]">{errors.region_id}</span>}
+                        {errors.region_id && <span id="region-error" className="mt-1 block text-xs text-[var(--danger)]">{errors.region_id}</span>}
                     </label>
                 </fieldset>
 
-                <fieldset className="space-y-4 rounded-xl border border-[var(--ink-muted)]/30 p-4">
-                    <legend className="px-2 text-sm font-bold text-[var(--ink)]">
+                <fieldset className="space-y-4 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-subtle)] p-5">
+                    <legend className="px-2 text-sm font-semibold text-[var(--ink)]">
                         {t('auth.register.contact_information')}
                     </legend>
                     <p className="text-xs text-[var(--ink-muted)]">{t('auth.register.contact_help')}</p>
@@ -291,8 +298,8 @@ export default function RegisterStudent({
                 </fieldset>
 
                 {questions.length > 0 && (
-                    <fieldset className="space-y-5 rounded-xl border border-[var(--ink-muted)]/30 p-4">
-                        <legend className="px-2 text-sm font-bold text-[var(--ink)]">
+                    <fieldset className="space-y-5 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-subtle)] p-5">
+                        <legend className="px-2 text-sm font-semibold text-[var(--ink)]">
                             {t('auth.register.evaluation_questions')}
                         </legend>
                         {questions.map(questionField)}
@@ -302,8 +309,8 @@ export default function RegisterStudent({
                 <label className="block text-sm font-semibold text-[var(--ink)]" htmlFor="notes">
                     {t('auth.register.notes')}
                     <span className="ms-2 text-xs font-normal text-[var(--ink-muted)]">{t('auth.register.optional')}</span>
-                    <textarea id="notes" className={`${inputClass} p-3`} rows={4} value={form.data.notes} onChange={(event) => form.setData('notes', event.target.value)} />
-                    {errors.notes && <span className="mt-1 block text-xs text-[var(--danger)]">{errors.notes}</span>}
+                    <textarea id="notes" className={`${inputClass} p-3`} rows={4} value={form.data.notes} aria-invalid={Boolean(errors.notes)} aria-describedby={errors.notes ? 'notes-error' : undefined} onChange={(event) => form.setData('notes', event.target.value)} />
+                    {errors.notes && <span id="notes-error" className="mt-1 block text-xs text-[var(--danger)]">{errors.notes}</span>}
                 </label>
 
                 <Button disabled={form.processing} fullWidth type="submit">

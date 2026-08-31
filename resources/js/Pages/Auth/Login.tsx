@@ -18,7 +18,7 @@ interface LoginForm {
 }
 
 const inputClasses =
-    'min-h-11 w-full rounded-lg border border-[var(--ink-muted)]/50 bg-[var(--surface)] ps-3 pe-3 text-[var(--ink)] placeholder:text-[var(--ink-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]';
+    'min-h-12 w-full rounded-[var(--radius-md)] border border-[var(--line-strong)] bg-[var(--surface)] px-4 text-base text-[var(--ink)] shadow-[0_1px_2px_rgb(20_37_54/0.04)] placeholder:text-[var(--ink-muted)] focus-visible:border-[var(--brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] sm:text-sm';
 
 export default function Login({
     action = '/login',
@@ -46,20 +46,20 @@ export default function Login({
             <Head title={t('auth.login.title')} />
 
             <div className="text-center">
-                <p className="text-sm font-bold text-[var(--brand)]">
+                <p className="text-sm font-semibold text-[var(--brand-strong)]">
                     {t('app.name')}
                 </p>
-                <h1 className="mt-2 text-2xl font-bold text-[var(--ink)]">
+                <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-[-0.02em] text-[var(--ink)] [text-wrap:balance]">
                     {t('auth.login.title')}
                 </h1>
-                <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+                <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)] [text-wrap:pretty]">
                     {t('auth.login.subtitle')}
                 </p>
             </div>
 
             {flash.success ?? status ? (
                 <div
-                    className="mt-6 rounded-lg border border-[var(--success)] bg-[var(--surface-muted)] ps-4 pe-4 py-3 text-sm text-[var(--ink)]"
+                    className="mt-6 rounded-[var(--radius-md)] border border-[color:var(--success)]/30 bg-[var(--success-soft)] px-4 py-3 text-sm font-medium text-[var(--success)]"
                     role="status"
                 >
                     {status ?? flash.success}
@@ -68,7 +68,7 @@ export default function Login({
 
             {flash.error ? (
                 <div
-                    className="mt-6 rounded-lg border border-[var(--danger)] bg-[var(--surface-muted)] ps-4 pe-4 py-3 text-sm text-[var(--ink)]"
+                    className="mt-6 rounded-[var(--radius-md)] border border-[color:var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-3 text-sm font-medium text-[var(--danger)]"
                     role="alert"
                 >
                     {flash.error}
@@ -148,7 +148,7 @@ export default function Login({
                     ) : null}
                 </div>
 
-                <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg text-sm font-medium text-[var(--ink)] focus-within:ring-2 focus-within:ring-[var(--brand)] focus-within:ring-offset-2 focus-within:ring-offset-[var(--surface)]">
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--radius-md)] text-sm font-medium text-[var(--ink)] focus-within:ring-2 focus-within:ring-[var(--focus-ring)] focus-within:ring-offset-2 focus-within:ring-offset-[var(--surface)]">
                     <input
                         checked={form.data.remember}
                         className="size-5 rounded border-[var(--ink-muted)] text-[var(--brand)] accent-[var(--brand)]"

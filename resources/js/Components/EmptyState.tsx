@@ -29,7 +29,7 @@ export default function EmptyState({
             aria-describedby={resolvedDescription ? descriptionId : undefined}
             aria-labelledby={titleId}
             className={[
-                'rounded-2xl border border-[color:var(--ink-muted)]/25 bg-[var(--surface)] px-5 py-10 text-center sm:px-8',
+                'rounded-[var(--radius-lg)] border border-dashed border-[var(--line-strong)] bg-[var(--surface-subtle)] px-5 py-10 text-center sm:px-8',
                 className,
             ]
                 .filter(Boolean)
@@ -37,7 +37,7 @@ export default function EmptyState({
         >
             <div
                 aria-hidden="true"
-                className="mx-auto flex size-12 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--ink-muted)]"
+                className="mx-auto flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--surface)] text-[var(--ink-muted)] shadow-[0_1px_2px_rgb(20_37_54/0.05)]"
             >
                 {icon ?? (
                     <svg
@@ -62,7 +62,7 @@ export default function EmptyState({
             </div>
 
             <h2
-                className="mt-4 text-base font-semibold text-[var(--ink)]"
+                className="mt-4 text-base font-semibold text-[var(--ink)] [text-wrap:balance]"
                 id={titleId}
             >
                 {resolvedTitle}
@@ -70,7 +70,7 @@ export default function EmptyState({
 
             {resolvedDescription && (
                 <p
-                    className="mx-auto mt-2 max-w-prose text-sm leading-6 text-[var(--ink-muted)]"
+                    className="mx-auto mt-2 max-w-prose text-sm leading-6 text-[var(--ink-muted)] [text-wrap:pretty]"
                     id={descriptionId}
                 >
                     {resolvedDescription}

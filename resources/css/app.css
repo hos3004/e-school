@@ -1,41 +1,150 @@
 @import 'tailwindcss';
 
-/* ---------------------------------------------------------------------------
-   نظام التصميم — يدعم RTL (عربي) و LTR (إنجليزي/فرنسي) من نفس الملف.
-   التبديل يتم عبر السمة dir على عنصر html.
---------------------------------------------------------------------------- */
+@font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/ibm-plex-sans-arabic/IBMPlexSansArabic-Regular.woff2') format('woff2');
+}
 
+@font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/ibm-plex-sans-arabic/IBMPlexSansArabic-Medium.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/ibm-plex-sans-arabic/IBMPlexSansArabic-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/ibm-plex-sans-arabic/IBMPlexSansArabic-Bold.woff2') format('woff2');
+}
+
+/* E-School design system: calm academic surfaces, one instructional accent,
+   and semantic tokens shared by RTL and LTR layouts. */
 @theme {
-    --font-sans-ar: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', system-ui, sans-serif;
-    --font-sans-latin: 'Inter', system-ui, sans-serif;
+    --font-sans-ar: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+    --font-sans-latin: 'IBM Plex Sans Arabic', Inter, 'Segoe UI', system-ui, sans-serif;
 }
 
 :root {
     color-scheme: light;
 
-    --surface: #ffffff;
-    --surface-muted: #f6f7f9;
-    --ink: #12151a;
-    --ink-muted: #5b6472;
-    --brand: #1f6f5c;
-    --danger: #b3261e;
-    --warning: #a06800;
-    --success: #1f6f3f;
+    /* Global palette. Components consume the semantic aliases below. */
+    --color-white: #ffffff;
+    --color-slate-25: #f8fafc;
+    --color-slate-50: #f1f5f9;
+    --color-slate-200: #dbe4ea;
+    --color-slate-300: #bccbd5;
+    --color-slate-500: #647789;
+    --color-slate-700: #334b5f;
+    --color-navy-800: #12304a;
+    --color-navy-900: #142536;
+    --color-teal-50: #ccfbf1;
+    --color-teal-700: #0f766e;
+    --color-teal-800: #115e59;
+    --color-amber-50: #ffedd5;
+    --color-amber-700: #b45309;
+    --color-red-50: #fee4e2;
+    --color-red-700: #b42318;
+    --color-yellow-50: #fef0c7;
+    --color-yellow-700: #a15c07;
+    --color-green-50: #d1fadf;
+    --color-green-700: #157f4a;
+    --color-blue-50: #dbeafe;
+    --color-blue-700: #175cd3;
+
+    /* Semantic color aliases. */
+    --surface: var(--color-white);
+    --surface-subtle: var(--color-slate-25);
+    --surface-muted: var(--color-slate-50);
+    --surface-raised: var(--color-white);
+    --surface-inverse: var(--color-navy-800);
+    --ink: var(--color-navy-900);
+    --ink-soft: var(--color-slate-700);
+    --ink-muted: var(--color-slate-500);
+    --ink-inverse: var(--color-slate-25);
+    --line: var(--color-slate-200);
+    --line-strong: var(--color-slate-300);
+    --brand: var(--color-teal-700);
+    --brand-strong: var(--color-teal-800);
+    --brand-soft: var(--color-teal-50);
+    --accent: var(--color-amber-700);
+    --accent-soft: var(--color-amber-50);
+    --danger: var(--color-red-700);
+    --danger-soft: var(--color-red-50);
+    --warning: var(--color-yellow-700);
+    --warning-soft: var(--color-yellow-50);
+    --success: var(--color-green-700);
+    --success-soft: var(--color-green-50);
+    --info: var(--color-blue-700);
+    --info-soft: var(--color-blue-50);
+
+    --primary: var(--brand);
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.25rem;
+    --shadow-card: 0 1px 2px rgb(20 37 54 / 0.05), 0 8px 24px rgb(20 37 54 / 0.04);
+    --shadow-float: 0 18px 48px rgb(20 37 54 / 0.16), 0 2px 8px rgb(20 37 54 / 0.08);
+    --focus-ring: #0f766e;
+    --space-section: clamp(1.5rem, 2vw, 2.25rem);
+    --duration-fast: 150ms;
+    --duration-enter: 300ms;
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) {
         color-scheme: dark;
 
-        --surface: #11141a;
-        --surface-muted: #181c24;
-        --ink: #e8ebf0;
-        --ink-muted: #9aa4b2;
-        --brand: #79d4bb;
-        --danger: #ff8f87;
-        --warning: #f2bd64;
-        --success: #7bd9a2;
+        --color-white: #13212d;
+        --color-slate-25: #0d1822;
+        --color-slate-50: #1b2c3a;
+        --color-slate-200: #2b4252;
+        --color-slate-300: #496273;
+        --color-slate-500: #94a8b5;
+        --color-slate-700: #c5d2da;
+        --color-navy-800: #e6eef3;
+        --color-navy-900: #edf4f7;
+        --color-teal-50: #123f3b;
+        --color-teal-700: #5eead4;
+        --color-teal-800: #99f6e4;
+        --color-amber-50: #4a2a12;
+        --color-amber-700: #fdba74;
+        --color-red-50: #4a1d1d;
+        --color-red-700: #fda29b;
+        --color-yellow-50: #473311;
+        --color-yellow-700: #fec84b;
+        --color-green-50: #163e2b;
+        --color-green-700: #75e0a7;
+        --color-blue-50: #172e59;
+        --color-blue-700: #84adff;
+        --focus-ring: #5eead4;
+        --shadow-card: 0 1px 2px rgb(0 0 0 / 0.28), 0 12px 32px rgb(0 0 0 / 0.14);
+        --shadow-float: 0 22px 56px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.24);
     }
+}
+
+html {
+    min-width: 320px;
+    background: var(--surface-subtle);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 html[dir='rtl'] body {
@@ -50,18 +159,54 @@ body {
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
-    background: var(--surface);
+    overflow-wrap: break-word;
+    background: var(--surface-subtle);
     color: var(--ink);
+    line-height: 1.5;
 }
 
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+a {
+    text-underline-position: from-font;
+    text-decoration-thickness: from-font;
+}
 
 ::selection {
-    background: color-mix(in srgb, var(--brand) 28%, transparent);
+    background: color-mix(in srgb, var(--brand) 24%, transparent);
     color: var(--ink);
 }
 
 :focus-visible {
-    outline-color: var(--brand);
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+}
+
+@media (hover: hover) {
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--line-strong);
+    }
+}
+
+::-webkit-scrollbar {
+    width: 0.7rem;
+    height: 0.7rem;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    border: 0.2rem solid transparent;
+    border-radius: 999px;
+    background: var(--line);
+    background-clip: padding-box;
 }
 
 @media (prefers-reduced-motion: reduce) {

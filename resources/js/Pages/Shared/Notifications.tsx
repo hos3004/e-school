@@ -6,6 +6,7 @@ import ErrorState from "@/Components/ErrorState";
 import LoadingState from "@/Components/LoadingState";
 import PageHeader from "@/Components/PageHeader";
 import AppLayout, { type AppRole } from "@/Layouts/AppLayout";
+import { formatDateTime, useLocale } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 
 interface NotificationItem {
@@ -36,6 +37,7 @@ const csrfToken = () =>
 
 export default function Notifications({ role }: Props) {
   const t = useI18n();
+  const locale = useLocale();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
   const [isLoading, setIsLoading] = useState(true);
@@ -140,14 +142,14 @@ export default function Notifications({ role }: Props) {
         subtitle={t("notifications.subtitle")}
       />
 
-      <section className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3">
+      <section className="mb-5 flex flex-wrap items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-raised)] p-3 shadow-[var(--shadow-card)]">
         {(["all", "unread"] as const).map((value) => (
           <button
             aria-pressed={filter === value}
             className={
               filter === value
-                ? "rounded-lg bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white"
-                : "rounded-lg px-4 py-2 text-sm font-semibold text-[var(--ink-muted)] hover:bg-[var(--surface-muted)]"
+                ? "min-h-10 rounded-[var(--radius-md)] bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-[var(--ink-inverse)]"
+                : "min-h-10 rounded-[var(--radius-md)] px-4 py-2 text-sm font-semibold text-[var(--ink-muted)] hover:bg-[var(--surface-muted)]"
             }
             key={value}
             onClick={() => setFilter(value)}
@@ -158,7 +160,7 @@ export default function Notifications({ role }: Props) {
           </button>
         ))}
         <button
-          className="ms-auto rounded-lg border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-50"
+          className="ms-auto min-h-10 rounded-[var(--radius-md)] border border-[var(--line-strong)] px-4 py-2 text-sm font-semibold text-[var(--brand-strong)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isMarkingAll || unreadCount === 0}
           onClick={() => void markAllAsRead()}
           type="button"
@@ -182,12 +184,12 @@ export default function Notifications({ role }: Props) {
           description={t("notifications.empty_description")}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)]">
+        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-raised)] shadow-[var(--shadow-card)]">
           <div className="divide-y divide-[var(--line)]">
             {visibleItems.map((notification) => (
               <article
                 className={
-                  notification.read_at ? "p-5" : "bg-[var(--surface-muted)] p-5"
+                  notification.read_at ? "p-5" : "bg-[var(--brand-soft)]/45 p-5"
                 }
                 key={notification.id}
               >
@@ -238,10 +240,7 @@ export default function Notifications({ role }: Props) {
                           className="ms-auto text-[var(--ink-muted)]"
                           dateTime={notification.created_at}
                         >
-                          {new Intl.DateTimeFormat(undefined, {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          }).format(new Date(notification.created_at))}
+                          {formatDateTime(notification.created_at, locale)}
                         </time>
                       )}
                     </div>

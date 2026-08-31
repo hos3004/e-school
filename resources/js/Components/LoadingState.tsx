@@ -22,7 +22,7 @@ export default function LoadingState({
             aria-busy="true"
             aria-live="polite"
             className={[
-                'rounded-2xl border border-[color:var(--ink-muted)]/20 bg-[var(--surface)] p-5 sm:p-6',
+                'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-[var(--shadow-card)] sm:p-6',
                 className,
             ]
                 .filter(Boolean)
@@ -43,7 +43,7 @@ export default function LoadingState({
                         { length: skeletonRows },
                         (_, index) => (
                             <div
-                                className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-xl border border-[color:var(--ink-muted)]/15 p-4"
+                                className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-[var(--radius-md)] border border-[var(--line)] p-4"
                                 key={index}
                             >
                                 <div className="space-y-2">

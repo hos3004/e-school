@@ -1,7 +1,14 @@
-import { useEffect, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
+import Button from '@/Components/Button';
+import EmptyState from '@/Components/EmptyState';
+import ErrorState from '@/Components/ErrorState';
+import LoadingState from '@/Components/LoadingState';
+import PageHeader from '@/Components/PageHeader';
 import AppLayout from '@/Layouts/AppLayout';
+import { formatDateTime, useLocale } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 
 interface ConversationItem {
     id: string;
@@ -13,86 +20,121 @@ interface ConversationItem {
 }
 
 export default function Inbox() {
+    const t = useI18n();
+    const locale = useLocale();
     const [conversations, setConversations] = useState<ConversationItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
 
     useEffect(() => {
         const fetchConversations = async () => {
             setLoading(true);
+            setHasError(false);
+
             try {
-                const res = await fetch('/api/conversations', {
+                const response = await fetch('/api/conversations', {
                     headers: { Accept: 'application/json' },
                 });
-                if (res.ok) {
-                    const data = await res.json();
-                    setConversations(Array.isArray(data) ? data : data.data || []);
+
+                if (!response.ok) {
+                    setHasError(true);
+                    return;
                 }
+
+                const data = await response.json();
+                setConversations(
+                    Array.isArray(data) ? data : (data.data ?? []),
+                );
             } catch {
-                // Fallback gracefully
+                setHasError(true);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchConversations();
+        void fetchConversations();
     }, []);
 
     return (
-        <AppLayout header={<h2 className="text-xl font-bold text-[var(--ink)]">الرسائل والمحادثات</h2>}>
-            <Head title="صندوق المحادثات" />
+        <AppLayout>
+            <Head title={t('messaging.inbox.title')} />
+            <PageHeader
+                action={
+                    <Button as="link" href="/messages/create">
+                        {t('messaging.inbox.new')}
+                    </Button>
+                }
+                className="mb-6"
+                subtitle={t('messaging.inbox.subtitle')}
+                title={t('messaging.inbox.title')}
+            />
 
-            <div className="mx-auto max-w-4xl space-y-6">
-                <div className="flex items-center justify-between rounded-xl border border-[var(--ink-muted)]/20 bg-[var(--surface)] p-4 shadow-sm">
-                    <h3 className="text-base font-bold text-[var(--ink)]">محادثاتي</h3>
-                    <Link
-                        href="/messages/create"
-                        className="rounded-lg bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white hover:bg-[var(--brand)]/90 transition-colors"
+            <div className="mx-auto max-w-4xl">
+                {loading ? (
+                    <LoadingState label={t('messaging.loading')} rows={4} />
+                ) : hasError ? (
+                    <ErrorState message={t('messaging.load_error')} />
+                ) : conversations.length === 0 ? (
+                    <EmptyState
+                        action={
+                            <Button as="link" href="/messages/create" variant="secondary">
+                                {t('messaging.inbox.new')}
+                            </Button>
+                        }
+                        description={t('messaging.inbox.empty_description')}
+                        title={t('messaging.inbox.empty_title')}
+                    />
+                ) : (
+                    <section
+                        aria-label={t('messaging.inbox.list_label')}
+                        className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-raised)] shadow-[var(--shadow-card)]"
                     >
-                        محادثة جديدة +
-                    </Link>
-                </div>
-
-                <div className="rounded-xl border border-[var(--ink-muted)]/20 bg-[var(--surface)] p-6 shadow-sm">
-                    {loading ? (
-                        <div className="py-12 text-center text-sm text-[var(--ink-muted)]">جاري تحميل المحادثات...</div>
-                    ) : conversations.length === 0 ? (
-                        <div className="py-12 text-center text-sm text-[var(--ink-muted)]">لا توجد محادثات نشطة حالياً</div>
-                    ) : (
-                        <div className="divide-y divide-[var(--ink-muted)]/10">
+                        <div className="divide-y divide-[var(--line)]">
                             {conversations.map((item) => (
                                 <Link
-                                    key={item.id}
+                                    className="group block px-4 py-4 transition-colors duration-150 hover:bg-[var(--surface-subtle)] focus-visible:bg-[var(--brand-soft)] sm:px-5"
                                     href={`/messages/${item.id}`}
-                                    className="block py-4 hover:bg-[var(--surface-muted)]/50 px-2 rounded-lg transition-colors first:pt-0 last:pb-0"
+                                    key={item.id}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-bold text-[var(--ink)]">
-                                                    {item.subject || 'محادثة خاصة'}
-                                                </span>
-                                                {(item.unread_count ?? 0) > 0 && (
-                                                    <span className="rounded-full bg-[var(--brand)] px-2 py-0.5 text-[10px] font-bold text-white">
-                                                        {item.unread_count} جديد
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {item.last_message && (
-                                                <p className="text-xs text-[var(--ink-muted)] line-clamp-1">
-                                                    {item.last_message}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <span className="text-[10px] text-[var(--ink-muted)]">
-                                            {item.updated_at ? new Date(item.updated_at).toLocaleDateString('ar-SA') : ''}
+                                    <div className="flex items-start gap-3">
+                                        <span
+                                            aria-hidden="true"
+                                            className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand-soft)] text-[var(--brand-strong)]"
+                                        >
+                                            <svg className="size-5" fill="none" viewBox="0 0 24 24">
+                                                <path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
+                                            </svg>
                                         </span>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-start justify-between gap-2">
+                                                <h2 className="font-semibold text-[var(--ink)]">
+                                                    {item.subject || t('messaging.private_conversation')}
+                                                </h2>
+                                                {item.updated_at ? (
+                                                    <time className="text-xs tabular-nums text-[var(--ink-muted)]" dateTime={item.updated_at}>
+                                                        {formatDateTime(item.updated_at, locale)}
+                                                    </time>
+                                                ) : null}
+                                            </div>
+                                            <div className="mt-1 flex items-center gap-2">
+                                                {item.last_message ? (
+                                                    <p className="min-w-0 flex-1 truncate text-sm text-[var(--ink-muted)]">
+                                                        {item.last_message}
+                                                    </p>
+                                                ) : null}
+                                                {(item.unread_count ?? 0) > 0 ? (
+                                                    <span className="inline-flex min-h-6 items-center rounded-full bg-[var(--brand)] px-2 text-xs font-semibold text-[var(--ink-inverse)]">
+                                                        {item.unread_count} {t('messaging.unread')}
+                                                    </span>
+                                                ) : null}
+                                            </div>
+                                        </div>
                                     </div>
                                 </Link>
                             ))}
                         </div>
-                    )}
-                </div>
+                    </section>
+                )}
             </div>
         </AppLayout>
     );

@@ -32,6 +32,8 @@ export default function NotificationBell({
 }: Props) {
   const t = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -98,6 +100,42 @@ export default function NotificationBell({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const trigger = triggerRef.current;
+    const dialog = dialogRef.current;
+    const focusableSelector =
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusableElements = dialog
+      ? Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
+      : [];
+
+    focusableElements[0]?.focus();
+
+    const keepFocusInside = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || focusableElements.length === 0) return;
+
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", keepFocusInside);
+
+    return () => {
+      document.removeEventListener("keydown", keepFocusInside);
+      trigger?.focus();
+    };
+  }, [isOpen]);
+
   const markAsRead = async (id: string) => {
     const item = items.find((notification) => notification.id === id);
     if (item?.read_at) return;
@@ -126,15 +164,17 @@ export default function NotificationBell({
   return (
     <div className="relative" ref={containerRef}>
       <button
+        aria-controls="notification-dialog"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-label={t("notifications.bell.label")}
-        className="relative rounded-full p-2 text-[var(--ink-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+        className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-transparent text-[var(--ink-muted)] transition-[color,background-color,border-color,transform] duration-150 ease-out hover:border-[var(--line)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] motion-reduce:transform-none"
         onClick={() => {
           const nextState = !isOpen;
           setIsOpen(nextState);
           if (nextState) void loadNotifications();
         }}
+        ref={triggerRef}
         type="button"
       >
         <svg
@@ -161,19 +201,37 @@ export default function NotificationBell({
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
+        <span className="sr-only" role="status">
+          {t("notifications.bell.title")}: {unreadCount}
+        </span>
       </button>
 
       {isOpen && (
         <section
           aria-label={t("notifications.bell.title")}
-          className="absolute end-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] shadow-xl"
+          aria-modal="true"
+          className="absolute end-0 z-50 mt-2 w-[min(23rem,calc(100vw-2rem))] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-float)]"
+          id="notification-dialog"
+          ref={dialogRef}
           role="dialog"
         >
           <header className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
             <h2 className="font-semibold">{t("notifications.bell.title")}</h2>
-            <span className="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-xs">
-              {unreadCount}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-xs">
+                {unreadCount}
+              </span>
+              <button
+                aria-label={t("navigation.close")}
+                className="inline-flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-[var(--ink-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]"
+                onClick={() => setIsOpen(false)}
+                type="button"
+              >
+                <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
+                  <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                </svg>
+              </button>
+            </div>
           </header>
 
           {isLoading ? (

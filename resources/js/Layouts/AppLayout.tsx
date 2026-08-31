@@ -4,6 +4,7 @@ import {
     type PropsWithChildren,
     type ReactNode,
     useEffect,
+    useRef,
     useState,
 } from 'react';
 
@@ -278,6 +279,8 @@ export default function AppLayout({
     const t = useI18n();
     const { user } = page.props.auth;
     const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+    const navigationTriggerRef = useRef<HTMLButtonElement>(null);
+    const navigationDialogRef = useRef<HTMLElement>(null);
     const localeOptions = useSupportedLocales();
 
     const requestedLocale = page.props.locale ?? user.locale;
@@ -305,6 +308,55 @@ export default function AppLayout({
     useEffect(() => {
         setIsNavigationOpen(false);
     }, [page.url]);
+
+    useEffect(() => {
+        if (!isNavigationOpen) {
+            return;
+        }
+
+        const dialog = navigationDialogRef.current;
+        const navigationTrigger = navigationTriggerRef.current;
+        const previousOverflow = document.body.style.overflow;
+        const focusableSelector =
+            'a[href], button:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+        document.body.style.overflow = 'hidden';
+        const focusableElements = dialog
+            ? Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
+            : [];
+        focusableElements[0]?.focus();
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                setIsNavigationOpen(false);
+                return;
+            }
+
+            if (event.key !== 'Tab' || focusableElements.length === 0) {
+                return;
+            }
+
+            const first = focusableElements[0];
+            const last = focusableElements.at(-1);
+
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last?.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first?.focus();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = previousOverflow;
+            navigationTrigger?.focus();
+        };
+    }, [isNavigationOpen]);
 
     const isActive = (href: string) => {
         if (href === homeHref) {
@@ -340,7 +392,7 @@ export default function AppLayout({
     const renderNavigation = () => (
         <nav
             aria-label={t('navigation.primary')}
-            className="flex flex-col gap-1 p-3"
+            className="flex flex-col gap-1.5 p-4"
         >
             {navigationItems.map((item) => {
                 const active = isActive(item.href);
@@ -350,11 +402,11 @@ export default function AppLayout({
                         key={item.href}
                         aria-current={active ? 'page' : undefined}
                         className={[
-                            'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors',
+                            'group relative flex min-h-11 items-center gap-3 rounded-[var(--radius-md)] px-3.5 py-2.5 text-sm font-medium transition-[color,background-color,box-shadow] duration-150',
                             focusRing,
                             active
-                                ? 'bg-[var(--brand)] text-[var(--surface)]'
-                                : 'text-[var(--ink)] hover:bg-[var(--surface-muted)]',
+                                ? 'bg-[var(--brand-soft)] text-[var(--brand-strong)] shadow-[inset_3px_0_0_var(--brand)] rtl:shadow-[inset_-3px_0_0_var(--brand)]'
+                                : 'text-[var(--ink-soft)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]',
                         ].join(' ')}
                         href={item.href}
                     >
@@ -370,14 +422,14 @@ export default function AppLayout({
 
     return (
         <div
-            className="min-h-dvh bg-[var(--surface-muted)] text-[var(--ink)]"
+            className="min-h-dvh bg-[var(--surface-subtle)] text-[var(--ink)]"
             dir={direction}
         >
             {title ? <Head title={title} /> : null}
 
             <a
                 className={[
-                    'fixed start-4 top-4 z-[70] -translate-y-24 rounded-lg bg-[var(--brand)] px-4 py-2 font-semibold text-[var(--surface)] transition-transform focus:translate-y-0',
+                    'fixed start-4 top-4 z-[70] -translate-y-24 rounded-[var(--radius-md)] bg-[var(--brand)] px-4 py-2 font-semibold text-[var(--ink-inverse)] shadow-[var(--shadow-float)] transition-transform focus:translate-y-0',
                     focusRing,
                 ].join(' ')}
                 href="#main-content"
@@ -385,17 +437,18 @@ export default function AppLayout({
                 {t('accessibility.skip_to_content')}
             </a>
 
-            <header className="sticky top-0 z-40 border-b border-[var(--ink-muted)]/30 bg-[var(--surface)]">
-                <div className="mx-auto flex min-h-16 max-w-screen-2xl items-center gap-3 px-4 py-2 sm:px-6">
+            <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[color:color-mix(in_srgb,var(--surface)_94%,transparent)] backdrop-blur-md">
+                <div className="mx-auto flex min-h-[4.5rem] max-w-[100rem] items-center gap-3 px-4 py-2 sm:px-6">
                     <button
                         aria-controls="mobile-navigation"
                         aria-expanded={isNavigationOpen}
                         aria-label={t('navigation.open')}
                         className={[
-                            'inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[var(--ink)] hover:bg-[var(--surface-muted)] lg:hidden',
+                            'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] shadow-[0_1px_2px_rgb(20_37_54/0.05)] hover:bg-[var(--surface-muted)] lg:hidden',
                             focusRing,
                         ].join(' ')}
                         onClick={() => setIsNavigationOpen(true)}
+                        ref={navigationTriggerRef}
                         type="button"
                     >
                         <MenuIcon />
@@ -403,17 +456,29 @@ export default function AppLayout({
 
                     <Link
                         className={[
-                            'min-w-0 shrink truncate rounded-md text-base font-bold sm:text-lg',
+                            'flex min-w-0 shrink items-center gap-3 rounded-[var(--radius-md)] text-base font-semibold text-[var(--ink)] sm:text-lg',
                             focusRing,
                         ].join(' ')}
                         href={homeHref}
                     >
-                        {t('app.name')}
+                        <span
+                            aria-hidden="true"
+                            className="hidden size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand)] text-[var(--ink-inverse)] shadow-[0_1px_2px_rgb(20_37_54/0.14)] sm:flex"
+                        >
+                            <svg className="size-5" fill="none" viewBox="0 0 24 24">
+                                <path d="m4 6.5 8-3 8 3-8 3-8-3Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
+                                <path d="M7 8.2v5.6c0 1.4 2.2 2.7 5 2.7s5-1.3 5-2.7V8.2M20 7v6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                            </svg>
+                        </span>
+                        <span className="truncate">{t('app.name')}</span>
                     </Link>
 
                     <div className="ms-auto flex min-w-0 items-center gap-2 sm:gap-4">
-                        <span className="max-w-28 truncate text-sm font-semibold sm:max-w-48">
-                            {user.name}
+                        <span className="hidden max-w-48 items-center gap-2.5 rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--surface)] px-2.5 py-1.5 text-sm font-medium text-[var(--ink-soft)] sm:flex">
+                            <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-soft)] text-xs font-semibold text-[var(--brand-strong)]">
+                                {user.name.trim().charAt(0).toUpperCase()}
+                            </span>
+                            <span className="truncate">{user.name}</span>
                         </span>
 
                         <label className="sr-only" htmlFor="app-locale">
@@ -422,7 +487,7 @@ export default function AppLayout({
                         <select
                             aria-label={t('common.language')}
                             className={[
-                                'min-h-11 rounded-lg border border-[var(--ink-muted)]/40 bg-[var(--surface)] px-3 text-sm font-semibold text-[var(--ink)]',
+                                'min-h-11 rounded-[var(--radius-md)] border border-[var(--line-strong)] bg-[var(--surface)] px-3 text-sm font-medium text-[var(--ink)] shadow-[0_1px_2px_rgb(20_37_54/0.04)]',
                                 focusRing,
                             ].join(' ')}
                             id="app-locale"
@@ -442,19 +507,19 @@ export default function AppLayout({
                 </div>
             </header>
 
-            <div className="mx-auto grid max-w-screen-2xl lg:grid-cols-[16rem_minmax(0,1fr)]">
-                <aside className="hidden min-h-[calc(100dvh-4rem)] border-e border-[var(--ink-muted)]/30 bg-[var(--surface)] lg:block">
+            <div className="mx-auto grid max-w-[100rem] lg:grid-cols-[17.5rem_minmax(0,1fr)]">
+                <aside className="hidden min-h-[calc(100dvh-4.5rem)] border-e border-[var(--line)] bg-[var(--surface)] lg:block">
                     {renderNavigation()}
                 </aside>
 
                 <main
-                    className="min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+                    className="min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-9 xl:px-10"
                     id="main-content"
                     tabIndex={-1}
                 >
                     {page.props.flash?.success ? (
                         <div
-                            className="mb-6 rounded-lg border border-[var(--success)] bg-[var(--surface)] px-4 py-3 text-sm font-medium"
+                            className="mb-6 rounded-[var(--radius-md)] border border-[color:var(--success)]/30 bg-[var(--success-soft)] px-4 py-3 text-sm font-medium text-[var(--success)] shadow-[0_1px_2px_rgb(20_37_54/0.04)]"
                             role="status"
                         >
                             {page.props.flash.success}
@@ -463,7 +528,7 @@ export default function AppLayout({
 
                     {page.props.flash?.error ? (
                         <div
-                            className="mb-6 rounded-lg border border-[var(--danger)] bg-[var(--surface)] px-4 py-3 text-sm font-medium"
+                            className="mb-6 rounded-[var(--radius-md)] border border-[color:var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-3 text-sm font-medium text-[var(--danger)] shadow-[0_1px_2px_rgb(20_37_54/0.04)]"
                             role="alert"
                         >
                             {page.props.flash.error}
@@ -480,24 +545,34 @@ export default function AppLayout({
                 <div className="fixed inset-0 z-50 lg:hidden">
                     <button
                         aria-label={t('navigation.close')}
-                        className="absolute inset-0 h-full w-full cursor-default bg-[var(--ink)]/50"
+                        className="absolute inset-0 h-full w-full cursor-default bg-[var(--surface-inverse)]/55 backdrop-blur-[2px]"
                         onClick={() => setIsNavigationOpen(false)}
+                        tabIndex={-1}
                         type="button"
                     />
 
                     <aside
                         aria-label={t('navigation.primary')}
-                        className="absolute inset-y-0 start-0 w-[min(20rem,88vw)] overflow-y-auto border-e border-[var(--ink-muted)]/30 bg-[var(--surface)]"
+                        aria-modal="true"
+                        className="absolute inset-y-0 start-0 w-[min(20rem,88vw)] overflow-y-auto border-e border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-float)]"
                         id="mobile-navigation"
+                        ref={navigationDialogRef}
+                        role="dialog"
                     >
-                        <div className="flex min-h-16 items-center gap-3 border-b border-[var(--ink-muted)]/30 px-4">
-                            <span className="min-w-0 flex-1 truncate font-bold">
+                        <div className="flex min-h-[4.5rem] items-center gap-3 border-b border-[var(--line)] px-4">
+                            <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand)] text-[var(--ink-inverse)]">
+                                <svg className="size-5" fill="none" viewBox="0 0 24 24">
+                                    <path d="m4 6.5 8-3 8 3-8 3-8-3Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
+                                    <path d="M7 8.2v5.6c0 1.4 2.2 2.7 5 2.7s5-1.3 5-2.7V8.2M20 7v6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                                </svg>
+                            </span>
+                            <span className="min-w-0 flex-1 truncate font-semibold">
                                 {t('app.name')}
                             </span>
                             <button
                                 aria-label={t('navigation.close')}
                                 className={[
-                                    'inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg hover:bg-[var(--surface-muted)]',
+                                    'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-transparent hover:border-[var(--line)] hover:bg-[var(--surface-muted)]',
                                     focusRing,
                                 ].join(' ')}
                                 onClick={() => setIsNavigationOpen(false)}

@@ -17,11 +17,11 @@ export interface CardProps
 
 const variantClasses: Record<CardVariant, string> = {
     default:
-        'border-[var(--surface-muted)] bg-[var(--surface)] text-[var(--ink)]',
+        'border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink)] shadow-[var(--shadow-card)]',
     muted:
-        'border-[var(--surface-muted)] bg-[var(--surface-muted)] text-[var(--ink)]',
+        'border-[var(--line)] bg-[var(--surface-muted)] text-[var(--ink)]',
     outlined:
-        'border-[var(--ink-muted)] bg-[var(--surface)] text-[var(--ink)]',
+        'border-[var(--line-strong)] bg-transparent text-[var(--ink)]',
 };
 
 const paddingClasses: Record<CardPadding, string> = {
@@ -49,8 +49,8 @@ export default function Card({
         <Component
             {...cardProps}
             className={classNames(
-                'rounded-xl border shadow-sm',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]',
+                'rounded-[var(--radius-lg)] border',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
                 'focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]',
                 variantClasses[variant],
                 paddingClasses[padding],
@@ -94,7 +94,7 @@ export function CardTitle({
         <Component
             {...titleProps}
             className={classNames(
-                'text-lg font-bold leading-snug text-[var(--ink)]',
+                'text-lg font-semibold leading-snug text-[var(--ink)] [text-wrap:balance]',
                 className,
             )}
         >
@@ -114,7 +114,7 @@ export function CardDescription({
         <p
             {...descriptionProps}
             className={classNames(
-                'text-sm leading-relaxed text-[var(--ink-muted)]',
+                'text-sm leading-relaxed text-[var(--ink-muted)] [text-wrap:pretty]',
                 className,
             )}
         >
@@ -151,7 +151,7 @@ export function CardFooter({
         <div
             {...footerProps}
             className={classNames(
-                'flex flex-wrap items-center justify-end gap-3 border-t border-[var(--surface-muted)] pt-4',
+                'flex flex-wrap items-center justify-end gap-3 border-t border-[var(--line)] pt-4',
                 className,
             )}
         >
