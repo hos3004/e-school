@@ -7,6 +7,7 @@ use Modules\Organization\Database\Factories\AcademicCalendarFactory;
 use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Models\AcademicCalendar;
 use Modules\Organization\Tests\Support\ApiUser;
+use Tests\TestCase;
 
 function calendarApiUser(): ApiUser
 {
@@ -14,7 +15,7 @@ function calendarApiUser(): ApiUser
 }
 
 it('lists academic calendars of an organization', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $organization = OrganizationFactory::new()->create();
@@ -29,7 +30,7 @@ it('lists academic calendars of an organization', function (): void {
 });
 
 it('stores an academic calendar over the api and returns 201', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $organization = OrganizationFactory::new()->create();
@@ -48,7 +49,7 @@ it('stores an academic calendar over the api and returns 201', function (): void
 });
 
 it('rejects a calendar whose end precedes its start with a validation error', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $organization = OrganizationFactory::new()->create();
@@ -64,7 +65,7 @@ it('rejects a calendar whose end precedes its start with a validation error', fu
 });
 
 it('activates an inactive calendar and closes the previous active one', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $organization = OrganizationFactory::new()->create();
@@ -88,7 +89,7 @@ it('activates an inactive calendar and closes the previous active one', function
 });
 
 it('closes an active calendar', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $organization = OrganizationFactory::new()->create();
@@ -105,7 +106,7 @@ it('closes an active calendar', function (): void {
 });
 
 it('forbids activating without the activate ability', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::define('academic_calendars.activate', fn (): bool => false);
 
     $organization = OrganizationFactory::new()->create();

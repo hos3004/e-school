@@ -8,9 +8,10 @@ use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Events\OrganizationCreated;
 use Modules\Organization\Domain\Models\Organization;
 use Shared\Support\BusinessRuleViolation;
+use Tests\TestCase;
 
 it('creates an organization and dispatches OrganizationCreated', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Event::fake([OrganizationCreated::class]);
 
     $action = app(CreateOrganization::class);
@@ -35,7 +36,7 @@ it('creates an organization and dispatches OrganizationCreated', function (): vo
 });
 
 it('rejects a duplicated slug with a business rule violation', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $slug = 'taken-'.strtolower((string) str()->ulid());
     OrganizationFactory::new()->create(['slug' => $slug]);
 

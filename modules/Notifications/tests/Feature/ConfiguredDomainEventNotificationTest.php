@@ -14,6 +14,7 @@ use Modules\Notifications\Infrastructure\Gateways\MailChannelGateway;
 use Modules\Notifications\Infrastructure\Mail\NotificationMail;
 use Shared\Domain\DomainEvent;
 use Shared\Testing\Fixtures;
+use Tests\TestCase;
 
 final class ConfiguredSessionScheduledEvent extends DomainEvent
 {
@@ -46,7 +47,7 @@ final class ConfiguredSessionScheduledEvent extends DomainEvent
 }
 
 it('runs a configured domain event through listener outbox job gateway and mail transport', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Mail::fake();
     $this->seed(NotificationTemplateSeeder::class);
     $recipientId = Fixtures::userId();

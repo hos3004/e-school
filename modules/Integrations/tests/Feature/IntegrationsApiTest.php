@@ -12,6 +12,7 @@ use Modules\Integrations\Domain\Enums\DeliveryStatus;
 use Modules\Integrations\Domain\Models\IntegrationConnection;
 use Modules\Integrations\Tests\Support\ApiUser;
 use Shared\Testing\Fixtures;
+use Tests\TestCase;
 
 function integrationsApiUser(): ApiUser
 {
@@ -19,7 +20,7 @@ function integrationsApiUser(): ApiUser
 }
 
 it('stores a connection over the api and returns the pending status', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Event::fake();
     Gate::after(fn (): bool => true);
 
@@ -40,7 +41,7 @@ it('stores a connection over the api and returns the pending status', function (
 });
 
 it('activates a connection over the api', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Event::fake();
     Gate::after(fn (): bool => true);
 
@@ -56,7 +57,7 @@ it('activates a connection over the api', function (): void {
 });
 
 it('requires a documented reason to disable a connection', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $connection = IntegrationConnectionFactory::new()->create([
@@ -71,7 +72,7 @@ it('requires a documented reason to disable a connection', function (): void {
 });
 
 it('settles a delivery over the api as delivered', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $connection = IntegrationConnectionFactory::new()->create([
@@ -94,7 +95,7 @@ it('settles a delivery over the api as delivered', function (): void {
 });
 
 it('requeues a dead delivery over the api', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $connection = IntegrationConnectionFactory::new()->create([
@@ -115,7 +116,7 @@ it('requeues a dead delivery over the api', function (): void {
 });
 
 it('forbids storing connections without the create ability', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $provider = IntegrationProviderFactory::new()->create();
 
     $this->actingAs(integrationsApiUser())

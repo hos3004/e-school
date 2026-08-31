@@ -9,6 +9,7 @@ use Modules\Guardians\Domain\Events\GuardianProfileCreated;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 use Modules\Guardians\Tests\Support\ApiUser;
 use Shared\Testing\Fixtures;
+use Tests\TestCase;
 
 function guardianApiUser(): ApiUser
 {
@@ -21,7 +22,7 @@ it('stores a guardian profile over the api and returns 201', function (): void {
     Gate::after(fn (): bool => true);
     Event::fake([GuardianProfileCreated::class]);
 
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $response = $this->actingAs(guardianApiUser())
         ->postJson('/api/guardians/profiles', [
             'organization_id' => Fixtures::organizationId(),
@@ -41,7 +42,7 @@ it('stores a guardian profile over the api and returns 201', function (): void {
 it('validates the store payload and reports translated errors', function (): void {
     Gate::after(fn (): bool => true);
 
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->actingAs(guardianApiUser())
         ->postJson('/api/guardians/profiles', [
             'organization_id' => '',
@@ -56,7 +57,7 @@ it('forbids storing a guardian profile without the ability', function (): void {
     Gate::define('guardian.link', fn (): bool => false);
     $profilesBefore = GuardianProfile::query()->count();
 
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->actingAs(guardianApiUser())
         ->postJson('/api/guardians/profiles', [
             'organization_id' => Fixtures::organizationId(),
@@ -73,7 +74,7 @@ it('updates a guardian profile when the caller owns it', function (): void {
     $userId = Fixtures::userId();
     $profile = GuardianProfile::factory()->create(['user_id' => $userId]);
 
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->actingAs((new ApiUser($userId))->forceFill([
         'organization_id' => Fixtures::organizationId(),
     ]))
@@ -91,7 +92,7 @@ it('forbids updating a profile owned by another user without the ability', funct
 
     $profile = GuardianProfile::factory()->create();
 
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->actingAs(guardianApiUser())
         ->patchJson("/api/guardians/profiles/{$profile->id}", [
             'occupation' => 'intruder',
@@ -106,13 +107,13 @@ it('archives a guardian profile with a mandatory reason', function (): void {
 
     $profile = GuardianProfile::factory()->create();
 
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->actingAs(guardianApiUser())
         ->deleteJson("/api/guardians/profiles/{$profile->id}", [])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['reason']);
 
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->actingAs(guardianApiUser())
         ->deleteJson("/api/guardians/profiles/{$profile->id}", ['reason' => 'left the school'])
         ->assertNoContent();

@@ -12,6 +12,7 @@ use Modules\AccessControl\Domain\Events\RoleAssigned;
 use Modules\AccessControl\Domain\Events\RoleRevoked;
 use Modules\AccessControl\Domain\Models\ModelHasRole;
 use Modules\AccessControl\Domain\Models\Role;
+use PHPUnit\Framework\Assert;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
@@ -84,7 +85,7 @@ it('refuses revoking a role that was never assigned', function (): void {
 
     try {
         app(RevokeRoleAction::class)->execute((string) $role->getKey(), AC_USER_TYPE, AC_USER_ID);
-        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
+        Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.role.not_assigned');
     }

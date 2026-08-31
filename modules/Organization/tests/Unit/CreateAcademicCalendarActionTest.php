@@ -9,9 +9,10 @@ use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Events\AcademicCalendarCreated;
 use Modules\Organization\Domain\Models\AcademicCalendar;
 use Shared\Support\BusinessRuleViolation;
+use Tests\TestCase;
 
 it('creates an academic calendar and dispatches the event', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Event::fake([AcademicCalendarCreated::class]);
 
     $organization = OrganizationFactory::new()->create();
@@ -32,7 +33,7 @@ it('creates an academic calendar and dispatches the event', function (): void {
 });
 
 it('rejects a calendar whose end date is not after its start date', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organization = OrganizationFactory::new()->create();
     $action = app(CreateAcademicCalendar::class);
 
@@ -50,7 +51,7 @@ it('rejects a calendar whose end date is not after its start date', function ():
 });
 
 it('rejects a calendar overlapping an already active one', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organization = OrganizationFactory::new()->create();
     AcademicCalendarFactory::new()->active()->create([
         'organization_id' => $organization->id,
@@ -76,7 +77,7 @@ it('rejects a calendar overlapping an already active one', function (): void {
 });
 
 it('allows a non-overlapping calendar next to an active one', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organization = OrganizationFactory::new()->create();
     AcademicCalendarFactory::new()->active()->create([
         'organization_id' => $organization->id,

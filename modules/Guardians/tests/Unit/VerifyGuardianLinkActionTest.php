@@ -8,11 +8,12 @@ use Modules\Guardians\Application\Actions\VerifyGuardianLink;
 use Modules\Guardians\Domain\Events\GuardianLinkVerified;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Shared\Support\BusinessRuleViolation;
+use Tests\TestCase;
 
 uses(RefreshDatabase::class);
 
 it('verifies a link and dispatches GuardianLinkVerified', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Event::fake([GuardianLinkVerified::class]);
 
     $link = GuardianLink::factory()->create();
@@ -25,7 +26,7 @@ it('verifies a link and dispatches GuardianLinkVerified', function (): void {
 });
 
 it('rejects verifying an already verified link', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $link = GuardianLink::factory()->verified()->create();
 
     try {

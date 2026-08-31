@@ -16,19 +16,20 @@ use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Infrastructure\Gateways\MailChannelGateway;
 use Modules\Notifications\Infrastructure\Mail\NotificationMail;
 use Shared\Testing\Fixtures;
+use Tests\TestCase;
 
 /**
  * يثبت أن الأحداث التي كانت بلا قوالب (الانضباط · التجميد · الواجبات · الدرجات)
  * صارت تُسلَّم فعليًا عبر واتساب والبريد بعد إضافة قوالبها.
  */
 beforeEach(function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
     config(['notifications.quiet_hours.enabled' => false]);
 });
 
 it('delivers the enrollment-frozen event through the WhatsApp template gateway', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     config([
         'notifications.channels' => [
             'in_app' => ['enabled' => false],
@@ -84,7 +85,7 @@ it('delivers the enrollment-frozen event through the WhatsApp template gateway',
 });
 
 it('delivers the graded-submission event through email with its score parameters', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Mail::fake();
 
     config([

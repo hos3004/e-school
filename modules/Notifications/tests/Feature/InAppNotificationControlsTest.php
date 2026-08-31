@@ -8,6 +8,7 @@ use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Tests\Support\ApiUser;
 use Shared\Testing\Fixtures;
+use Tests\TestCase;
 
 function notificationControlsOrganization(): string
 {
@@ -25,14 +26,14 @@ function notificationControlsOrganization(): string
 }
 
 it('protects the in-app notification endpoints with authentication', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->getJson('/api/notifications')->assertUnauthorized();
     $this->getJson('/api/notifications/unread-count')->assertUnauthorized();
     $this->postJson('/api/notifications/mark-all-as-read')->assertUnauthorized();
 });
 
 it('lists and counts only delivered in-app notifications owned by the current tenant user', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organizationId = Fixtures::organizationId();
     $ownerId = Fixtures::userId();
     $otherUserId = Fixtures::userId();
@@ -77,7 +78,7 @@ it('lists and counts only delivered in-app notifications owned by the current te
 });
 
 it('marks one notification idempotently and hides records owned by another user', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organizationId = Fixtures::organizationId();
     $ownerId = Fixtures::userId();
     $otherUserId = Fixtures::userId();
@@ -113,7 +114,7 @@ it('marks one notification idempotently and hides records owned by another user'
 });
 
 it('marks all and updates only unread delivered in-app records in the current user organization', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organizationId = Fixtures::organizationId();
     $ownerId = Fixtures::userId();
     $otherUserId = Fixtures::userId();

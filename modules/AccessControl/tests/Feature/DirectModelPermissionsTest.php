@@ -12,6 +12,7 @@ use Modules\AccessControl\Domain\Enums\GuardName;
 use Modules\AccessControl\Domain\Events\ModelPermissionGranted;
 use Modules\AccessControl\Domain\Events\ModelPermissionRevoked;
 use Modules\AccessControl\Domain\Models\ModelHasPermission;
+use PHPUnit\Framework\Assert;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
@@ -66,7 +67,7 @@ it('revokes a direct permission and dispatches the event', function (): void {
 it('refuses revoking a permission that was never granted', function (): void {
     try {
         app(RevokeModelPermissionAction::class)->execute('never.granted', AC_DIRECT_TYPE, AC_DIRECT_ID);
-        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
+        Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.permission.not_granted');
     }

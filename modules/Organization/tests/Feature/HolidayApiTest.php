@@ -7,6 +7,7 @@ use Modules\Organization\Database\Factories\HolidayFactory;
 use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Models\Holiday;
 use Modules\Organization\Tests\Support\ApiUser;
+use Tests\TestCase;
 
 function holidayApiUser(): ApiUser
 {
@@ -14,7 +15,7 @@ function holidayApiUser(): ApiUser
 }
 
 it('lists holidays of an organization', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $organization = OrganizationFactory::new()->create();
@@ -27,7 +28,7 @@ it('lists holidays of an organization', function (): void {
 });
 
 it('stores a holiday over the api and returns 201', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $organization = OrganizationFactory::new()->create();
@@ -47,7 +48,7 @@ it('stores a holiday over the api and returns 201', function (): void {
 });
 
 it('rejects a holiday ending before it starts', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $organization = OrganizationFactory::new()->create();
@@ -63,7 +64,7 @@ it('rejects a holiday ending before it starts', function (): void {
 });
 
 it('removes a holiday over the api', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
 
     $organization = OrganizationFactory::new()->create();
@@ -78,7 +79,7 @@ it('removes a holiday over the api', function (): void {
 });
 
 it('forbids removing a holiday without the delete ability', function (): void {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     Gate::define('holidays.delete', fn (): bool => false);
 
     $organization = OrganizationFactory::new()->create();

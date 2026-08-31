@@ -8,18 +8,19 @@ use Modules\Identity\Domain\Events\UserStatusChanged;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
 use Modules\Identity\Tests\Concerns\UsesRealAccessControl;
+use Modules\Identity\Tests\Support\IdentityPestContext;
 
 uses(CreatesTestOrganization::class, UsesRealAccessControl::class);
 
 beforeEach(function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     $this->createTestOrganization();
 
     $this->seedRealAccessControl();
 });
 
 it('changes a user status over HTTP with reason and event', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     Event::fake([UserStatusChanged::class]);
 
     /** @var User $admin */
@@ -45,7 +46,7 @@ it('changes a user status over HTTP with reason and event', function (): void {
 });
 
 it('rejects status change without a written reason', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     Event::fake([UserStatusChanged::class]);
 
     /** @var User $admin */
@@ -65,7 +66,7 @@ it('rejects status change without a written reason', function (): void {
 });
 
 it('forbids an admin changing their own status over HTTP', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     /** @var User $admin */
     $admin = User::factory()->inOrganization($this->organizationId)->create();
     $this->assignRealRole($admin, 'platform_admin');
@@ -79,7 +80,7 @@ it('forbids an admin changing their own status over HTTP', function (): void {
 });
 
 it('hides a cross-tenant account id with not found', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     $firstOrganization = $this->organizationId;
     $admin = User::factory()->inOrganization($firstOrganization)->create();
     $this->assignRealRole($admin, 'platform_admin');

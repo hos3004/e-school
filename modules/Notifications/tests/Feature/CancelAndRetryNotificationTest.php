@@ -9,6 +9,7 @@ use Modules\Notifications\Application\Actions\RetryNotificationAction;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Events\NotificationCancelled;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
+use PHPUnit\Framework\Assert;
 use Shared\Support\BusinessRuleViolation;
 
 it('cancels a queued notification with an auditable reason', function (): void {
@@ -33,7 +34,7 @@ it('refuses to cancel notifications that left the queue', function (): void {
 
         try {
             app(CancelNotificationAction::class)->execute($outbox, 'late_cancel');
-            \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
+            Assert::fail('Expected BusinessRuleViolation was not thrown.');
         } catch (BusinessRuleViolation $violation) {
             expect($violation->rule)->toBe('notifications.not_cancellable');
         }
@@ -64,7 +65,7 @@ it('does not overwrite a newer status when retrying a stale failed model', funct
 
     try {
         app(RetryNotificationAction::class)->execute($stale);
-        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
+        Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('notifications.not_retryable');
     }
@@ -78,7 +79,7 @@ it('refuses to retry anything but failed notifications', function (): void {
 
         try {
             app(RetryNotificationAction::class)->execute($outbox);
-            \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
+            Assert::fail('Expected BusinessRuleViolation was not thrown.');
         } catch (BusinessRuleViolation $violation) {
             expect($violation->rule)->toBe('notifications.not_retryable');
         }

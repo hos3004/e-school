@@ -20,6 +20,7 @@ use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationOutboxResource;
+use Modules\Notifications\Tests\Support\NotificationsPestContext;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Presentation\Filament\Resources\SessionResource;
 use Shared\Support\BusinessRuleViolation;
@@ -27,7 +28,7 @@ use Shared\Support\BusinessRuleViolation;
 uses(RefreshDatabase::class, CreatesSessionParticipant::class);
 
 it('returns localized portal notifications with a safe deep link and accurate unread count', function (): void {
-    /** @var \Modules\Notifications\Tests\Support\NotificationsPestContext $this */
+    /** @var NotificationsPestContext $this */
     $participantId = $this->createSessionParticipant();
     $sessionId = (string) DB::table('session_participants')->where('id', $participantId)->value('session_id');
     $studentUserId = (string) DB::table('student_profiles')
@@ -58,7 +59,7 @@ it('returns localized portal notifications with a safe deep link and accurate un
 });
 
 it('renders real recipients and session delivery history in both operations hubs', function (): void {
-    /** @var \Modules\Notifications\Tests\Support\NotificationsPestContext $this */
+    /** @var NotificationsPestContext $this */
     Gate::before(static fn (): bool => true);
     Filament::setCurrentPanel('admin');
     $participantId = $this->createSessionParticipant();
@@ -99,7 +100,7 @@ it('renders real recipients and session delivery history in both operations hubs
 });
 
 it('requires reasons and audits manual retry and cancellation decisions', function (): void {
-    /** @var \Modules\Notifications\Tests\Support\NotificationsPestContext $this */
+    /** @var NotificationsPestContext $this */
     $participantId = $this->createSessionParticipant();
     $operator = User::query()->where('organization_id', $this->organizationId)->firstOrFail();
     $failed = NotificationOutbox::factory()->withChannel(Channel::InApp)->failed()->create([
@@ -140,7 +141,7 @@ it('requires reasons and audits manual retry and cancellation decisions', functi
 });
 
 it('protects operational notification endpoints with authentication', function (): void {
-    /** @var \Modules\Notifications\Tests\Support\NotificationsPestContext $this */
+    /** @var NotificationsPestContext $this */
     $queued = NotificationOutbox::factory()->withChannel(Channel::InApp)->create();
     $failed = NotificationOutbox::factory()->withChannel(Channel::InApp)->failed()->create();
 
@@ -153,7 +154,7 @@ it('protects operational notification endpoints with authentication', function (
 });
 
 it('accepts the real browser session on notification api routes', function (): void {
-    /** @var \Modules\Notifications\Tests\Support\NotificationsPestContext $this */
+    /** @var NotificationsPestContext $this */
     $route = app('router')->getRoutes()->getByName('notifications.index');
     expect($route)->not->toBeNull()
         ->and(app('router')->gatherRouteMiddleware($route))->toContain(EnsureFrontendRequestsAreStateful::class);

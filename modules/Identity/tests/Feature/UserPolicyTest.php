@@ -8,17 +8,18 @@ use Modules\Identity\Application\Policies\UserPolicy;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
 use Modules\Identity\Tests\Concerns\UsesRealAccessControl;
+use Modules\Identity\Tests\Support\IdentityPestContext;
 
 uses(CreatesTestOrganization::class, UsesRealAccessControl::class);
 
 beforeEach(function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     $this->createTestOrganization();
     $this->seedRealAccessControl();
 });
 
 it('allows self-service but denies every cross-tenant object even with real admin permissions', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     $actor = User::factory()->inOrganization($this->organizationId)->create();
     $sameTenant = User::factory()->inOrganization($this->organizationId)->create();
     $firstOrganization = $this->organizationId;
@@ -38,7 +39,7 @@ it('allows self-service but denies every cross-tenant object even with real admi
 });
 
 it('forbids user deletion and self status changes', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     $actor = User::factory()->inOrganization($this->organizationId)->create();
     $target = User::factory()->inOrganization($this->organizationId)->create();
     $this->assignRealRole($actor, 'platform_admin');
@@ -48,7 +49,7 @@ it('forbids user deletion and self status changes', function (): void {
 });
 
 it('uses capabilities for admin panel access and denies teacher and student accounts', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     $admin = User::factory()->inOrganization($this->organizationId)->create();
     $supervisor = User::factory()->inOrganization($this->organizationId)->create();
     $teacher = User::factory()->inOrganization($this->organizationId)->create();
@@ -66,6 +67,6 @@ it('uses capabilities for admin panel access and denies teacher and student acco
 });
 
 it('maps the policy to the model through the service provider', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     expect(Gate::getPolicyFor(User::class))->toBeInstanceOf(UserPolicy::class);
 });

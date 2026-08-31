@@ -11,17 +11,18 @@ use Modules\Identity\Domain\Events\PasswordResetRequested;
 use Modules\Identity\Domain\Models\PasswordResetToken;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
+use Modules\Identity\Tests\Support\IdentityPestContext;
 use Shared\Support\BusinessRuleViolation;
 
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     $this->createTestOrganization();
 });
 
 it('issues a reset token and dispatches the request event', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     Event::fake([PasswordResetRequested::class]);
 
     User::factory()->inOrganization($this->organizationId)->create([
@@ -36,7 +37,7 @@ it('issues a reset token and dispatches the request event', function (): void {
 });
 
 it('stays silent when the email does not exist', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     Event::fake([PasswordResetRequested::class]);
 
     app(IssuePasswordResetToken::class)->execute('ghost@eschool.test');
@@ -47,7 +48,7 @@ it('stays silent when the email does not exist', function (): void {
 });
 
 it('resets the password with a valid token and dispatches completion', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     Event::fake([PasswordResetCompleted::class]);
 
     /** @var User $user */
@@ -71,7 +72,7 @@ it('resets the password with a valid token and dispatches completion', function 
 });
 
 it('rejects an invalid token without touching anything', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create([
         'email' => 'badtoken@eschool.test',
@@ -93,7 +94,7 @@ it('rejects an invalid token without touching anything', function (): void {
 });
 
 it('rejects an expired token', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     User::factory()->inOrganization($this->organizationId)->create([
         'email' => 'expired@eschool.test',
     ]);

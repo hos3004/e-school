@@ -14,6 +14,7 @@ use Modules\AccessControl\Domain\Events\PermissionDeleted;
 use Modules\AccessControl\Domain\Models\ModelHasPermission;
 use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Domain\Models\Role;
+use PHPUnit\Framework\Assert;
 use Shared\Support\BusinessRuleViolation;
 
 function acCreateRoleFixture(): string
@@ -84,7 +85,7 @@ it('rejects renaming a permission onto an existing name for the same guard', fun
 
     try {
         app(UpdatePermissionAction::class)->execute((string) $other->getKey(), name: 'payroll.view_any');
-        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
+        Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.permission.name_taken');
     }
@@ -100,7 +101,7 @@ it('refuses deleting a permission that is attached to a role', function (): void
 
     try {
         app(DeletePermissionAction::class)->execute((string) $permission->getKey());
-        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
+        Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.permission.in_use_by_roles');
     }
@@ -117,7 +118,7 @@ it('refuses deleting a directly-granted permission', function (): void {
 
     try {
         app(DeletePermissionAction::class)->execute((string) $permission->getKey());
-        \PHPUnit\Framework\Assert::fail('Expected BusinessRuleViolation was not thrown.');
+        Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.permission.in_use_directly');
     }

@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Illuminate\Support\Env;
 
 /*
 | إعدادات موديول Guardians — كل رقم سياسة يعيش هنا لا في الكود.
@@ -9,7 +10,7 @@ declare(strict_types=1);
 return [
 
     'account' => [
-        'guardian_role' => Illuminate\Support\Env::get('GUARDIAN_ACCOUNT_ROLE', 'guardian'),
+        'guardian_role' => Env::get('GUARDIAN_ACCOUNT_ROLE', 'guardian'),
     ],
 
     'limits' => [

@@ -10,17 +10,18 @@ use Modules\Identity\Domain\Events\DeviceRevoked;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Domain\Models\UserDevice;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
+use Modules\Identity\Tests\Support\IdentityPestContext;
 use Shared\Support\BusinessRuleViolation;
 
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     $this->createTestOrganization();
 });
 
 it('registers a device for a user', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     Event::fake([DeviceRegistered::class]);
 
     /** @var User $user */
@@ -40,7 +41,7 @@ it('registers a device for a user', function (): void {
 });
 
 it('rejects a push token already bound to another active device', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     /** @var User $owner */
     $owner = User::factory()->inOrganization($this->organizationId)->create();
     /** @var User $other */
@@ -59,7 +60,7 @@ it('rejects a push token already bound to another active device', function (): v
 });
 
 it('revokes a device and clears its push token', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     Event::fake([DeviceRevoked::class]);
 
     /** @var User $user */
@@ -80,7 +81,7 @@ it('revokes a device and clears its push token', function (): void {
 });
 
 it('rejects revoking an already revoked device', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create();
 
@@ -91,7 +92,7 @@ it('rejects revoking an already revoked device', function (): void {
 })->throws(BusinessRuleViolation::class);
 
 it('allows the same push token after it was revoked elsewhere', function (): void {
-    /** @var \Modules\Identity\Tests\Support\IdentityPestContext $this */
+    /** @var IdentityPestContext $this */
     /** @var User $owner */
     $owner = User::factory()->inOrganization($this->organizationId)->create();
     /** @var User $newOwner */

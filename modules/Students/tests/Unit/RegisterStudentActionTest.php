@@ -3,10 +3,11 @@
 declare(strict_types=1);
 
 use Modules\Students\Application\Actions\RegisterStudentAction;
+use Modules\Students\Tests\Support\StudentsPestContext;
 use Shared\Support\BusinessRuleViolation;
 
 it('blocks every legacy direct student profile creation attempt', function (): void {
-    /** @var \Modules\Students\Tests\Support\StudentsPestContext $this */
+    /** @var StudentsPestContext $this */
     try {
         (new RegisterStudentAction)->execute([
             'organization_id' => '01DIRECTPROFILEBLOCK000000',
