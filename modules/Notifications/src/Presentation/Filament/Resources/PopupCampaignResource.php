@@ -380,7 +380,7 @@ final class PopupCampaignResource extends Resource
                     ),
             ])
             ->recordActions([
-                ...Pages\ViewPopupCampaign::recordActionsForTable(),
+                ...Pages\ListPopupCampaigns::recordActionsForTable(),
             ])
             ->bulkActions([
                 BulkAction::make('pause')

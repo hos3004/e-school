@@ -17,35 +17,37 @@ use Modules\Certificates\Presentation\Http\Controllers\StoreCertificateTemplateC
 use Modules\Certificates\Presentation\Http\Controllers\UpdateBadgeController;
 use Modules\Certificates\Presentation\Http\Controllers\UpdateCertificateTemplateController;
 
-// ── قوالب الشهادات ──────────────────────────────────────────────────────────
+Route::middleware('auth:sanctum')->group(function (): void {
+    // ── قوالب الشهادات ──────────────────────────────────────────────────────────
 
-Route::post('certificate-templates', StoreCertificateTemplateController::class)
-    ->middleware('can:create,'.CertificateTemplate::class)
-    ->name('certificate-templates.store');
+    Route::post('certificate-templates', StoreCertificateTemplateController::class)
+        ->middleware('can:create,'.CertificateTemplate::class)
+        ->name('certificate-templates.store');
 
-Route::patch('certificate-templates/{template}', UpdateCertificateTemplateController::class)
-    ->name('certificate-templates.update');
+    Route::patch('certificate-templates/{template}', UpdateCertificateTemplateController::class)
+        ->name('certificate-templates.update');
 
-// ── الشهادات ────────────────────────────────────────────────────────────────
+    // ── الشهادات ────────────────────────────────────────────────────────────────
 
-Route::get('certificates', ListCertificatesController::class)->name('certificates.index');
-Route::get('certificates/{certificate}', ShowCertificateController::class)->name('certificates.show');
+    Route::get('certificates', ListCertificatesController::class)->name('certificates.index');
+    Route::get('certificates/{certificate}', ShowCertificateController::class)->name('certificates.show');
 
-Route::post('certificates', IssueCertificateController::class)
-    ->middleware('can:create,'.Certificate::class)
-    ->name('certificates.store');
+    Route::post('certificates', IssueCertificateController::class)
+        ->middleware('can:create,'.Certificate::class)
+        ->name('certificates.store');
 
-Route::delete('certificates/{certificate}', RevokeCertificateController::class)
-    ->name('certificates.revoke');
+    Route::delete('certificates/{certificate}', RevokeCertificateController::class)
+        ->name('certificates.revoke');
 
-// ── الشارات والمنح ──────────────────────────────────────────────────────────
+    // ── الشارات والمنح ──────────────────────────────────────────────────────────
 
-Route::get('badge-awards', ListBadgeAwardsController::class)->name('badge-awards.index');
+    Route::get('badge-awards', ListBadgeAwardsController::class)->name('badge-awards.index');
 
-Route::post('badges', StoreBadgeController::class)
-    ->middleware('can:create,'.Badge::class)
-    ->name('badges.store');
+    Route::post('badges', StoreBadgeController::class)
+        ->middleware('can:create,'.Badge::class)
+        ->name('badges.store');
 
-Route::patch('badges/{badge}', UpdateBadgeController::class)->name('badges.update');
+    Route::patch('badges/{badge}', UpdateBadgeController::class)->name('badges.update');
 
-Route::post('badges/{badge}/awards', AwardBadgeController::class)->name('badges.award');
+    Route::post('badges/{badge}/awards', AwardBadgeController::class)->name('badges.award');
+});

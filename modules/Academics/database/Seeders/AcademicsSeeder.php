@@ -61,7 +61,7 @@ final class AcademicsSeeder extends Seeder
                 'organization_id' => $organizationId,
                 'level_id' => (string) Level::query()
                     ->where('program_id', $program->getKey())
-                    ->where('code', 'L1')
+                    ->where('code', 'L001')
                     ->value('id'),
                 'name' => ['ar' => 'مقدمة في الرياضيات', 'en' => 'Introduction to Mathematics'],
                 'description' => [
@@ -79,7 +79,7 @@ final class AcademicsSeeder extends Seeder
                 'organization_id' => $organizationId,
                 'level_id' => (string) Level::query()
                     ->where('program_id', $program->getKey())
-                    ->where('code', 'L2')
+                    ->where('code', 'L002')
                     ->value('id'),
                 'name' => ['ar' => 'أساسيات الفيزياء', 'en' => 'Physics Basics'],
                 'description' => [

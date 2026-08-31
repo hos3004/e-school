@@ -10,7 +10,6 @@ use Modules\Assessments\Domain\Enums\AssessmentType;
 use Modules\Assessments\Domain\Models\Assessment;
 use Modules\Assessments\Domain\Models\AssessmentAttempt;
 use Modules\Assessments\Domain\Models\Question;
-use Shared\Support\BusinessRuleViolation;
 
 /**
  * بيانات تجريبية لموديول الاختبارات.
@@ -55,10 +54,11 @@ final class AssessmentsSeeder extends Seeder
                 'assessment_id' => $quizzes->first()->id,
             ]);
 
-        try {
-            app(GradeAttemptAction::class)->execute($gradedAttempt, 70);
-        } catch (BusinessRuleViolation) {
-            // المحاولة صُحّحت مسبقًا في تشغيل سابق — لا شيء مطلوب.
-        }
+        app(GradeAttemptAction::class)->execute(
+            attempt: $gradedAttempt,
+            score: 70,
+            actorId: (string) $quizzes->first()->created_by,
+            reason: (string) __('assessments::messages.graded'),
+        );
     }
 }

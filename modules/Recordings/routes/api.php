@@ -19,24 +19,26 @@ use Modules\Recordings\Presentation\Http\Controllers\StoreRecordingController;
 | RecordingPolicy عبر FormRequest أو Gate::authorize داخل المتحكم.
 */
 
-Route::get('/recordings', ListRecordingsController::class)->name('recordings.index');
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::get('/recordings', ListRecordingsController::class)->name('recordings.index');
 
-Route::post('/recordings', StoreRecordingController::class)
-    ->middleware('can:recording.delete')
-    ->name('recordings.store');
+    Route::post('/recordings', StoreRecordingController::class)
+        ->middleware('can:recording.delete')
+        ->name('recordings.store');
 
-Route::get('/recordings/{recording}', ShowRecordingController::class)
-    ->whereUlid('recording')
-    ->name('recordings.show');
+    Route::get('/recordings/{recording}', ShowRecordingController::class)
+        ->whereUlid('recording')
+        ->name('recordings.show');
 
-Route::patch('/recordings/{recording}/ready', MarkRecordingReadyController::class)
-    ->whereUlid('recording')
-    ->name('recordings.ready');
+    Route::patch('/recordings/{recording}/ready', MarkRecordingReadyController::class)
+        ->whereUlid('recording')
+        ->name('recordings.ready');
 
-Route::post('/recordings/{recording}/views', LogRecordingViewController::class)
-    ->whereUlid('recording')
-    ->name('recordings.views.log');
+    Route::post('/recordings/{recording}/views', LogRecordingViewController::class)
+        ->whereUlid('recording')
+        ->name('recordings.views.log');
 
-Route::delete('/recordings/{recording}', DeleteRecordingController::class)
-    ->whereUlid('recording')
-    ->name('recordings.delete');
+    Route::delete('/recordings/{recording}', DeleteRecordingController::class)
+        ->whereUlid('recording')
+        ->name('recordings.delete');
+});

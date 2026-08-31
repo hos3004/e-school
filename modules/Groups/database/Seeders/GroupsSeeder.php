@@ -16,14 +16,31 @@ use Modules\Groups\Domain\Models\GroupTeacher;
 /**
  * بيانات تجريبية للمجموعات.
  *
- * يعيد استخدام المؤسسة التجريبية إن وُجدت ولا ينشئ كيانات لموديولات أخرى —
- * المعرّفات الخارجية (طلاب/معلمين/برامج) تُولَّد كقيم فقط لأن هذا بذر عرض.
+ * يعيد استخدام المؤسسة التجريبية إن وُجدت ولا ينشئ كيانات لموديولات أخرى.
+ * علاقات الطلاب والمعلمين تستهلك الملفات الموجودة فقط، وتُتخطى عند عدم وجود
+ * صف أب صالح.
  */
 final class GroupsSeeder extends Seeder
 {
     public function run(): void
     {
         $organizationId = $this->ensureOrganizationId();
+        $staffProfileId = DB::table('staff_profiles')
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->orderBy('created_at')
+            ->value('id');
+        $staffProfileId = is_string($staffProfileId) && $staffProfileId !== ''
+            ? $staffProfileId
+            : null;
+        $studentProfileIds = DB::table('student_profiles')
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->orderBy('created_at')
+            ->limit(5)
+            ->pluck('id')
+            ->filter(static fn (mixed $id): bool => is_string($id) && $id !== '')
+            ->values();
 
         $groups = [
             [
@@ -57,25 +74,32 @@ final class GroupsSeeder extends Seeder
                 ]),
             );
 
-            if (!$group->wasRecentlyCreated) {
-                continue;
+            if ($staffProfileId !== null) {
+                GroupTeacher::query()->firstOrCreate(
+                    [
+                        'group_id' => (string) $group->getKey(),
+                        'staff_profile_id' => $staffProfileId,
+                        'course_id' => null,
+                    ],
+                    [
+                        'role' => $index === 0 ? GroupTeacherRole::Lead : GroupTeacherRole::Assistant,
+                        'assigned_from' => now()->toDateString(),
+                    ],
+                );
             }
 
-            GroupTeacher::query()->create([
-                'group_id' => (string) $group->getKey(),
-                'staff_profile_id' => (string) str()->ulid(),
-                'course_id' => null,
-                'role' => $index === 0 ? GroupTeacherRole::Lead : GroupTeacherRole::Assistant,
-                'assigned_from' => now()->toDateString(),
-            ]);
-
-            for ($seat = 0; $seat < min(5, (int) $group->capacity); $seat++) {
-                GroupMembership::query()->create([
-                    'group_id' => (string) $group->getKey(),
-                    'student_profile_id' => (string) str()->ulid(),
-                    'joined_at' => now()->subDays($seat + 1),
-                    'status' => MembershipStatus::Active,
-                ]);
+            foreach ($studentProfileIds as $seat => $studentProfileId) {
+                GroupMembership::query()->firstOrCreate(
+                    [
+                        'group_id' => (string) $group->getKey(),
+                        'student_profile_id' => $studentProfileId,
+                        'left_at' => null,
+                    ],
+                    [
+                        'joined_at' => now()->subDays($seat + 1),
+                        'status' => MembershipStatus::Active,
+                    ],
+                );
             }
         }
     }

@@ -110,7 +110,7 @@ interface StudentDirectory
 | AccessControl | `roles` · `permissions` · `*_has_*` |
 | Audit | `audit_log` |
 | Integrations | `integration_providers` · `integration_connections` · `integration_webhook_deliveries` |
-| Students | `student_profiles` · `registration_applications` |
+| Students | `student_profiles` · `registration_applications` · `registration_forms` |
 | Guardians | `guardian_profiles` · `guardian_links` |
 | Staff | `staff_profiles` · `teacher_contracts` · `teacher_rates` · `teacher_availability` · `teacher_leaves` · `teacher_courses` |
 | Academics | `programs` · `levels` · `courses` |
