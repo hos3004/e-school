@@ -3,6 +3,19 @@
 declare(strict_types=1);
 
 return [
+    'navigation' => [
+        'academic' => 'الأكاديمي',
+        'students_guardians' => 'الطلاب وأولياء الأمور',
+        'staff' => 'الطاقم',
+        'operations' => 'التشغيل',
+        'learning' => 'التعلّم',
+        'discipline' => 'الانضباط',
+        'communication' => 'التواصل',
+        'finance' => 'المال',
+        'reporting' => 'التقارير',
+        'system' => 'النظام',
+    ],
+
     'common' => [
         'dash' => '—',
     ],

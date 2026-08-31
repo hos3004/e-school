@@ -3,6 +3,19 @@
 declare(strict_types=1);
 
 return [
+    'navigation' => [
+        'academic' => 'Academic',
+        'students_guardians' => 'Students & guardians',
+        'staff' => 'Staff',
+        'operations' => 'Operations',
+        'learning' => 'Learning',
+        'discipline' => 'Discipline',
+        'communication' => 'Communication',
+        'finance' => 'Finance',
+        'reporting' => 'Reports',
+        'system' => 'System',
+    ],
+
     'common' => [
         'dash' => '—',
     ],

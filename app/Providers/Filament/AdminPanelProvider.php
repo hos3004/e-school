@@ -95,8 +95,9 @@ final class AdminPanelProvider extends PanelProvider
             ->login(Login::class)
             ->brandName(config('app.name'))
             ->defaultThemeMode(ThemeMode::Light)
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->colors([
-                'primary' => Color::Emerald,
+                'primary' => Color::Teal,
                 'gray' => Color::Slate,
                 'danger' => Color::Rose,
                 'warning' => Color::Amber,
@@ -106,16 +107,16 @@ final class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->maxContentWidth(Width::Full)
             ->navigationGroups([
-                'الأكاديمي',
-                'الطلاب وأولياء الأمور',
-                'الطاقم',
-                'التشغيل',
-                'التعلّم',
-                'الانضباط',
-                'التواصل',
-                ...((bool) config('features.payroll') ? ['المال'] : []),
-                'التقارير',
-                'النظام',
+                __('dashboard.navigation.academic'),
+                __('dashboard.navigation.students_guardians'),
+                __('dashboard.navigation.staff'),
+                __('dashboard.navigation.operations'),
+                __('dashboard.navigation.learning'),
+                __('dashboard.navigation.discipline'),
+                __('dashboard.navigation.communication'),
+                ...((bool) config('features.payroll') ? [__('dashboard.navigation.finance')] : []),
+                __('dashboard.navigation.reporting'),
+                __('dashboard.navigation.system'),
             ])
             ->resources([
                 MonthlyReportResource::class,
