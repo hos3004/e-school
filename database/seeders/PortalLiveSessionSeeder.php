@@ -25,6 +25,8 @@ final class PortalLiveSessionSeeder extends Seeder
 
     public const STUDENT_EMAIL = 'portal.live.student@demo.local';
 
+    public const GUARDIAN_EMAIL = 'portal.live.guardian@demo.local';
+
     public const SESSION_MARKER = 'demo:portal-live-session-v1';
 
     public function run(): void
@@ -53,6 +55,11 @@ final class PortalLiveSessionSeeder extends Seeder
             self::STUDENT_EMAIL,
             'طالب الحصة التجريبية',
         );
+        $guardianUserId = $this->ensureUser(
+            (string) $context->organization_id,
+            self::GUARDIAN_EMAIL,
+            'ولي أمر الحصة التجريبية',
+        );
 
         $teacherProfileId = $this->ensureTeacherProfile(
             (string) $context->organization_id,
@@ -62,6 +69,11 @@ final class PortalLiveSessionSeeder extends Seeder
             (string) $context->organization_id,
             $studentUserId,
         );
+        $guardianProfileId = $this->ensureGuardianProfile(
+            (string) $context->organization_id,
+            $guardianUserId,
+        );
+        $this->ensureGuardianLink($guardianProfileId, $studentProfileId);
 
         $this->ensureTeacherContract((string) $context->organization_id, $teacherProfileId);
         $this->ensureTeacherQualification(
@@ -84,6 +96,7 @@ final class PortalLiveSessionSeeder extends Seeder
 
         $this->assignRole($teacherUserId, 'teacher');
         $this->assignRole($studentUserId, 'student');
+        $this->assignRole($guardianUserId, 'guardian');
 
         $session = $this->ensureLiveSession(
             (string) $context->organization_id,
@@ -106,9 +119,10 @@ final class PortalLiveSessionSeeder extends Seeder
         );
 
         $this->command?->info(sprintf(
-            'حسابا بوابتي الحصة: %s و%s · الحصة: %s',
+            'حسابات بوابات الحصة: %s و%s و%s · الحصة: %s',
             self::TEACHER_EMAIL,
             self::STUDENT_EMAIL,
+            self::GUARDIAN_EMAIL,
             (string) $session->getKey(),
         ));
     }
@@ -206,6 +220,59 @@ final class PortalLiveSessionSeeder extends Seeder
         }
 
         return $profileId;
+    }
+
+    private function ensureGuardianProfile(string $organizationId, string $userId): string
+    {
+        $profileId = DB::table('guardian_profiles')->where('user_id', $userId)->value('id');
+        $values = [
+            'organization_id' => $organizationId,
+            'preferred_contact_channel' => 'email',
+            'updated_at' => now()->utc(),
+            'deleted_at' => null,
+        ];
+
+        if (!is_string($profileId) || $profileId === '') {
+            $profileId = (string) Str::ulid();
+            DB::table('guardian_profiles')->insert($values + [
+                'id' => $profileId,
+                'user_id' => $userId,
+                'created_at' => now()->utc(),
+            ]);
+        } else {
+            DB::table('guardian_profiles')->where('id', $profileId)->update($values);
+        }
+
+        return $profileId;
+    }
+
+    private function ensureGuardianLink(string $guardianProfileId, string $studentProfileId): void
+    {
+        $link = DB::table('guardian_links')
+            ->where('guardian_profile_id', $guardianProfileId)
+            ->where('student_profile_id', $studentProfileId);
+        $values = [
+            'relationship' => 'parent',
+            'is_primary' => true,
+            'can_act_for' => true,
+            'visible_sections' => json_encode(['attendance', 'schedule', 'reports'], JSON_THROW_ON_ERROR),
+            'verified_at' => now()->utc(),
+            'updated_at' => now()->utc(),
+            'deleted_at' => null,
+        ];
+
+        if ($link->exists()) {
+            $link->update($values);
+
+            return;
+        }
+
+        DB::table('guardian_links')->insert($values + [
+            'id' => (string) Str::ulid(),
+            'guardian_profile_id' => $guardianProfileId,
+            'student_profile_id' => $studentProfileId,
+            'created_at' => now()->utc(),
+        ]);
     }
 
     private function ensureTeacherContract(string $organizationId, string $teacherProfileId): void

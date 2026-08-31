@@ -17,6 +17,12 @@ final class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (!app()->environment(['local', 'testing'])) {
+            $this->command?->warn('DatabaseSeeder: demo data is disabled outside local/testing.');
+
+            return;
+        }
+
         foreach (ModuleRegistry::enabled() as $module) {
             $seeder = ModuleRegistry::namespace($module)
                 .chr(92).'Database'

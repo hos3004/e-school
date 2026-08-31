@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Groups\Domain\Enums\GroupTeacherRole;
 use RuntimeException;
 
 /**
@@ -50,6 +51,7 @@ final class DemoDataSeeder extends Seeder
         $groups = $this->seedGroups(
             $organizationId,
             $academics,
+            $teachers,
             [
                 'g1' => ['teacher' => 't3', 'course' => 'quran_hifz', 'program' => 'quran'],
                 'g2' => ['teacher' => 't1', 'course' => 'quran_tajwid', 'program' => 'quran'],
@@ -507,12 +509,14 @@ final class DemoDataSeeder extends Seeder
 
     /**
      * @param array<string, mixed> $academics
+     * @param array<string, array{staff_profile_id: string, contract_id: string, rate: int, resolved_via: string}> $teachers
      * @param array<string, array<string, string>> $mapping
      * @return array<string, array<string, mixed>>
      */
     private function seedGroups(
         string $organizationId,
         array $academics,
+        array $teachers,
         array $mapping,
         CarbonImmutable $now,
     ): array {
@@ -570,9 +574,9 @@ final class DemoDataSeeder extends Seeder
             DB::table('group_teachers')->insert([
                 'id' => self::ulid(),
                 'group_id' => $groupId,
-                'staff_profile_id' => self::teacherStaffId($map['teacher']),
+                'staff_profile_id' => $teachers[$map['teacher']]['staff_profile_id'],
                 'course_id' => $academics['courses'][$map['course']]['id'],
-                'role' => 'primary',
+                'role' => GroupTeacherRole::Lead->value,
                 'assigned_from' => $startsOn,
                 'created_at' => $createdAt,
             ]);
@@ -581,25 +585,15 @@ final class DemoDataSeeder extends Seeder
                 'id' => $groupId,
                 'teacher_key' => $map['teacher'],
                 'course_key' => $map['course'],
+                'course_id' => $academics['courses'][$map['course']]['id'],
+                'course_name' => $academics['courses'][$map['course']]['name'],
+                'staff_profile_id' => $teachers[$map['teacher']]['staff_profile_id'],
                 'program_key' => $map['program'],
                 'name' => $definition['name'],
             ];
         }
 
         return $groups;
-    }
-
-    /** @var array<string, string> */
-    private static array $teacherStaffIds = [];
-
-    public static function rememberTeacherStaffId(string $teacherKey, string $staffProfileId): void
-    {
-        self::$teacherStaffIds[$teacherKey] = $staffProfileId;
-    }
-
-    private static function teacherStaffId(string $teacherKey): string
-    {
-        return self::$teacherStaffIds[$teacherKey];
     }
 
     /**
@@ -760,8 +754,8 @@ final class DemoDataSeeder extends Seeder
                 'id' => $scheduleId,
                 'organization_id' => $organizationId,
                 'group_id' => $group['id'],
-                'course_id' => self::courseIdOf($group['course_key']),
-                'staff_profile_id' => self::teacherStaffId($group['teacher_key']),
+                'course_id' => $group['course_id'],
+                'staff_profile_id' => $group['staff_profile_id'],
                 'session_type' => 'group',
                 'rrule' => 'FREQ=WEEKLY;BYDAY='.implode(',', $config['bydays']),
                 'start_time' => $config['start'],
@@ -779,24 +773,6 @@ final class DemoDataSeeder extends Seeder
         }
 
         return $schedules;
-    }
-
-    /** @var array<string, string> */
-    private static array $courseIds = [];
-
-    /**
-     * @param array<string, array<string, mixed>> $courses
-     */
-    public static function registerCourses(array $courses): void
-    {
-        foreach ($courses as $key => $course) {
-            self::$courseIds[$key] = $course['id'];
-        }
-    }
-
-    private static function courseIdOf(string $courseKey): string
-    {
-        return self::$courseIds[$courseKey];
     }
 
     /**
@@ -862,7 +838,7 @@ final class DemoDataSeeder extends Seeder
                 }
 
                 $sessionId = self::ulid();
-                $courseName = self::courseNameOf($group['course_key']);
+                $courseName = $group['course_name'];
                 $title = [
                     'ar' => $courseName['ar'].' — '.$group['name']['ar'],
                     'en' => $courseName['en'].' — '.$group['name']['en'],
@@ -873,12 +849,21 @@ final class DemoDataSeeder extends Seeder
                     'organization_id' => $organizationId,
                     'schedule_id' => $schedules[$groupKey],
                     'group_id' => $group['id'],
-                    'course_id' => self::courseIdOf($group['course_key']),
-                    'staff_profile_id' => self::teacherStaffId($group['teacher_key']),
+                    'course_id' => $group['course_id'],
+                    'staff_profile_id' => $group['staff_profile_id'],
+                    'original_teacher_id' => $group['staff_profile_id'],
                     'session_type' => 'group',
                     'status' => $status,
                     'scheduled_start' => self::ts($scheduledStart),
                     'scheduled_end' => self::ts($scheduledEnd),
+                    'actual_start' => null,
+                    'actual_end' => null,
+                    'finalized_at' => null,
+                    'finalized_by' => null,
+                    'cancelled_by' => null,
+                    'cancelled_at' => null,
+                    'cancellation_reason' => null,
+                    'notes' => null,
                     'title' => self::js($title),
                     'created_at' => self::ts($now),
                     'updated_at' => self::ts($now),
@@ -906,6 +891,7 @@ final class DemoDataSeeder extends Seeder
                 $meta[] = [
                     'row' => $row,
                     'group_key' => $groupKey,
+                    'course_name' => $group['course_name'],
                     'status' => $status,
                     'scheduled_start' => $scheduledStart,
                     'scheduled_end' => $scheduledEnd,
@@ -1116,27 +1102,6 @@ final class DemoDataSeeder extends Seeder
         return $this->groupProgramKeys[$groupKey];
     }
 
-    /** @var array<string, array{ar: string, en: string}> */
-    private static array $courseNames = [];
-
-    /**
-     * @param array<string, array{name: array{ar: string, en: string}}> $courses
-     */
-    public static function registerCourseNames(array $courses): void
-    {
-        foreach ($courses as $key => $course) {
-            self::$courseNames[$key] = $course['name'];
-        }
-    }
-
-    /**
-     * @return array{ar: string, en: string}
-     */
-    private static function courseNameOf(string $courseKey): array
-    {
-        return self::$courseNames[$courseKey];
-    }
-
     /**
      * @param array<int, array<string, mixed>> $sessions
      * @param array<string, array{staff_profile_id: string, contract_id: string, rate: int, resolved_via: string}> $teachers
@@ -1205,7 +1170,7 @@ final class DemoDataSeeder extends Seeder
                 ]),
                 'status' => 'recorded',
                 'description' => self::js([
-                    'ar' => 'مستحقات حصة '.self::courseNameOf($this->courseKeyOfGroup($session['group_key']))['ar'],
+                    'ar' => 'مستحقات حصة '.$session['course_name']['ar'],
                     'en' => 'Session earning',
                 ]),
                 'created_at' => self::ts($session['scheduled_end']),
@@ -1262,22 +1227,9 @@ final class DemoDataSeeder extends Seeder
         'g4' => 't5',
     ];
 
-    /** @var array<string, string> */
-    private array $groupCourseKeys = [
-        'g1' => 'quran_hifz',
-        'g2' => 'quran_tajwid',
-        'g3' => 'eng_conv',
-        'g4' => 'code_py',
-    ];
-
     private function teacherKeyOfGroup(string $groupKey): string
     {
         return $this->groupTeacherKeys[$groupKey];
-    }
-
-    private function courseKeyOfGroup(string $groupKey): string
-    {
-        return $this->groupCourseKeys[$groupKey];
     }
 
     private static function ulid(): string

@@ -32,9 +32,9 @@ return [
 
     // ── التعلّم ──────────────────────────────────────────────────────────
     'assignments' => env('FEATURE_ASSIGNMENTS', true),
-    'assessments' => env('FEATURE_ASSESSMENTS', true),
-    'certificates' => env('FEATURE_CERTIFICATES', true),
-    'badges' => env('FEATURE_BADGES', true),
+    'assessments' => env('FEATURE_ASSESSMENTS', false),
+    'certificates' => env('FEATURE_CERTIFICATES', false),
+    'badges' => env('FEATURE_BADGES', false),
     // الشهادات التلقائية مرتبطة بالدورات المسجَّلة — غير متاحة الآن.
     'auto_certificates' => env('FEATURE_AUTO_CERTIFICATES', false),
 

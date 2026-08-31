@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Modules\Identity\Domain\Contracts\UserQueryService;
 use Modules\Notifications\Application\Actions\RecordPopupInteractionAction;
 use Modules\Notifications\Application\Services\PopupPageRegistry;
+use Modules\Notifications\Domain\Contracts\PopupAudienceResolver;
 use Modules\Notifications\Domain\Contracts\PopupQueries;
 use Modules\Notifications\Domain\ValueObjects\ActivePopupData;
 use Shared\Support\BusinessRuleViolation;
@@ -124,6 +125,24 @@ final class PopupController extends Controller
             : null;
     }
 
+    /**
+     * @return array{
+     *     id: string,
+     *     type: string,
+     *     icon: string,
+     *     color: string,
+     *     title: string,
+     *     body: string,
+     *     acknowledgement_label: string,
+     *     action_label: string|null,
+     *     action_url: string|null,
+     *     action_is_external: bool,
+     *     is_dismissible: bool,
+     *     requires_acknowledgement: bool,
+     *     starts_at: string,
+     *     ends_at: string|null
+     * }
+     */
     private static function serialize(ActivePopupData $popup): array
     {
         return [
