@@ -4,54 +4,60 @@ declare(strict_types=1);
 
 namespace Modules\AcademicReports\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\AcademicReports\Domain\Models\MonthlyReport;
 
 /**
  * سياسة التقارير الشهرية — لا فحص لأسماء الأدوار إطلاقًا.
- *
- * كل فعل يمر عبر بوابة الصلاحيات academicreports.monthly_report.<action>
- * مع مقارنة ملكية السجل بالمؤسسة.
  */
 final class MonthlyReportPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
+    {
+        return $user->can('report.view');
+    }
+
+    public function view(Authenticatable&Authorizable $user, MonthlyReport $report): bool
     {
         return $user->can('report.view')
-            || $user->can('academicreports.monthly_report.view_any');
+            && $this->belongsToOrganization($user, (string) $report->getAttribute('organization_id'));
     }
 
-    public function view($user, MonthlyReport $report): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('academicreports.monthly_report.view')
-            && $report->organization_id === $user->organization_id;
+        return $user->can('monthly_report.create');
     }
 
-    public function create($user): bool
+    public function update(Authenticatable&Authorizable $user, MonthlyReport $report): bool
     {
-        return $user->can('academicreports.monthly_report.create');
+        return $user->can('monthly_report.create')
+            && $this->belongsToOrganization($user, (string) $report->getAttribute('organization_id'));
     }
 
-    public function update($user, MonthlyReport $report): bool
+    public function delete(Authenticatable&Authorizable $user, MonthlyReport $report): bool
     {
-        return $user->can('academicreports.monthly_report.update')
-            && $report->organization_id === $user->organization_id;
+        return false;
     }
 
-    public function delete($user, MonthlyReport $report): bool
+    public function approve(Authenticatable&Authorizable $user, MonthlyReport $report): bool
     {
-        return $user->can('academicreports.monthly_report.delete')
-            && $report->organization_id === $user->organization_id;
+        return $user->can('monthly_report.approve')
+            && $this->belongsToOrganization($user, (string) $report->getAttribute('organization_id'));
     }
 
-    public function approve($user, MonthlyReport $report): bool
+    public function send(Authenticatable&Authorizable $user, MonthlyReport $report): bool
     {
-        return $user->can('academicreports.monthly_report.approve')
-            && $report->organization_id === $user->organization_id;
+        return $user->can('monthly_report.approve')
+            && $this->belongsToOrganization($user, (string) $report->getAttribute('organization_id'));
     }
 
-    public function send($user, MonthlyReport $report): bool
+    private function belongsToOrganization(Authenticatable $user, string $organizationId): bool
     {
-        return $user->can('academicreports.monthly_report.send')
-            && $report->organization_id === $user->organization_id;
+        $actorOrganizationId = data_get($user, 'organization_id');
+
+        return is_string($actorOrganizationId)
+            && $actorOrganizationId !== ''
+            && hash_equals($actorOrganizationId, $organizationId);
     }
 }

@@ -103,6 +103,32 @@ final readonly class StudentDirectoryQueryService implements StudentDirectoryQue
         return $names;
     }
 
+    public function searchNames(string $organizationId, string $search, int $limit = 50): array
+    {
+        $limit = max(1, min($limit, 100));
+        $userIds = $this->users->searchUserIdsForOrganization($organizationId, trim($search), $limit);
+
+        if ($userIds === []) {
+            return [];
+        }
+
+        $profileIds = StudentProfile::query()
+            ->forOrganization($organizationId)
+            ->whereIn('user_id', $userIds)
+            ->whereNull('deleted_at')
+            ->limit($limit)
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+
+        $names = $this->namesForProfiles($organizationId, $profileIds);
+
+        return collect($profileIds)
+            ->filter(static fn (string $id): bool => isset($names[$id]))
+            ->mapWithKeys(static fn (string $id): array => [$id => $names[$id]])
+            ->all();
+    }
+
     private static function toDto(StudentProfile $profile): StudentDirectoryData
     {
         return new StudentDirectoryData(

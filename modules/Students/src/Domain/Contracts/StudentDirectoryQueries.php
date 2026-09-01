@@ -30,4 +30,11 @@ interface StudentDirectoryQueries
      * @return array<string, string>
      */
     public function namesForProfiles(string $organizationId, array $studentProfileIds): array;
+
+    /**
+     * Search active student profiles in one organization for safe selectors.
+     *
+     * @return array<string, string> student_profile_id => display name
+     */
+    public function searchNames(string $organizationId, string $search, int $limit = 50): array;
 }

@@ -18,4 +18,6 @@ return [
     'session_report_score_out_of_range' => 'التقييمات يجب أن تكون بين :min و :max لكل محور من محاور التقييم.',
     'monthly_report_duplicate_period' => 'يوجد بالفعل تقرير شهري لهذا الطالب عن الفترة :month/:year، ولا يجوز إنشاء تقرير مكرر.',
     'monthly_report_invalid_transition' => 'لا يمكن تغيير حالة التقرير الشهري من «:from» إلى «:to» — هذا الانتقال غير مسموح.',
+    'monthly_report_invalid_student' => 'الطالب غير موجود أو مؤرشف داخل مؤسستك.',
+    'monthly_report_invalid_enrollment' => 'التسجيل المحدد لا يخص هذا الطالب داخل مؤسستك.',
 ];

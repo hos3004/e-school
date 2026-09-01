@@ -11,4 +11,6 @@ return [
     'session_report_empty_students' => 'Au moins une évaluation d’élève est requise.',
     'session_report_duplicate_student' => 'Un élève ne peut être évalué qu’une seule fois.',
     'session_report_score_out_of_range' => 'Les notes doivent respecter l’échelle autorisée.',
+    'monthly_report_invalid_student' => 'L’étudiant est introuvable ou archivé dans votre organisation.',
+    'monthly_report_invalid_enrollment' => 'L’inscription sélectionnée n’appartient pas à cet étudiant dans votre organisation.',
 ];

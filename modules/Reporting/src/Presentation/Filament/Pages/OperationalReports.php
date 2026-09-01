@@ -37,6 +37,8 @@ final class OperationalReports extends Page implements HasTable
 
     protected string $view = 'reporting::filament.operational-reports';
 
+    public bool $hasRun = false;
+
     private ?string $reportError = null;
 
     /** @var array<string, OperationalReportData> */
@@ -69,14 +71,26 @@ final class OperationalReports extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('run_report')
+                ->label(__('reporting::operational.actions.run_report'))
+                ->icon('heroicon-o-play')
+                ->color('primary')
+                ->action('runReport'),
             Action::make('export_pdf')
                 ->label(__('reporting::operational.actions.export_pdf'))
                 ->icon('heroicon-o-arrow-down-tray')
-                ->color('primary')
-                ->visible(fn (): bool => (bool) auth()->user()?->can('report.export'))
+                ->color('gray')
+                ->visible(fn (): bool => $this->hasRun && (bool) auth()->user()?->can('report.export'))
                 ->url(fn (): string => route('reporting.operational.export-pdf', $this->exportParameters()))
                 ->openUrlInNewTab(),
         ];
+    }
+
+    public function runReport(): void
+    {
+        $this->hasRun = true;
+        $this->reportCache = [];
+        $this->reportError = null;
     }
 
     public function table(Table $table): Table

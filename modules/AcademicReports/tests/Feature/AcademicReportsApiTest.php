@@ -177,7 +177,7 @@ final class AcademicReportsApiTest extends TestCase
 
     public function test_lists_monthly_reports_scoped_to_the_user_organization(): void
     {
-        Gate::define('academicreports.monthly_report.view_any', fn (): bool => true);
+        Gate::define('report.view', fn (): bool => true);
 
         $organizationId = Fixtures::organizationId();
 
@@ -203,8 +203,7 @@ final class AcademicReportsApiTest extends TestCase
     public function test_approves_then_sends_a_monthly_report_through_the_api(): void
     {
         Event::fake([MonthlyReportSent::class]);
-        Gate::define('academicreports.monthly_report.approve', fn (): bool => true);
-        Gate::define('academicreports.monthly_report.send', fn (): bool => true);
+        Gate::define('monthly_report.approve', fn (): bool => true);
 
         $organizationId = Fixtures::organizationId();
         $actorId = Fixtures::userId();
@@ -237,7 +236,7 @@ final class AcademicReportsApiTest extends TestCase
 
     public function test_approval_requires_a_reason(): void
     {
-        Gate::define('academicreports.monthly_report.approve', fn (): bool => true);
+        Gate::define('monthly_report.approve', fn (): bool => true);
 
         $organizationId = Fixtures::organizationId();
 

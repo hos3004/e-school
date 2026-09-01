@@ -23,7 +23,7 @@ final class StoreMonthlyReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'organization_id' => ['required', 'string', 'size:26'],
+            'organization_id' => ['prohibited'],
             'student_profile_id' => ['required', 'string', 'size:26'],
             'enrollment_id' => ['required', 'string', 'size:26'],
             'period_year' => ['required', 'integer', 'min:2000', 'max:2100'],

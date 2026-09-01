@@ -16,4 +16,5 @@ return [
     'demo_weaknesses' => 'Needs additional review of some exercises.',
     'demo_summary' => 'The student performed steadily this month with notable improvement in participation.',
     'demo_approval_reason' => 'Supervisor reviewed the monthly report and approved it after verifying the metrics.',
+    'create_monthly_report' => 'Create monthly report',
 ];

@@ -6,29 +6,44 @@
             </p>
         </div>
 
-        @if ($this->getReportError())
-            <div role="alert" class="rounded-xl border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950 dark:text-danger-200">
-                {{ $this->getReportError() }}
+        @if (! $hasRun)
+            <div class="rounded-xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center shadow-sm dark:border-white/20 dark:bg-gray-900">
+                <x-filament::icon icon="heroicon-o-chart-bar-square" class="mx-auto h-10 w-10 text-primary-600" />
+                <h2 class="mt-4 text-base font-semibold text-gray-950 dark:text-white">
+                    {{ __('reporting::operational.initial_title') }}
+                </h2>
+                <p class="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">
+                    {{ __('reporting::operational.initial_description') }}
+                </p>
+                <x-filament::button class="mt-6" icon="heroicon-o-play" wire:click="runReport">
+                    {{ __('reporting::operational.actions.run_report') }}
+                </x-filament::button>
+            </div>
+        @else
+            @if ($this->getReportError())
+                <div role="alert" class="rounded-xl border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700 dark:border-danger-800 dark:bg-danger-950 dark:text-danger-200">
+                    {{ $this->getReportError() }}
+                </div>
+            @endif
+
+            @if ($this->isReportLimitExceeded())
+                <div role="status" class="rounded-xl border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950 dark:text-warning-200">
+                    {{ __('reporting::operational.limit_exceeded') }}
+                </div>
+            @endif
+
+            <div class="grid grid-cols-1 gap-3 min-[28rem]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-5" aria-live="polite">
+                @foreach ($this->getSummaryCards() as $card)
+                    <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-gray-900">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $card['label'] }}</p>
+                        <p class="mt-3 text-2xl font-semibold tabular-nums text-gray-950 dark:text-white">{{ $card['value'] }}</p>
+                    </section>
+                @endforeach
+            </div>
+
+            <div class="fi-ta-ctn overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900">
+                {{ $this->table }}
             </div>
         @endif
-
-        @if ($this->isReportLimitExceeded())
-            <div role="status" class="rounded-xl border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950 dark:text-warning-200">
-                {{ __('reporting::operational.limit_exceeded') }}
-            </div>
-        @endif
-
-        <div class="grid grid-cols-1 gap-3 min-[28rem]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-5" aria-live="polite">
-            @foreach ($this->getSummaryCards() as $card)
-                <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-gray-900">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $card['label'] }}</p>
-                    <p class="mt-3 text-2xl font-semibold tabular-nums text-gray-950 dark:text-white">{{ $card['value'] }}</p>
-                </section>
-            @endforeach
-        </div>
-
-        <div class="fi-ta-ctn overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900">
-            {{ $this->table }}
-        </div>
     </div>
 </x-filament-panels::page>

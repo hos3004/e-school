@@ -11,6 +11,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -18,6 +20,10 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\AcademicReports\Domain\Enums\MonthlyReportStatus;
 use Modules\AcademicReports\Domain\Models\MonthlyReport;
+use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
+use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
+use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
+use Modules\Enrollments\Domain\ValueObjects\EnrollmentSummaryData;
 use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
 
 /**
@@ -31,7 +37,7 @@ final class MonthlyReportResource extends Resource
 
     protected static ?int $navigationSort = 52;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('academicreports::navigation.group');
     }
@@ -52,14 +58,24 @@ final class MonthlyReportResource extends Resource
             Section::make(__('academicreports::fields.period'))
                 ->schema([
                     Grid::make(2)->schema([
-                        TextInput::make('student_profile_id')
+                        Select::make('student_profile_id')
                             ->label(__('academicreports::fields.student_profile'))
-                            ->required()
-                            ->maxLength(26),
-                        TextInput::make('enrollment_id')
+                            ->searchable()
+                            ->getSearchResultsUsing(fn (string $search): array => app(StudentDirectoryQueries::class)
+                                ->searchNames(self::organizationId() ?? '', $search))
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => is_string($value)
+                                ? (app(StudentDirectoryQueries::class)->namesForProfiles(self::organizationId() ?? '', [$value])[$value] ?? null)
+                                : null)
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('enrollment_id', null))
+                            ->required(),
+                        Select::make('enrollment_id')
                             ->label(__('academicreports::fields.enrollment'))
-                            ->required()
-                            ->maxLength(26),
+                            ->options(fn (Get $get): array => self::enrollmentOptions(
+                                is_string($get('student_profile_id')) ? $get('student_profile_id') : null,
+                            ))
+                            ->searchable()
+                            ->required(),
                         TextInput::make('period_year')
                             ->label(__('academicreports::fields.period_year'))
                             ->required()
@@ -83,12 +99,6 @@ final class MonthlyReportResource extends Resource
                     Textarea::make('supervisor_summary')
                         ->label(__('academicreports::fields.supervisor_summary'))
                         ->columnSpanFull(),
-                    Select::make('status')
-                        ->label(__('academicreports::fields.status'))
-                        ->options(collect(MonthlyReportStatus::cases())
-                            ->mapWithKeys(fn (MonthlyReportStatus $s): array => [$s->value => $s->label()])
-                            ->all())
-                        ->required(),
                 ]),
         ]);
     }
@@ -181,6 +191,7 @@ final class MonthlyReportResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
+        /** @var Builder<MonthlyReport> $query */
         $query = parent::getEloquentQuery();
         $organizationId = self::organizationId();
 
@@ -193,6 +204,7 @@ final class MonthlyReportResource extends Resource
     {
         return [
             'index' => MonthlyReportResource\Pages\ListMonthlyReports::route('/'),
+            'create' => MonthlyReportResource\Pages\CreateMonthlyReport::route('/create'),
         ];
     }
 
@@ -220,5 +232,34 @@ final class MonthlyReportResource extends Resource
         return is_string($organizationId) && $organizationId !== ''
             ? $organizationId
             : null;
+    }
+
+    /** @return array<string, string> */
+    private static function enrollmentOptions(?string $studentProfileId): array
+    {
+        $organizationId = self::organizationId();
+
+        if ($organizationId === null || $studentProfileId === null || $studentProfileId === '') {
+            return [];
+        }
+
+        $enrollments = app(EnrollmentAdministrationQueries::class)->forStudent($organizationId, $studentProfileId);
+        $programs = app(AcademicCatalogQueries::class)->programsByIds(
+            $organizationId,
+            collect($enrollments)->map(static fn (EnrollmentSummaryData $item): string => $item->programId)->all(),
+        );
+        $locale = app()->getLocale();
+
+        return collect($enrollments)->mapWithKeys(static function (EnrollmentSummaryData $enrollment) use ($programs, $locale): array {
+            $program = $programs[$enrollment->programId] ?? null;
+            $programName = $program === null
+                ? __('academicreports::fields.enrollment')
+                : ($program->name[$locale]
+                    ?? $program->name[(string) config('app.fallback_locale', 'en')]
+                    ?? $program->code);
+            $status = EnrollmentStatus::tryFrom($enrollment->status)?->label() ?? $enrollment->status;
+
+            return [$enrollment->id => $programName.' · '.$status];
+        })->all();
     }
 }

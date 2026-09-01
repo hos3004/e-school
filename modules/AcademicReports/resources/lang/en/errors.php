@@ -18,4 +18,6 @@ return [
     'session_report_score_out_of_range' => 'Scores must be between :min and :max for each evaluation axis.',
     'monthly_report_duplicate_period' => 'A monthly report for this student already exists for period :month/:year; duplicates are not allowed.',
     'monthly_report_invalid_transition' => 'The monthly report status cannot change from ":from" to ":to" — this transition is not allowed.',
+    'monthly_report_invalid_student' => 'The student is missing or archived in your organization.',
+    'monthly_report_invalid_enrollment' => 'The selected enrollment does not belong to this student in your organization.',
 ];
