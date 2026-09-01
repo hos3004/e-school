@@ -128,6 +128,7 @@
 | `grade.view` | ● | ● | — | ○ | — | ◐assigned | ◐own | ◐children | ○ |
 | `session_report.create` | ● | ● | — | — | — | **◐assigned** | — | — | — |
 | `session_report.view` | ● | ● | — | ○ | — | ◐own | ◐own | ◐children | ○ |
+| `monthly_report.create` | ● | ● | — | — | — | — | — | — | — |
 | `monthly_report.approve` | ● | **●** | — | — | — | — | — | — | — |
 | `certificate.issue` | ● | ● | — | — | — | ◐assigned | — | — | — |
 | `badge.award` | ● | ● | — | — | — | ◐assigned | — | — | — |
@@ -154,6 +155,7 @@
 | الصلاحية | admin | acad.sup | fin.sup | registrar | comms | teacher | student | guardian | auditor |
 |----------|:-----:|:--------:|:-------:|:---------:|:-----:|:-------:|:-------:|:--------:|:-------:|
 | `message.send` | ● | ● | ● | ● | ● | ◐assigned | ◐ | ◐ | — |
+| `notifications.outbox.create` | ● | — | — | — | ● | — | — | — | — |
 | `message.moderate` | ● | ● | — | — | ● | — | — | — | — |
 | **`messaging.inbound.view`** | ● | ● | — | — | ● | — | — | — | — |
 | `announcement.publish` | ● | ● | — | ○ | ● | — | — | — | — |

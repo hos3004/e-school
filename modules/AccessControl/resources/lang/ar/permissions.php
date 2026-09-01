@@ -130,6 +130,8 @@ return [
         'message.send' => 'إرسال رسالة',
         'messaging.inbound.view' => 'عرض الرسائل الواردة',
 
+        'notifications.outbox.create' => 'إرسال إشعار',
+        'monthly_report.create' => 'إنشاء تقرير شهري',
         'monthly_report.approve' => 'اعتماد التقرير الشهري',
 
         'payroll.adjustment.approve' => 'اعتماد قيدة تسوية',

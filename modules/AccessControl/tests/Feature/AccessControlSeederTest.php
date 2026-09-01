@@ -94,6 +94,8 @@ it('seeds the base permission matrix and system roles idempotently', function ()
 
     expect($academicSupervisor->permissions()->where('name', 'staff.availability.approve')->exists())
         ->toBeTrue();
+    expect($academicSupervisor->permissions()->where('name', 'monthly_report.create')->exists())
+        ->toBeTrue();
 
     $teacher = Role::query()
         ->whereNull('organization_id')
@@ -102,6 +104,8 @@ it('seeds the base permission matrix and system roles idempotently', function ()
 
     expect($teacher->permissions()->where('name', 'staff.availability.create')->exists())
         ->toBeTrue();
+    expect($teacher->permissions()->where('name', 'recording.download')->exists())
+        ->toBeFalse();
 
     $popupPermissions = [
         'popup_campaign.view_any',
@@ -126,6 +130,8 @@ it('seeds the base permission matrix and system roles idempotently', function ()
     expect($communicationsOfficer->permissions()
         ->whereIn('name', $popupPermissions)
         ->count())->toBe(count($popupPermissions));
+    expect($communicationsOfficer->permissions()->where('name', 'notifications.outbox.create')->exists())
+        ->toBeTrue();
 
     $auditor = Role::query()
         ->whereNull('organization_id')

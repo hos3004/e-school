@@ -108,6 +108,8 @@ return [
         'message.moderate' => 'Moderate messages',
         'message.send' => 'Send message',
         'messaging.inbound.view' => 'View inbound messages',
+        'notifications.outbox.create' => 'Send notification',
+        'monthly_report.create' => 'Create monthly report',
         'monthly_report.approve' => 'Approve monthly report',
         'payroll.adjustment.approve' => 'Approve adjustment entry',
         'payroll.adjustment.propose' => 'Propose adjustment entry',
