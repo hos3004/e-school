@@ -93,6 +93,47 @@ final class ConversationListAuthorizationTest extends TestCase
             ->assertJsonPath('meta.total', 17);
     }
 
+    public function test_large_participant_list_uses_bounded_database_pagination(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $actor = User::factory()->inOrganization($organizationId)->create();
+        $peer = User::factory()->inOrganization($organizationId)->create();
+        $this->grantPermission($actor, 'message.send');
+
+        for ($index = 0; $index < 250; $index++) {
+            $this->conversation($organizationId, $actor, $peer, 'Measured '.$index);
+        }
+
+        $queryCount = 0;
+        DB::listen(static function () use (&$queryCount): void {
+            $queryCount++;
+        });
+
+        $memoryBefore = memory_get_usage(true);
+        $startedAt = hrtime(true);
+
+        $response = $this->actingAs($actor)->getJson('/api/conversations?page=17');
+
+        $elapsedMilliseconds = (hrtime(true) - $startedAt) / 1_000_000;
+        $memoryGrowthBytes = max(memory_get_usage(true) - $memoryBefore, 0);
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(10, 'data')
+            ->assertJsonPath('meta.total', 250);
+
+        self::assertLessThanOrEqual(12, $queryCount);
+        self::assertLessThan(1_500.0, $elapsedMilliseconds);
+        self::assertLessThan(32 * 1024 * 1024, $memoryGrowthBytes);
+
+        fwrite(STDERR, sprintf(
+            "Messaging pagination: 250 conversations, %d queries, %.2f ms, %.2f MiB growth\n",
+            $queryCount,
+            $elapsedMilliseconds,
+            $memoryGrowthBytes / 1024 / 1024,
+        ));
+    }
+
     private function grantPermission(User $user, string $permissionName): void
     {
         $permission = Permission::query()->firstOrCreate(
