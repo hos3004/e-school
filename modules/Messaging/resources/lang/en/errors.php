@@ -21,4 +21,5 @@ return [
     'wall_comment_too_long' => 'The comment exceeds the maximum length of :max characters.',
     'whatsapp_duplicate_message' => 'This WhatsApp message has already been recorded.',
     'whatsapp_already_handled' => 'This message has already been handled.',
+    'invalid_recipient' => 'The recipient is unavailable or outside your organization.',
 ];

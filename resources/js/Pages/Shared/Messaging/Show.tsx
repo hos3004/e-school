@@ -12,17 +12,18 @@ import { useI18n } from '@/lib/i18n';
 
 interface Message {
     id: string;
-    sender_id: string;
+    user_id: string;
     sender_name?: string;
-    content: string;
+    body: string;
     created_at?: string;
 }
 
 interface Props {
     conversationId: string;
+    subject?: string;
 }
 
-export default function Show({ conversationId }: Props) {
+export default function Show({ conversationId, subject }: Props) {
     const t = useI18n();
     const locale = useLocale();
     const [messages, setMessages] = useState<Message[]>([]);
@@ -103,7 +104,7 @@ export default function Show({ conversationId }: Props) {
 
     return (
         <AppLayout>
-            <Head title={t('messaging.show.title')} />
+            <Head title={subject || t('messaging.show.title')} />
             <PageHeader
                 action={
                     <Button as="link" href="/messages" variant="ghost">
@@ -112,7 +113,7 @@ export default function Show({ conversationId }: Props) {
                 }
                 className="mb-6"
                 subtitle={t('messaging.show.subtitle')}
-                title={t('messaging.show.title')}
+                title={subject || t('messaging.show.title')}
             />
 
             <section className="mx-auto flex min-h-[30rem] max-w-4xl flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-raised)] shadow-[var(--shadow-card)]">
@@ -144,7 +145,7 @@ export default function Show({ conversationId }: Props) {
                                         ) : null}
                                     </div>
                                     <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--ink)]">
-                                        {message.content}
+                                        {message.body}
                                     </p>
                                 </li>
                             ))}

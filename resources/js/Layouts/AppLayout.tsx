@@ -29,6 +29,7 @@ export type NavigationIconName =
     | 'students'
     | 'availability'
     | 'earnings'
+    | 'messages'
     | 'notifications';
 
 interface AuthenticatedUser {
@@ -79,6 +80,7 @@ const navigationByRole: Record<AppRole, readonly NavigationItem[]> = {
         { href: '/student/programs', labelKey: 'navigation.programs', icon: 'programs' },
         { href: '/student/group', labelKey: 'navigation.group', icon: 'group' },
         { href: '/student/profile', labelKey: 'navigation.profile', icon: 'profile' },
+        { href: '/messages', labelKey: 'navigation.messages', icon: 'messages' },
         { href: '/student/notifications', labelKey: 'navigation.notifications', icon: 'notifications' },
     ],
     teacher: [
@@ -99,6 +101,7 @@ const navigationByRole: Record<AppRole, readonly NavigationItem[]> = {
             feature: 'payroll',
         },
         { href: '/teacher/profile', labelKey: 'navigation.profile', icon: 'profile' },
+        { href: '/messages', labelKey: 'navigation.messages', icon: 'messages' },
         { href: '/teacher/notifications', labelKey: 'navigation.notifications', icon: 'notifications' },
     ],
     guardian: [
@@ -256,6 +259,13 @@ function NavigationIcon({ name }: { name: NavigationIconName }) {
                 <svg {...commonProps}>
                     <circle cx="12" cy="12" r="9" />
                     <path d="m8.5 12.5 2.5 2.5 4.5-5" />
+                </svg>
+            );
+        case 'messages':
+            return (
+                <svg {...commonProps}>
+                    <path d="M4 5.5h16v11H9l-5 3v-14Z" />
+                    <path d="M8 10h8M8 13h5" />
                 </svg>
             );
         case 'notifications':

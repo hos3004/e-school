@@ -21,4 +21,5 @@ return [
     'wall_comment_too_long' => 'التعليق أطول من الطول المسموح (:max حرفًا).',
     'whatsapp_duplicate_message' => 'رسالة الواتساب هذه مسجّلة مسبقًا.',
     'whatsapp_already_handled' => 'تم التعامل مع هذه الرسالة مسبقًا.',
+    'invalid_recipient' => 'المستلم غير متاح أو لا ينتمي إلى مؤسستك.',
 ];

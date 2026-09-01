@@ -7,7 +7,9 @@ use Modules\Messaging\Presentation\Http\Controllers\FlagMessageController;
 use Modules\Messaging\Presentation\Http\Controllers\HandleWhatsappInboundController;
 use Modules\Messaging\Presentation\Http\Controllers\ListConversationMessagesController;
 use Modules\Messaging\Presentation\Http\Controllers\ListConversationsController;
+use Modules\Messaging\Presentation\Http\Controllers\SearchMessageRecipientsController;
 use Modules\Messaging\Presentation\Http\Controllers\ShowConversationController;
+use Modules\Messaging\Presentation\Http\Controllers\StartDirectConversationController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreConversationController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreMessageController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreWallCommentController;
@@ -23,6 +25,10 @@ Route::post('webhooks/whatsapp', WhatsappWebhookController::class)->name('whatsa
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('conversations', ListConversationsController::class)->name('conversations.index');
     Route::post('conversations', StoreConversationController::class)->name('conversations.store');
+    Route::get('messaging/recipients', SearchMessageRecipientsController::class)
+        ->name('messaging.recipients.index');
+    Route::post('messaging/direct-conversations', StartDirectConversationController::class)
+        ->name('messaging.direct-conversations.store');
     Route::get('messaging/conversations/{conversation}', ShowConversationController::class)
         ->name('messaging.conversations.show');
     Route::get('conversations/{conversation}/messages', ListConversationMessagesController::class)
