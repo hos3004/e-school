@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'send_notification' => 'Send notification',
+    'send_notification_heading' => 'Send a new notification',
+    'send_notification_description' => 'Review the audience, recipient count, and content before queueing.',
+    'confirm_send' => 'Confirm send',
     'view' => 'View',
     'mark_as_read' => 'Mark as read',
     'mark_all_as_read' => 'Mark all as read',

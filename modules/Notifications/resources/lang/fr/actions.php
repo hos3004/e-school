@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'send_notification' => 'Envoyer une notification',
+    'send_notification_heading' => 'Envoyer une nouvelle notification',
+    'send_notification_description' => 'Vérifiez le public, le nombre de destinataires et le contenu avant la mise en file.',
+    'confirm_send' => 'Confirmer l’envoi',
     'view' => 'Voir',
     'mark_as_read' => 'Marquer comme lue',
     'mark_all_as_read' => 'Tout marquer comme lu',

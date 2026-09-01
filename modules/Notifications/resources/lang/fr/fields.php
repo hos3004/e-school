@@ -22,4 +22,7 @@ return [
     'recipient' => 'Destinataire', 'retry_reason' => 'Motif du renvoi', 'cancel_reason' => 'Motif de l’annulation',
     'attempts_history' => 'Historique des tentatives de livraison', 'result' => 'Résultat',
     'audit_history' => 'Historique des décisions et de l’audit', 'action' => 'Action', 'actor' => 'Effectuée par',
+    'recipient_type' => 'Type de destinataire', 'recipient_count' => 'Nombre de destinataires',
+    'preview' => 'Aperçu de la notification',
+    'recipient_types' => ['student' => 'Élève', 'teacher' => 'Enseignant', 'group' => 'Groupe'],
 ];

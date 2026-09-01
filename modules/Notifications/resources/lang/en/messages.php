@@ -36,4 +36,10 @@ return [
     'not_available' => 'Not available',
     'no_audit_entries' => 'No manual decisions have been recorded for this notification.',
     'system_actor' => 'System',
+    'manual_reason_help' => 'State the administrative reason. It is audited and is not shown to recipients.',
+    'manual_preview_empty' => 'Enter a subject or message to see the preview.',
+    'manual_preview_count' => 'The notification will be queued for :count recipients.',
+    'manual_send_failed' => 'The notification could not be queued.',
+    'manual_already_processed' => 'This send request was already processed; no duplicate messages were created.',
+    'manual_queued' => ':queued notifications were queued for :recipients recipients.',
 ];

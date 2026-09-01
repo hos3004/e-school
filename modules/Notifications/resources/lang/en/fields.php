@@ -61,4 +61,12 @@ return [
     'audit_history' => 'Decision and audit history',
     'action' => 'Action',
     'actor' => 'Performed by',
+    'recipient_type' => 'Recipient type',
+    'recipient_count' => 'Recipient count',
+    'preview' => 'Notification preview',
+    'recipient_types' => [
+        'student' => 'Student',
+        'teacher' => 'Teacher',
+        'group' => 'Group',
+    ],
 ];

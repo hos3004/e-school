@@ -16,4 +16,10 @@ return [
     'retry_failed_done' => ':count notifications en échec ont été replanifiées.',
     'not_available' => 'Non disponible', 'no_audit_entries' => 'Aucune décision manuelle n’a été enregistrée.',
     'system_actor' => 'Système',
+    'manual_reason_help' => 'Indiquez le motif administratif. Il est audité et n’est pas affiché aux destinataires.',
+    'manual_preview_empty' => 'Saisissez un objet ou un message pour afficher l’aperçu.',
+    'manual_preview_count' => 'La notification sera mise en file pour :count destinataires.',
+    'manual_send_failed' => 'La notification n’a pas pu être mise en file.',
+    'manual_already_processed' => 'Cette demande a déjà été traitée ; aucun doublon n’a été créé.',
+    'manual_queued' => ':queued notifications ont été mises en file pour :recipients destinataires.',
 ];

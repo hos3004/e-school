@@ -61,4 +61,12 @@ return [
     'audit_history' => 'سجل القرارات والتدقيق',
     'action' => 'الإجراء',
     'actor' => 'نفّذ بواسطة',
+    'recipient_type' => 'نوع المستلم',
+    'recipient_count' => 'عدد المستلمين',
+    'preview' => 'معاينة الإشعار',
+    'recipient_types' => [
+        'student' => 'طالب',
+        'teacher' => 'معلم',
+        'group' => 'مجموعة',
+    ],
 ];

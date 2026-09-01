@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'send_notification' => 'إرسال إشعار',
+    'send_notification_heading' => 'إرسال إشعار جديد',
+    'send_notification_description' => 'راجع الجمهور والعدد والمحتوى قبل إضافة الرسائل إلى صندوق الإرسال.',
+    'confirm_send' => 'تأكيد الإرسال',
     'view' => 'عرض',
     'mark_as_read' => 'تعليم كمقروء',
     'mark_all_as_read' => 'تعليم الكل كمقروء',

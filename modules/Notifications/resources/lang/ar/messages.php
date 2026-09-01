@@ -36,4 +36,10 @@ return [
     'not_available' => 'غير متاح',
     'no_audit_entries' => 'لم تُسجّل قرارات يدوية على هذا الإشعار.',
     'system_actor' => 'النظام',
+    'manual_reason_help' => 'اكتب سبب الإرسال الإداري؛ يُحفظ في سجل التدقيق ولا يظهر للمستلمين.',
+    'manual_preview_empty' => 'اكتب الموضوع أو الرسالة لعرض المعاينة.',
+    'manual_preview_count' => 'سيُضاف الإشعار إلى صندوق إرسال :count مستلم.',
+    'manual_send_failed' => 'تعذر إضافة الإشعار إلى صندوق الإرسال.',
+    'manual_already_processed' => 'عولج طلب الإرسال نفسه مسبقًا؛ لم تُنشأ رسائل مكررة.',
+    'manual_queued' => 'أُضيف :queued إشعار إلى صندوق الإرسال من أصل :recipients مستلم.',
 ];

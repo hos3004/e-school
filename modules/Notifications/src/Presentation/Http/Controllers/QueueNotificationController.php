@@ -6,6 +6,7 @@ namespace Modules\Notifications\Presentation\Http\Controllers;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Routing\Controller;
+use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Notifications\Application\Actions\QueueNotificationAction;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
@@ -19,15 +20,24 @@ final class QueueNotificationController extends Controller
 {
     public function __construct(
         private readonly QueueNotificationAction $action,
+        private readonly UserAccountDirectory $accounts,
     ) {}
 
     public function __invoke(QueueNotificationRequest $request): mixed
     {
         /** @var array<string, mixed> $data */
         $data = $request->validated();
+        $organizationId = $request->user()?->getAttribute('organization_id');
+        $actorId = $request->user()?->getAuthIdentifier();
+
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403);
+        abort_unless(is_string($actorId) && $actorId !== '', 403);
+
+        // لا نثق بمعرّف المستلم: يجب أن يعيده دليل Identity داخل مؤسسة المنفّذ.
+        abort_if($this->accounts->find($organizationId, (string) $data['user_id']) === null, 404);
 
         $outbox = $this->action->execute(
-            organizationId: (string) $data['organization_id'],
+            organizationId: $organizationId,
             userId: (string) $data['user_id'],
             category: (string) $data['category'],
             channel: Channel::from((string) $data['channel']),
@@ -41,6 +51,7 @@ final class QueueNotificationController extends Controller
                 : null,
             locale: isset($data['locale']) ? (string) $data['locale'] : null,
             correlationId: isset($data['correlation_id']) ? (string) $data['correlation_id'] : null,
+            actorId: $actorId,
         );
 
         if ($outbox === null) {

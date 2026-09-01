@@ -23,4 +23,8 @@ return [
     'template_parameter_missing' => 'Le paramètre « :parameter » manque dans les données de « :event ».',
     'email_recipient_invalid' => 'Le destinataire ne dispose pas d’une adresse e-mail valide.',
     'mail_transport_failed' => 'Le transport e-mail est temporairement indisponible.',
+    'manual_recipient_not_found' => 'Le destinataire est absent ou inactif dans votre organisation.',
+    'manual_empty_audience' => 'Le groupe ne contient aucun destinataire actif dans l’organisation.',
+    'manual_fields_required' => 'L’objet, le message et le motif sont obligatoires.',
+    'manual_request_invalid' => 'L’identifiant de la demande est invalide. Rouvrez le formulaire.',
 ];
