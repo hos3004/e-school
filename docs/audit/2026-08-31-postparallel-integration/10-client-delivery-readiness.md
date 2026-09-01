@@ -18,12 +18,12 @@
 
 ## أدلة القبول
 
-- Laravel الكامل: 1111 ناجحًا، 6883 assertion، والبذرة المسجلة `1788219652`.
+- Laravel الكامل: 1112 ناجحًا و6890 assertion في الترتيب الافتراضي، وكذلك البذور `1788221401` و`1788221402` و`1788221403`.
 - شرائح إعادة التفعيل والبنية والـseeders: 93 ناجحًا، 2693 assertion.
 - عقد Discipline/Assessments يختبر success وnot-found وinvalid-state وforeign-tenant وwrong actor، مع architecture guard.
 - PHPStan للنطاق الحرج/المعدل: صفر. PHPStan الإنتاجي الكامل: تحسن من 1396 إلى 449، بلا baseline أو ignore واسع.
 - ECharts رُقّي من 5.6 إلى 6.1، و`npm audit` أصبح بلا advisories في التحقق المنفذ.
-- Playwright يغطي ثماني رحلات؛ تحفظ traces/screenshots خارج Git فقط عند الفشل.
+- Playwright: ثماني رحلات من ثمانٍ ناجحة في الجولة النهائية (44.0s)؛ تحفظ traces/screenshots خارج Git فقط عند الفشل.
 - قياس Messaging: 250 محادثة، 4 استعلامات، 50.91ms، ونمو ذاكرة مقاس 0.00MiB لمسار participant. أزيل تجميع IDs غير المحدود؛ مسار guardian الاستثنائي يرشح بسياسة الخصوصية بتدفق bounded-memory.
 
 ## أخطاء اكتشفتها رحلات المتصفح وأُغلقت
