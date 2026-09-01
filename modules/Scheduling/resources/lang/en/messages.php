@@ -9,4 +9,8 @@ declare(strict_types=1);
 
 return [
     'generated_from_schedule' => 'Automatically generated from a schedule template.',
+    'postponement_requested' => 'The postponement request was sent for review.',
+    'teacher_approved_postponement' => 'The teacher approved the proposed time.',
+    'postponement_approved' => 'The postponement time was approved.',
+    'postponement_alternative_proposed' => 'The alternative time was sent.',
 ];

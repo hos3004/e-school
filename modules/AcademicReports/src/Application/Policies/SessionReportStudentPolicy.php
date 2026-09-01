@@ -15,26 +15,26 @@ final class SessionReportStudentPolicy
 {
     public function viewAny($user): bool
     {
-        return $user->can('academicreports.session_report_student.view_any');
+        return $user->can('session_report.view');
     }
 
     public function view($user, SessionReportStudent $record): bool
     {
-        return $user->can('academicreports.session_report_student.view');
+        return $user->can('session_report.view');
     }
 
     public function create($user): bool
     {
-        return $user->can('academicreports.session_report_student.create');
+        return $user->can('session_report.create');
     }
 
     public function update($user, SessionReportStudent $record): bool
     {
-        return $user->can('academicreports.session_report_student.update');
+        return $user->can('session_report.create');
     }
 
     public function delete($user, SessionReportStudent $record): bool
     {
-        return $user->can('academicreports.session_report_student.delete');
+        return false;
     }
 }

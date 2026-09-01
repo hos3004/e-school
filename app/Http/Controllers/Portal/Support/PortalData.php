@@ -1063,6 +1063,28 @@ final readonly class PortalData
         ];
     }
 
+    /** @return array{id: string, status: string, reason: string, proposedStart: string}|null */
+    public function postponementForSession(string $sessionId, string $userId, string $organizationId): ?array
+    {
+        $row = DB::table('postponement_requests')
+            ->where('organization_id', $organizationId)
+            ->where('session_id', $sessionId)
+            ->where('requested_by', $userId)
+            ->orderByDesc('created_at')
+            ->first(['id', 'status', 'reason', 'proposed_start']);
+
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'id' => (string) $row->id,
+            'status' => (string) $row->status,
+            'reason' => (string) $row->reason,
+            'proposedStart' => (string) $this->iso($row->proposed_start),
+        ];
+    }
+
     /**
      * @return list<array<string, mixed>>
      */
@@ -1211,6 +1233,7 @@ final readonly class PortalData
                 'postponement_requests.status as request_status',
                 'postponement_requests.reason',
                 'postponement_requests.proposed_start',
+                'postponement_requests.requires_admin_review',
                 'requester_users.id as requester_id',
                 'requester_users.name as requester_name',
                 'sessions.id',
@@ -1235,8 +1258,12 @@ final readonly class PortalData
             'reason' => (string) $row->reason,
             'requestedStartAt' => (string) $this->iso($row->proposed_start),
             'status' => (string) $row->request_status,
-            'approveUrl' => '',
-            'proposeAlternativeUrl' => '',
+            'approveUrl' => (bool) $row->requires_admin_review
+                ? ''
+                : route('portal.teacher.postponements.approve', ['postponement' => (string) $row->request_id]),
+            'proposeAlternativeUrl' => (bool) $row->requires_admin_review
+                ? ''
+                : route('portal.teacher.postponements.propose-alternative', ['postponement' => (string) $row->request_id]),
         ])->values()->all();
     }
 
@@ -1327,7 +1354,10 @@ final readonly class PortalData
     private function teacherSessionsQuery(string $staffProfileId, string $organizationId): Builder
     {
         return $this->baseSessionsQuery($organizationId)
-            ->where('sessions.staff_profile_id', $staffProfileId);
+            ->where(static function (Builder $query) use ($staffProfileId): void {
+                $query->where('sessions.staff_profile_id', $staffProfileId)
+                    ->orWhere('sessions.original_teacher_id', $staffProfileId);
+            });
     }
 
     /**

@@ -39,7 +39,7 @@ final class AcademicReportsApiTest extends TestCase
     public function test_submits_session_report_through_the_api(): void
     {
         Event::fake([SessionReportSubmitted::class]);
-        Gate::define('academicreports.session_report.create', fn (): bool => true);
+        Gate::define('session_report.create', fn (): bool => true);
 
         $studentProfileId = Fixtures::studentProfileId();
         $context = SessionReportFactory::createSessionContext();
@@ -69,7 +69,7 @@ final class AcademicReportsApiTest extends TestCase
 
     public function test_rejects_out_of_scale_scores_with_validation_errors(): void
     {
-        Gate::define('academicreports.session_report.create', fn (): bool => true);
+        Gate::define('session_report.create', fn (): bool => true);
 
         $context = SessionReportFactory::createSessionContext();
 
@@ -91,7 +91,7 @@ final class AcademicReportsApiTest extends TestCase
 
     public function test_forbids_submission_without_the_ability(): void
     {
-        Gate::define('academicreports.session_report.create', fn (): bool => false);
+        Gate::define('session_report.create', fn (): bool => false);
 
         $context = SessionReportFactory::createSessionContext();
 

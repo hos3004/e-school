@@ -18,6 +18,7 @@ return [
     'postponement_already_pending' => 'يوجد طلب تأجيل معلّق لهذه الحصة بالفعل.',
     'proposed_start_in_past' => 'الموعد المقترح يجب أن يكون في المستقبل.',
     'student_not_participant' => 'الطالب ليس مشاركًا في هذه الحصة.',
+    'teacher_not_assigned_to_session' => 'لا يمكنك طلب تأجيل حصة غير مسندة إليك.',
     'outside_makeup_window' => 'يجب أن تقع حصة التلافي خلال :days يومًا من الموعد الأصلي.',
     'conflict_detected' => 'الموعد يتعارض مع :count حصة قائمة.',
     'weekdays_invalid' => 'اختر يومًا صحيحًا واحدًا على الأقل.',

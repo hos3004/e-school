@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'teacher_not_assigned_to_session' => 'Vous ne pouvez pas demander le report d’une séance qui ne vous est pas attribuée.',
     'postponement_invalid_transition' => 'Transition de report impossible de :from vers :to.',
     'rejection_reason_required' => 'Le motif du refus est obligatoire.',
     'reason_required' => 'Le motif de l’opération est obligatoire.',

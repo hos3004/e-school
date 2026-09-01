@@ -81,11 +81,21 @@ final class TeacherSessionController extends Controller
             'attendanceStatuses' => $this->data->attendanceStatuses(),
             'statusColors' => $this->data->statusColors(),
             'attendanceUpdateUrl' => route('sessions.attendance', ['session' => $id]),
-            'reportSubmitUrl' => route('academicreports.session_reports.store'),
+            'reportSubmitUrl' => route('portal.teacher.sessions.report.store', ['session' => $id]),
             'initialReport' => $this->data->teacherInitialReport(
                 $id,
                 $staffId,
             ),
+            'postponementRequestUrl' => route('portal.teacher.sessions.postponement-requests.store', ['session' => $id]),
+            'postponementRequest' => $this->data->postponementForSession(
+                $id,
+                (string) $request->user()?->getAuthIdentifier(),
+                $organizationId,
+            ),
+            'canRequestPostponement' => (bool) $request->user()?->can('session.postpone.request')
+                && in_array((string) $session['status'], [SessionStatus::Scheduled->value, SessionStatus::Confirmed->value], true),
+            'canSubmitReport' => (bool) $request->user()?->can('session_report.create')
+                && in_array((string) $session['status'], [SessionStatus::AwaitingReview->value, SessionStatus::Completed->value], true),
         ]);
     }
 }

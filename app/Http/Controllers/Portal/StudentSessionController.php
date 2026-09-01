@@ -54,6 +54,16 @@ final class StudentSessionController extends Controller
                 ['recording' => $recording->id],
             );
 
-        return Inertia::render('Student/Sessions/Show', ['session' => $session]);
+        return Inertia::render('Student/Sessions/Show', [
+            'session' => $session,
+            'postponementRequestUrl' => route('portal.student.sessions.postponement-requests.store', ['session' => $id]),
+            'postponementRequest' => $this->data->postponementForSession(
+                $id,
+                (string) $request->user()?->getAuthIdentifier(),
+                $organizationId,
+            ),
+            'canRequestPostponement' => (bool) $request->user()?->can('session.postpone.request')
+                && in_array((string) $session['status'], ['scheduled', 'confirmed'], true),
+        ]);
     }
 }

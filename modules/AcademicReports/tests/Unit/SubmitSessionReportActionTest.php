@@ -3,14 +3,23 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Modules\AcademicReports\Application\Actions\SubmitSessionReportAction;
 use Modules\AcademicReports\Database\Factories\SessionReportFactory;
 use Modules\AcademicReports\Domain\Events\SessionReportSubmitted;
 use Modules\AcademicReports\Domain\Models\SessionReport;
 use Modules\AcademicReports\Domain\Models\SessionReportStudent;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
+use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
+use Modules\Sessions\Domain\ValueObjects\SessionAdministrationData;
+use Modules\Sessions\Domain\ValueObjects\SessionParticipantAdministrationData;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
@@ -148,4 +157,90 @@ it('rejects scores outside the allowed scale', function (): void {
         expect($violation->rule)->toBe('academicreports.session_report.score_out_of_range')
             ->and($violation->context['max'])->toBe(SessionReportStudent::MAX_SCORE);
     }
+});
+
+it('accepts an original teacher after substitution and audits the tenant-scoped report', function (): void {
+    Event::fake([SessionReportSubmitted::class]);
+    $context = SessionReportFactory::createSessionContext();
+    $organizationId = (string) DB::table('sessions')
+        ->where('id', $context['session_id'])
+        ->value('organization_id');
+    $courseId = (string) DB::table('sessions')
+        ->where('id', $context['session_id'])
+        ->value('course_id');
+    $payload = submitReportPayload();
+    $studentId = $payload[0]['student_profile_id'];
+    $actorId = Fixtures::userId();
+
+    $session = new SessionAdministrationData(
+        id: $context['session_id'],
+        organizationId: $organizationId,
+        groupId: (string) Str::ulid(),
+        courseId: $courseId,
+        staffProfileId: (string) Str::ulid(),
+        status: 'completed',
+        title: ['ar' => 'حصة اختبار'],
+        scheduledStart: now('UTC')->subHour()->toIso8601String(),
+        scheduledEnd: now('UTC')->toIso8601String(),
+        originalStaffProfileId: $context['staff_profile_id'],
+        actualEnd: now('UTC')->toIso8601String(),
+    );
+    $participant = new SessionParticipantAdministrationData(
+        id: (string) Str::ulid(),
+        organizationId: $organizationId,
+        sessionId: $context['session_id'],
+        studentProfileId: $studentId,
+        enrollmentId: (string) Str::ulid(),
+        courseId: $courseId,
+        groupId: null,
+        staffProfileId: $context['staff_profile_id'],
+        sessionTitle: ['ar' => 'حصة اختبار'],
+        sessionStatus: 'completed',
+        scheduledStart: now('UTC')->subHour()->toIso8601String(),
+        scheduledEnd: now('UTC')->toIso8601String(),
+        firstJoinedAt: null,
+        lastLeftAt: null,
+        attendedMinutes: 0,
+        invitationActive: true,
+    );
+
+    $sessions = Mockery::mock(SessionAdministrationQueries::class);
+    $sessions->shouldReceive('findForOrganization')
+        ->once()
+        ->with($organizationId, $context['session_id'])
+        ->andReturn($session);
+    $participants = Mockery::mock(SessionParticipantAdministrationQueries::class);
+    $participants->shouldReceive('forSession')
+        ->once()
+        ->with($organizationId, $context['session_id'])
+        ->andReturn([$participant]);
+    $audit = Mockery::mock(AuditRecorder::class);
+    $audit->shouldReceive('record')
+        ->once()
+        ->withArgs(static fn (
+            ?string $recordedOrganizationId,
+            ?string $recordedActorId,
+            string $actorType,
+            string $action,
+        ): bool => $recordedOrganizationId === $organizationId
+            && $recordedActorId === $actorId
+            && $actorType === 'user'
+            && $action === 'academicreports.session_report_submitted')
+        ->andReturn((string) Str::ulid());
+
+    $report = (new SubmitSessionReportAction(
+        app(Transaction::class),
+        app(Dispatcher::class),
+        $sessions,
+        $participants,
+        $audit,
+    ))->executeForTeacher(
+        organizationId: $organizationId,
+        sessionId: $context['session_id'],
+        staffProfileId: $context['staff_profile_id'],
+        actorId: $actorId,
+        students: $payload,
+    );
+
+    expect($report->staff_profile_id)->toBe($context['staff_profile_id']);
 });

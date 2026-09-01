@@ -40,6 +40,17 @@ interface TeacherSessionShowProps extends LoadablePageProps {
   attendanceUpdateUrl: string;
   reportSubmitUrl: string;
   initialReport?: SessionReport | null;
+  postponementRequestUrl?: string;
+  postponementRequest?: PostponementSummary | null;
+  canRequestPostponement?: boolean;
+  canSubmitReport?: boolean;
+}
+
+interface PostponementSummary {
+  id: string;
+  status: string;
+  reason: string;
+  proposedStart: string;
 }
 
 interface AttendanceFormData {
@@ -50,6 +61,17 @@ interface AttendanceFormData {
 interface ReportFormData {
   summary: string;
   notes: string;
+  students: Array<{
+    student_profile_id: string;
+    participation: number;
+    performance: number;
+    commitment: number;
+  }>;
+}
+
+interface PostponementFormData {
+  proposed_start: string;
+  reason: string;
 }
 
 interface FieldErrorProps {
@@ -142,6 +164,10 @@ export default function TeacherSessionShow({
   attendanceUpdateUrl,
   reportSubmitUrl,
   initialReport = null,
+  postponementRequestUrl = "",
+  postponementRequest = null,
+  canRequestPostponement = false,
+  canSubmitReport = false,
   loading = false,
   error = null,
 }: TeacherSessionShowProps) {
@@ -155,6 +181,16 @@ export default function TeacherSessionShow({
   const reportForm = useForm<ReportFormData>({
     summary: initialReport?.summary ?? "",
     notes: initialReport?.notes ?? "",
+    students: attendance.map((record) => ({
+      student_profile_id: record.studentId,
+      participation: 3,
+      performance: 3,
+      commitment: 3,
+    })),
+  });
+  const postponementForm = useForm<PostponementFormData>({
+    proposed_start: "",
+    reason: "",
   });
   const availableAttendanceStatuses = Array.from(
     new Set([
@@ -188,6 +224,28 @@ export default function TeacherSessionShow({
     reportForm.post(reportSubmitUrl, {
       preserveScroll: true,
     });
+  };
+
+  const submitPostponement = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    postponementForm.post(postponementRequestUrl, {
+      preserveScroll: true,
+      onSuccess: () => postponementForm.reset(),
+    });
+  };
+
+  const setReportScore = (
+    index: number,
+    field: "participation" | "performance" | "commitment",
+    value: number,
+  ) => {
+    const students = [...reportForm.data.students];
+    const current = students[index];
+    if (!current) {
+      return;
+    }
+    students[index] = { ...current, [field]: value };
+    reportForm.setData("students", students);
   };
 
   const setAttendanceStatus = (studentId: string, status: string) => {
@@ -348,6 +406,78 @@ export default function TeacherSessionShow({
             ) : null}
           </div>
         </Card>
+
+        {postponementRequest ? (
+          <Card as="section" aria-labelledby="teacher-postponement-status">
+            <CardHeader>
+              <CardTitle as="h2" id="teacher-postponement-status">
+                {t("postponement.request_title")}
+              </CardTitle>
+              <CardDescription>
+                {t("common.status")}:{" "}
+                {t("statuses." + postponementRequest.status)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-4 text-sm text-[var(--ink-muted)]">
+              {postponementRequest.reason}
+            </CardContent>
+          </Card>
+        ) : canRequestPostponement && postponementRequestUrl ? (
+          <Card as="section" aria-labelledby="teacher-postponement-request">
+            <CardHeader>
+              <CardTitle as="h2" id="teacher-postponement-request">
+                {t("postponement.request_title")}
+              </CardTitle>
+              <CardDescription>
+                {t("postponement.request_description")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-5">
+              <form
+                className="grid gap-4 md:grid-cols-2"
+                onSubmit={submitPostponement}
+              >
+                <label className="text-sm font-semibold text-[var(--ink)]">
+                  {t("postponement.proposed_start")}
+                  <input
+                    className={`${teacherFieldClasses} mt-2`}
+                    disabled={postponementForm.processing}
+                    onChange={(event) =>
+                      postponementForm.setData(
+                        "proposed_start",
+                        event.target.value,
+                      )
+                    }
+                    required
+                    type="datetime-local"
+                    value={postponementForm.data.proposed_start}
+                  />
+                </label>
+                <label className="text-sm font-semibold text-[var(--ink)]">
+                  {t("postponement.reason")}
+                  <textarea
+                    className={`${teacherFieldClasses} mt-2 min-h-24 py-3`}
+                    disabled={postponementForm.processing}
+                    onChange={(event) =>
+                      postponementForm.setData("reason", event.target.value)
+                    }
+                    required
+                    value={postponementForm.data.reason}
+                  />
+                </label>
+                <Button
+                  className="md:col-span-2 md:justify-self-end"
+                  disabled={postponementForm.processing}
+                  type="submit"
+                >
+                  {postponementForm.processing
+                    ? t("actions.processing")
+                    : t("postponement.submit")}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)]">
           <Card
@@ -523,84 +653,147 @@ export default function TeacherSessionShow({
             </CardHeader>
 
             <CardContent className="mt-5">
-              <form className="space-y-5" onSubmit={submitReport}>
-                <div>
-                  <label
-                    className="block text-sm font-semibold text-[var(--ink)]"
-                    htmlFor="session-report-summary"
+              {initialReport ? (
+                <p className="rounded-[var(--radius-md)] bg-[var(--surface-subtle)] p-4 text-sm text-[var(--ink-muted)]">
+                  {t("teacher.sessions.show.report.submitted")}
+                </p>
+              ) : (
+                <form className="space-y-5" onSubmit={submitReport}>
+                  <fieldset
+                    className="space-y-3"
+                    disabled={reportForm.processing || !canSubmitReport}
                   >
-                    {t("teacher.sessions.show.report.summary_label")}
-                  </label>
-                  <textarea
-                    aria-describedby={
-                      reportForm.errors.summary
-                        ? "session-report-summary-error"
-                        : undefined
-                    }
-                    aria-invalid={Boolean(reportForm.errors.summary)}
-                    className={`${teacherFieldClasses} min-h-32 py-3`}
-                    disabled={reportForm.processing}
-                    id="session-report-summary"
-                    name="summary"
-                    onChange={(event) =>
-                      reportForm.setData("summary", event.target.value)
-                    }
-                    placeholder={t(
-                      "teacher.sessions.show.report.summary_placeholder",
-                    )}
-                    required
-                    value={reportForm.data.summary}
-                  />
-                  <FieldError
-                    id="session-report-summary-error"
-                    message={reportForm.errors.summary}
-                  />
-                </div>
+                    <legend className="text-sm font-semibold text-[var(--ink)]">
+                      {t("teacher.sessions.show.report.student_scores")}
+                    </legend>
+                    {attendance.map((record, index) => (
+                      <div
+                        className="rounded-[var(--radius-md)] bg-[var(--surface-subtle)] p-3"
+                        key={record.studentId}
+                      >
+                        <p className="mb-2 text-sm font-semibold text-[var(--ink)]">
+                          {record.studentName}
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(
+                            [
+                              "participation",
+                              "performance",
+                              "commitment",
+                            ] as const
+                          ).map((field) => (
+                            <label
+                              className="text-xs text-[var(--ink-muted)]"
+                              key={field}
+                            >
+                              {t("teacher.sessions.show.report." + field)}
+                              <select
+                                className={`${teacherFieldClasses} mt-1`}
+                                onChange={(event) =>
+                                  setReportScore(
+                                    index,
+                                    field,
+                                    Number(event.target.value),
+                                  )
+                                }
+                                value={
+                                  reportForm.data.students[index]?.[field] ?? 3
+                                }
+                              >
+                                {[1, 2, 3, 4, 5].map((score) => (
+                                  <option key={score} value={score}>
+                                    {score}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </fieldset>
+                  <div>
+                    <label
+                      className="block text-sm font-semibold text-[var(--ink)]"
+                      htmlFor="session-report-summary"
+                    >
+                      {t("teacher.sessions.show.report.summary_label")}
+                    </label>
+                    <textarea
+                      aria-describedby={
+                        reportForm.errors.summary
+                          ? "session-report-summary-error"
+                          : undefined
+                      }
+                      aria-invalid={Boolean(reportForm.errors.summary)}
+                      className={`${teacherFieldClasses} min-h-32 py-3`}
+                      disabled={reportForm.processing}
+                      id="session-report-summary"
+                      name="summary"
+                      onChange={(event) =>
+                        reportForm.setData("summary", event.target.value)
+                      }
+                      placeholder={t(
+                        "teacher.sessions.show.report.summary_placeholder",
+                      )}
+                      required
+                      value={reportForm.data.summary}
+                    />
+                    <FieldError
+                      id="session-report-summary-error"
+                      message={reportForm.errors.summary}
+                    />
+                  </div>
 
-                <div>
-                  <label
-                    className="block text-sm font-semibold text-[var(--ink)]"
-                    htmlFor="session-report-notes"
-                  >
-                    {t("teacher.sessions.show.report.notes_label")}
-                  </label>
-                  <textarea
-                    aria-describedby={
-                      reportForm.errors.notes
-                        ? "session-report-notes-error"
-                        : undefined
-                    }
-                    aria-invalid={Boolean(reportForm.errors.notes)}
-                    className={`${teacherFieldClasses} min-h-28 py-3`}
-                    disabled={reportForm.processing}
-                    id="session-report-notes"
-                    name="notes"
-                    onChange={(event) =>
-                      reportForm.setData("notes", event.target.value)
-                    }
-                    placeholder={t(
-                      "teacher.sessions.show.report.notes_placeholder",
-                    )}
-                    value={reportForm.data.notes}
-                  />
-                  <FieldError
-                    id="session-report-notes-error"
-                    message={reportForm.errors.notes}
-                  />
-                </div>
+                  <div>
+                    <label
+                      className="block text-sm font-semibold text-[var(--ink)]"
+                      htmlFor="session-report-notes"
+                    >
+                      {t("teacher.sessions.show.report.notes_label")}
+                    </label>
+                    <textarea
+                      aria-describedby={
+                        reportForm.errors.notes
+                          ? "session-report-notes-error"
+                          : undefined
+                      }
+                      aria-invalid={Boolean(reportForm.errors.notes)}
+                      className={`${teacherFieldClasses} min-h-28 py-3`}
+                      disabled={reportForm.processing}
+                      id="session-report-notes"
+                      name="notes"
+                      onChange={(event) =>
+                        reportForm.setData("notes", event.target.value)
+                      }
+                      placeholder={t(
+                        "teacher.sessions.show.report.notes_placeholder",
+                      )}
+                      value={reportForm.data.notes}
+                    />
+                    <FieldError
+                      id="session-report-notes-error"
+                      message={reportForm.errors.notes}
+                    />
+                  </div>
 
-                <div className="flex justify-end">
-                  <Button
-                    className="w-full sm:w-auto"
-                    disabled={reportForm.processing}
-                    type="submit"
-                  >
-                    {reportForm.processing
-                      ? t("actions.saving")
-                      : t("teacher.sessions.show.report.submit")}
-                  </Button>
-                </div>
-              </form>
+                  <div className="flex justify-end">
+                    <Button
+                      className="w-full sm:w-auto"
+                      disabled={
+                        reportForm.processing ||
+                        !canSubmitReport ||
+                        attendance.length === 0
+                      }
+                      type="submit"
+                    >
+                      {reportForm.processing
+                        ? t("actions.saving")
+                        : t("teacher.sessions.show.report.submit")}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </CardContent>
           </Card>
         </div>

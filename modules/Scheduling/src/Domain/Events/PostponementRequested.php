@@ -11,7 +11,7 @@ final class PostponementRequested extends DomainEvent
     public function __construct(
         public readonly string $requestId,
         public readonly string $sessionId,
-        public readonly string $studentProfileId,
+        public readonly ?string $studentProfileId,
         public readonly string $proposedStart,
         ?string $actorId = null,
     ) {

@@ -8,6 +8,7 @@ declare(strict_types=1);
 */
 
 return [
+    'session_report_submitted' => 'Assigned teacher submitted the session report.',
     'seeder_no_enrollments' => 'No enrollments available to create demo monthly reports — run the Enrollments module seeder first.',
     'seeder_no_sessions' => 'No sessions or students available to build demo session reports.',
     'demo_topics' => 'Demo session :n topics and review of the previous homework.',

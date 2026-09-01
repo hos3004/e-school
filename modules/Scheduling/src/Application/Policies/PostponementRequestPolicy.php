@@ -9,6 +9,11 @@ use Modules\Scheduling\Domain\Models\PostponementRequest;
 
 final class PostponementRequestPolicy
 {
+    public function request(Authenticatable $user): bool
+    {
+        return $user->can('session.postpone.request');
+    }
+
     public function viewAny(Authenticatable $user): bool
     {
         return $user->can('session.postpone.approve');

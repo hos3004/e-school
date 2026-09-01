@@ -18,6 +18,7 @@ return [
     'postponement_already_pending' => 'A postponement request is already pending for this session.',
     'proposed_start_in_past' => 'The proposed time must be in the future.',
     'student_not_participant' => 'The student is not a participant in this session.',
+    'teacher_not_assigned_to_session' => 'You cannot request postponement for a session not assigned to you.',
     'outside_makeup_window' => 'The make-up session must occur within :days days of the original.',
     'conflict_detected' => 'The time conflicts with :count existing sessions.',
     'weekdays_invalid' => 'Select at least one valid weekday.',

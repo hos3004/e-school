@@ -13,6 +13,7 @@ use App\Http\Controllers\Portal\GuardianScheduleController;
 use App\Http\Controllers\Portal\PortalNotificationsController;
 use App\Http\Controllers\Portal\PortalProfileController;
 use App\Http\Controllers\Portal\RecordingPlaybackController;
+use App\Http\Controllers\Portal\SessionPostponementRequestController;
 use App\Http\Controllers\Portal\StudentAssignmentsController;
 use App\Http\Controllers\Portal\StudentAssignmentSubmissionController;
 use App\Http\Controllers\Portal\StudentDashboardController;
@@ -27,10 +28,12 @@ use App\Http\Controllers\Portal\TeacherAvailabilityWriteController;
 use App\Http\Controllers\Portal\TeacherDashboardController;
 use App\Http\Controllers\Portal\TeacherEarningsController;
 use App\Http\Controllers\Portal\TeacherGroupsController;
+use App\Http\Controllers\Portal\TeacherPostponementResponseController;
 use App\Http\Controllers\Portal\TeacherPostponementsController;
 use App\Http\Controllers\Portal\TeacherProfileController;
 use App\Http\Controllers\Portal\TeacherScheduleController;
 use App\Http\Controllers\Portal\TeacherSessionController;
+use App\Http\Controllers\Portal\TeacherSessionReportController;
 use App\Http\Controllers\Portal\TeacherStudentsController;
 use App\Http\Controllers\UpdateLocaleController;
 use Illuminate\Support\Facades\Route;
@@ -99,6 +102,9 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::post('/student/assignments/{assignment}/submit', StudentAssignmentSubmissionController::class)
         ->whereUlid('assignment')
         ->name('portal.student.assignments.submit');
+    Route::post('/student/sessions/{session}/postponement-requests', [SessionPostponementRequestController::class, 'student'])
+        ->whereUlid('session')
+        ->name('portal.student.sessions.postponement-requests.store');
 
     Route::patch('/student/profile', [PortalProfileController::class, 'update'])
         ->name('portal.student.profile.update');
@@ -157,6 +163,18 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::delete('/teacher/availability/{availability}', [TeacherAvailabilityWriteController::class, 'destroy'])
         ->whereUlid('availability')
         ->name('portal.teacher.availability.destroy');
+    Route::post('/teacher/sessions/{session}/report', TeacherSessionReportController::class)
+        ->whereUlid('session')
+        ->name('portal.teacher.sessions.report.store');
+    Route::post('/teacher/sessions/{session}/postponement-requests', [SessionPostponementRequestController::class, 'teacher'])
+        ->whereUlid('session')
+        ->name('portal.teacher.sessions.postponement-requests.store');
+    Route::post('/teacher/postponements/{postponement}/approve', [TeacherPostponementResponseController::class, 'approve'])
+        ->whereUlid('postponement')
+        ->name('portal.teacher.postponements.approve');
+    Route::post('/teacher/postponements/{postponement}/propose-alternative', [TeacherPostponementResponseController::class, 'propose'])
+        ->whereUlid('postponement')
+        ->name('portal.teacher.postponements.propose-alternative');
 
     Route::patch('/teacher/profile', [PortalProfileController::class, 'update'])
         ->name('portal.teacher.profile.update');

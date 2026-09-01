@@ -9,6 +9,7 @@ use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Modules\Scheduling\Domain\Events\PostponementRequested;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
+use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingQueries;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
@@ -18,6 +19,7 @@ final readonly class RequestPostponement
     public function __construct(
         private Transaction $transaction,
         private SessionSchedulingQueries $sessions,
+        private SessionAdministrationQueries $sessionAdministration,
         private AuditRecorder $audit,
     ) {}
 
@@ -25,9 +27,10 @@ final readonly class RequestPostponement
         string $organizationId,
         string $sessionId,
         string $requestedBy,
-        string $studentProfileId,
+        ?string $studentProfileId,
         CarbonImmutable $proposedStart,
         string $reason,
+        ?string $requestingStaffProfileId = null,
     ): PostponementRequest {
         $reason = trim($reason);
         if ($reason === '') {
@@ -38,7 +41,18 @@ final readonly class RequestPostponement
         if ($session === null) {
             throw BusinessRuleViolation::make('session.not_found', 'scheduling::errors.session_not_found');
         }
-        if (!in_array($studentProfileId, $session->studentProfileIds, true)) {
+        if ($requestingStaffProfileId !== null) {
+            $administrationSession = $this->sessionAdministration->findForOrganization($organizationId, $sessionId);
+            $assignedStaff = array_filter([
+                $session->staffProfileId,
+                $administrationSession?->originalStaffProfileId,
+            ]);
+
+            if (!in_array($requestingStaffProfileId, $assignedStaff, true)) {
+                throw BusinessRuleViolation::make('postponement.teacher_not_assigned', 'scheduling::errors.teacher_not_assigned_to_session');
+            }
+        }
+        if ($requestingStaffProfileId === null && ($studentProfileId === null || !in_array($studentProfileId, $session->studentProfileIds, true))) {
             throw BusinessRuleViolation::make('postponement.student_not_participant', 'scheduling::errors.student_not_participant');
         }
         if (!in_array($session->status, ['scheduled', 'confirmed'], true)) {
@@ -68,7 +82,8 @@ final readonly class RequestPostponement
             throw BusinessRuleViolation::make('postponement.already_pending', 'scheduling::errors.postponement_already_pending');
         }
 
-        $requiresAdminReview = $this->monthlyLimitReached($organizationId, $studentProfileId);
+        $requiresAdminReview = $studentProfileId === null
+            || $this->monthlyLimitReached($organizationId, $studentProfileId);
         $request = $this->transaction->run(function () use (
             $organizationId,
             $sessionId,

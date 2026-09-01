@@ -233,6 +233,80 @@ it('runs the postponement lifecycle through the Sessions gateway and escalates m
     ))->toThrow(BusinessRuleViolation::class);
 });
 
+it('allows the original teacher after substitution and guards invalid duplicate and foreign requests', function (): void {
+    CarbonImmutable::setTestNow('2026-10-10 08:00:00 UTC');
+    $fixture = schedulingFixture();
+    $this->actingAs($fixture['operator']);
+    $schedule = createOperationalSchedule($fixture, [
+        'weekdays' => [0, 2],
+        'start_time' => '10:00',
+        'timezone' => 'UTC',
+        'starts_on' => '2026-10-11',
+        'ends_on' => '2026-10-31',
+    ]);
+    $sessions = Session::query()->where('schedule_id', $schedule->id)->orderBy('scheduled_start')->get();
+
+    $substituteUser = User::factory()->inOrganization((string) $fixture['organization']->id)->create();
+    $substitute = StaffProfile::query()->create([
+        'organization_id' => $fixture['organization']->id,
+        'user_id' => $substituteUser->id,
+        'staff_code' => 'T-SUBSTITUTE',
+        'employment_type' => EmploymentType::Contractor,
+        'gender' => StaffGender::Male,
+        'hired_at' => '2026-01-01',
+    ]);
+    $sessions[0]->update(['staff_profile_id' => $substitute->id]);
+
+    $request = app(RequestPostponement::class)->execute(
+        (string) $fixture['organization']->id,
+        (string) $sessions[0]->id,
+        (string) $fixture['teacher']->user_id,
+        null,
+        $sessions[0]->scheduled_start->addDay(),
+        'المعلم الأصلي يطلب التأجيل بعد تكليف بديل',
+        (string) $fixture['teacher']->id,
+    );
+
+    expect($request->requested_for_student_id)->toBeNull()
+        ->and($request->requires_admin_review)->toBeTrue()
+        ->and(AuditLog::query()
+            ->where('action', 'scheduling.postponement_requested')
+            ->where('auditable_id', $request->id)
+            ->exists())->toBeTrue();
+
+    expect(fn () => app(RequestPostponement::class)->execute(
+        (string) $fixture['organization']->id,
+        (string) $sessions[0]->id,
+        (string) $fixture['teacher']->user_id,
+        null,
+        $sessions[0]->scheduled_start->addDays(2),
+        'طلب مكرر لنفس الحصة',
+        (string) $fixture['teacher']->id,
+    ))->toThrow(BusinessRuleViolation::class);
+
+    $sessions[1]->update(['status' => SessionStatus::Completed]);
+    expect(fn () => app(RequestPostponement::class)->execute(
+        (string) $fixture['organization']->id,
+        (string) $sessions[1]->id,
+        (string) $fixture['teacher']->user_id,
+        null,
+        $sessions[1]->scheduled_start->addDays(2),
+        'طلب في حالة غير صالحة',
+        (string) $fixture['teacher']->id,
+    ))->toThrow(BusinessRuleViolation::class);
+
+    $foreignOrganization = Organization::factory()->create();
+    expect(fn () => app(RequestPostponement::class)->execute(
+        (string) $foreignOrganization->id,
+        (string) $sessions[0]->id,
+        (string) $fixture['teacher']->user_id,
+        null,
+        $sessions[0]->scheduled_start->addDays(3),
+        'محاولة عابرة للمؤسسات',
+        (string) $fixture['teacher']->id,
+    ))->toThrow(BusinessRuleViolation::class);
+});
+
 it('rolls the scheduling integrity migration down and reapplies it cleanly', function (): void {
     $migration = require base_path('modules/Scheduling/database/migrations/2026_08_24_190000_harden_scheduling_integrity.php');
 

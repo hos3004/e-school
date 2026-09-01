@@ -8,6 +8,7 @@ declare(strict_types=1);
 */
 
 return [
+    'session_report_submitted' => 'تقديم تقرير الحصة من المعلم المسند.',
     'seeder_no_enrollments' => 'لا توجد تسجيلات لإنشاء تقارير شهرية تجريبية — شغّل باذر موديول Enrollments أولًا.',
     'seeder_no_sessions' => 'لا توجد حصص أو طلاب لبناء تقارير حصص تجريبية.',
     'demo_topics' => 'مواضيع الحصة التجريبية رقم :n ومراجعة الواجب السابق.',

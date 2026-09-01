@@ -31,13 +31,6 @@ final class TeacherPostponementsController extends Controller
                 $organizationId,
             );
 
-        // لا نعرض أزرار كتابة قبل أن يوفّر موديول Scheduling مساراتها الفعلية.
-        $requests = array_values(array_filter(
-            $requests,
-            static fn (array $item): bool => $item['approveUrl'] !== ''
-                && $item['proposeAlternativeUrl'] !== '',
-        ));
-
         return Inertia::render('Teacher/Postponements', [
             'requests' => $requests,
             'statusColors' => $this->data->statusColors(),

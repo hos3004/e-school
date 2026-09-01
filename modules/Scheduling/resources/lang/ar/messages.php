@@ -9,4 +9,8 @@ declare(strict_types=1);
 
 return [
     'generated_from_schedule' => 'توليد آلي من قالب الجدول.',
+    'postponement_requested' => 'تم إرسال طلب التأجيل للمراجعة.',
+    'teacher_approved_postponement' => 'اعتمد المعلم الموعد المقترح.',
+    'postponement_approved' => 'تم اعتماد موعد التأجيل.',
+    'postponement_alternative_proposed' => 'تم إرسال الموعد البديل.',
 ];

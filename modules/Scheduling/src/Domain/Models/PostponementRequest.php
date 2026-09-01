@@ -16,7 +16,7 @@ use Shared\Concerns\HasUlid;
  * @property string $organization_id
  * @property string $session_id
  * @property string $requested_by
- * @property string $requested_for_student_id
+ * @property string|null $requested_for_student_id
  * @property PostponementStatus $status
  * @property bool $requires_admin_review
  * @property CarbonImmutable $proposed_start

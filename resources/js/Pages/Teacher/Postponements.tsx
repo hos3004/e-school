@@ -182,32 +182,36 @@ function RequestCard({ request, statusColors }: RequestCardProps) {
         </CardContent>
 
         <CardFooter className="mt-5 justify-start sm:justify-end">
-          <Button
-            className="w-full sm:w-auto"
-            disabled={approving || alternativeForm.processing}
-            onClick={approve}
-            type="button"
-          >
-            {approving
-              ? t("actions.processing")
-              : t("teacher.postponements.actions.approve")}
-          </Button>
-          <Button
-            aria-controls={alternativeFormId}
-            aria-expanded={alternativeOpen}
-            className="w-full sm:w-auto"
-            disabled={approving || alternativeForm.processing}
-            onClick={toggleAlternative}
-            type="button"
-            variant="secondary"
-          >
-            {alternativeOpen
-              ? t("actions.cancel")
-              : t("teacher.postponements.actions.propose_alternative")}
-          </Button>
+          {request.approveUrl ? (
+            <Button
+              className="w-full sm:w-auto"
+              disabled={approving || alternativeForm.processing}
+              onClick={approve}
+              type="button"
+            >
+              {approving
+                ? t("actions.processing")
+                : t("teacher.postponements.actions.approve")}
+            </Button>
+          ) : null}
+          {request.proposeAlternativeUrl ? (
+            <Button
+              aria-controls={alternativeFormId}
+              aria-expanded={alternativeOpen}
+              className="w-full sm:w-auto"
+              disabled={approving || alternativeForm.processing}
+              onClick={toggleAlternative}
+              type="button"
+              variant="secondary"
+            >
+              {alternativeOpen
+                ? t("actions.cancel")
+                : t("teacher.postponements.actions.propose_alternative")}
+            </Button>
+          ) : null}
         </CardFooter>
 
-        {alternativeOpen ? (
+        {alternativeOpen && request.proposeAlternativeUrl ? (
           <form
             className="mt-5 space-y-5 border-t border-[var(--ink-muted)]/25 pt-5"
             id={alternativeFormId}
