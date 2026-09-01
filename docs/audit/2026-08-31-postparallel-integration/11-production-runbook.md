@@ -66,4 +66,3 @@ dropdb eschool_restore_drill
 - `/up` أو health endpoint، login، Dashboard، queue backlog، scheduler timestamps وReverb handshake.
 - لا `local.ERROR` جديد، لا أسرار أو كلمات مرور في logs، ولا 404/403/500 غير متوقع.
 - نفّذ checklist UAT المرافق قبل فتح الوصول للعميل.
-
