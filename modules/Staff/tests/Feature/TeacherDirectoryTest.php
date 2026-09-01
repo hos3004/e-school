@@ -193,11 +193,13 @@ final class TeacherDirectoryTest extends TestCase
 
         $now = CarbonImmutable::now('UTC');
 
+        $withinCurrentMonth = $now->startOfMonth()->addSecond();
+
         foreach ([
             [SessionStatus::Scheduled, $now->addDays(3), null],
             [SessionStatus::Confirmed, $now->addDays(7), null],
-            [SessionStatus::Completed, $now->subDays(2), null],
-            [SessionStatus::CancelledBySchool, $now->subDays(4), null],
+            [SessionStatus::Completed, $withinCurrentMonth, null],
+            [SessionStatus::CancelledBySchool, $withinCurrentMonth, null],
             [SessionStatus::Completed, $now->subMonths(2), null], // خارج الشهر الحالي
         ] as [$status, $start, $_]) {
             Session::query()->create([
