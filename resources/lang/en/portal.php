@@ -267,6 +267,7 @@ return [
     'teacher.sessions.show.title' => 'Manage session',
 
     'attendance.statuses.present' => 'Present',
+    'attendance.statuses.pending' => 'Pending',
     'attendance.statuses.late' => 'Late',
     'attendance.statuses.partial' => 'Partially attended',
     'attendance.statuses.left_early' => 'Left early',

@@ -267,6 +267,7 @@ return [
     'teacher.sessions.show.title' => 'إدارة الحصة',
 
     'attendance.statuses.present' => 'حاضر',
+    'attendance.statuses.pending' => 'قيد الانتظار',
     'attendance.statuses.late' => 'متأخر',
     'attendance.statuses.partial' => 'حضور جزئي',
     'attendance.statuses.left_early' => 'غادر مبكرًا',
