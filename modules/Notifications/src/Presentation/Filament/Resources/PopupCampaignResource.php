@@ -132,12 +132,12 @@ final class PopupCampaignResource extends Resource
                                     'external_url' => __('notifications::popups.options.external_url'),
                                 ])
                                 ->live(),
-                            Select::make('action_target')
+                            Select::make('internal_action_target')
                                 ->label(__('notifications::popups.fields.internal_page'))
                                 ->options(PopupPageRegistry::options())
                                 ->visible(fn (Get $get): bool => $get('action_type') === 'internal_page')
                                 ->required(fn (Get $get): bool => $get('action_type') === 'internal_page'),
-                            TextInput::make('action_target')
+                            TextInput::make('external_action_target')
                                 ->label(__('notifications::popups.fields.external_url'))
                                 ->url()
                                 ->rule('regex:#^https://[^\s]+$#i')
@@ -293,8 +293,7 @@ final class PopupCampaignResource extends Resource
                 ->helperText(__('notifications::popups.fields.reason_help'))
                 ->maxLength(2000)
                 ->required()
-                ->columnSpanFull()
-                ->dehydrated(false),
+                ->columnSpanFull(),
         ]);
     }
 

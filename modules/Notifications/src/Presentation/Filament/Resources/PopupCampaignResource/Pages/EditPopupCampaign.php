@@ -41,7 +41,8 @@ final class EditPopupCampaign extends EditRecord
         try {
             return app(SavePopupCampaignAction::class)->execute(
                 campaign: $record,
-                attributes: collect($data)->except('reason')->all(),
+                organizationId: (string) data_get(auth()->user(), 'organization_id'),
+                attributes: $this->campaignAttributes($data),
                 scheduleChanges: null,
                 actorId: (string) auth()->id(),
                 reason: (string) ($data['reason'] ?? ''),
@@ -51,5 +52,36 @@ final class EditPopupCampaign extends EditRecord
 
             throw new Halt;
         }
+    }
+
+    /** @param array<string, mixed> $data */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $targetKey = $data['action_type'] === 'internal_page'
+            ? 'internal_action_target'
+            : 'external_action_target';
+        $data[$targetKey] = $data['action_target'] ?? null;
+
+        return $data;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function campaignAttributes(array $data): array
+    {
+        $actionType = (string) ($data['action_type'] ?? '');
+        $actionTarget = match ($actionType) {
+            'internal_page' => $data['internal_action_target'] ?? null,
+            'external_url' => $data['external_action_target'] ?? null,
+            default => null,
+        };
+
+        return collect($data)
+            ->except(['reason', 'internal_action_target', 'external_action_target'])
+            ->put('action_type', $actionType !== '' ? $actionType : null)
+            ->put('action_target', $actionTarget)
+            ->all();
     }
 }

@@ -133,6 +133,9 @@ return [
 
     'errors' => [
         'reason_required' => 'Un motif est requis et est enregistré dans le journal d’audit.',
+        'foreign_tenant' => 'Une campagne appartenant à une autre organisation ne peut pas être enregistrée.',
+        'invalid_configuration' => 'Les données de la campagne sont incomplètes ou contiennent une valeur non prise en charge.',
+        'invalid_action' => 'Le bouton ou la cible est invalide. Les liens externes doivent utiliser HTTPS.',
         'invalid_transition' => 'Cette transition de statut n’est pas autorisée.',
         'arabic_content_required' => 'Le titre et le texte arabes sont obligatoires avant publication.',
         'audience_required' => 'Sélectionnez au moins un public.',

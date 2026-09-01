@@ -32,6 +32,7 @@ final class CreatePopupCampaign extends CreateRecord
         try {
             return app(SavePopupCampaignAction::class)->execute(
                 campaign: null,
+                organizationId: (string) data_get(auth()->user(), 'organization_id'),
                 attributes: $this->campaignAttributes($data),
                 scheduleChanges: null,
                 actorId: (string) auth()->id(),
@@ -50,9 +51,17 @@ final class CreatePopupCampaign extends CreateRecord
      */
     protected function campaignAttributes(array $data): array
     {
-        return collect($data)->except('reason')->put(
-            'organization_id',
-            (string) data_get(auth()->user(), 'organization_id'),
-        )->all();
+        $actionType = (string) ($data['action_type'] ?? '');
+        $actionTarget = match ($actionType) {
+            'internal_page' => $data['internal_action_target'] ?? null,
+            'external_url' => $data['external_action_target'] ?? null,
+            default => null,
+        };
+
+        return collect($data)
+            ->except(['reason', 'internal_action_target', 'external_action_target'])
+            ->put('action_type', $actionType !== '' ? $actionType : null)
+            ->put('action_target', $actionTarget)
+            ->all();
     }
 }

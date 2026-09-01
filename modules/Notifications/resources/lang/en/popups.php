@@ -133,6 +133,9 @@ return [
 
     'errors' => [
         'reason_required' => 'A change reason is required and is recorded in the audit log.',
+        'foreign_tenant' => 'A campaign belonging to another organization cannot be saved.',
+        'invalid_configuration' => 'The campaign data is incomplete or contains an unsupported value.',
+        'invalid_action' => 'The action button or target is invalid. External links must use HTTPS.',
         'invalid_transition' => 'This status transition is not allowed.',
         'arabic_content_required' => 'An Arabic title and body are mandatory before publishing.',
         'audience_required' => 'Select at least one audience.',
