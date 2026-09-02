@@ -24,6 +24,8 @@ return [
         'navigation_label' => 'Violations',
         'model_label' => 'Violation',
         'plural_model_label' => 'Violations',
+        'waive' => 'Waive violation',
+        'waived_notice' => 'Waived; it no longer counts toward escalation.',
     ],
 
     'actions' => [
@@ -36,5 +38,12 @@ return [
         'navigation_label' => 'Reactivation requests',
         'model_label' => 'Reactivation request',
         'plural_model_label' => 'Reactivation requests',
+        'approve' => 'Approve request',
+        'approved' => 'Approved; the enrollment is active again.',
+        'reject' => 'Reject request',
+        'rejected' => 'Request rejected.',
+        'cancel' => 'Withdraw request',
+        'cancelled' => 'Request withdrawn.',
+        'assessment_hint' => 'Readiness assessment attempt id (26 chars) — required to approve per discipline config.',
     ],
 ];

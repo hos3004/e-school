@@ -10,4 +10,10 @@ use Modules\Discipline\Presentation\Filament\Resources\ViolationEventFilamentRes
 final class ViewViolationEvent extends ViewRecord
 {
     protected static string $resource = ViolationEventFilamentResource::class;
+
+    /** @return array<int, mixed> */
+    protected function getHeaderActions(): array
+    {
+        return [ViolationEventFilamentResource::waiveAction()];
+    }
 }
