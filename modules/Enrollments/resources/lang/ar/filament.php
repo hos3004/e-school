@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation_group' => 'القيود والشؤون',
+    'navigation_group' => 'الأشخاص',
     'enrollment' => [
         'label' => 'قيد',
         'plural' => 'القيود',

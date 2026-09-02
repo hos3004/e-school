@@ -9,7 +9,7 @@ return [
     'metric_running' => 'Running',
     'metric_ended' => 'Ended',
     'metric_failed' => 'Failed',
-    'navigation_group' => 'System',
+    'navigation_group' => 'Reports & Administration',
     'navigation_label' => 'Live classroom connection',
     'title' => 'BigBlueButton settings',
     'connection_heading' => 'Connection status',

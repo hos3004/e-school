@@ -9,7 +9,7 @@ return [
     'metric_running' => 'تعمل الآن',
     'metric_ended' => 'انتهت',
     'metric_failed' => 'فشلت',
-    'navigation_group' => 'النظام',
+    'navigation_group' => 'التقارير والإدارة',
     'navigation_label' => 'ربط الحصص المباشرة',
     'title' => 'إعداد BigBlueButton',
     'connection_heading' => 'حالة الاتصال',

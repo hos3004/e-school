@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'Rapports',
+    'group' => 'Rapports et administration',
     'operational' => 'Rapports des séances',
     'student' => ['label' => 'Tableau élève', 'plural' => 'Tableaux élèves'],
     'teacher' => ['label' => 'Tableau enseignant', 'plural' => 'Tableaux enseignants'],

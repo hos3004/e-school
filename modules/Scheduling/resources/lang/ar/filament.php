@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'التشغيل',
+    'group' => 'اليوم الدراسي',
     'postponement' => [
         'admin_note' => 'ملاحظة الإدارة',
         'approve' => 'اعتماد',

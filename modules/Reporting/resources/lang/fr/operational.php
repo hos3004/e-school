@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation' => 'Rapports des séances',
+    'navigation' => 'Centre de rapports',
     'title' => 'Rapports opérationnels des séances',
     'description' => 'Synthèses et détails des séances, élèves, enseignants et groupes selon la période et les filtres.',
     'periods' => [

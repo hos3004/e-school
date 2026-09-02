@@ -29,6 +29,11 @@ final class IntegrationWebhookDeliveryResource extends Resource
 
     protected static ?int $navigationSort = 104;
 
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
     public static function getNavigationGroup(): string
     {
         return __('integrations::navigation.group');

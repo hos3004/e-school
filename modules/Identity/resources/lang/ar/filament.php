@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'الهوية والحسابات',
+    'navigation_group' => 'التقارير والإدارة',
 
     'user' => [
         'label' => 'مستخدم',

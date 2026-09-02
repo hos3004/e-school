@@ -35,6 +35,11 @@ final class StaffProfileResource extends Resource
 
     protected static bool $shouldRegisterNavigation = true;
 
+    // الترتيب داخل قسمه — يُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?int $navigationSort = 230;
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-briefcase';
+
     public static function getNavigationGroup(): string
     {
         return __('staff::filament.navigation_group');

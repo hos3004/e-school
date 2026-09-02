@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'المؤسسة',
+    'navigation_group' => 'التقارير والإدارة',
 
     'organization' => [
         'label' => 'مؤسسة',

@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 return [
 
-    'nav_group' => 'Governance & Security',
+    'nav_group' => 'Reports & Administration',
     'nav_sort' => 'Audit Log',
 
     'audit_log' => [

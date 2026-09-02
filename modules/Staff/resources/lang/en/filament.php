@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation_group' => 'Staff',
+    'navigation_group' => 'People',
     'common' => [
         'active' => 'Active',
     ],

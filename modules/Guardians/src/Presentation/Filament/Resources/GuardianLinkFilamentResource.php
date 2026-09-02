@@ -37,6 +37,13 @@ final class GuardianLinkFilamentResource extends Resource
 
     protected static ?int $navigationSort = 31;
 
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-link';
+
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
     protected static function organizationRelation(): string
     {
         return 'guardian';

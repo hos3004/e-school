@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation_group' => 'Apprentissage et évaluation',
+    'navigation_group' => 'Apprentissage',
     'assignments' => ['navigation_label' => 'Devoirs', 'model_label' => 'Devoir', 'plural_model_label' => 'Devoirs'],
     'sections' => ['audience' => 'Public académique', 'audience_help' => 'Choisissez le programme, le cours puis un groupe facultatif.', 'content' => 'Contenu et consignes', 'grading' => 'Calendrier et notation'],
     'course_wide_help' => 'Laissez le groupe vide pour tous les étudiants actifs du cours.',

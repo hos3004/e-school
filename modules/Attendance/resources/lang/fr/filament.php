@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation_group' => 'Présence et discipline',
+    'navigation_group' => 'Journée scolaire',
     'attendance' => ['label' => 'Présence', 'plural' => 'Présences'],
     'pages' => [
         'list_title' => 'Registre de présence',

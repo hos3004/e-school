@@ -95,7 +95,7 @@ final class SessionReportResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('academicreports::navigation.group');
+        return __('academicreports::navigation.group_operations');
     }
 
     public static function getModelLabel(): string

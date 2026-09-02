@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation_group' => 'التعلّم والتقييم',
+    'navigation_group' => 'التعلّم',
     'assignments' => ['navigation_label' => 'الواجبات', 'model_label' => 'واجب', 'plural_model_label' => 'الواجبات'],
     'sections' => [
         'audience' => 'الجمهور الأكاديمي',

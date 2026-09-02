@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'Reports',
+    'group' => 'Reports & Administration',
 
     'operational' => 'Session reports',
 

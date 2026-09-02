@@ -37,6 +37,8 @@ final class ScheduleResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-table-cells';
+
     public static function getNavigationGroup(): string
     {
         return __('scheduling::filament.group');

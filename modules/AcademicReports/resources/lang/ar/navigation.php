@@ -7,7 +7,8 @@ declare(strict_types=1);
 */
 
 return [
-    'group' => 'التقارير الأكاديمية',
+    'group' => 'التقارير والإدارة',
+    'group_operations' => 'اليوم الدراسي',
     'session_report' => [
         'label' => 'تقرير حصة',
         'plural' => 'تقارير الحصص',

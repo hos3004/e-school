@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'Operations',
+    'group' => 'Daily Operations',
     'postponement' => [
         'admin_note' => 'Admin note',
         'approve' => 'Approve',

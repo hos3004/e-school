@@ -32,9 +32,21 @@ final class AuditLogResource extends Resource
 
     protected static ?string $model = AuditLog::class;
 
+    // الترتيب داخل قسمه — يُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?int $navigationSort = 570;
+
     public static function getNavigationIcon(): ?string
     {
         return 'heroicon-o-shield-check';
+    }
+
+    /**
+     * كان `audit::labels.nav_group` معرّفًا بلا مستدعٍ، فيسقط سجل التدقيق خارج
+     * كل الأقسام ويظهر وحيدًا أعلى الشريط بلا عنوان.
+     */
+    public static function getNavigationGroup(): string
+    {
+        return __('audit::labels.nav_group');
     }
 
     public static function getModelLabel(): string

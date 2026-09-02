@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'التكاملات',
+    'group' => 'التقارير والإدارة',
 
     'provider' => [
         'label' => 'مزوّد تكاملات',

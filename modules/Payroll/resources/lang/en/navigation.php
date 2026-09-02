@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'group' => 'Finance',
+    'group' => 'Reports & Administration',
     'period' => [
         'label' => 'Payroll period',
         'plural' => 'Payroll periods',

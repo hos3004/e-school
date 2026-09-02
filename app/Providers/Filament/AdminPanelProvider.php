@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\AdminNavigation;
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Widgets\NeedsAttention;
 use App\Filament\Widgets\PlatformOverview;
@@ -11,6 +12,7 @@ use App\Filament\Widgets\QuickActions;
 use App\Filament\Widgets\SessionsTrend;
 use App\Filament\Widgets\UpcomingSessions;
 use Filament\Enums\ThemeMode;
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -87,6 +89,21 @@ use Modules\VirtualClassroom\Presentation\Filament\Pages\ClassroomConnectionSett
 
 final class AdminPanelProvider extends PanelProvider
 {
+    /**
+     * ترتيب التنقّل وتداخله يُضبطان على حدث `ServingFilament` لا في `panel()`
+     * ولا عبر `bootUsing()`.
+     *
+     * السبب قياسي لا تفضيلي: `bootUsing` يُنفَّذ قبل أن تحسم جلسةُ الطلب
+     * المستخدمَ، فتعود `auth()->check()` بـfalse حتى لمستخدم مسجَّل، فيسقط
+     * الضبط كله بصمت ويبقى الشريط مسطّحًا بترتيب التسجيل. أما
+     * `ServingFilament` فيُطلقه `DispatchServingFilamentEvent` بعد
+     * `StartSession`، فالمستخدم واللغة محسومان، والشريط لم يُبنَ بعد.
+     */
+    public function boot(): void
+    {
+        Filament::serving(static fn () => AdminNavigation::configure());
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
@@ -106,18 +123,8 @@ final class AdminPanelProvider extends PanelProvider
             ])
             ->sidebarCollapsibleOnDesktop()
             ->maxContentWidth(Width::Full)
-            ->navigationGroups([
-                __('dashboard.navigation.academic'),
-                __('dashboard.navigation.students_guardians'),
-                __('dashboard.navigation.staff'),
-                __('dashboard.navigation.operations'),
-                __('dashboard.navigation.learning'),
-                __('dashboard.navigation.discipline'),
-                __('dashboard.navigation.communication'),
-                ...((bool) config('features.payroll') ? [__('dashboard.navigation.finance')] : []),
-                __('dashboard.navigation.reporting'),
-                __('dashboard.navigation.system'),
-            ])
+            // خمسة أقسام لا أكثر. الترتيب والتداخل داخلها في App\Filament\AdminNavigation.
+            ->navigationGroups(AdminNavigation::groups())
             ->resources([
                 MonthlyReportResource::class,
                 SessionReportResource::class,

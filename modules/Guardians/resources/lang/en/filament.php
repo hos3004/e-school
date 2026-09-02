@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'Families & Guardians',
+    'navigation_group' => 'People',
 
     'common' => [
         'id' => 'ID',

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation' => 'Session reports',
+    'navigation' => 'Reports centre',
     'title' => 'Operational session reports',
     'description' => 'Session, student, teacher, and group summaries and details for the selected period and filters.',
     'periods' => [

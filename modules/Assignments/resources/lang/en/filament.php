@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation_group' => 'Learning and assessment',
+    'navigation_group' => 'Learning',
     'assignments' => ['navigation_label' => 'Assignments', 'model_label' => 'Assignment', 'plural_model_label' => 'Assignments'],
     'sections' => [
         'audience' => 'Academic audience',

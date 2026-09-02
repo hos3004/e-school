@@ -8,7 +8,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'Academic Affairs',
+    'navigation_group' => 'People',
     'navigation_label' => 'Groups',
     'model_label' => 'Group',
     'plural_model_label' => 'Groups',

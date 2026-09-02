@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation_group' => 'الموظفون',
+    'navigation_group' => 'الأشخاص',
     'common' => [
         'active' => 'على رأس العمل',
     ],

@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'Personnel',
+    'navigation_group' => 'Personnes',
     'common' => [
         'active' => 'En poste',
     ],

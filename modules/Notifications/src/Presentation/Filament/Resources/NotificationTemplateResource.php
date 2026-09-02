@@ -40,6 +40,11 @@ final class NotificationTemplateResource extends Resource
 
     protected static ?int $navigationSort = 72;
 
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
     protected static ?string $recordTitleAttribute = 'event_key';
 
     public static function getNavigationGroup(): string

@@ -8,7 +8,7 @@ declare(strict_types=1);
 */
 
 return [
-    'group' => 'الأكاديميات',
+    'group' => 'التعلّم',
 
     'fields' => [
         'created_at' => 'أُنشئ في',

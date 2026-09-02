@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'group' => 'المالية',
+    'group' => 'التقارير والإدارة',
     'period' => [
         'label' => 'فترة مستحقات',
         'plural' => 'فترات المستحقات',

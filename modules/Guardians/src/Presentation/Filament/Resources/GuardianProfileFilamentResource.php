@@ -28,6 +28,8 @@ final class GuardianProfileFilamentResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-home-modern';
+
     public static function getNavigationGroup(): string
     {
         return __('guardians::filament.navigation_group');

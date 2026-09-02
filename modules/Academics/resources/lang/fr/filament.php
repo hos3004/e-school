@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'Académique',
+    'group' => 'Apprentissage',
     'fields' => [
         'created_at' => 'Créé le', 'reason' => 'Motif du changement',
         'reason_help' => 'Ce motif est conservé dans le journal d’audit.',

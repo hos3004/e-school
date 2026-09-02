@@ -8,7 +8,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'الشؤون الأكاديمية',
+    'navigation_group' => 'الأشخاص',
     'navigation_label' => 'المجموعات',
     'model_label' => 'مجموعة',
     'plural_model_label' => 'المجموعات',

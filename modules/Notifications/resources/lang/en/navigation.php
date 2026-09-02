@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'Notifications',
+    'group' => 'Communication',
 
     'outbox' => [
         'label' => 'Outbox',

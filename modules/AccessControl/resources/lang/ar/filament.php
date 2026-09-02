@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'التحكم بالوصول',
+    'group' => 'التقارير والإدارة',
 
     'fields' => [
         'created_at' => 'أُنشئ في',

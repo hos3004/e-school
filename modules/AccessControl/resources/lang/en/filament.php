@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'Access Control',
+    'group' => 'Reports & Administration',
 
     'fields' => [
         'created_at' => 'Created at',

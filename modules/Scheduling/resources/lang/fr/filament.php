@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'Opérations',
+    'group' => 'Journée scolaire',
     'common' => ['yes' => 'Oui', 'no' => 'Non', 'not_available' => 'Indisponible'],
     'awaiting' => ['teacher' => 'Enseignant', 'student' => 'Étudiant', 'admin' => 'Administration', 'none' => '—'],
     'postponement' => [

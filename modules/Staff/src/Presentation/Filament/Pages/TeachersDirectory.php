@@ -44,6 +44,11 @@ final class TeachersDirectory extends Page implements HasTable
 
     protected static ?int $navigationSort = 2;
 
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
     protected string $view = 'staff::filament.teachers-directory';
 
     /** @var array<string, TeacherDirectoryData>|null */

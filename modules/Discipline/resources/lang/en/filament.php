@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'Discipline',
+    'navigation_group' => 'People',
 
     'window_key' => 'Counting window',
     'is_countable' => 'Countable',

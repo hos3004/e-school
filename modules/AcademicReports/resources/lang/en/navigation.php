@@ -7,7 +7,8 @@ declare(strict_types=1);
 */
 
 return [
-    'group' => 'Academic Reports',
+    'group' => 'Reports & Administration',
+    'group_operations' => 'Daily Operations',
     'session_report' => [
         'label' => 'Session report',
         'plural' => 'Session reports',

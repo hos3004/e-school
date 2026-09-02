@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation_group' => 'Affaires académiques',
+    'navigation_group' => 'Personnes',
     'navigation_label' => 'Groupes',
     'model_label' => 'Groupe',
     'plural_model_label' => 'Groupes',

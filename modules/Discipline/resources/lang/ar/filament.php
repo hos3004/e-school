@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'الانضباط',
+    'navigation_group' => 'الأشخاص',
 
     'window_key' => 'نافذة الاحتساب',
     'is_countable' => 'قابلة للعدّ',

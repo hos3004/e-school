@@ -3,6 +3,6 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'Contenu pédagogique',
+    'group' => 'Apprentissage',
     'material' => ['label' => 'Ressource pédagogique', 'plural' => 'Ressources pédagogiques'],
 ];

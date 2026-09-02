@@ -8,7 +8,7 @@ declare(strict_types=1);
 */
 
 return [
-    'group' => 'Academics',
+    'group' => 'Learning',
 
     'fields' => [
         'created_at' => 'Created at',

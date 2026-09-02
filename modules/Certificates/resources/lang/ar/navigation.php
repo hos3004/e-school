@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'الشهادات والشارات',
+    'group' => 'التعلّم',
     'award' => [
         'label' => 'منح شارة',
         'plural' => 'منح الشارات',

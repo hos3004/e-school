@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'Notifications',
+    'group' => 'Communication',
     'outbox' => ['label' => 'Boîte d’envoi', 'plural' => 'Boîte d’envoi'],
     'preference' => ['label' => 'Préférence de notification', 'plural' => 'Préférences de notification'],
     'template' => ['label' => 'Modèle de notification', 'plural' => 'Modèles de notification'],

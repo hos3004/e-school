@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
 
     'navigation_label' => 'الطلاب',
-    'navigation_group' => 'الشؤون الأكاديمية',
+    'navigation_group' => 'الأشخاص',
     'model_label' => 'طالب',
     'plural_model_label' => 'الطلاب',
 

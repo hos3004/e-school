@@ -31,6 +31,8 @@ final class DisciplineActionFilamentResource extends Resource
 
     protected static ?int $navigationSort = 60;
 
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-scale';
+
     public static function getNavigationGroup(): ?string
     {
         return __('discipline::filament.navigation_group');

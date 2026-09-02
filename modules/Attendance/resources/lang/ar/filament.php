@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'الحضور والانضباط',
+    'navigation_group' => 'اليوم الدراسي',
 
     'attendance' => [
         'label' => 'قيد حضور',

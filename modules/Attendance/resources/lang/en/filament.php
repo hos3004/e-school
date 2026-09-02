@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'Attendance & Discipline',
+    'navigation_group' => 'Daily Operations',
 
     'attendance' => [
         'label' => 'Attendance record',

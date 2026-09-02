@@ -36,6 +36,8 @@ final class GroupResource extends Resource
 
     protected static ?int $navigationSort = 11;
 
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-user-group';
+
     public static function getNavigationGroup(): string
     {
         return __('groups::filament.navigation_group');

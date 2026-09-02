@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'metric_total' => 'Total des classes', 'metric_pending' => 'En attente', 'metric_provisioned' => 'Prêtes',
     'metric_running' => 'En cours', 'metric_ended' => 'Terminées', 'metric_failed' => 'Échecs',
-    'navigation_group' => 'Système', 'navigation_label' => 'Connexion des classes virtuelles',
+    'navigation_group' => 'Rapports et administration', 'navigation_label' => 'Connexion des classes virtuelles',
     'title' => 'Paramètres BigBlueButton', 'connection_heading' => 'État de la connexion',
     'connection_description' => 'Cette page affiche l’état sans exposer ni enregistrer le secret.',
     'provider' => 'Fournisseur actif', 'base_url' => 'URL du serveur BBB',

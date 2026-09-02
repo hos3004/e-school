@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'التقارير',
+    'group' => 'التقارير والإدارة',
 
     'operational' => 'تقارير الحصص',
 

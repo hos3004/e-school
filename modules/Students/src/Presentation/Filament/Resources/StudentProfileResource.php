@@ -50,6 +50,8 @@ final class StudentProfileResource extends Resource
 
     protected static ?int $navigationSort = 20;
 
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-user-circle';
+
     public static function getNavigationGroup(): string
     {
         return __('students::filament.navigation_group');

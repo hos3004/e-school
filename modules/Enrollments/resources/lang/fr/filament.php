@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'navigation_group' => 'Inscriptions et affaires',
+    'navigation_group' => 'Personnes',
     'enrollment' => [
         'label' => 'Inscription',
         'plural' => 'Inscriptions',

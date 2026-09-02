@@ -3,17 +3,15 @@
 declare(strict_types=1);
 
 return [
+    // أقسام الشريط الجانبي الخمسة. هذه القيم هي المرجع الوحيد لأسماء المجموعات،
+    // وكل ملف ترجمة موديول يعيد النص نفسه حرفيًا. التطابق يحرسه
+    // tests/Feature/AdminNavigationStructureTest.php فلا تنفرط المجموعات ثانيةً.
     'navigation' => [
-        'academic' => 'الأكاديمي',
-        'students_guardians' => 'الطلاب وأولياء الأمور',
-        'staff' => 'الطاقم',
-        'operations' => 'التشغيل',
+        'daily' => 'اليوم الدراسي',
+        'people' => 'الأشخاص',
         'learning' => 'التعلّم',
-        'discipline' => 'الانضباط',
         'communication' => 'التواصل',
-        'finance' => 'المال',
-        'reporting' => 'التقارير',
-        'system' => 'النظام',
+        'insights' => 'التقارير والإدارة',
     ],
 
     'common' => [
