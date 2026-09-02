@@ -13,6 +13,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Modules\Certificates\Domain\Models\BadgeAward;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد عرض منح الشارات في لوحة الإدارة.
@@ -77,7 +78,11 @@ final class BadgeAwardFilamentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'certificates::origin.badge_award',
+            'heroicon-o-star',
+        )
             ->columns([
                 TextColumn::make('badge_id')
                     ->label(__('certificates::navigation.badge.label'))

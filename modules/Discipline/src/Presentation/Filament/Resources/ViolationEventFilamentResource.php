@@ -23,6 +23,7 @@ use Modules\Discipline\Domain\Enums\ViolationType;
 use Modules\Discipline\Domain\Models\ViolationEvent;
 use Modules\Discipline\Presentation\Filament\Resources\ViolationEventFilamentResource\Pages;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد أحداث المخالفات في لوحة التحكم — قراءة فقط مع فعل عفو موثّق.
@@ -106,7 +107,12 @@ final class ViolationEventFilamentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'discipline::origin.violation',
+            'heroicon-o-exclamation-triangle',
+            'filament.admin.resources.attendance-filaments.index',
+        )
             ->columns([
                 TextColumn::make('enrollment_id')
                     ->label(__('discipline::attributes.enrollment_id'))

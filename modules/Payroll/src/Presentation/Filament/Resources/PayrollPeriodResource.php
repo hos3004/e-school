@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Gate;
 use Modules\Payroll\Domain\Enums\PayrollPeriodStatus;
 use Modules\Payroll\Domain\Models\PayrollPeriod;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 use Shared\ValueObjects\Money;
 
 /**
@@ -87,7 +88,11 @@ final class PayrollPeriodResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'payroll::origin.period',
+            'heroicon-o-calendar-days',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('payroll::fields.id'))

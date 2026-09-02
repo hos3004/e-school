@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Modules\Reporting\Domain\Models\StudentDashboard;
 use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد لوحات الطلاب في لوحة الإدارة — قراءة وتصحيح موثّق فقط.
@@ -95,7 +96,12 @@ final class StudentDashboardResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'reporting::origin.student_dashboard',
+            'heroicon-o-chart-bar-square',
+            'filament.admin.resources.students.index',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('reporting::fields.id'))

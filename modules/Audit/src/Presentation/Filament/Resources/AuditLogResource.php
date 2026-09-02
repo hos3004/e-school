@@ -19,6 +19,7 @@ use Modules\Audit\Domain\Enums\AuditActorType;
 use Modules\Audit\Domain\Models\AuditLog;
 use Modules\Audit\Presentation\Filament\Resources\AuditLogResource\Pages;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد Filament لقيود التدقيق — قراءة فقط.
@@ -104,7 +105,11 @@ final class AuditLogResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'audit::origin',
+            'heroicon-o-shield-check',
+        )
             ->columns([
                 TextColumn::make('created_at')
                     ->label(__('audit::labels.fields.created_at'))

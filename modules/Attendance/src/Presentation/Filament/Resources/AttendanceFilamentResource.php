@@ -21,6 +21,7 @@ use Modules\Attendance\Application\Queries\AttendanceOperationsQueryService;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Models\Attendance;
 use Modules\Attendance\Presentation\Filament\Resources\AttendanceResource\Pages;
+use Shared\Filament\RecordOriginGuide;
 use Shared\Support\BusinessRuleViolation;
 
 /** شاشة تشغيلية لقيود الحضور؛ الرصد نفسه يأتي من الفصل ولا يُنشأ يدويًا. */
@@ -74,7 +75,12 @@ final class AttendanceFilamentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'attendance::origin',
+            'heroicon-o-calendar-days',
+            'filament.admin.resources.sessions.index',
+        )
             ->columns([
                 TextColumn::make('student_label')
                     ->label(__('attendance::fields.student'))

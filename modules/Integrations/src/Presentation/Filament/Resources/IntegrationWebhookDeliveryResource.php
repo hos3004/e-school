@@ -17,6 +17,7 @@ use Filament\Tables\Table;
 use Modules\Integrations\Domain\Enums\DeliveryStatus;
 use Modules\Integrations\Domain\Enums\WebhookDirection;
 use Modules\Integrations\Domain\Models\IntegrationWebhookDelivery;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد متابعة إيصالات Webhook في لوحة الإدارة — للقراءة والمتابعة.
@@ -96,7 +97,11 @@ final class IntegrationWebhookDeliveryResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'integrations::origin.delivery',
+            'heroicon-o-arrows-right-left',
+        )
             ->columns([
                 TextColumn::make('event_type')
                     ->label(__('integrations::fields.event_type'))

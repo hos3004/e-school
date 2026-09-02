@@ -16,6 +16,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Messaging\Domain\Models\Message;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد إشراف على الرسائل في لوحة الإدارة.
@@ -77,7 +78,11 @@ final class MessageResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'messaging::origin.message',
+            'heroicon-o-envelope',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('messaging::fields.id'))

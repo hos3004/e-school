@@ -15,6 +15,7 @@ use Modules\Recordings\Application\Queries\RecordingOperationsQueryService;
 use Modules\Recordings\Domain\Contracts\RecordingAdministrationQueries;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Models\Recording;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد إدارة التسجيلات في لوحة الإدارة.
@@ -70,7 +71,12 @@ final class RecordingResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'recordings::origin',
+            'heroicon-o-video-camera',
+            'filament.admin.resources.sessions.index',
+        )
             ->columns([
                 TextColumn::make('session_context')
                     ->label(__('recordings::fields.session'))

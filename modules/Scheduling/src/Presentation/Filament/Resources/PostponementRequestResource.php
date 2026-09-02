@@ -17,6 +17,7 @@ use Modules\Scheduling\Application\Queries\SchedulingAdministrationQueryService;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * طلبات التأجيل — الطريق الوحيد المتاح للطالب لتغيير موعد حصة،
@@ -78,7 +79,12 @@ final class PostponementRequestResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'scheduling::origin.postponement',
+            'heroicon-o-clock',
+            'filament.admin.resources.sessions.index',
+        )
             ->columns([
                 TextColumn::make('session_id')
                     ->label(__('scheduling::filament.postponement.session'))

@@ -20,6 +20,7 @@ use Modules\Discipline\Domain\Enums\ReactivationStatus;
 use Modules\Discipline\Domain\Models\ReactivationRequest;
 use Modules\Discipline\Presentation\Filament\Resources\ReactivationRequestFilamentResource\Pages;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد طلبات إعادة التفعيل — مراجعة إدارية بلا نصوص مكتوبة مباشرة.
@@ -91,7 +92,11 @@ final class ReactivationRequestFilamentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'discipline::origin.reactivation',
+            'heroicon-o-lock-open',
+        )
             ->columns([
                 TextColumn::make('enrollment_id')
                     ->label(__('discipline::attributes.enrollment_id'))

@@ -26,6 +26,7 @@ use Modules\Guardians\Domain\Enums\GuardianRelationship;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Modules\Guardians\Presentation\Filament\Resources\Pages\ManageGuardianLinks;
 use Shared\Concerns\ScopesFilamentToOrganizationVia;
+use Shared\Filament\RecordOriginGuide;
 
 final class GuardianLinkFilamentResource extends Resource
 {
@@ -90,7 +91,12 @@ final class GuardianLinkFilamentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'guardians::origin.link',
+            'heroicon-o-link',
+            'filament.admin.resources.guardians.index',
+        )
             ->columns([
                 TextColumn::make('guardian_name')
                     ->label(__('guardians::filament.link.fields.guardian'))

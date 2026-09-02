@@ -16,6 +16,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Messaging\Domain\Models\WhatsappInbound;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد صندوق رسائل واتساب الواردة في لوحة الإدارة.
@@ -86,7 +87,11 @@ final class WhatsappInboundResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'messaging::origin.whatsapp',
+            'heroicon-o-device-phone-mobile',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('messaging::fields.id'))

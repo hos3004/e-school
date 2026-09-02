@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Modules\Reporting\Domain\Enums\SnapshotType;
 use Modules\Reporting\Domain\Models\OrganizationSnapshot;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد اللقطات التنظيمية — قراءة فقط، والبناء عبر الإجراء المجدول.
@@ -104,7 +105,11 @@ final class OrganizationSnapshotResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'reporting::origin.snapshot',
+            'heroicon-o-building-office-2',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('reporting::fields.id'))

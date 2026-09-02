@@ -15,6 +15,7 @@ use Filament\Tables\Table;
 use Modules\Reporting\Domain\Models\TeacherDashboard;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 use Shared\ValueObjects\Money;
 
 /**
@@ -88,7 +89,12 @@ final class TeacherDashboardResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'reporting::origin.teacher_dashboard',
+            'heroicon-o-academic-cap',
+            'filament.admin.resources.staff-profiles.index',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('reporting::fields.id'))

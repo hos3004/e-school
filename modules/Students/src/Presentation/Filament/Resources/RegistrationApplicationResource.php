@@ -40,6 +40,7 @@ use Modules\Students\Domain\Models\RegistrationForm;
 use Modules\Students\Domain\ValueObjects\FilterableQuestionData;
 use Modules\Students\Presentation\Filament\Resources\RegistrationApplicationResource\Pages;
 use Modules\Students\Presentation\Filament\Resources\RegistrationApplicationResource\Support\BulkPlacementAction;
+use Shared\Filament\RecordOriginGuide;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Locales;
 
@@ -167,7 +168,12 @@ final class RegistrationApplicationResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'students::origin.application',
+            'heroicon-o-inbox-stack',
+            'filament.admin.resources.registration-forms.index',
+        )
             ->columns([
                 /*
                  * الكود المعروض للطالب لا الـULID. الطلب قبل القبول لا يملك

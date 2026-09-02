@@ -17,6 +17,7 @@ use Modules\Discipline\Domain\Enums\DisciplineActionType;
 use Modules\Discipline\Domain\Models\DisciplineAction;
 use Modules\Discipline\Presentation\Filament\Resources\DisciplineActionFilamentResource\Pages;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد قيود إجراءات الانضباط — سجل تاريخي للقراءة فقط.
@@ -89,7 +90,12 @@ final class DisciplineActionFilamentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'discipline::origin.action',
+            'heroicon-o-scale',
+            'filament.admin.resources.discipline-violations.index',
+        )
             ->columns([
                 TextColumn::make('enrollment_id')
                     ->label(__('discipline::attributes.enrollment_id'))

@@ -15,6 +15,7 @@ use Modules\Payroll\Domain\Enums\PayrollEntryStatus;
 use Modules\Payroll\Domain\Models\PayrollEntry;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * قيود المستحقات — **للعرض فقط**.
@@ -80,7 +81,12 @@ final class PayrollEntryResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'payroll::origin.entry',
+            'heroicon-o-banknotes',
+            'filament.admin.resources.sessions.index',
+        )
             ->columns([
                 TextColumn::make('created_at')
                     ->label(__('payroll::filament.entry.created_at'))

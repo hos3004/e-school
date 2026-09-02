@@ -26,6 +26,7 @@ use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationOutboxResource\Pages;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد صندوق الإرسال في لوحة الإدارة — قراءة وتشغيل (إلغاء/إعادة)،
@@ -188,7 +189,11 @@ final class NotificationOutboxResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'notifications::origin.outbox',
+            'heroicon-o-bell-alert',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('notifications::fields.id'))

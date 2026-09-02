@@ -20,6 +20,7 @@ use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Models\NotificationCategorySetting;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationCategorySettingResource\Pages;
 use Modules\Notifications\Presentation\Support\CategoryLabel;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد إعدادات فئات الإشعارات — تحكم الأدمن في: أي قنوات لكل فئة، وهل الفئة
@@ -96,7 +97,12 @@ final class NotificationCategorySettingResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'notifications::origin.category',
+            'heroicon-o-signal',
+            'filament.admin.resources.notification-templates.index',
+        )
             ->columns([
                 TextColumn::make('category')
                     ->label(__('notifications::fields.category'))

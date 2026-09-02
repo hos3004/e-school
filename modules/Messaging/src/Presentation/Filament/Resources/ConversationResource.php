@@ -20,6 +20,7 @@ use Filament\Tables\Table;
 use Modules\Messaging\Domain\Enums\ConversationType;
 use Modules\Messaging\Domain\Models\Conversation;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد إدارة المحادثات في لوحة الإدارة.
@@ -93,7 +94,11 @@ final class ConversationResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'messaging::origin.conversation',
+            'heroicon-o-chat-bubble-left-right',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('messaging::fields.id'))

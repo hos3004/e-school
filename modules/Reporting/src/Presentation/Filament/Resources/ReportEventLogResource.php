@@ -11,6 +11,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Reporting\Domain\Models\ReportEventLog;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد سجل الأحداث المُدخلة — قراءة تشخيصية فقط، السجل append-only.
@@ -62,7 +63,11 @@ final class ReportEventLogResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'reporting::origin.event_log',
+            'heroicon-o-inbox-arrow-down',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('reporting::fields.id'))

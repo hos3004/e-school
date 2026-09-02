@@ -15,6 +15,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Messaging\Domain\Models\ClassWallPost;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد إدارة حائط الصفوف في لوحة الإدارة.
@@ -67,7 +68,11 @@ final class ClassWallPostResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'messaging::origin.wall',
+            'heroicon-o-clipboard-document-list',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('messaging::fields.id'))
