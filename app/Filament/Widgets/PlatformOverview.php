@@ -149,15 +149,30 @@ final class PlatformOverview extends StatsOverviewWidget
 
     /**
      * المبالغ مخزَّنة بالوحدة الصغرى (القروش) — تُعرض مقسومة على 100.
+     *
+     * الترشيح على **فترة المستحقات** لا على `created_at`. سببان:
+     *
+     * أولًا `PayrollEntry::$timestamps = false` لأن الدفتر append-only، والعمود
+     * `created_at` يبقى NULL في كل قيدة — فكان الشرط `created_at >= $monthStart`
+     * يُسقط كل القيود دائمًا وتقرأ البطاقة 0.00 مهما بلغت المستحقات.
+     *
+     * وثانيًا أن دلالة «مستحقات الشهر» هي الفترة التي تنتمي إليها القيدة لا لحظة
+     * كتابتها: حصةُ أغسطس تُعتمد في سبتمبر وتبقى مستحقًا أغسطسيًّا، وهو ما يقرره
+     * `payroll_period_id` وحده.
      */
     private function payrollThisMonth(CarbonImmutable $monthStart): Stat
     {
+        $periodIds = $this->scoped('payroll_periods')
+            ->where('year', $monthStart->year)
+            ->where('month', $monthStart->month)
+            ->pluck('id');
+
         $net = (int) $this->scoped('payroll_entries')
-            ->where('created_at', '>=', $monthStart)
+            ->whereIn('payroll_period_id', $periodIds)
             ->sum('amount');
 
         $deferred = $this->scoped('payroll_entries')
-            ->where('created_at', '>=', $monthStart)
+            ->whereIn('payroll_period_id', $periodIds)
             ->where('status', 'deferred')
             ->count();
 
