@@ -22,4 +22,7 @@ return [
         'deferred' => 'مؤجَّل',
         'adjustment' => 'تسوية',
     ],
+    'release_deferred' => 'تحرير المستحق المؤجَّل',
+    'release_reason' => 'سبب التحرير',
+    'released' => 'حُرِّر المستحق المؤجَّل.',
 ];

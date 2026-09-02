@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Modules\Payroll\Presentation\Filament\Resources;
 
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Payroll\Application\Actions\ReleaseDeferredEntriesAction;
 use Modules\Payroll\Domain\Enums\PayrollEntryStatus;
 use Modules\Payroll\Domain\Models\PayrollEntry;
 use Modules\Staff\Domain\Contracts\StaffQueries;
@@ -149,7 +153,49 @@ final class PayrollEntryResource extends Resource
                         'adjustment' => __('payroll::filament.entry_type.adjustment'),
                     ]),
             ])
+            ->recordActions([self::releaseDeferredAction()])
             ->defaultSort('created_at', 'desc');
+    }
+
+    /**
+     * تحرير المستحق المؤجَّل بعد إقامة حصة التلافي.
+     *
+     * `ReleaseDeferredEntriesAction` كان بلا زر، فيبقى مستحق المعلم معلّقًا في
+     * حالة `deferred` بلا مسار إغلاق من اللوحة رغم إقامة الحصة.
+     *
+     * القيدة نفسها تحمل حصة التلافي والمعلم، فلا حاجة لسؤال المستخدم عنهما.
+     * والدفتر append-only فالتحرير انتقال حالة موثّق لا تعديل مبلغ.
+     */
+    public static function releaseDeferredAction(): Action
+    {
+        return Action::make('release_deferred')
+            ->label(__('payroll::filament.release_deferred'))
+            ->icon('heroicon-m-lock-open')
+            ->color('success')
+            ->authorize('release')
+            ->visible(fn (PayrollEntry $record): bool => $record->status === PayrollEntryStatus::Deferred
+                && $record->deferred_until_session_id !== null)
+            ->form([
+                Textarea::make('reason')
+                    ->label(__('payroll::filament.release_reason'))
+                    ->required()
+                    ->minLength(3)
+                    ->maxLength(1000),
+            ])
+            ->action(function (PayrollEntry $record, array $data): void {
+                app(ReleaseDeferredEntriesAction::class)->execute(
+                    (string) $record->organization_id,
+                    (string) $record->deferred_until_session_id,
+                    (string) $record->staff_profile_id,
+                    (string) auth()->id(),
+                    (string) $data['reason'],
+                );
+
+                Notification::make()
+                    ->title(__('payroll::filament.released'))
+                    ->success()
+                    ->send();
+            });
     }
 
     /**

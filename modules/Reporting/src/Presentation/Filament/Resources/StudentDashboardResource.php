@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Reporting\Presentation\Filament\Resources;
 
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -15,6 +19,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Reporting\Application\Actions\CorrectStudentDashboardAction;
 use Modules\Reporting\Domain\Models\StudentDashboard;
 use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
 use Shared\Concerns\ScopesFilamentToOrganization;
@@ -174,7 +179,61 @@ final class StudentDashboardResource extends Resource
                         false: fn ($query) => $query->where('violations_count', 0),
                     ),
             ])
+            ->recordActions([self::correctAction()])
             ->defaultSort('attendance_rate_bp');
+    }
+
+    /**
+     * تصحيح عدّاد انحرف عن مصدره.
+     *
+     * اللوحة تُبنى بإسقاط الأحداث، وقد ينحرف عدّاد عن الحقيقة (حدث ضائع أو
+     * مُعاد). `CorrectStudentDashboardAction` كان مكتوبًا بلا زر، فلم يكن أمام
+     * المشرف إلا تعديل القاعدة يدويًا — وهو ما يفسد الأثر ولا يترك سببًا.
+     *
+     * الأعمدة المسموحة يحكمها الإجراء نفسه، والسبب إلزامي بحدّي طول من الإعداد.
+     */
+    public static function correctAction(): Action
+    {
+        return Action::make('correct')
+            ->label(__('reporting::fields.correct'))
+            ->icon('heroicon-m-wrench-screwdriver')
+            ->color('warning')
+            ->authorize('correct')
+            ->form([
+                Select::make('column')
+                    ->label(__('reporting::fields.correction_column'))
+                    ->options([
+                        'sessions_total' => __('reporting::fields.sessions_total'),
+                        'sessions_attended' => __('reporting::fields.sessions_attended'),
+                        'sessions_missed' => __('reporting::fields.sessions_missed'),
+                        'violations_count' => __('reporting::fields.violations_count'),
+                        'freezes_count' => __('reporting::fields.freezes_count'),
+                    ])
+                    ->required(),
+                TextInput::make('value')
+                    ->label(__('reporting::fields.correction_value'))
+                    ->numeric()
+                    ->minValue(0)
+                    ->required(),
+                Textarea::make('reason')
+                    ->label(__('reporting::fields.correction_reason'))
+                    ->required()
+                    ->minLength((int) config('reporting.correction.reason_min_chars', 5))
+                    ->maxLength((int) config('reporting.correction.reason_max_chars', 500)),
+            ])
+            ->action(function (StudentDashboard $record, array $data): void {
+                app(CorrectStudentDashboardAction::class)->execute([
+                    'enrollment_id' => (string) $record->enrollment_id,
+                    'column' => (string) $data['column'],
+                    'value' => (int) $data['value'],
+                    'reason' => (string) $data['reason'],
+                ]);
+
+                Notification::make()
+                    ->title(__('reporting::fields.corrected'))
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function getPages(): array

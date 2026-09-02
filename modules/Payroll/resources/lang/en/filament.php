@@ -22,4 +22,7 @@ return [
         'deferred' => 'Deferred',
         'adjustment' => 'Adjustment',
     ],
+    'release_deferred' => 'Release deferred entry',
+    'release_reason' => 'Reason for release',
+    'released' => 'Deferred entry released.',
 ];
