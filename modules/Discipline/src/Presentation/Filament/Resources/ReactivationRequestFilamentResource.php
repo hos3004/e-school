@@ -153,7 +153,7 @@ final class ReactivationRequestFilamentResource extends Resource
     public static function decisionActions(): array
     {
         return [
-            self::decisionAction(ReactivationStatus::Approved, 'approve', 'approved', 'heroicon-m-check', 'success'),
+            self::decisionAction(ReactivationStatus::Approved, 'approve', 'approved', 'heroicon-m-check', 'primary'),
             self::decisionAction(ReactivationStatus::Rejected, 'reject', 'rejected', 'heroicon-m-x-mark', 'danger'),
             self::cancelAction(),
         ];

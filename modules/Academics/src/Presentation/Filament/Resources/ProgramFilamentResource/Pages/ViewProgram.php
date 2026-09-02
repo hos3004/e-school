@@ -215,7 +215,7 @@ final class ViewProgram extends ViewRecord
         return Action::make('toggle_active')
             ->label(fn (): string => $this->program()->is_active ? __('academics::filament.actions.deactivate') : __('academics::filament.actions.activate'))
             ->icon(fn (): string => $this->program()->is_active ? 'heroicon-o-pause' : 'heroicon-o-play')
-            ->color(fn (): string => $this->program()->is_active ? 'warning' : 'success')
+            ->color('primary')
             ->visible(fn (): bool => auth()->user()?->can('update', $this->program()) ?? false)->requiresConfirmation()
             ->schema([$this->reasonField()])
             ->action(function (array $data): void {

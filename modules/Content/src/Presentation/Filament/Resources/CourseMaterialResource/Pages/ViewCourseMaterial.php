@@ -105,7 +105,7 @@ final class ViewCourseMaterial extends ViewRecord
         return Action::make($name)
             ->label(__('content::messages.'.$name))
             ->icon($target === MaterialStatus::Published ? 'heroicon-o-eye' : 'heroicon-o-eye-slash')
-            ->color($target === MaterialStatus::Published ? 'success' : 'warning')
+            ->color('primary')
             ->visible(fn (): bool => $this->material()->status->canTransitionTo($target)
                 && (auth()->user()?->can('publish', $this->material()) ?? false))
             ->requiresConfirmation()

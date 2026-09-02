@@ -51,7 +51,7 @@ final class ViewSession extends ViewRecord
             $this->transitionAction('end', SessionStatus::AwaitingReview, EndSessionAction::class, 'end'),
             $this->transitionAction('complete', SessionStatus::Completed, CompleteSessionAction::class, 'complete'),
             $this->transitionAction('mark_no_show', SessionStatus::NoShow, MarkNoShowAction::class, 'markNoShow', 'danger'),
-            $this->transitionAction('excuse', SessionStatus::Excused, ExcuseAbsenceAction::class, 'excuse', 'info'),
+            $this->transitionAction('excuse', SessionStatus::Excused, ExcuseAbsenceAction::class, 'excuse'),
             $this->rescheduleAction(),
             $this->provisionClassroomAction(),
             $this->checkClassroomHealthAction(),

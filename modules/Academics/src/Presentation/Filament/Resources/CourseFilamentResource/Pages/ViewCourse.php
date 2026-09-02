@@ -83,7 +83,7 @@ final class ViewCourse extends ViewRecord
         return Action::make('toggle_active')
             ->label(fn (): string => $this->course()->is_active ? __('academics::filament.actions.deactivate') : __('academics::filament.actions.activate'))
             ->icon(fn (): string => $this->course()->is_active ? 'heroicon-o-pause' : 'heroicon-o-play')
-            ->color(fn (): string => $this->course()->is_active ? 'warning' : 'success')
+            ->color('primary')
             ->visible(fn (): bool => auth()->user()?->can('update', $this->course()) ?? false)->requiresConfirmation()
             ->schema([$this->reasonField()])
             ->action(function (array $data): void {
