@@ -12,6 +12,16 @@ use Modules\Certificates\Domain\Enums\BadgeTier;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $organization_id
+ * @property string $code
+ * @property array<string, string> $name
+ * @property array<string, string>|null $description
+ * @property string|null $icon_path
+ * @property BadgeTier $tier
+ * @property bool $is_active
+ */
 final class Badge extends Model
 {
     use HasModuleFactory;

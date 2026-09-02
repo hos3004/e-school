@@ -68,6 +68,7 @@ use Modules\Notifications\Presentation\Filament\Resources\PopupCampaignResource;
 use Modules\Organization\Presentation\Filament\Resources\AcademicCalendarFilamentResource;
 use Modules\Organization\Presentation\Filament\Resources\HolidayFilamentResource;
 use Modules\Organization\Presentation\Filament\Resources\OrganizationFilamentResource;
+use Modules\Payroll\Presentation\Filament\Resources\PayrollAdjustmentResource;
 use Modules\Payroll\Presentation\Filament\Resources\PayrollEntryResource;
 use Modules\Payroll\Presentation\Filament\Resources\PayrollPeriodResource;
 use Modules\Recordings\Presentation\Filament\Resources\RecordingResource;
@@ -169,6 +170,7 @@ final class AdminPanelProvider extends PanelProvider
                 ...((bool) config('features.payroll') ? [
                     PayrollEntryResource::class,
                     PayrollPeriodResource::class,
+                    PayrollAdjustmentResource::class,
                 ] : []),
                 RecordingResource::class,
                 OrganizationSnapshotResource::class,
