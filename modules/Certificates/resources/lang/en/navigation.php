@@ -9,6 +9,8 @@ return [
         'plural' => 'Badge awards',
     ],
     'badge' => [
+        'award' => 'Award badge',
+        'awarded' => 'Badge awarded to the user.',
         'label' => 'Badge',
         'plural' => 'Badges',
     ],

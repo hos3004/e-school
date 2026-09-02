@@ -41,6 +41,7 @@ return [
         ],
     ],
     'actions' => [
+        'schedule_sessions' => 'جدولة حصص',
         'place_student' => 'تسكين طالب',
         'student_placed' => 'تم تسكين الطالب في المجموعة.',
         'assign_teacher' => 'إسناد معلم',

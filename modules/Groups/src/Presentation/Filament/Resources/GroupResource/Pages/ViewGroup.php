@@ -21,6 +21,7 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Route;
 use Modules\Groups\Application\Actions\ActivateGroupAction;
 use Modules\Groups\Application\Actions\ArchiveGroupAction;
 use Modules\Groups\Application\Actions\AssignTeacherAction;
@@ -45,6 +46,7 @@ final class ViewGroup extends ViewRecord
             $this->placeStudentAction(),
             $this->assignTeacherAction(),
             $this->attachProgramAction(),
+            $this->scheduleSessionsAction(),
             $this->transitionAction('activate', GroupStatus::Planning, ActivateGroupAction::class),
             $this->transitionAction('complete', GroupStatus::Active, CompleteGroupAction::class),
             $this->archiveAction(),
@@ -299,6 +301,32 @@ final class ViewGroup extends ViewRecord
                 $this->record->refresh();
                 Notification::make()->title(__('groups::filament.actions.'.$this->group()->status->value.'_success'))->success()->send();
             });
+    }
+
+    /**
+     * الانتقال إلى إنشاء جدول بالمجموعة مُسبقة الاختيار.
+     *
+     * كان المنسّق يُسند المعلم ويضع الطلاب ثم يقف: لا شيء في صفحة المجموعة
+     * يقود إلى تحديد المواعيد، فيغادرها ويفتح الجداول ويعيد اختيار المجموعة
+     * نفسها من قائمة طويلة.
+     *
+     * الوجهة باسم المسار لا باستيراد `ScheduleResource`، والصلاحية بالاسم لا
+     * بنموذج `Schedule`: موديول Groups لا يستورد طبقة عرض موديول Scheduling
+     * ولا نماذجه (البندان 1 و2). وغياب المسار يُخفي الزر بدل أن يرمي
+     * RouteNotFoundException ويُسقط الصفحة.
+     */
+    private function scheduleSessionsAction(): Action
+    {
+        $route = 'filament.admin.resources.schedules.create';
+
+        return Action::make('schedule_sessions')
+            ->label(__('groups::filament.actions.schedule_sessions'))
+            ->icon('heroicon-o-calendar-days')
+            ->color('primary')
+            ->visible(fn (): bool => Route::has($route)
+                && $this->group()->status === GroupStatus::Active
+                && (auth()->user()?->can('schedule.manage') ?? false))
+            ->url(fn (): string => route($route, ['group' => (string) $this->group()->getKey()]));
     }
 
     private function archiveAction(): Action

@@ -41,6 +41,7 @@ return [
         ],
     ],
     'actions' => [
+        'schedule_sessions' => 'Schedule sessions',
         'place_student' => 'Place student',
         'student_placed' => 'The student was placed in this group.',
         'assign_teacher' => 'Assign teacher',
