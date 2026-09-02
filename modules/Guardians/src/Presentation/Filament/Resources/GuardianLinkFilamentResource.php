@@ -153,7 +153,7 @@ final class GuardianLinkFilamentResource extends Resource
                 Action::make('set_primary')
                     ->label(__('guardians::admin.actions.set_primary'))
                     ->icon('heroicon-o-star')
-                    ->color('warning')
+                    ->color('primary')
                     ->visible(fn (GuardianLink $record): bool => !$record->is_primary
                         && (auth()->user()?->can('setPrimary', $record) ?? false))
                     ->schema([self::reasonField()])

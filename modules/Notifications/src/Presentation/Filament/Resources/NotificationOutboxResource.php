@@ -356,7 +356,7 @@ final class NotificationOutboxResource extends Resource
         return Action::make('manual_retry')
             ->label(__('notifications::actions.manual_retry'))
             ->icon('heroicon-m-arrow-path')
-            ->color('warning')
+            ->color('primary')
             ->requiresConfirmation()
             ->modalHeading(__('notifications::actions.manual_retry_heading'))
             ->modalDescription(__('notifications::actions.manual_retry_description'))

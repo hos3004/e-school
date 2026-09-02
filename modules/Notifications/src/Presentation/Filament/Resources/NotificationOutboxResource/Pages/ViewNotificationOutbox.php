@@ -35,7 +35,7 @@ final class ViewNotificationOutbox extends ViewRecord
             Action::make('retry')
                 ->label(__('notifications::actions.manual_retry'))
                 ->icon('heroicon-m-arrow-path')
-                ->color('warning')
+                ->color('primary')
                 ->requiresConfirmation()
                 ->authorize('retry')
                 ->visible(fn (NotificationOutbox $record): bool => $record->status === OutboxStatus::Failed)

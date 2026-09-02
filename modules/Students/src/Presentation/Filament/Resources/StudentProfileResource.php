@@ -284,7 +284,7 @@ final class StudentProfileResource extends Resource
         return Action::make('place_student')
             ->label(__('students::admin.placement.action'))
             ->icon('heroicon-o-user-plus')
-            ->color('info')
+            ->color('primary')
             ->authorize(fn (): bool => self::canPlaceStudent())
             ->visible(fn (StudentProfile $record): bool => $record->registrationApplication?->status === RegistrationStatus::WaitingAssignment)
             ->form([

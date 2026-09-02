@@ -73,7 +73,7 @@ final class PlatformOverview extends StatsOverviewWidget
         return Stat::make(__('dashboard.stats.teachers.label'), (string) $total)
             ->description(__('dashboard.stats.teachers.description'))
             ->descriptionIcon('heroicon-m-user-group')
-            ->color('info')
+            ->color('primary')
             ->url('/admin/staff-profiles');
     }
 
@@ -87,7 +87,7 @@ final class PlatformOverview extends StatsOverviewWidget
         return Stat::make(__('dashboard.stats.programs.label'), (string) $total)
             ->description(__('dashboard.stats.programs.description'))
             ->descriptionIcon('heroicon-m-academic-cap')
-            ->color('success')
+            ->color('primary')
             ->url('/admin/program-filaments');
     }
 
@@ -107,7 +107,7 @@ final class PlatformOverview extends StatsOverviewWidget
                 'upcoming' => $upcoming,
             ]))
             ->descriptionIcon('heroicon-m-calendar-days')
-            ->color('info')
+            ->color('primary')
             ->url('/admin/sessions');
     }
 

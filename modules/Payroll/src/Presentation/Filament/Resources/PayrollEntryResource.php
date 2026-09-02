@@ -171,7 +171,7 @@ final class PayrollEntryResource extends Resource
         return Action::make('release_deferred')
             ->label(__('payroll::filament.release_deferred'))
             ->icon('heroicon-m-lock-open')
-            ->color('success')
+            ->color('primary')
             ->authorize('release')
             ->visible(fn (PayrollEntry $record): bool => $record->status === PayrollEntryStatus::Deferred
                 && $record->deferred_until_session_id !== null)

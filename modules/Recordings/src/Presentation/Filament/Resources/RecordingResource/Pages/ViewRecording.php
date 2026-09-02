@@ -45,7 +45,7 @@ final class ViewRecording extends ViewRecord
             Action::make('watch')
                 ->label(__('recordings::actions.watch'))
                 ->icon('heroicon-m-play')
-                ->color('success')
+                ->color('primary')
                 ->authorize('watch')
                 ->visible(fn (): bool => $this->recording()->status === RecordingStatus::Ready)
                 ->url(fn (): string => URL::temporarySignedRoute(
@@ -279,7 +279,7 @@ final class ViewRecording extends ViewRecord
         return Action::make('revoke_access')
             ->label(__('recordings::actions.revoke_access'))
             ->icon('heroicon-m-key')
-            ->color('warning')
+            ->color('primary')
             ->authorize(fn (): bool => (bool) (auth()->user()?->can('recording.grant') ?? false))
             ->visible(fn (): bool => collect($this->hub('grants'))->contains('status_value', 'active'))
             ->schema([

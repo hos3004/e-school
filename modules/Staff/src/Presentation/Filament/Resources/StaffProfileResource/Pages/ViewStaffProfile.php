@@ -293,7 +293,7 @@ final class ViewStaffProfile extends ViewRecord
         return Action::make('change_account_status')
             ->label(__('staff::admin.hub.change_status'))
             ->icon('heroicon-o-lock-closed')
-            ->color('warning')
+            ->color('primary')
             ->visible(fn (): bool => (bool) auth()->user()?->can('identity.users.change_status'))
             ->schema([
                 Select::make('status')
@@ -327,7 +327,7 @@ final class ViewStaffProfile extends ViewRecord
         return Action::make('assign_qualifications')
             ->label(__('staff::admin.qualifications.assign_action'))
             ->icon('heroicon-o-academic-cap')
-            ->color('success')
+            ->color('primary')
             ->visible(fn (): bool => (bool) auth()->user()?->can('staff.contract.update'))
             ->schema([
                 Select::make('course_ids')
@@ -403,7 +403,7 @@ final class ViewStaffProfile extends ViewRecord
         return Action::make('new_contract')
             ->label(__('staff::admin.contracts.new_action'))
             ->icon('heroicon-o-document-plus')
-            ->color('success')
+            ->color('primary')
             ->visible(fn (): bool => (bool) auth()->user()?->can('staff.contract.update'))
             ->schema([
                 Select::make('basis')
@@ -481,7 +481,7 @@ final class ViewStaffProfile extends ViewRecord
         return Action::make('new_rate')
             ->label(__('staff::admin.contracts.new_rate_action'))
             ->icon('heroicon-o-currency-dollar')
-            ->color('success')
+            ->color('primary')
             ->visible(fn (): bool => (bool) auth()->user()?->can('staff.contract.update'))
             ->schema([
                 Select::make('contract_id')
@@ -597,7 +597,7 @@ final class ViewStaffProfile extends ViewRecord
         return Action::make('assign_group')
             ->label(__('staff::admin.groups.assign_action'))
             ->icon('heroicon-o-user-group')
-            ->color('success')
+            ->color('primary')
             ->visible(fn (): bool => (bool) auth()->user()?->can('group.manage'))
             ->schema([
                 Select::make('program_id')
@@ -732,7 +732,7 @@ final class ViewStaffProfile extends ViewRecord
         return Action::make('add_availability')
             ->label(__('staff::admin.availability.add_action'))
             ->icon('heroicon-o-clock')
-            ->color('success')
+            ->color('primary')
             ->visible(fn (): bool => (bool) auth()->user()?->can('staff.availability.approve'))
             ->schema([
                 Select::make('weekday')
@@ -833,7 +833,7 @@ final class ViewStaffProfile extends ViewRecord
         return Action::make('decide_availability')
             ->label(__('staff::admin.availability.decision_action'))
             ->icon('heroicon-o-check-badge')
-            ->color('warning')
+            ->color('primary')
             ->visible(fn (): bool => $this->pendingAvailabilityOptions() !== []
                 && (auth()->user()?->can('staff.availability.approve') ?? false))
             ->schema([

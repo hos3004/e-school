@@ -239,7 +239,7 @@ final class RoleResource extends Resource
         return Action::make('revoke_user')
             ->label(__('accesscontrol::filament.role.actions.revoke_user'))
             ->icon('heroicon-m-user-minus')
-            ->color('warning')
+            ->color('primary')
             ->visible(fn (Role $record): bool => auth()->user()?->can('revoke', $record) === true)
             ->schema([
                 Select::make('user_id')

@@ -47,7 +47,7 @@ final class BulkPlacementAction
         return BulkAction::make('assignToGroup')
             ->label(__('students::admin.bulk_placement.action'))
             ->icon('heroicon-m-user-group')
-            ->color('info')
+            ->color('primary')
             ->modalHeading(__('students::admin.bulk_placement.heading'))
             ->modalSubmitActionLabel(__('students::admin.bulk_placement.confirm'))
             ->modalWidth('4xl')

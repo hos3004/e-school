@@ -178,7 +178,7 @@ final class ViolationEventFilamentResource extends Resource
         return Action::make('waive')
             ->label(__('discipline::filament.violations.waive'))
             ->icon('heroicon-m-hand-raised')
-            ->color('warning')
+            ->color('primary')
             ->authorize('waive')
             ->form([
                 Textarea::make('reason')

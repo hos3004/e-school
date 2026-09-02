@@ -228,7 +228,7 @@ final class ViewStudentProfile extends ViewRecord
         return Action::make('change_account_status')
             ->label(__('students::admin.hub.change_status'))
             ->icon('heroicon-o-lock-closed')
-            ->color('warning')
+            ->color('primary')
             ->visible(fn (): bool => (bool) auth()->user()?->can('identity.users.change_status'))
             ->schema([
                 Select::make('status')
@@ -262,7 +262,7 @@ final class ViewStudentProfile extends ViewRecord
         return Action::make('link_guardian')
             ->label(__('students::admin.guardians.link_action'))
             ->icon('heroicon-o-heart')
-            ->color('success')
+            ->color('primary')
             ->visible(fn (): bool => (bool) auth()->user()?->can('guardian.link'))
             ->schema([
                 Select::make('guardian_profile_id')

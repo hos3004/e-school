@@ -149,7 +149,7 @@ final class AttendanceFilamentResource extends Resource
         return Action::make('confirm')
             ->label(__('attendance::filament.actions.confirm'))
             ->icon('heroicon-m-check-badge')
-            ->color('success')
+            ->color('primary')
             ->authorize('confirm')
             ->visible(fn (Attendance $record): bool => !$record->isConfirmed())
             ->requiresConfirmation()
@@ -178,7 +178,7 @@ final class AttendanceFilamentResource extends Resource
         return Action::make('override')
             ->label(__('attendance::filament.actions.override'))
             ->icon('heroicon-m-pencil-square')
-            ->color('warning')
+            ->color('primary')
             ->authorize('override')
             ->schema([
                 Select::make('status')

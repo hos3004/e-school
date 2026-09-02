@@ -178,7 +178,7 @@ final class IntegrationWebhookDeliveryResource extends Resource
         return Action::make('requeue')
             ->label(__('integrations::fields.requeue'))
             ->icon('heroicon-m-arrow-path')
-            ->color('warning')
+            ->color('primary')
             ->authorize('requeue')
             ->requiresConfirmation()
             // الإجراء نفسه يرفض غير الميت؛ إخفاء الزر يمنع محاولةً مآلها خطأ.

@@ -480,7 +480,7 @@ final class RegistrationApplicationResource extends Resource
     {
         return Action::make('accept')
             ->label(__('students::registration.actions.accept'))
-            ->color('success')
+            ->color('primary')
             ->requiresConfirmation()
             ->form([
                 Textarea::make('reason')
@@ -543,7 +543,7 @@ final class RegistrationApplicationResource extends Resource
     {
         return Action::make('assign')
             ->label(__('students::admin.placement.action'))
-            ->color('info')
+            ->color('primary')
             ->icon('heroicon-m-user-group')
             ->visible(fn (RegistrationApplication $record): bool => in_array($record->status, [
                 RegistrationStatus::WaitingAssignment,

@@ -93,7 +93,7 @@ final class SubmissionsRelationManager extends RelationManager
         return Action::make('grade')
             ->label(__('assignments::filament.actions.grade'))
             ->icon('heroicon-o-check-badge')
-            ->color('success')
+            ->color('primary')
             ->visible(fn (AssignmentSubmission $record): bool => in_array($record->status, [
                 AssignmentSubmissionStatus::Submitted,
                 AssignmentSubmissionStatus::Late,

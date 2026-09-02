@@ -134,7 +134,7 @@ final class ViewGroup extends ViewRecord
         return Action::make('place_student')
             ->label(__('groups::filament.actions.place_student'))
             ->icon('heroicon-o-user-plus')
-            ->color('info')
+            ->color('primary')
             ->visible(fn (): bool => $this->group()->status === GroupStatus::Active
                 && auth()->user()->can('enrollStudent', $this->group()) === true
                 && auth()->user()->can('enrollment.create') === true)

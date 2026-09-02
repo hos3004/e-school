@@ -73,7 +73,7 @@ final class ViewSchedule extends ViewRecord
             Action::make('activate')
                 ->label(__('scheduling::filament.schedule.actions.activate'))
                 ->icon('heroicon-o-play')
-                ->color('success')
+                ->color('primary')
                 ->visible(fn (): bool => !$this->schedule()->is_active
                     && auth()->user()?->can('activate', $this->schedule()) === true)
                 ->requiresConfirmation()

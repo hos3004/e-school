@@ -31,7 +31,7 @@ final class ViewPostponementRequest extends ViewRecord
             Action::make('approve')
                 ->label(__('scheduling::filament.postponement.approve'))
                 ->icon('heroicon-m-check')
-                ->color('success')
+                ->color('primary')
                 ->authorize('approve')
                 ->visible(fn (PostponementRequest $record): bool => $record->status->canTransitionTo(PostponementStatus::Scheduled))
                 ->form([
@@ -58,7 +58,7 @@ final class ViewPostponementRequest extends ViewRecord
             Action::make('propose_alternative')
                 ->label(__('scheduling::filament.postponement.propose_alternative'))
                 ->icon('heroicon-m-arrows-right-left')
-                ->color('info')
+                ->color('primary')
                 ->authorize('approve')
                 ->visible(fn (PostponementRequest $record): bool => $record->status === PostponementStatus::Requested
                     && !$record->requires_admin_review)

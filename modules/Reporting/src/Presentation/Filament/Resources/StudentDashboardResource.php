@@ -197,7 +197,7 @@ final class StudentDashboardResource extends Resource
         return Action::make('correct')
             ->label(__('reporting::fields.correct'))
             ->icon('heroicon-m-wrench-screwdriver')
-            ->color('warning')
+            ->color('primary')
             ->authorize('correct')
             ->form([
                 Select::make('column')

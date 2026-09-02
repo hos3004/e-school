@@ -44,7 +44,7 @@ final class ViewUser extends ViewRecord
             Action::make('change_status')
                 ->label(__('identity::admin.change_status'))
                 ->icon('heroicon-o-no-symbol')
-                ->color('warning')
+                ->color('primary')
                 ->visible(fn (): bool => $this->userRecord()->getKey() !== auth()->id()
                     && (auth()->user()?->can('changeStatus', $this->userRecord()) ?? false))
                 ->schema([

@@ -162,7 +162,7 @@ final class BadgeFilamentResource extends Resource
         return Action::make('award')
             ->label(__('certificates::navigation.badge.award'))
             ->icon('heroicon-m-gift')
-            ->color('success')
+            ->color('primary')
             /*
              * الصلاحية تُفحص صراحةً على `BadgeAward` لا عبر `authorize()`:
              * الأخيرة تمرّر سجل الصف (شارة) إلى السياسة، والصلاحية المطلوبة

@@ -140,7 +140,7 @@ final class ViewEnrollment extends ViewRecord
         return Action::make('place')
             ->label(__('enrollments::filament.actions.place'))
             ->icon('heroicon-o-user-plus')
-            ->color('success')
+            ->color('primary')
             ->visible(fn (): bool => $this->enrollment()->status === EnrollmentStatus::Approved
                 && (auth()->user()?->can('enrollment.create') ?? false))
             ->schema([
@@ -247,7 +247,7 @@ final class ViewEnrollment extends ViewRecord
         return Action::make('pause')
             ->label(__('enrollments::filament.actions.pause'))
             ->icon('heroicon-o-pause')
-            ->color('warning')
+            ->color('primary')
             ->visible(fn (): bool => $this->enrollment()->status === EnrollmentStatus::Active
                 && (auth()->user()?->can('pause', $this->enrollment()) ?? false))
             ->schema([
@@ -323,7 +323,7 @@ final class ViewEnrollment extends ViewRecord
         return Action::make('reactivate')
             ->label(__('enrollments::filament.actions.reactivate'))
             ->icon('heroicon-o-lock-open')
-            ->color('success')
+            ->color('primary')
             ->visible(fn (): bool => $this->enrollment()->status === EnrollmentStatus::UnderAssessment
                 && (auth()->user()?->can('reactivate', $this->enrollment()) ?? false))
             ->requiresConfirmation()

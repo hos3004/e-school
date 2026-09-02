@@ -229,7 +229,7 @@ final class SessionResource extends Resource
         return Action::make('assign_substitute')
             ->label(__('sessions::actions.assign_substitute'))
             ->icon('heroicon-m-user-plus')
-            ->color('warning')
+            ->color('primary')
             ->authorize('assignSubstitute')
             ->modalHeading(__('sessions::actions.assign_substitute_heading'))
             ->modalDescription(__('sessions::actions.assign_substitute_description'))
