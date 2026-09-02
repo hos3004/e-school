@@ -103,4 +103,14 @@ final class ClassWallPostResource extends Resource
             ])
             ->defaultSort('created_at', 'desc');
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => ClassWallPostResource\Pages\ListClassWallPosts::route('/'),
+        ];
+    }
 }

@@ -142,4 +142,14 @@ final class ConversationResource extends Resource
             ])
             ->defaultSort('last_message_at', 'desc');
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => ConversationResource\Pages\ListConversations::route('/'),
+        ];
+    }
 }

@@ -96,4 +96,14 @@ final class ReportEventLogResource extends Resource
             ])
             ->defaultSort('created_at', direction: 'desc');
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => ReportEventLogResource\Pages\ListReportEventLogs::route('/'),
+        ];
+    }
 }

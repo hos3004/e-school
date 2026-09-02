@@ -164,4 +164,14 @@ final class AssessmentAttemptResource extends Resource
             ])
             ->defaultSort('started_at', direction: 'desc');
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => AssessmentAttemptResource\Pages\ListAssessmentAttempts::route('/'),
+        ];
+    }
 }

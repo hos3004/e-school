@@ -129,4 +129,14 @@ final class WhatsappInboundResource extends Resource
             ])
             ->defaultSort('received_at', 'desc');
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => WhatsappInboundResource\Pages\ListWhatsappInbounds::route('/'),
+        ];
+    }
 }

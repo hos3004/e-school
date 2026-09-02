@@ -10,6 +10,9 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+// كان هذا الاستيراد ناقصًا فترمي table() خطأ «Class TextColumn not found».
+// لم يظهر العطب قط لأن المورد كان بلا صفحة فهرس، فلم تُنفَّذ الدالة أبدًا.
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Modules\Certificates\Domain\Models\BadgeAward;
 use Shared\Concerns\ScopesFilamentToOrganization;
@@ -100,5 +103,15 @@ final class BadgeAwardFilamentResource extends Resource
                     ->sortable(),
             ])
             ->defaultSort('awarded_at', direction: 'desc');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => BadgeAwardFilamentResource\Pages\ListBadgeAwards::route('/'),
+        ];
     }
 }

@@ -139,4 +139,14 @@ final class IntegrationConnectionResource extends Resource
             ])
             ->defaultSort('created_at', 'desc');
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => IntegrationConnectionResource\Pages\ListIntegrationConnections::route('/'),
+        ];
+    }
 }

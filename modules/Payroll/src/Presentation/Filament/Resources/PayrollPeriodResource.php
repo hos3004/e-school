@@ -157,4 +157,14 @@ final class PayrollPeriodResource extends Resource
                     ->action(fn () => null),
             ]);
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => PayrollPeriodResource\Pages\ListPayrollPeriods::route('/'),
+        ];
+    }
 }

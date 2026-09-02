@@ -33,4 +33,6 @@ return [
     'handled_by' => 'Handled by',
     'handled_at' => 'Handled at',
     'is_handled' => 'Handled',
+    'flag' => 'Flag for review',
+    'flagged_notice' => 'Message flagged for review.',
 ];

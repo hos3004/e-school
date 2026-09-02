@@ -113,4 +113,14 @@ final class IntegrationProviderResource extends Resource
             ])
             ->defaultSort('key');
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => IntegrationProviderResource\Pages\ListIntegrationProviders::route('/'),
+        ];
+    }
 }

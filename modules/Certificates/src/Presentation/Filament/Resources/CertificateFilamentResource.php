@@ -127,4 +127,14 @@ final class CertificateFilamentResource extends Resource
             ])
             ->defaultSort('issued_at', direction: 'desc');
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => CertificateFilamentResource\Pages\ListCertificates::route('/'),
+        ];
+    }
 }

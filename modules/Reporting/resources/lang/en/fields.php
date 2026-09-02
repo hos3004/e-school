@@ -47,4 +47,6 @@ return [
     'value' => 'New value',
     'reason' => 'Correction reason',
 
+    'capture_snapshot' => 'Capture snapshot now',
+    'snapshot_captured' => 'Organization snapshot captured.',
 ];

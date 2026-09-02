@@ -47,4 +47,6 @@ return [
     'value' => 'القيمة الجديدة',
     'reason' => 'سبب التصحيح',
 
+    'capture_snapshot' => 'التقاط لقطة الآن',
+    'snapshot_captured' => 'التُقطت اللقطة التنظيمية.',
 ];

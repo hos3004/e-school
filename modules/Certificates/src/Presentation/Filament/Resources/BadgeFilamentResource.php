@@ -141,4 +141,14 @@ final class BadgeFilamentResource extends Resource
             ])
             ->defaultSort('code');
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => BadgeFilamentResource\Pages\ListBadges::route('/'),
+        ];
+    }
 }

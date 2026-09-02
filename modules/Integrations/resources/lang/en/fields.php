@@ -40,4 +40,6 @@ return [
     'next_retry_at' => 'Next retry at',
     'delivered_at' => 'Delivered at',
 
+    'requeue' => 'Requeue delivery',
+    'requeued' => 'Delivery requeued; it will be retried shortly.',
 ];

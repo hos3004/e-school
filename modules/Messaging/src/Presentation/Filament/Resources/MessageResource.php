@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace Modules\Messaging\Presentation\Filament\Resources;
 
+use Filament\Actions\Action;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Modules\Messaging\Application\Actions\FlagMessageAction;
 use Modules\Messaging\Domain\Models\Message;
 use Shared\Concerns\ScopesFilamentToOrganization;
 use Shared\Filament\RecordOriginGuide;
@@ -112,6 +115,52 @@ final class MessageResource extends Resource
                 TernaryFilter::make('is_flagged')
                     ->label(__('messaging::fields.is_flagged')),
             ])
+            ->recordActions([self::flagAction()])
             ->defaultSort('created_at', 'desc');
+    }
+
+    /**
+     * تعليم رسالة للمراجعة — أداة الإشراف الوحيدة على محتوى المحادثات.
+     *
+     * `FlagMessageAction` وسياسة `flag` كانتا موجودتين بلا زر، فكان عمود
+     * «معلَّمة» في هذا الجدول يعرض حالةً لا سبيل لأحد أن يصنعها من اللوحة.
+     */
+    public static function flagAction(): Action
+    {
+        return Action::make('flag')
+            ->label(__('messaging::fields.flag'))
+            ->icon('heroicon-m-flag')
+            ->color('danger')
+            ->authorize('flag')
+            ->visible(fn (Message $record): bool => !$record->is_flagged)
+            ->form([
+                Textarea::make('reason')
+                    ->label(__('messaging::fields.flagged_reason'))
+                    ->required()
+                    ->minLength(3)
+                    ->maxLength(1000),
+            ])
+            ->action(function (Message $record, array $data): void {
+                app(FlagMessageAction::class)->execute(
+                    $record,
+                    (string) auth()->id(),
+                    (string) $data['reason'],
+                );
+
+                Notification::make()
+                    ->title(__('messaging::fields.flagged_notice'))
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => MessageResource\Pages\ListMessages::route('/'),
+        ];
     }
 }

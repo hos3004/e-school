@@ -140,4 +140,14 @@ final class NotificationPreferenceResource extends Resource
 
         return array_combine($categories, $categories) ?: [];
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => NotificationPreferenceResource\Pages\ListNotificationPreferences::route('/'),
+        ];
+    }
 }

@@ -125,4 +125,14 @@ final class CertificateTemplateFilamentResource extends Resource
             ])
             ->defaultSort('created_at', direction: 'desc');
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => CertificateTemplateFilamentResource\Pages\ListCertificateTemplates::route('/'),
+        ];
+    }
 }
