@@ -80,7 +80,7 @@ final class TeacherSessionController extends Controller
             'attendance' => $this->data->teacherAttendance($id, $organizationId),
             'attendanceStatuses' => $this->data->attendanceStatuses(),
             'statusColors' => $this->data->statusColors(),
-            'attendanceUpdateUrl' => route('sessions.attendance', ['session' => $id]),
+            'attendanceUpdateUrl' => route('portal.teacher.sessions.attendance.store', ['session' => $id]),
             'reportSubmitUrl' => route('portal.teacher.sessions.report.store', ['session' => $id]),
             'initialReport' => $this->data->teacherInitialReport(
                 $id,

@@ -214,7 +214,7 @@ export default function TeacherSessionShow({
 
   const submitAttendance = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    attendanceForm.put(attendanceUpdateUrl, {
+    attendanceForm.post(attendanceUpdateUrl, {
       preserveScroll: true,
     });
   };

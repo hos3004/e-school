@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 return [
     'participant_not_active' => 'The participant does not belong to this organization or their session invitation is no longer active.',
+    'sheet_no_participants' => 'This session has no invited students, so there is no attendance sheet to save.',
+    'sheet_participant_outside_session' => 'One of the students on the sheet is not a participant in this session.',
     'participant_required' => 'The session participant identifier is required to record attendance.',
     'already_recorded' => 'Attendance for this participant was already recorded — each participant has exactly one attendance record.',
     'already_confirmed' => 'This attendance record is already confirmed and cannot be confirmed again.',

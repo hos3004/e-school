@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 return [
     'participant_not_active' => 'المشارك غير موجود في هذه المؤسسة أو أن دعوته للحصة أُلغيت.',
+    'sheet_no_participants' => 'لا يوجد طلاب مدعوّون لهذه الحصة، فلا كشف حضور يُحفظ.',
+    'sheet_participant_outside_session' => 'أحد الطلاب في الكشف ليس من مشاركي هذه الحصة.',
     'participant_required' => 'معرّف مشاركة الحصة مطلوب لرصد الحضور.',
     'already_recorded' => 'سبق رصد حضور هذه المشاركة — لكل مشاركة قيد حضور واحد.',
     'already_confirmed' => 'هذا الحضور معتمد بالفعل ولا يمكن اعتماده مرة أخرى.',

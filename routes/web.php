@@ -24,6 +24,7 @@ use App\Http\Controllers\Portal\StudentProgramsController;
 use App\Http\Controllers\Portal\StudentReportsController;
 use App\Http\Controllers\Portal\StudentScheduleController;
 use App\Http\Controllers\Portal\StudentSessionController;
+use App\Http\Controllers\Portal\TeacherAttendanceController;
 use App\Http\Controllers\Portal\TeacherAvailabilityController;
 use App\Http\Controllers\Portal\TeacherAvailabilityWriteController;
 use App\Http\Controllers\Portal\TeacherDashboardController;
@@ -177,6 +178,10 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::delete('/teacher/availability/{availability}', [TeacherAvailabilityWriteController::class, 'destroy'])
         ->whereUlid('availability')
         ->name('portal.teacher.availability.destroy');
+    Route::post('/teacher/sessions/{session}/attendance', TeacherAttendanceController::class)
+        ->whereUlid('session')
+        ->middleware('can:attendance.record')
+        ->name('portal.teacher.sessions.attendance.store');
     Route::post('/teacher/sessions/{session}/report', TeacherSessionReportController::class)
         ->whereUlid('session')
         ->name('portal.teacher.sessions.report.store');

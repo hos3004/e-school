@@ -14,5 +14,7 @@ return [
     'system_actor' => 'النظام',
     'not_available' => 'غير متاح',
     'demo_override_reason' => 'تصحيح إداري للحالة بعد مراجعة تسجيل الفصل.',
+    'sheet_recorded' => 'رصد ضمن كشف حضور الحصة.',
+    'sheet_saved' => 'حُفظ كشف الحضور.',
     'seeder_no_participants' => 'لا توجد مشاركات حصص بعد — شغّل بذر Sessions أولًا لتوليد قيود حضور تجريبية.',
 ];
