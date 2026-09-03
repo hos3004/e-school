@@ -935,6 +935,16 @@ final class TeleCourseDemoSeeder extends Seeder
             /** @var Session $session */
             $session = $item['session'];
 
+            /*
+             * أحدث حصتين في كل مجموعة تبقيان بلا تقرير عمدًا: مدرسة حقيقية فيها
+             * تقارير متأخرة، والأهم أن `SubmitSessionReportAction` ترفض تقريرًا
+             * ثانيًا لنفس الحصة — فلو كُتبت كلها لما بقيت حصة واحدة يجرّب عليها
+             * العميل كتابة التقرير.
+             */
+            if ((int) $item['index'] >= self::PAST_WEEKS * 2 - 1) {
+                continue;
+            }
+
             if (DB::table('session_reports')->where('session_id', $session->getKey())->exists()) {
                 continue;
             }

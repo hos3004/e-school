@@ -37,6 +37,8 @@ return [
     'postponement.proposed_start' => 'Proposed time',
     'postponement.reason' => 'Request reason',
     'postponement.submit' => 'Send postponement request',
+    'teacher.sessions.show.report.blocked_not_held' => 'The report is written after the session ends and is approved. This session has not been held yet.',
+    'teacher.sessions.show.report.blocked_no_students' => 'No students are enrolled in this session, so there is nothing to evaluate.',
     'teacher.sessions.show.report.submitted' => 'This session report has been submitted.',
     'navigation.primary' => 'Primary navigation',
     'navigation.reports' => 'Reports',

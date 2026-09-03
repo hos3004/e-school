@@ -37,6 +37,8 @@ return [
     'postponement.proposed_start' => 'الموعد المقترح',
     'postponement.reason' => 'سبب الطلب',
     'postponement.submit' => 'إرسال طلب التأجيل',
+    'teacher.sessions.show.report.blocked_not_held' => 'التقرير يُكتب بعد انتهاء الحصة واعتمادها. هذه الحصة لم تُعقد بعد.',
+    'teacher.sessions.show.report.blocked_no_students' => 'لا يوجد طلاب مسجَّلون في هذه الحصة، فلا تقييم يُكتب.',
     'teacher.sessions.show.report.submitted' => 'تم إرسال تقرير هذه الحصة.',
     'navigation.primary' => 'التنقل الرئيسي',
     'navigation.reports' => 'التقارير',

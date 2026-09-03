@@ -777,6 +777,14 @@ export default function TeacherSessionShow({
                     />
                   </div>
 
+                  {!canSubmitReport || attendance.length === 0 ? (
+                    <p className="text-sm text-[var(--ink-muted)]">
+                      {attendance.length === 0
+                        ? t("teacher.sessions.show.report.blocked_no_students")
+                        : t("teacher.sessions.show.report.blocked_not_held")}
+                    </p>
+                  ) : null}
+
                   <div className="flex justify-end">
                     <Button
                       className="w-full sm:w-auto"
