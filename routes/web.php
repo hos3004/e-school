@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\PublicStudentRegistrationController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MarketingPageController;
 use App\Http\Controllers\Portal\ClassroomJoinController;
 use App\Http\Controllers\Portal\GuardianAttendanceController;
 use App\Http\Controllers\Portal\GuardianChildController;
@@ -39,6 +40,19 @@ use App\Http\Controllers\UpdateLocaleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+
+// الواجهة العامة. لا مصادقة ولا كتابة — صفحات عرض فقط.
+Route::controller(MarketingPageController::class)->group(function (): void {
+    Route::get('/about', 'about')->name('marketing.about');
+    Route::get('/programs', 'programs')->name('marketing.programs');
+    Route::get('/programs/{program}', 'program')->name('marketing.programs.show');
+    Route::get('/projects', 'projects')->name('marketing.projects');
+    Route::get('/activities', 'activities')->name('marketing.activities');
+    Route::get('/faq', 'faq')->name('marketing.faq');
+    Route::get('/contact', 'contact')->name('marketing.contact');
+    Route::get('/privacy', 'privacy')->name('marketing.privacy');
+    Route::get('/terms', 'terms')->name('marketing.terms');
+});
 
 Route::get('/register/student', [PublicStudentRegistrationController::class, 'showForm'])->name('register.student');
 Route::post('/register/student', [PublicStudentRegistrationController::class, 'store'])

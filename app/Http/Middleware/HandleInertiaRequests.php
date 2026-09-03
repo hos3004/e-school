@@ -78,9 +78,23 @@ final class HandleInertiaRequests extends Middleware
             return [];
         }
 
+        $translations = Arr::dot($lines);
+        $marketing = Lang::get('marketing', [], $locale);
+
+        if (!is_array($marketing)) {
+            $marketing = Lang::get('marketing', [], (string) config('app.fallback_locale', 'en'));
+        }
+
+        if (is_array($marketing)) {
+            $translations = [
+                ...$translations,
+                ...Arr::dot(['marketing' => $marketing]),
+            ];
+        }
+
         return array_map(
             static fn (mixed $value): string => (string) $value,
-            Arr::dot($lines),
+            $translations,
         );
     }
 }

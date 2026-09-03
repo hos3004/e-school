@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -19,7 +20,7 @@ final class HomeController extends Controller
         $user = $request->user();
 
         if ($user === null) {
-            return redirect()->route('login');
+            return Inertia::render('Marketing/Home')->toResponse($request);
         }
 
         $userId = (string) $user->getAuthIdentifier();

@@ -11,9 +11,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 use Shared\Module\ModuleRegistry;
 use Shared\Support\BusinessRuleViolation;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -41,6 +43,21 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReport(BusinessRuleViolation::class);
+
+        /*
+         * صفحة 404 العامة تخدم الزائر. لوحة Filament ومسارات JSON لها
+         * معالجتها الخاصة، ولا تمرّ عبر HandleInertiaRequests، فلو رُدَّت
+         * صفحة Inertia هناك لظهرت مفاتيح الترجمة خامًا بدل النص.
+         */
+        $exceptions->render(function (NotFoundHttpException $exception, Request $request): ?Response {
+            if ($request->expectsJson() || $request->is('admin/*', 'admin', 'api/*')) {
+                return null;
+            }
+
+            return Inertia::render('Errors/404')
+                ->toResponse($request)
+                ->setStatusCode(Response::HTTP_NOT_FOUND);
+        });
 
         $exceptions->render(function (BusinessRuleViolation $violation, Request $request): JsonResponse|RedirectResponse {
             $correlationId = (string) ($request->header('X-Correlation-Id') ?: Str::ulid());
