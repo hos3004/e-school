@@ -54,7 +54,10 @@ final readonly class ScheduleDefinitionValidator
         }
 
         $duration = (int) ($data['duration_minutes'] ?? 0);
-        if (!in_array($duration, (array) config('scheduling.session_durations', []), true)) {
+        $allowedDurations = $studentId !== null
+            ? (array) config('scheduling.individual_session_durations', [])
+            : (array) config('scheduling.session_durations', []);
+        if (!in_array($duration, $allowedDurations, true)) {
             throw BusinessRuleViolation::make('scheduling.duration_invalid', 'scheduling::errors.duration_invalid');
         }
 

@@ -9,6 +9,7 @@ import Card, {
 import EmptyState from '@/Components/EmptyState';
 import ErrorState from '@/Components/ErrorState';
 import LoadingState from '@/Components/LoadingState';
+import SessionEmailPreference from '@/Components/SessionEmailPreference';
 import AppLayout from '@/Layouts/AppLayout';
 import {
     formatDateTime,
@@ -386,6 +387,9 @@ export default function Profile({
                             </div>
                         </form>
                     </Card>
+                    <div className='xl:col-start-2'>
+                        <SessionEmailPreference />
+                    </div>
                 </div>
             )}
         </AppLayout>

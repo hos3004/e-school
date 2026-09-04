@@ -8,6 +8,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Scheduling\Application\Services\ScheduleDefinitionValidator;
 use Modules\Scheduling\Application\Services\ScheduleMaterializer;
+use Modules\Scheduling\Application\Services\ScheduleNotificationPayloadFactory;
 use Modules\Scheduling\Domain\Events\ScheduleCreated;
 use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Scheduling\Domain\ValueObjects\WeeklyRecurrence;
@@ -22,6 +23,7 @@ final readonly class CreateScheduleAction
         private AuditRecorder $audit,
         private ScheduleDefinitionValidator $validator,
         private ScheduleMaterializer $materializer,
+        private ScheduleNotificationPayloadFactory $notificationPayload,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -77,10 +79,7 @@ final readonly class CreateScheduleAction
         });
 
         $this->events->dispatch(new ScheduleCreated(
-            scheduleId: (string) $result['schedule']->getKey(),
-            staffProfileId: (string) $result['schedule']->staff_profile_id,
-            courseId: (string) $result['schedule']->course_id,
-            rrule: (string) $result['schedule']->rrule,
+            ...$this->notificationPayload->forSchedule($result['schedule']),
             actorId: $actorId,
         ));
 

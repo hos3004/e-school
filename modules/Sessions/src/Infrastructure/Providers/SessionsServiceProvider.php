@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Infrastructure\Providers;
 
+use Modules\Sessions\Application\Console\DispatchSessionReminders;
 use Modules\Sessions\Application\Policies\SessionParticipantPolicy;
 use Modules\Sessions\Application\Policies\SessionPolicy;
 use Modules\Sessions\Application\Policies\SessionStatusHistoryPolicy;
@@ -58,5 +59,12 @@ final class SessionsServiceProvider extends BaseModuleServiceProvider
             SessionParticipant::class => SessionParticipantPolicy::class,
             SessionStatusHistory::class => SessionStatusHistoryPolicy::class,
         ];
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->commands([DispatchSessionReminders::class]);
     }
 }

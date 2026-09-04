@@ -13,4 +13,6 @@ return [
     'attendance_leave' => 'تسجيل مغادرة المشارك واحتساب مدة الحضور.',
     'apology_approved_reason' => 'اعتماد اعتذار المعلم وفتح مسار البحث عن بديل.',
     'apology_decided' => 'تم تسجيل القرار في اعتذار المعلم.',
+    'reminders_dispatched' => 'تم تجهيز تذكيرات :count حصة للإرسال.',
+    'reminders_dispatched_manually' => 'تم تشغيل مهمة تذكيرات الحصص بنجاح.',
 ];

@@ -19,6 +19,7 @@ return [
     'assignment_update' => 'تحديث الواجب',
     'session_changed' => 'تغيير في الحصة',
     'session_reminder' => 'تذكير بالحصة',
+    'schedule_summary' => 'ملخص الجدول الدراسي',
     'classroom_invitation' => 'دعوة الفصل الافتراضي',
     'session_report' => 'تقرير الحصة',
     'discipline_notice' => 'تنبيه الانضباط',

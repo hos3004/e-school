@@ -29,6 +29,7 @@ use Shared\Concerns\HasUlid;
  * @property SessionStatus $status
  * @property CarbonImmutable $scheduled_start
  * @property CarbonImmutable $scheduled_end
+ * @property CarbonImmutable|null $reminder_sent_at
  * @property CarbonImmutable|null $actual_start
  * @property CarbonImmutable|null $actual_end
  * @property array<string, mixed> $title
@@ -65,6 +66,7 @@ final class Session extends Model
         'status',
         'scheduled_start',
         'scheduled_end',
+        'reminder_sent_at',
         'actual_start',
         'actual_end',
         'title',
@@ -82,6 +84,7 @@ final class Session extends Model
             'status' => SessionStatus::class,
             'scheduled_start' => 'immutable_datetime',
             'scheduled_end' => 'immutable_datetime',
+            'reminder_sent_at' => 'immutable_datetime',
             'actual_start' => 'immutable_datetime',
             'actual_end' => 'immutable_datetime',
             'title' => 'array',

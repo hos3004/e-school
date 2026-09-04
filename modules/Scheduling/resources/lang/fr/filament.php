@@ -22,7 +22,19 @@ return [
     'schedule' => [
         'navigation' => 'Modèles de planning', 'label' => 'Modèle de planning', 'plural' => 'Modèles de planning',
         'sections' => ['target' => 'Parcours et cible', 'recurrence' => 'Récurrence et horaire', 'governance' => 'Traçabilité', 'overview' => 'Résumé du planning'],
-        'targets' => ['group' => 'Groupe', 'student' => 'Étudiant individuel'],
+        'targets' => ['group' => 'Placement collectif', 'student' => 'Placement individuel (un étudiant)'],
+        'availability' => [
+            'title' => 'Résumé des horaires de l’enseignant',
+            'choose_available_time' => 'Choisir un horaire disponible',
+            'booked_times_hidden' => 'Les horaires réservés sont automatiquement exclus.',
+            'select_details' => 'Choisissez l’enseignant, les jours et la durée pour voir les créneaux.',
+            'no_declared' => 'Cet enseignant n’a aucune disponibilité approuvée ; une séance individuelle ne peut pas être réservée.',
+            'overview' => ':available horaires disponibles · :booked réservations · :planned séances prévues.',
+        ],
+        'created' => [
+            'title' => ':count séances réservées',
+            'body' => 'Bénéficiaire : :target · Cours : :course · Enseignant : :teacher · Durée : :duration minutes — Horaires des séances : :sessions — Autres horaires disponibles : :available',
+        ],
         'fields' => [
             'target_type' => 'Type de cible', 'target' => 'Groupe / étudiant', 'group' => 'Groupe', 'student' => 'Étudiant',
             'course' => 'Cours', 'teacher' => 'Enseignant', 'weekdays' => 'Jours des séances',

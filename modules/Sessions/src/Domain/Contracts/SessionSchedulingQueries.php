@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Domain\Contracts;
 
+use Carbon\CarbonImmutable;
 use Modules\Sessions\Domain\ValueObjects\SessionSchedulingData;
 use Shared\ValueObjects\TimeRange;
 
@@ -22,5 +23,13 @@ interface SessionSchedulingQueries
         ?string $groupId = null,
         array $studentProfileIds = [],
         ?string $ignoreSessionId = null,
+    ): array;
+
+    /** @return list<SessionSchedulingData> */
+    public function bookingsForTeacher(
+        string $organizationId,
+        string $staffProfileId,
+        CarbonImmutable $from,
+        CarbonImmutable $until,
     ): array;
 }

@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Modules\Scheduling\Presentation\Filament\Resources;
 
+use Carbon\CarbonImmutable;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\TimePicker;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -21,7 +22,9 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 use Modules\Scheduling\Application\Queries\SchedulingAdministrationQueryService;
+use Modules\Scheduling\Application\Services\TeacherAvailabilityPlanner;
 use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Scheduling\Domain\ValueObjects\WeeklyRecurrence;
 use Modules\Scheduling\Presentation\Filament\Resources\ScheduleResource\Pages;
@@ -93,6 +96,7 @@ final class ScheduleResource extends Resource
                                 $set('student_profile_id', null);
                                 $set('course_id', null);
                                 $set('staff_profile_id', null);
+                                $set('start_time', null);
                             })
                             ->required(),
                         Select::make('group_id')
@@ -114,6 +118,7 @@ final class ScheduleResource extends Resource
                                 $get('target_type') === 'group' && is_string($get('group_id'))
                                     ? $get('group_id')
                                     : null,
+                                is_string($get('target_type')) ? $get('target_type') : null,
                             ))
                             ->searchable()
                             ->preload()
@@ -121,6 +126,7 @@ final class ScheduleResource extends Resource
                             ->afterStateUpdated(function (Set $set): void {
                                 $set('staff_profile_id', null);
                                 $set('student_profile_id', null);
+                                $set('start_time', null);
                             })
                             ->required(),
                         Select::make('student_profile_id')
@@ -142,6 +148,8 @@ final class ScheduleResource extends Resource
                             ))
                             ->searchable()
                             ->preload()
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('start_time', null))
                             ->required(),
                     ]),
                 ]),
@@ -156,6 +164,8 @@ final class ScheduleResource extends Resource
                         ->label(__('scheduling::filament.schedule.fields.weekdays'))
                         ->options(self::weekdayOptions())
                         ->columns(4)
+                        ->live()
+                        ->afterStateUpdated(fn (Set $set): mixed => $set('start_time', null))
                         ->required()
                         ->columnSpanFull(),
                     Grid::make(1)->schema([
@@ -165,18 +175,31 @@ final class ScheduleResource extends Resource
                             ->minValue(1)
                             ->maxValue(12)
                             ->default(1)
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('start_time', null))
                             ->required(),
-                        TimePicker::make('start_time')
+                        Select::make('start_time')
                             ->label(__('scheduling::filament.schedule.fields.start_time'))
-                            ->seconds(false)
+                            ->options(fn (Get $get, ?Schedule $record): array => self::availableStartTimeOptions($get, $record))
+                            ->placeholder(__('scheduling::filament.schedule.availability.choose_available_time'))
+                            ->helperText(__('scheduling::filament.schedule.availability.booked_times_hidden'))
+                            ->searchable()
+                            ->native(false)
+                            ->live()
                             ->required(),
                         Select::make('duration_minutes')
                             ->label(__('scheduling::filament.schedule.fields.duration'))
-                            ->options(collect((array) config('scheduling.session_durations'))
+                            ->options(fn (Get $get): array => collect(self::durationChoices(
+                                is_string($get('target_type')) ? $get('target_type') : null,
+                            ))
                                 ->mapWithKeys(static fn (mixed $minutes): array => [
                                     (int) $minutes => __('scheduling::filament.schedule.minutes', ['minutes' => $minutes]),
                                 ])->all())
-                            ->default((int) config('scheduling.default_duration_minutes'))
+                            ->default(fn (Get $get): int => self::defaultDuration(
+                                is_string($get('target_type')) ? $get('target_type') : null,
+                            ))
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('start_time', null))
                             ->required(),
                     ]),
                     Grid::make(1)->schema([
@@ -185,15 +208,25 @@ final class ScheduleResource extends Resource
                             ->options(array_combine(timezone_identifiers_list(), timezone_identifiers_list()))
                             ->default(fn (): string => (string) (auth()->user()?->getAttribute('timezone') ?? config('app.timezone')))
                             ->searchable()
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('start_time', null))
                             ->required(),
                         DatePicker::make('starts_on')
                             ->label(__('scheduling::filament.schedule.fields.starts_on'))
                             ->default(now()->toDateString())
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('start_time', null))
                             ->required(),
                         DatePicker::make('ends_on')
                             ->label(__('scheduling::filament.schedule.fields.ends_on'))
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('start_time', null))
                             ->afterOrEqual('starts_on'),
                     ]),
+                    Placeholder::make('availability_overview')
+                        ->label(__('scheduling::filament.schedule.availability.title'))
+                        ->content(fn (Get $get, ?Schedule $record): HtmlString => self::availabilitySummary($get, $record))
+                        ->columnSpanFull(),
                 ]),
             Section::make(__('scheduling::filament.schedule.sections.governance'))
                 ->description(__('scheduling::filament.schedule.sections.governance_description'))
@@ -286,6 +319,103 @@ final class ScheduleResource extends Resource
         return collect(range(0, 6))->mapWithKeys(static fn (int $day): array => [
             $day => __('scheduling::filament.schedule.weekdays.'.$day),
         ])->all();
+    }
+
+    /** @return array<string, string> */
+    private static function availableStartTimeOptions(Get $get, ?Schedule $record): array
+    {
+        $overview = self::availabilityOverview($get, $record);
+
+        return collect($overview['available_start_times'])
+            ->mapWithKeys(static fn (string $time): array => [$time => $time])
+            ->all();
+    }
+
+    private static function availabilitySummary(Get $get, ?Schedule $record): HtmlString
+    {
+        $overview = self::availabilityOverview($get, $record);
+
+        return self::renderAvailabilitySummary(
+            $overview,
+            $get('target_type') === 'student',
+            is_string($get('staff_profile_id')) && (array) $get('weekdays') !== [],
+        );
+    }
+
+    /** @param array<string, mixed> $data */
+    private static function renderAvailabilitySummary(array $data, bool $individual, bool $ready): HtmlString
+    {
+        if (!$ready) {
+            return new HtmlString(e(__('scheduling::filament.schedule.availability.select_details')));
+        }
+
+        $message = __('scheduling::filament.schedule.availability.overview', [
+            'available' => count($data['available_start_times']),
+            'booked' => count($data['booked_sessions']),
+            'planned' => $data['total_occurrences'],
+        ]);
+        if ($individual && !$data['has_declared_availability']) {
+            $message = __('scheduling::filament.schedule.availability.no_declared').' '.$message;
+        }
+
+        return new HtmlString(e($message));
+    }
+
+    /**
+     * @return array{
+     *   available_start_times: list<string>,
+     *   booked_sessions: list<array{start: CarbonImmutable, end: CarbonImmutable}>,
+     *   planned_occurrences: list<array{start: CarbonImmutable, end: CarbonImmutable, available: bool}>,
+     *   total_occurrences: int,
+     *   has_declared_availability: bool
+     * }
+     */
+    private static function availabilityOverview(Get $get, ?Schedule $record): array
+    {
+        $targetType = is_string($get('target_type')) ? $get('target_type') : 'group';
+
+        return app(TeacherAvailabilityPlanner::class)->overview(
+            organizationId: self::organizationId(),
+            staffProfileId: is_string($get('staff_profile_id')) ? $get('staff_profile_id') : null,
+            weekdays: (array) $get('weekdays'),
+            intervalWeeks: max(1, (int) $get('interval_weeks')),
+            durationMinutes: (int) $get('duration_minutes'),
+            timezone: is_string($get('timezone')) && $get('timezone') !== ''
+                ? $get('timezone')
+                : (string) config('app.timezone'),
+            startsOn: self::nullableString($get('starts_on')),
+            endsOn: self::nullableString($get('ends_on')),
+            selectedStartTime: is_string($get('start_time')) ? $get('start_time') : null,
+            requireDeclaredAvailability: $targetType === 'student',
+            ignoreScheduleId: $record === null ? null : (string) $record->getKey(),
+        );
+    }
+
+    /** @return list<int> */
+    private static function durationChoices(?string $targetType): array
+    {
+        return array_values(array_map(
+            'intval',
+            (array) config($targetType === 'student'
+                ? 'scheduling.individual_session_durations'
+                : 'scheduling.session_durations'),
+        ));
+    }
+
+    private static function defaultDuration(?string $targetType): int
+    {
+        return (int) config($targetType === 'student'
+            ? 'scheduling.default_individual_duration_minutes'
+            : 'scheduling.default_duration_minutes');
+    }
+
+    private static function nullableString(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (string) $value;
     }
 
     private static function recurrenceLabel(Schedule $schedule): string

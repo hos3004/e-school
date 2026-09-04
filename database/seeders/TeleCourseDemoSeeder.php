@@ -41,6 +41,7 @@ use Modules\Sessions\Application\Actions\StartSessionAction;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\SessionParticipant;
+use Modules\Staff\Application\Actions\AssignTeacherQualificationsAction;
 use Modules\Staff\Application\Actions\CreateTeacherOnboardingAction;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Students\Application\Actions\CreateRegistrationApplicationAction;
@@ -359,6 +360,27 @@ final class TeleCourseDemoSeeder extends Seeder
             ],
         ];
 
+        $definitions['quran_individual'] = [
+            'program' => $definitions['quran']['program'],
+            'level' => $definitions['quran']['level'],
+            'course' => [
+                'code' => 'C-QURAN-IND',
+                'name' => ['ar' => 'القرآن الفردي', 'en' => 'Individual Quran'],
+                'description' => [
+                    'ar' => 'حصص فردية لطالب واحد مع معلم مؤهل، بموعد يُختار من إتاحة المعلم ومدد 25 أو 35 أو 55 دقيقة.',
+                    'en' => 'One-to-one Quran sessions with a qualified teacher, booked from approved availability for 25, 35, or 55 minutes.',
+                ],
+                'total_sessions' => 48,
+                'session_mode' => SessionMode::Individual->value,
+                'age_from' => 13,
+                'age_to' => 60,
+                'target_gender' => TargetGender::All->value,
+                'default_duration_minutes' => 35,
+                'sessions_per_week' => 2,
+            ],
+            'rate' => self::rate('quran'),
+        ];
+
         $catalog = [];
 
         foreach ($definitions as $key => $definition) {
@@ -470,6 +492,18 @@ final class TeleCourseDemoSeeder extends Seeder
 
             $teachers[$key][] = $profile;
         }
+
+        $individualCourseId = (string) $catalog['quran_individual']['course']->getKey();
+        foreach ($teachers['quran'] as $profile) {
+            app(AssignTeacherQualificationsAction::class)->execute(
+                $profile,
+                [$individualCourseId],
+                $this->adminId,
+                'تأهيل معلم القرآن لمسار الحصص الفردية',
+                'يمتد اعتماد القرآن الحالي إلى المسار الفردي.',
+            );
+        }
+        $teachers['quran_individual'] = $teachers['quran'];
 
         return $teachers;
     }

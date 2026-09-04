@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 return [
+    'schedule.created' => [
+        'subject' => 'تم اعتماد الجدول الدراسي',
+        'body' => 'تم اعتماد جدول {{target_name}} في كورس {{course_name}} ({{course_code}}) مع المعلم {{teacher_name}}. مدة الحصة {{duration_minutes}} دقيقة، وعدد الحصص {{session_count}}. مواعيد الحصص: {{schedule_times}}',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
+    ],
     'registration.submitted' => [
         'subject' => 'تم استلام طلب التسجيل',
         'body' => 'تم استلام طلب التسجيل، وسيصلك إشعار عند اكتمال المراجعة.',
@@ -65,8 +70,8 @@ return [
     ],
     'session.approaching' => [
         'subject' => 'موعد الحصة يقترب',
-        'body' => 'تذكير: تبدأ الحصة في {{scheduled_start}}.',
-        'parameters' => ['scheduled_start'],
+        'body' => 'تذكير: تبدأ حصة {{course_name}} في {{scheduled_start}}، ومدتها {{duration_minutes}} دقيقة.',
+        'parameters' => ['course_name', 'scheduled_start', 'duration_minutes'],
     ],
     'session.joinable' => [
         'subject' => 'يمكنك دخول الحصة الآن',

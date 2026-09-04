@@ -53,8 +53,11 @@ final class SchedulingAdministrationQueryService
     }
 
     /** @return array<string, string> */
-    public function courseOptions(string $organizationId, ?string $groupId = null): array
-    {
+    public function courseOptions(
+        string $organizationId,
+        ?string $groupId = null,
+        ?string $targetType = null,
+    ): array {
         if ($groupId === null || $groupId === '') {
             $items = collect($this->academics->programs($organizationId))
                 ->flatMap(fn (AcademicCatalogItemData $program): array => $this->academics->courses($organizationId, $program->id))
@@ -74,9 +77,20 @@ final class SchedulingAdministrationQueryService
             $items = collect($this->academics->coursesByIds($organizationId, $courseIds))->values();
         }
 
-        return $items->mapWithKeys(fn (AcademicCatalogItemData $course): array => [
-            $course->id => $this->catalogLabel($course),
-        ])->all();
+        $requiredMode = match ($targetType) {
+            'group' => 'group',
+            'student' => 'individual',
+            default => null,
+        };
+
+        return $items
+            ->filter(static fn (AcademicCatalogItemData $course): bool => $requiredMode === null
+                || $course->sessionMode === null
+                || $course->sessionMode === 'both'
+                || $course->sessionMode === $requiredMode)
+            ->mapWithKeys(fn (AcademicCatalogItemData $course): array => [
+                $course->id => $this->catalogLabel($course),
+            ])->all();
     }
 
     /** @return array<string, string> */
