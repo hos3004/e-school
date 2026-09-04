@@ -37,6 +37,7 @@ final readonly class ProvisionClassroomAction
         ?string $organizationId = null,
         ?string $actorId = null,
         ?string $reason = null,
+        bool $ensureRemoteIsRunning = false,
     ): Classroom {
         if ($organizationId !== null
             && $this->sessions->findForOrganization($organizationId, $sessionId) === null) {
@@ -56,50 +57,39 @@ final readonly class ProvisionClassroomAction
             );
         }
 
-        $classroom = DB::transaction(function () use ($sessionId): Classroom {
-            /** @var Classroom $record */
-            $record = Classroom::query()->firstOrCreate(
-                ['session_id' => $sessionId],
-                [
-                    'provider' => $this->provider->name(),
-                    'status' => ClassroomStatus::Pending,
-                    'health_status' => ClassroomHealthStatus::Unknown,
-                ],
-            );
-
-            if ($record->isProvisioned()) {
-                return $record;
-            }
-
-            if (!$record->status->canProvision()) {
-                throw BusinessRuleViolation::make(
-                    'virtualclassroom.invalid_status',
-                    'virtualclassroom::errors.invalid_status',
-                    ['status' => $record->status->label()],
-                );
-            }
-
-            /** @var Classroom $locked */
-            $locked = Classroom::query()->lockForUpdate()->findOrFail((string) $record->getKey());
-            $locked->forceFill([
-                'provider' => $this->provider->name(),
-                'status' => ClassroomStatus::Pending,
-                'provision_attempts' => (int) $locked->provision_attempts + 1,
-                'last_error' => null,
-                'last_error_at' => null,
-            ])->save();
-
-            return $locked;
-        });
+        $classroom = $this->prepareForProvisioning($sessionId);
 
         if ($classroom->isProvisioned()) {
-            return $classroom;
+            if (!$ensureRemoteIsRunning
+                || $classroom->external_id === null
+                || $this->provider->isRunning($classroom->external_id)) {
+                return $classroom;
+            }
+
+            $classroom = $this->markRemoteClassroomUnavailable(
+                classroom: $classroom,
+                organizationId: $organizationId,
+                actorId: $actorId,
+                reason: $reason,
+            );
+
+            if ($classroom->isProvisioned()) {
+                return $classroom;
+            }
+
+            $classroom = $this->prepareForProvisioning($sessionId);
+
+            if ($classroom->isProvisioned()) {
+                return $classroom;
+            }
         }
 
         $spec = new ClassroomSpec(
             sessionId: $sessionId,
             title: $title,
-            externalMeetingId: 'SES-'.$sessionId,
+            externalMeetingId: 'SES-'.$sessionId.($classroom->provision_attempts > 1
+                ? '-R'.$classroom->provision_attempts
+                : ''),
             startsAt: $startsAt,
             maxParticipants: $maxParticipants,
             recordable: $recordable,
@@ -196,5 +186,103 @@ final readonly class ProvisionClassroomAction
         ));
 
         return $classroom;
+    }
+
+    private function prepareForProvisioning(string $sessionId): Classroom
+    {
+        return DB::transaction(function () use ($sessionId): Classroom {
+            /** @var Classroom $record */
+            $record = Classroom::query()->firstOrCreate(
+                ['session_id' => $sessionId],
+                [
+                    'provider' => $this->provider->name(),
+                    'status' => ClassroomStatus::Pending,
+                    'health_status' => ClassroomHealthStatus::Unknown,
+                ],
+            );
+
+            if ($record->isProvisioned()) {
+                return $record;
+            }
+
+            if (!$record->status->canProvision()) {
+                throw BusinessRuleViolation::make(
+                    'virtualclassroom.invalid_status',
+                    'virtualclassroom::errors.invalid_status',
+                    ['status' => $record->status->label()],
+                );
+            }
+
+            /** @var Classroom $locked */
+            $locked = Classroom::query()->lockForUpdate()->findOrFail((string) $record->getKey());
+            $locked->forceFill([
+                'provider' => $this->provider->name(),
+                'status' => ClassroomStatus::Pending,
+                'provision_attempts' => (int) $locked->provision_attempts + 1,
+                'last_error' => null,
+                'last_error_at' => null,
+            ])->save();
+
+            return $locked;
+        });
+    }
+
+    private function markRemoteClassroomUnavailable(
+        Classroom $classroom,
+        ?string $organizationId,
+        ?string $actorId,
+        string $reason,
+    ): Classroom {
+        return DB::transaction(function () use (
+            $classroom,
+            $organizationId,
+            $actorId,
+            $reason,
+        ): Classroom {
+            /** @var Classroom $locked */
+            $locked = Classroom::query()->lockForUpdate()->findOrFail((string) $classroom->getKey());
+
+            if ($locked->external_id !== $classroom->external_id
+                || !in_array($locked->status, [ClassroomStatus::Provisioned, ClassroomStatus::Running], true)) {
+                return $locked;
+            }
+
+            if (!$locked->status->canTransitionTo(ClassroomStatus::Failed)) {
+                throw BusinessRuleViolation::make(
+                    'virtualclassroom.invalid_status',
+                    'virtualclassroom::errors.invalid_status',
+                    ['status' => $locked->status->label()],
+                );
+            }
+
+            $before = [
+                'status' => $locked->status->value,
+                'external_id' => $locked->external_id,
+                'attempts' => $locked->provision_attempts,
+            ];
+            $locked->forceFill([
+                'status' => ClassroomStatus::Failed,
+                'health_status' => ClassroomHealthStatus::Down,
+                'last_error' => 'remote_classroom_not_running',
+                'last_error_at' => now('UTC'),
+            ])->save();
+            $this->audit->record(
+                organizationId: $organizationId,
+                actorId: $actorId,
+                actorType: $actorId === null ? 'system' : 'user',
+                action: 'virtualclassroom.remote_classroom_unavailable',
+                auditableType: 'classrooms',
+                auditableId: (string) $locked->getKey(),
+                oldValues: $before,
+                newValues: [
+                    'status' => ClassroomStatus::Failed->value,
+                    'attempts' => $locked->provision_attempts,
+                    'error' => $locked->last_error,
+                ],
+                reason: $reason,
+            );
+
+            return $locked;
+        });
     }
 }
