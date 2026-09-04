@@ -45,7 +45,7 @@ final readonly class TeacherAvailabilityPlanner
         ?string $startsOn,
         ?string $endsOn,
         ?string $selectedStartTime = null,
-        bool $requireDeclaredAvailability = true,
+        bool $requireDeclaredAvailability = false,
         ?string $ignoreScheduleId = null,
     ): array {
         $empty = [

@@ -98,7 +98,8 @@ return [
     'individual_quran' => [
         'open_page' => 'Individual Quran placement',
         'page_title' => 'Place students in Individual Quran',
-        'page_description' => 'Select one or more students, then use Individual Quran placement to allocate a separate teacher slot to each student.',
+        'page_description' => 'Select unplaced students to create their schedules. Placed students appear in green with one action to edit their placement.',
+        'edit_action' => 'Edit Individual Quran placement',
         'action' => 'Place in Individual Quran',
         'heading' => 'Place the selected students in Individual Quran',
         'description' => 'A separate individual schedule is created for every student using non-overlapping teacher slots.',
@@ -115,7 +116,7 @@ return [
         'reason_help' => 'The reason is written to the audit entry for every created schedule.',
         'preview_counts' => 'Selected: :selected · eligible: :eligible · independent slots available: :slots',
         'assigned_times' => 'Times to allocate',
-        'no_slots' => 'Choose a teacher and weekdays to display available slots.',
+        'no_slots' => 'Choose a teacher and weekdays to display available slots. Teachers without declared hours are available all day.',
         'skipped_notice' => ':count students will be skipped because they lack an active enrollment or already have an active Individual Quran schedule.',
         'succeeded' => ':count Individual Quran schedules were created.',
         'result' => ':failed could not be created and :skipped selected students were skipped.',

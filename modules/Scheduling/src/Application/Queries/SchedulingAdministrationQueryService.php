@@ -150,16 +150,24 @@ final class SchedulingAdministrationQueryService
     /** @return list<string> */
     public function activeIndividualStudentIds(string $organizationId, string $courseId): array
     {
+        return array_keys($this->activeIndividualSchedulesByStudent($organizationId, $courseId));
+    }
+
+    /** @return array<string, string> student profile ID => schedule ID */
+    public function activeIndividualSchedulesByStudent(string $organizationId, string $courseId): array
+    {
         return Schedule::query()
             ->forOrganization($organizationId)
             ->where('course_id', $courseId)
             ->where('session_type', 'individual')
             ->where('is_active', true)
             ->whereNotNull('student_profile_id')
-            ->pluck('student_profile_id')
-            ->map(static fn (mixed $id): string => (string) $id)
-            ->unique()
-            ->values()
+            ->latest('created_at')
+            ->get(['id', 'student_profile_id'])
+            ->unique('student_profile_id')
+            ->mapWithKeys(static fn (Schedule $schedule): array => [
+                (string) $schedule->student_profile_id => (string) $schedule->getKey(),
+            ])
             ->all();
     }
 

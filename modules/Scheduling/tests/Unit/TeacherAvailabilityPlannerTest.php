@@ -68,7 +68,7 @@ it('offers approved teacher slots and removes times overlapping an existing book
         ->and($overview['total_occurrences'])->toBe(1);
 });
 
-it('returns no individual slots when the teacher has no approved availability', function (): void {
+it('offers the full day when the teacher has no declared availability', function (): void {
     CarbonImmutable::setTestNow('2026-10-10 08:00:00 UTC');
     $staff = Mockery::mock(StaffAdministrationQueries::class);
     $staff->shouldReceive('availabilityForTeacher')->once()->andReturn([]);
@@ -86,6 +86,6 @@ it('returns no individual slots when the teacher has no approved availability', 
         endsOn: '2026-10-11',
     );
 
-    expect($overview['available_start_times'])->toBe([])
+    expect($overview['available_start_times'])->toContain('00:00', '23:35')
         ->and($overview['has_declared_availability'])->toBeFalse();
 });

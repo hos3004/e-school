@@ -47,15 +47,31 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
     }
 
     /** @return list<string> */
-    public function eligibleStudentIds(string $organizationId): array
+    public function individualQuranStudentIds(string $organizationId): array
     {
         $course = $this->course($organizationId);
         if ($course === null) {
             return [];
         }
 
-        $schedulable = array_keys($this->scheduling->studentOptions($organizationId, $course->id));
-        $scheduled = $this->scheduling->activeIndividualStudentIds($organizationId, $course->id);
+        return array_keys($this->scheduling->studentOptions($organizationId, $course->id));
+    }
+
+    /** @return array<string, string> student profile ID => schedule ID */
+    public function activeScheduleIdsByStudent(string $organizationId): array
+    {
+        $course = $this->course($organizationId);
+
+        return $course === null
+            ? []
+            : $this->scheduling->activeIndividualSchedulesByStudent($organizationId, $course->id);
+    }
+
+    /** @return list<string> */
+    public function eligibleStudentIds(string $organizationId): array
+    {
+        $schedulable = $this->individualQuranStudentIds($organizationId);
+        $scheduled = array_keys($this->activeScheduleIdsByStudent($organizationId));
 
         return array_values(array_diff($schedulable, $scheduled));
     }
@@ -98,7 +114,7 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
             timezone: $timezone,
             startsOn: $startsOn,
             endsOn: $endsOn,
-            requireDeclaredAvailability: true,
+            requireDeclaredAvailability: false,
         );
         $slots = $this->nonOverlappingTimes($overview['available_start_times'], $durationMinutes);
 

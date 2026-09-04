@@ -386,7 +386,7 @@ final class ScheduleResource extends Resource
             startsOn: self::nullableString($get('starts_on')),
             endsOn: self::nullableString($get('ends_on')),
             selectedStartTime: is_string($get('start_time')) ? $get('start_time') : null,
-            requireDeclaredAvailability: $targetType === 'student',
+            requireDeclaredAvailability: false,
             ignoreScheduleId: $record === null ? null : (string) $record->getKey(),
         );
     }

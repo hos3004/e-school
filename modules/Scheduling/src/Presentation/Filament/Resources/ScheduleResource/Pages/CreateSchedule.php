@@ -80,7 +80,7 @@ final class CreateSchedule extends CreateRecord
             startsOn: $schedule->starts_on->toDateString(),
             endsOn: $schedule->ends_on?->toDateString(),
             selectedStartTime: (string) $schedule->start_time,
-            requireDeclaredAvailability: (string) $schedule->session_type === 'individual',
+            requireDeclaredAvailability: false,
         );
 
         return Notification::make()
