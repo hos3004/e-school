@@ -147,6 +147,22 @@ final class SchedulingAdministrationQueryService
         return $options;
     }
 
+    /** @return list<string> */
+    public function activeIndividualStudentIds(string $organizationId, string $courseId): array
+    {
+        return Schedule::query()
+            ->forOrganization($organizationId)
+            ->where('course_id', $courseId)
+            ->where('session_type', 'individual')
+            ->where('is_active', true)
+            ->whereNotNull('student_profile_id')
+            ->pluck('student_profile_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function groupLabel(string $organizationId, ?string $groupId): string
     {
         if ($groupId === null) {

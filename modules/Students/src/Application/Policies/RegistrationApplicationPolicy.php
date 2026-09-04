@@ -79,6 +79,23 @@ final class RegistrationApplicationPolicy
             && $user->can('group.manage');
     }
 
+    public function scheduleIndividual(
+        Authenticatable&Authorizable $user,
+        RegistrationApplication $application,
+    ): bool {
+        return $this->sameOrganization($user, $application)
+            && $application->status->isClearedForAssignment()
+            && $application->student_profile_id !== null
+            && $user->can('student.view')
+            && $user->can('schedule.manage');
+    }
+
+    public function scheduleIndividualAny(Authenticatable&Authorizable $user): bool
+    {
+        return $user->can('student.view.any')
+            && $user->can('schedule.manage');
+    }
+
     public function update(Authenticatable&Authorizable $user, RegistrationApplication $application): bool
     {
         return false;

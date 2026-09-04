@@ -83,6 +83,7 @@ return [
         'recurrence_summary' => '{1} Weekly: :days|[2,*] Every :interval weeks: :days',
         'status' => ['active' => 'Active', 'inactive' => 'Inactive'],
         'actions' => [
+            'individual_quran_placement' => 'Place individual Quran students',
             'materialize' => 'Generate and sync sessions',
             'materialized' => 'Synced :count sessions with :warnings availability warnings.',
             'deactivate' => 'Deactivate template',

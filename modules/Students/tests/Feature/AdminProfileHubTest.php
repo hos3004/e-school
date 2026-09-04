@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Modules\Students\Tests\Feature;
 
 use Filament\Facades\Filament;
+use Filament\Support\Contracts\TranslatableContentDriver;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Component;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Database\Seeders\GeographySeeder;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
@@ -76,6 +81,23 @@ final class AdminProfileHubTest extends TestCase
             ->assertOk()
             ->assertSeeText(__('students::admin.onboarding.new_account'));
 
+        $this->get(StudentProfileResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText(__('students::admin.individual_quran.open_page'));
+
+        $studentTable = StudentProfileResource::table(Table::make($this->tableLivewireStub()));
+        $bulkActionNames = array_map(
+            static fn (object $action): string => $action->getName(),
+            $studentTable->getBulkActions(),
+        );
+        $this->assertContains('assignToGroup', $bulkActionNames);
+        $this->assertContains('place_individual_quran', $bulkActionNames);
+
+        $this->get(StudentProfileResource::getUrl('individual-quran', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText(__('students::admin.individual_quran.page_title'))
+            ->assertSeeText(__('students::admin.individual_quran.page_description'));
+
         $this->get(StudentProfileResource::getUrl('view', ['record' => $student], panel: 'admin'))
             ->assertOk()
             ->assertSeeText('ST-HUB-001')
@@ -99,5 +121,23 @@ final class AdminProfileHubTest extends TestCase
         self::assertNotEmpty($regions);
 
         return [(string) $country->id, $regions[0]->id];
+    }
+
+    private function tableLivewireStub(): HasTable
+    {
+        return new class extends Component implements HasTable
+        {
+            use InteractsWithTable;
+
+            public function getTable(): Table
+            {
+                return StudentProfileResource::table(Table::make($this));
+            }
+
+            public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
+            {
+                return null;
+            }
+        };
     }
 }

@@ -101,6 +101,7 @@ return [
         'recurrence_summary' => '{1} أسبوعيًا: :days|[2,*] كل :interval أسابيع: :days',
         'status' => ['active' => 'نشط', 'inactive' => 'متوقف'],
         'actions' => [
+            'individual_quran_placement' => 'تسكين طلاب القرآن الفردي',
             'materialize' => 'توليد ومزامنة الحصص',
             'materialized' => 'تمت مزامنة :count حصة، مع :warnings تحذير إتاحة.',
             'deactivate' => 'إيقاف القالب',

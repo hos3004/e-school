@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Application\Actions\BulkCreateIndividualQuranSchedulesAction;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -350,6 +351,93 @@ it('runs the postponement lifecycle through the Sessions gateway and escalates m
         $sessions[1]->scheduled_start->addDays(4),
         'محاولة عابرة للمؤسسات',
     ))->toThrow(BusinessRuleViolation::class);
+});
+
+it('bulk places eligible Quran students into distinct non-overlapping teacher slots', function (): void {
+    CarbonImmutable::setTestNow('2026-10-10 08:00:00 UTC');
+    $fixture = schedulingFixture();
+    $individualCourse = Course::factory()->create([
+        'organization_id' => $fixture['organization']->id,
+        'level_id' => $fixture['level']->id,
+        'code' => 'C-QURAN-IND',
+        'session_mode' => SessionMode::Individual,
+        'name' => ['ar' => 'القرآن الفردي', 'en' => 'Individual Quran'],
+    ]);
+    DB::table('teacher_courses')->insert([
+        'id' => (string) Str::ulid(),
+        'staff_profile_id' => $fixture['teacher']->id,
+        'course_id' => $individualCourse->id,
+        'qualified_at' => now('UTC'),
+        'qualified_by' => $fixture['operator']->id,
+        'created_at' => now('UTC'),
+        'updated_at' => now('UTC'),
+    ]);
+    TeacherAvailability::query()->create([
+        'staff_profile_id' => $fixture['teacher']->id,
+        'weekday' => 0,
+        'start_time' => '09:00',
+        'end_time' => '11:00',
+        'timezone' => 'UTC',
+        'effective_from' => '2026-10-01',
+        'effective_to' => '2026-12-31',
+        'approval_status' => TeacherAvailabilityApprovalStatus::Approved,
+    ]);
+    $secondUser = User::factory()->inOrganization((string) $fixture['organization']->id)->create();
+    $secondStudent = StudentProfile::factory()->create([
+        'organization_id' => $fixture['organization']->id,
+        'user_id' => $secondUser->id,
+        'student_code' => 'ST-QURAN-002',
+    ]);
+    Enrollment::query()->create([
+        'organization_id' => $fixture['organization']->id,
+        'student_profile_id' => $secondStudent->id,
+        'program_id' => $fixture['program']->id,
+        'current_level_id' => $fixture['level']->id,
+        'status' => EnrollmentStatus::Active,
+        'applied_at' => now('UTC')->subMonth(),
+        'activated_at' => now('UTC')->subWeeks(2),
+    ]);
+    $action = app(BulkCreateIndividualQuranSchedulesAction::class);
+    $studentIds = [(string) $fixture['student']->id, (string) $secondStudent->id];
+
+    $preview = $action->preview(
+        (string) $fixture['organization']->id,
+        $studentIds,
+        (string) $fixture['teacher']->id,
+        [0],
+        1,
+        35,
+        'UTC',
+        '2026-10-11',
+        '2026-10-11',
+    );
+    $result = $action->execute(
+        organizationId: (string) $fixture['organization']->id,
+        studentProfileIds: $studentIds,
+        staffProfileId: (string) $fixture['teacher']->id,
+        weekdays: [0],
+        intervalWeeks: 1,
+        durationMinutes: 35,
+        timezone: 'UTC',
+        startsOn: '2026-10-11',
+        endsOn: '2026-10-11',
+        actorId: (string) $fixture['operator']->id,
+        reason: 'تسكين جماعي آمن في القرآن الفردي',
+    );
+    $schedules = Schedule::query()
+        ->where('course_id', $individualCourse->id)
+        ->orderBy('start_time')
+        ->get();
+
+    expect($preview->assignedStartTimes)->toBe(['09:00', '09:35'])
+        ->and($result->createdCount())->toBe(2)
+        ->and($result->failedCount())->toBe(0)
+        ->and($schedules)->toHaveCount(2)
+        ->and($schedules->pluck('student_profile_id')->sort()->values()->all())
+        ->toBe(collect($studentIds)->sort()->values()->all())
+        ->and($schedules->pluck('start_time')->all())->toBe(['09:00:00', '09:35:00'])
+        ->and(Session::query()->whereIn('schedule_id', $schedules->pluck('id'))->count())->toBe(2)
+        ->and($action->eligibleStudentIds((string) $fixture['organization']->id))->toBe([]);
 });
 
 it('allows the original teacher after substitution and guards invalid duplicate and foreign requests', function (): void {

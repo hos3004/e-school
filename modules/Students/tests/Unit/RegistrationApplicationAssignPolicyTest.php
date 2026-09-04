@@ -73,6 +73,40 @@ final class RegistrationApplicationAssignPolicyTest extends TestCase
         ));
     }
 
+    public function test_individual_scheduling_requires_an_accepted_student_profile_and_schedule_permission(): void
+    {
+        $policy = new RegistrationApplicationPolicy;
+        $application = $this->application('org-1', RegistrationStatus::WaitingAssignment);
+        $application->student_profile_id = 'student-1';
+
+        $this->assertTrue($policy->scheduleIndividual(
+            $this->user('org-1', ['student.view', 'schedule.manage']),
+            $application,
+        ));
+        $this->assertFalse($policy->scheduleIndividual(
+            $this->user('org-1', ['student.view']),
+            $application,
+        ));
+
+        $application->student_profile_id = null;
+        $this->assertFalse($policy->scheduleIndividual(
+            $this->user('org-1', ['student.view', 'schedule.manage']),
+            $application,
+        ));
+    }
+
+    public function test_individual_scheduling_bulk_entry_requires_listing_and_schedule_permissions(): void
+    {
+        $policy = new RegistrationApplicationPolicy;
+
+        $this->assertTrue($policy->scheduleIndividualAny(
+            $this->user('org-1', ['student.view.any', 'schedule.manage']),
+        ));
+        $this->assertFalse($policy->scheduleIndividualAny(
+            $this->user('org-1', ['student.view.any']),
+        ));
+    }
+
     private function application(string $organizationId, RegistrationStatus $status): RegistrationApplication
     {
         $application = new RegistrationApplication;

@@ -40,6 +40,7 @@ use Modules\Students\Domain\Models\RegistrationForm;
 use Modules\Students\Domain\ValueObjects\FilterableQuestionData;
 use Modules\Students\Presentation\Filament\Resources\RegistrationApplicationResource\Pages;
 use Modules\Students\Presentation\Filament\Resources\RegistrationApplicationResource\Support\BulkPlacementAction;
+use Modules\Students\Presentation\Filament\Resources\StudentProfileResource\Support\IndividualQuranBulkPlacementAction;
 use Shared\Filament\RecordOriginGuide;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Locales;
@@ -224,6 +225,7 @@ final class RegistrationApplicationResource extends Resource
             ])
             ->toolbarActions([
                 BulkPlacementAction::make(),
+                IndividualQuranBulkPlacementAction::forApplications(),
             ])
             ->defaultSort('created_at', 'desc');
     }
