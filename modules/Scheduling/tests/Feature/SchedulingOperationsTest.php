@@ -49,6 +49,7 @@ use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Enums\StudentGender;
 use Modules\Students\Domain\Models\RegistrationApplication;
 use Modules\Students\Domain\Models\StudentProfile;
+use Modules\Students\Presentation\Filament\Resources\StudentProfileResource;
 use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
@@ -467,7 +468,21 @@ it('bulk places Quran students into distinct slots and activates a missing enrol
         ->and($firstApplication->fresh()->status)->toBe(RegistrationStatus::Assigned)
         ->and($secondApplication->fresh()->status)->toBe(RegistrationStatus::Assigned)
         ->and(AuditLog::query()->where('action', 'enrollments.created_by_placement')->exists())->toBeTrue()
+        ->and($action->individualQuranStudentIds((string) $fixture['organization']->id))
+        ->toEqualCanonicalizing($studentIds)
+        ->and($action->activeScheduleIdsByStudent((string) $fixture['organization']->id))
+        ->toBe($schedules->pluck('id', 'student_profile_id')->all())
         ->and($action->eligibleStudentIds((string) $fixture['organization']->id))->toBe([]);
+
+    Gate::before(static fn (): bool => true);
+    Filament::setCurrentPanel('admin');
+    $this->actingAs($fixture['operator']);
+
+    $this->get(StudentProfileResource::getUrl('individual-quran', panel: 'admin'))
+        ->assertOk()
+        ->assertSee(__('students::admin.individual_quran.edit_action'), false)
+        ->assertSee(route('filament.admin.resources.schedules.edit', ['record' => $schedules->first()->id]), false)
+        ->assertSee('!bg-success-50', false);
 });
 
 it('allows the original teacher after substitution and guards invalid duplicate and foreign requests', function (): void {

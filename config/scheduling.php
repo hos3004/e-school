@@ -89,13 +89,8 @@ return [
     'booking_slots' => [
         'interval_minutes' => 5,
         'day_start' => '00:00',
-        'day_end' => '23:59',
+        'day_end' => '24:00',
         'preview_limit' => 8,
-    ],
-
-    'individual_quran' => [
-        'course_code' => 'C-QURAN-IND',
-        'bulk_max_students' => 50,
     ],
 
     'individual_quran' => [

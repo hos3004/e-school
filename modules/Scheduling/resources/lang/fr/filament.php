@@ -28,7 +28,7 @@ return [
             'choose_available_time' => 'Choisir un horaire disponible',
             'booked_times_hidden' => 'Les horaires réservés sont automatiquement exclus.',
             'select_details' => 'Choisissez l’enseignant, les jours et la durée pour voir les créneaux.',
-            'no_declared' => 'Cet enseignant n’a aucune disponibilité approuvée ; une séance individuelle ne peut pas être réservée.',
+            'no_declared' => 'Cet enseignant n’a aucun horaire déclaré ; il est donc considéré disponible toute la journée.',
             'overview' => ':available horaires disponibles · :booked réservations · :planned séances prévues.',
         ],
         'created' => [

@@ -60,7 +60,7 @@ return [
             'choose_available_time' => 'Choose an available time',
             'booked_times_hidden' => 'Booked times are automatically removed from the list.',
             'select_details' => 'Select the teacher, days, and duration to see available slots.',
-            'no_declared' => 'This teacher has no approved availability; an individual session cannot be booked.',
+            'no_declared' => 'This teacher has no declared availability, so they are treated as available all day.',
             'overview' => ':available available times · :booked existing bookings · :planned sessions in the current selection.',
         ],
         'created' => [
