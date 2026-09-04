@@ -484,6 +484,63 @@ final readonly class PortalData
     }
 
     /**
+     * تفاصيل مجموعة واحدة لا تُعاد إلا إذا كانت مسندة حاليًا إلى المعلم.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function teacherGroupDetailed(
+        string $staffProfileId,
+        string $groupId,
+        string $organizationId,
+        string $locale,
+    ): ?array {
+        $group = collect($this->teacherGroupsDetailed($staffProfileId, $organizationId, $locale))
+            ->firstWhere('id', $groupId);
+
+        if (!is_array($group)) {
+            return null;
+        }
+
+        $students = DB::table('group_memberships')
+            ->join('student_profiles', 'student_profiles.id', '=', 'group_memberships.student_profile_id')
+            ->join('users', 'users.id', '=', 'student_profiles.user_id')
+            ->where('group_memberships.group_id', $groupId)
+            ->whereNull('group_memberships.left_at')
+            ->where('student_profiles.organization_id', $organizationId)
+            ->whereColumn('users.organization_id', 'student_profiles.organization_id')
+            ->whereNull('student_profiles.deleted_at')
+            ->whereNull('users.deleted_at')
+            ->orderBy('users.name')
+            ->get([
+                'student_profiles.id',
+                'student_profiles.student_code',
+                'users.name',
+                'group_memberships.joined_at',
+            ])
+            ->map(fn (object $row): array => [
+                'id' => (string) $row->id,
+                'name' => (string) $row->name,
+                'code' => (string) $row->student_code,
+                'joinedAt' => $row->joined_at === null ? null : (string) $row->joined_at,
+            ])
+            ->values()
+            ->all();
+
+        $sessions = $this->teacherSessionsQuery($staffProfileId, $organizationId)
+            ->where('sessions.group_id', $groupId)
+            ->where('sessions.scheduled_end', '>=', CarbonImmutable::now('UTC'))
+            ->orderBy('sessions.scheduled_start')
+            ->limit(20)
+            ->get();
+
+        return [
+            ...$group,
+            'students' => $students,
+            'sessions' => $this->mapSessions($sessions, $locale),
+        ];
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     public function groupNextSession(
@@ -524,6 +581,10 @@ final readonly class PortalData
             ->whereNull('groups.deleted_at')
             ->whereNull('student_profiles.deleted_at')
             ->whereNull('group_memberships.left_at')
+            ->where(function (Builder $query): void {
+                $query->whereNull('group_teachers.assigned_to')
+                    ->orWhere('group_teachers.assigned_to', '>=', now('UTC')->toDateString());
+            })
             ->distinct()
             ->orderBy('users.name')
             ->get([
@@ -555,6 +616,94 @@ final readonly class PortalData
                 ),
             ];
         })->values()->all();
+    }
+
+    /**
+     * ملف طالب أكاديمي ضمن المجموعات المسندة حاليًا إلى المعلم فقط.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function teacherStudentProfile(
+        string $staffProfileId,
+        string $studentProfileId,
+        string $organizationId,
+        string $locale,
+    ): ?array {
+        $row = DB::table('group_teachers')
+            ->join('groups', 'groups.id', '=', 'group_teachers.group_id')
+            ->join('group_memberships', 'group_memberships.group_id', '=', 'groups.id')
+            ->join('student_profiles', 'student_profiles.id', '=', 'group_memberships.student_profile_id')
+            ->join('users', 'users.id', '=', 'student_profiles.user_id')
+            ->where('group_teachers.staff_profile_id', $staffProfileId)
+            ->where('student_profiles.id', $studentProfileId)
+            ->where('groups.organization_id', $organizationId)
+            ->whereColumn('student_profiles.organization_id', 'groups.organization_id')
+            ->whereColumn('users.organization_id', 'groups.organization_id')
+            ->whereNull('groups.deleted_at')
+            ->whereNull('student_profiles.deleted_at')
+            ->whereNull('users.deleted_at')
+            ->whereNull('group_memberships.left_at')
+            ->where(function (Builder $query): void {
+                $query->whereNull('group_teachers.assigned_to')
+                    ->orWhere('group_teachers.assigned_to', '>=', now('UTC')->toDateString());
+            })
+            ->first([
+                'student_profiles.id',
+                'student_profiles.student_code',
+                'student_profiles.date_of_birth',
+                'student_profiles.gender',
+                'student_profiles.country',
+                'student_profiles.city',
+                'users.name',
+                'users.status',
+            ]);
+
+        if ($row === null) {
+            return null;
+        }
+
+        $groups = DB::table('group_teachers')
+            ->join('groups', 'groups.id', '=', 'group_teachers.group_id')
+            ->join('group_memberships', 'group_memberships.group_id', '=', 'groups.id')
+            ->where('group_teachers.staff_profile_id', $staffProfileId)
+            ->where('group_memberships.student_profile_id', $studentProfileId)
+            ->where('groups.organization_id', $organizationId)
+            ->whereNull('groups.deleted_at')
+            ->whereNull('group_memberships.left_at')
+            ->where(function (Builder $query): void {
+                $query->whereNull('group_teachers.assigned_to')
+                    ->orWhere('group_teachers.assigned_to', '>=', now('UTC')->toDateString());
+            })
+            ->distinct()
+            ->orderBy('groups.code')
+            ->get([
+                'groups.id',
+                'groups.code',
+                'groups.name',
+                'group_memberships.joined_at',
+            ])
+            ->map(fn (object $group): array => [
+                'id' => (string) $group->id,
+                'code' => (string) $group->code,
+                'name' => $this->localized($group->name, $locale),
+                'joinedAt' => $group->joined_at === null ? null : (string) $group->joined_at,
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'id' => (string) $row->id,
+            'name' => (string) $row->name,
+            'code' => (string) $row->student_code,
+            'status' => (string) $row->status,
+            'gender' => $row->gender === null ? null : (string) $row->gender,
+            'dateOfBirth' => $row->date_of_birth === null ? null : (string) $row->date_of_birth,
+            'country' => $row->country === null ? null : (string) $row->country,
+            'city' => $row->city === null ? null : (string) $row->city,
+            'attendanceRate' => $this->attendanceRate($studentProfileId, $organizationId),
+            'openAssignmentsCount' => $this->studentOpenAssignmentsCount($studentProfileId, $organizationId),
+            'groups' => $groups,
+        ];
     }
 
     /**

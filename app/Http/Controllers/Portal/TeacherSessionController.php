@@ -95,7 +95,11 @@ final class TeacherSessionController extends Controller
             'canRequestPostponement' => (bool) $request->user()?->can('session.postpone.request')
                 && in_array((string) $session['status'], [SessionStatus::Scheduled->value, SessionStatus::Confirmed->value], true),
             'canSubmitReport' => (bool) $request->user()?->can('session_report.create')
-                && in_array((string) $session['status'], [SessionStatus::AwaitingReview->value, SessionStatus::Completed->value], true),
+                && in_array((string) $session['status'], [
+                    SessionStatus::InProgress->value,
+                    SessionStatus::AwaitingReview->value,
+                    SessionStatus::Completed->value,
+                ], true),
         ]);
     }
 }

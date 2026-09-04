@@ -1,4 +1,4 @@
-import { Head, router } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import { useMemo, useState } from "react";
 
 import Card from "@/Components/Card";
@@ -76,7 +76,12 @@ export default function Students({
       header: t("teacher.students.columns.student"),
       render: (student) => (
         <div className="min-w-44">
-          <p className="font-semibold text-[var(--ink)]">{student.name}</p>
+          <Link
+            className="font-semibold text-[var(--brand-strong)] underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+            href={`/teacher/students/${student.id}`}
+          >
+            {student.name}
+          </Link>
           <p className="mt-1 font-mono text-sm text-[var(--ink-muted)]">
             {student.code}
           </p>
@@ -241,6 +246,14 @@ export default function Students({
                         </dd>
                       </div>
                     </dl>
+                    <div className="mt-4 border-t border-[var(--line)] pt-4">
+                      <Link
+                        className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-[var(--ink-muted)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
+                        href={`/teacher/students/${student.id}`}
+                      >
+                        {t("teacher.students.view_profile")}
+                      </Link>
+                    </div>
                   </Card>
                 </li>
               ))}

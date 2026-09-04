@@ -29,6 +29,7 @@ use App\Http\Controllers\Portal\TeacherAvailabilityController;
 use App\Http\Controllers\Portal\TeacherAvailabilityWriteController;
 use App\Http\Controllers\Portal\TeacherDashboardController;
 use App\Http\Controllers\Portal\TeacherEarningsController;
+use App\Http\Controllers\Portal\TeacherGroupController;
 use App\Http\Controllers\Portal\TeacherGroupsController;
 use App\Http\Controllers\Portal\TeacherPostponementResponseController;
 use App\Http\Controllers\Portal\TeacherPostponementsController;
@@ -36,6 +37,7 @@ use App\Http\Controllers\Portal\TeacherProfileController;
 use App\Http\Controllers\Portal\TeacherScheduleController;
 use App\Http\Controllers\Portal\TeacherSessionController;
 use App\Http\Controllers\Portal\TeacherSessionReportController;
+use App\Http\Controllers\Portal\TeacherStudentController;
 use App\Http\Controllers\Portal\TeacherStudentsController;
 use App\Http\Controllers\UpdateLocaleController;
 use Illuminate\Support\Facades\Route;
@@ -148,9 +150,17 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::get('/teacher/groups', TeacherGroupsController::class)
         ->middleware('can:schedule.view')
         ->name('portal.teacher.groups');
+    Route::get('/teacher/groups/{group}', TeacherGroupController::class)
+        ->whereUlid('group')
+        ->middleware('can:schedule.view')
+        ->name('portal.teacher.groups.show');
     Route::get('/teacher/students', TeacherStudentsController::class)
         ->middleware('can:student.view')
         ->name('portal.teacher.students');
+    Route::get('/teacher/students/{student}', TeacherStudentController::class)
+        ->whereUlid('student')
+        ->middleware('can:student.view')
+        ->name('portal.teacher.students.show');
     Route::get('/teacher/availability', TeacherAvailabilityController::class)
         ->name('portal.teacher.availability');
     Route::get('/teacher/notifications', [PortalNotificationsController::class, 'teacher'])

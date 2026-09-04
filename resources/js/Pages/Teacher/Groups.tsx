@@ -211,6 +211,17 @@ export default function Groups({
                       {t("teacher.groups.no_next_session")}
                     </p>
                   )}
+
+                  <div className="mt-5 border-t border-[var(--line)] pt-4">
+                    <Button
+                      as="link"
+                      className="w-full"
+                      href={`/teacher/groups/${group.id}`}
+                      variant="secondary"
+                    >
+                      {t("teacher.groups.view_details")}
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))}
