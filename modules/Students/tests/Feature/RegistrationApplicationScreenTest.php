@@ -79,6 +79,7 @@ final class RegistrationApplicationScreenTest extends TestCase
         );
 
         $this->assertContains('assignToGroup', $names);
+        $this->assertContains('place_individual_quran', $names);
     }
 
     public function test_a_user_without_the_abilities_cannot_open_the_bulk_action(): void

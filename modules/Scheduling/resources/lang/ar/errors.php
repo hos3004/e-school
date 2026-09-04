@@ -37,4 +37,8 @@ return [
     'schedule_inactive' => 'قالب الجدول متوقف.',
     'teacher_on_leave' => 'المعلم في إجازة معتمدة بتاريخ :date.',
     'outside_teacher_availability' => 'الموعد خارج الإتاحة المعتمدة للمعلم.',
+    'individual_quran_course_missing' => 'كورس القرآن الفردي غير موجود أو غير مفعّل.',
+    'bulk_no_eligible_students' => 'لا يوجد ضمن التحديد طالب مؤهل لتسكين القرآن الفردي.',
+    'bulk_insufficient_slots' => 'الخانات المستقلة المتاحة (:slots) أقل من عدد الطلاب المؤهلين (:students).',
+    'bulk_limit_exceeded' => 'لا يمكن تسكين أكثر من :maximum طالب في عملية واحدة.',
 ];

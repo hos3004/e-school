@@ -1,0 +1,231 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Application\Actions;
+
+use App\Application\DTO\BulkIndividualSchedulePreview;
+use App\Application\DTO\BulkIndividualScheduleResult;
+use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
+use Modules\Academics\Domain\ValueObjects\AcademicCatalogItemData;
+use Modules\Scheduling\Application\Actions\CreateScheduleAction;
+use Modules\Scheduling\Application\Queries\SchedulingAdministrationQueryService;
+use Modules\Scheduling\Application\Services\TeacherAvailabilityPlanner;
+use Shared\Support\BusinessRuleViolation;
+
+/**
+ * منسق جذر للتسكين الفردي الجماعي؛ كل طالب يحصل على Schedule وخانة مستقلة.
+ */
+final readonly class BulkCreateIndividualQuranSchedulesAction
+{
+    public function __construct(
+        private AcademicCatalogQueries $academics,
+        private SchedulingAdministrationQueryService $scheduling,
+        private TeacherAvailabilityPlanner $availability,
+        private CreateScheduleAction $createSchedule,
+    ) {}
+
+    /** @return array<string, string> */
+    public function teacherOptions(string $organizationId): array
+    {
+        $course = $this->course($organizationId);
+
+        return $course === null
+            ? []
+            : $this->scheduling->teacherOptions($organizationId, null, $course->id);
+    }
+
+    /** @return list<string> */
+    public function eligibleStudentIds(string $organizationId): array
+    {
+        $course = $this->course($organizationId);
+        if ($course === null) {
+            return [];
+        }
+
+        $schedulable = array_keys($this->scheduling->studentOptions($organizationId, $course->id));
+        $scheduled = $this->scheduling->activeIndividualStudentIds($organizationId, $course->id);
+
+        return array_values(array_diff($schedulable, $scheduled));
+    }
+
+    /**
+     * @param list<string> $studentProfileIds
+     * @param list<int|string> $weekdays
+     */
+    public function preview(
+        string $organizationId,
+        array $studentProfileIds,
+        ?string $staffProfileId,
+        array $weekdays,
+        int $intervalWeeks,
+        int $durationMinutes,
+        string $timezone,
+        ?string $startsOn,
+        ?string $endsOn,
+    ): BulkIndividualSchedulePreview {
+        $selected = $this->normalizeIds($studentProfileIds);
+        $this->guardSelectionLimit($selected);
+        $eligible = array_values(array_intersect($selected, $this->eligibleStudentIds($organizationId)));
+
+        if ($staffProfileId === null || $staffProfileId === '' || $weekdays === []) {
+            return new BulkIndividualSchedulePreview(count($selected), $eligible, 0, []);
+        }
+
+        $overview = $this->availability->overview(
+            organizationId: $organizationId,
+            staffProfileId: $staffProfileId,
+            weekdays: $weekdays,
+            intervalWeeks: max(1, $intervalWeeks),
+            durationMinutes: $durationMinutes,
+            timezone: $timezone,
+            startsOn: $startsOn,
+            endsOn: $endsOn,
+            requireDeclaredAvailability: true,
+        );
+        $slots = $this->nonOverlappingTimes($overview['available_start_times'], $durationMinutes);
+
+        return new BulkIndividualSchedulePreview(
+            selectedCount: count($selected),
+            eligibleStudentIds: $eligible,
+            availableSlotCount: count($slots),
+            assignedStartTimes: array_slice($slots, 0, count($eligible)),
+        );
+    }
+
+    /**
+     * @param list<string> $studentProfileIds
+     * @param list<int|string> $weekdays
+     */
+    public function execute(
+        string $organizationId,
+        array $studentProfileIds,
+        string $staffProfileId,
+        array $weekdays,
+        int $intervalWeeks,
+        int $durationMinutes,
+        string $timezone,
+        string $startsOn,
+        ?string $endsOn,
+        string $actorId,
+        string $reason,
+    ): BulkIndividualScheduleResult {
+        $course = $this->course($organizationId);
+        if ($course === null) {
+            throw BusinessRuleViolation::make(
+                'scheduling.individual_quran_course_missing',
+                'scheduling::errors.individual_quran_course_missing',
+            );
+        }
+
+        $preview = $this->preview(
+            $organizationId,
+            $studentProfileIds,
+            $staffProfileId,
+            $weekdays,
+            $intervalWeeks,
+            $durationMinutes,
+            $timezone,
+            $startsOn,
+            $endsOn,
+        );
+        if ($preview->eligibleCount() === 0) {
+            throw BusinessRuleViolation::make(
+                'scheduling.bulk_no_eligible_students',
+                'scheduling::errors.bulk_no_eligible_students',
+            );
+        }
+        if (!$preview->hasEnoughSlots()) {
+            throw BusinessRuleViolation::make(
+                'scheduling.bulk_insufficient_slots',
+                'scheduling::errors.bulk_insufficient_slots',
+                ['students' => $preview->eligibleCount(), 'slots' => $preview->availableSlotCount],
+            );
+        }
+
+        $created = [];
+        $failed = [];
+        foreach ($preview->eligibleStudentIds as $index => $studentProfileId) {
+            try {
+                $schedule = $this->createSchedule->execute($organizationId, [
+                    'target_type' => 'student',
+                    'student_profile_id' => $studentProfileId,
+                    'course_id' => $course->id,
+                    'staff_profile_id' => $staffProfileId,
+                    'weekdays' => $weekdays,
+                    'interval_weeks' => max(1, $intervalWeeks),
+                    'start_time' => $preview->assignedStartTimes[$index],
+                    'duration_minutes' => $durationMinutes,
+                    'timezone' => $timezone,
+                    'starts_on' => $startsOn,
+                    'ends_on' => $endsOn,
+                ], $actorId, $reason);
+                $created[$studentProfileId] = (string) $schedule->getKey();
+            } catch (BusinessRuleViolation $violation) {
+                $failed[$studentProfileId] = $violation->getMessage();
+            }
+        }
+
+        return new BulkIndividualScheduleResult($created, $failed, $preview->blockedCount());
+    }
+
+    private function course(string $organizationId): ?AcademicCatalogItemData
+    {
+        $code = (string) config('scheduling.individual_quran.course_code');
+
+        return collect($this->academics->programs($organizationId))
+            ->flatMap(fn (AcademicCatalogItemData $program): array => $this->academics->courses(
+                $organizationId,
+                $program->id,
+            ))
+            ->first(static fn (AcademicCatalogItemData $course): bool => $course->code === $code
+                && in_array($course->sessionMode, ['individual', 'both'], true));
+    }
+
+    /**
+     * @param list<string> $ids
+     * @return list<string>
+     */
+    private function normalizeIds(array $ids): array
+    {
+        return array_values(array_unique(array_filter(
+            $ids,
+            static fn (mixed $id): bool => is_string($id) && $id !== '',
+        )));
+    }
+
+    /** @param list<string> $ids */
+    private function guardSelectionLimit(array $ids): void
+    {
+        $maximum = max(1, (int) config('scheduling.individual_quran.bulk_max_students'));
+        if (count($ids) > $maximum) {
+            throw BusinessRuleViolation::make(
+                'scheduling.bulk_limit_exceeded',
+                'scheduling::errors.bulk_limit_exceeded',
+                ['maximum' => $maximum],
+            );
+        }
+    }
+
+    /**
+     * @param list<string> $times
+     * @return list<string>
+     */
+    private function nonOverlappingTimes(array $times, int $durationMinutes): array
+    {
+        $selected = [];
+        $previousEnd = null;
+        foreach ($times as $time) {
+            [$hour, $minute] = array_map('intval', explode(':', $time));
+            $start = ($hour * 60) + $minute;
+            if ($previousEnd !== null && $start < $previousEnd) {
+                continue;
+            }
+
+            $selected[] = $time;
+            $previousEnd = $start + $durationMinutes;
+        }
+
+        return $selected;
+    }
+}

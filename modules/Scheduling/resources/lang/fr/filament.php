@@ -48,6 +48,7 @@ return [
         'recurrence_summary' => '{1} Chaque semaine : :days|[2,*] Toutes les :interval semaines : :days',
         'status' => ['active' => 'Actif', 'inactive' => 'Inactif'],
         'actions' => [
+            'individual_quran_placement' => 'Affecter les étudiants du Coran individuel',
             'materialize' => 'Générer et synchroniser', 'materialized' => ':count séances synchronisées, :warnings avertissements.',
             'deactivate' => 'Désactiver', 'deactivated' => 'Modèle désactivé ; les séances proches ont été conservées.',
             'activate' => 'Réactiver', 'activated' => 'Modèle réactivé et séances futures générées.',

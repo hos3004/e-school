@@ -32,4 +32,8 @@ return [
     'schedule_inactive' => 'Le modèle de planning est inactif.',
     'teacher_on_leave' => 'L’enseignant est en congé approuvé le :date.',
     'outside_teacher_availability' => 'Le créneau est hors des disponibilités approuvées de l’enseignant.',
+    'individual_quran_course_missing' => 'Le cours de Coran individuel est introuvable ou inactif.',
+    'bulk_no_eligible_students' => 'Aucun étudiant sélectionné n’est éligible au placement individuel.',
+    'bulk_insufficient_slots' => 'Les créneaux indépendants disponibles (:slots) sont moins nombreux que les étudiants éligibles (:students).',
+    'bulk_limit_exceeded' => 'Vous ne pouvez pas placer plus de :maximum étudiants en une seule opération.',
 ];

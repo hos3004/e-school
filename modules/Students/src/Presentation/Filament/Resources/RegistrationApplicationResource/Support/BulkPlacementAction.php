@@ -23,6 +23,7 @@ use Filament\Schemas\Components\Wizard\Step;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\HtmlString;
 use Modules\Students\Domain\Models\RegistrationApplication;
+use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Locales;
 
@@ -44,21 +45,23 @@ final class BulkPlacementAction
 
     public static function make(): BulkAction
     {
-        return BulkAction::make('assignToGroup')
+        return self::build(fromStudents: false);
+    }
+
+    public static function forStudents(): BulkAction
+    {
+        return self::build(fromStudents: true);
+    }
+
+    private static function build(bool $fromStudents): BulkAction
+    {
+        $action = BulkAction::make('assignToGroup')
             ->label(__('students::admin.bulk_placement.action'))
             ->icon('heroicon-m-user-group')
             ->color('primary')
             ->modalHeading(__('students::admin.bulk_placement.heading'))
             ->modalSubmitActionLabel(__('students::admin.bulk_placement.confirm'))
             ->modalWidth('4xl')
-            // تفويض على مستوى الشاشة…
-            ->authorize('assignAny')
-            /*
-             * …وتفويض على مستوى كل سجل: Filament يستبعد الطلاب الذين لا يملك
-             * المستخدم صلاحية تسكينهم قبل أن يصل شيء إلى المعالج، ثم يعيد
-             * الأوركستريتر التحقق منهم جميعًا داخل المعاملة.
-             */
-            ->authorizeIndividualRecords('assign')
             /*
              * تعبئة الحالة الابتدائية. الوجهة تُذكر هنا صراحةً لأن `fillForm`
              * تحل محل قيم `default()` في المكوّنات، فلولا ذلك بقيت الوجهة
@@ -75,6 +78,14 @@ final class BulkPlacementAction
                 self::reviewStep(),
             ])
             ->action(self::handler(...));
+
+        return $fromStudents
+            ? $action
+                ->visible(static fn (): bool => self::canBulkPlaceStudents())
+                ->authorizeIndividualRecords('view')
+            : $action
+                ->authorize('assignAny')
+                ->authorizeIndividualRecords('assign');
     }
 
     /** الخطوة ١: مجموعة موجودة أم مجموعة جديدة. */
@@ -280,7 +291,7 @@ final class BulkPlacementAction
     }
 
     /**
-     * @param Collection<int, RegistrationApplication> $records الطلاب بعد تصفية التفويض الفردي
+     * @param Collection<int, RegistrationApplication|StudentProfile> $records الطلاب بعد تصفية التفويض الفردي
      * @param array<string, mixed> $data
      */
     private static function handler(Collection $records, array $data): void
@@ -361,15 +372,31 @@ final class BulkPlacementAction
     }
 
     /**
-     * @param Collection<int, RegistrationApplication> $records
+     * @param Collection<int, RegistrationApplication|StudentProfile> $records
      * @return list<string>
      */
     private static function applicationIds(Collection $records): array
     {
         return $records
-            ->map(static fn (RegistrationApplication $record): string => (string) $record->getKey())
+            ->map(static fn (RegistrationApplication|StudentProfile $record): ?string => $record instanceof RegistrationApplication
+                ? (string) $record->getKey()
+                : ($record->registrationApplication === null
+                    ? null
+                    : (string) $record->registrationApplication->getKey()))
+            ->filter(static fn (?string $id): bool => $id !== null && $id !== '')
+            ->unique()
             ->values()
             ->all();
+    }
+
+    private static function canBulkPlaceStudents(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null
+            && (bool) $user->can('student.view.any')
+            && (bool) $user->can('enrollment.create')
+            && (bool) $user->can('group.manage');
     }
 
     private static function groupUrl(string $groupId, bool $isDraft): string

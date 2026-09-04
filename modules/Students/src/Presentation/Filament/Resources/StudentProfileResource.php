@@ -35,7 +35,9 @@ use Modules\Organization\Domain\ValueObjects\RegionData;
 use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Enums\StudentGender;
 use Modules\Students\Domain\Models\StudentProfile;
+use Modules\Students\Presentation\Filament\Resources\RegistrationApplicationResource\Support\BulkPlacementAction;
 use Modules\Students\Presentation\Filament\Resources\StudentProfileResource\Pages;
+use Modules\Students\Presentation\Filament\Resources\StudentProfileResource\Support\IndividualQuranBulkPlacementAction;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Locales;
 
@@ -276,7 +278,10 @@ final class StudentProfileResource extends Resource
                 EditAction::make(),
                 self::placementAction(),
             ])
-            ->bulkActions([]);
+            ->bulkActions([
+                BulkPlacementAction::forStudents(),
+                IndividualQuranBulkPlacementAction::make(),
+            ]);
     }
 
     public static function placementAction(): Action
@@ -286,7 +291,7 @@ final class StudentProfileResource extends Resource
             ->icon('heroicon-o-user-plus')
             ->color('primary')
             ->authorize(fn (): bool => self::canPlaceStudent())
-            ->visible(fn (StudentProfile $record): bool => $record->registrationApplication?->status === RegistrationStatus::WaitingAssignment)
+            ->visible(fn (StudentProfile $record): bool => $record->registrationApplication?->status->isClearedForAssignment() === true)
             ->form([
                 Select::make('program_id')
                     ->label(__('students::admin.placement.program'))
@@ -367,6 +372,7 @@ final class StudentProfileResource extends Resource
         return [
             'index' => Pages\ListStudentProfiles::route('/'),
             'create' => Pages\CreateStudentProfile::route('/create'),
+            'individual-quran' => Pages\IndividualQuranPlacement::route('/individual-quran'),
             'view' => Pages\ViewStudentProfile::route('/{record}'),
             'edit' => Pages\EditStudentProfile::route('/{record}/edit'),
         ];

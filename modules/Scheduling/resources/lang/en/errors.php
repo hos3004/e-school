@@ -37,4 +37,8 @@ return [
     'schedule_inactive' => 'The schedule template is inactive.',
     'teacher_on_leave' => 'The teacher is on approved leave on :date.',
     'outside_teacher_availability' => 'The time is outside the teacher’s approved availability.',
+    'individual_quran_course_missing' => 'The Individual Quran course is missing or inactive.',
+    'bulk_no_eligible_students' => 'None of the selected students is eligible for Individual Quran placement.',
+    'bulk_insufficient_slots' => 'Available independent slots (:slots) are fewer than eligible students (:students).',
+    'bulk_limit_exceeded' => 'No more than :maximum students can be placed in one operation.',
 ];

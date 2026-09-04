@@ -40,6 +40,11 @@ it('renders the real schedule form and operations hub while isolating organizati
         ->toHaveKey((string) $individualCourse->id)
         ->not->toHaveKey((string) $fixture['course']->id);
 
+    $this->get(ScheduleResource::getUrl('index', panel: 'admin'))
+        ->assertOk()
+        ->assertSeeText(__('scheduling::filament.schedule.actions.individual_quran_placement'))
+        ->assertSee(route('filament.admin.resources.students.individual-quran'), false);
+
     $this->get(ScheduleResource::getUrl('create', panel: 'admin'))
         ->assertOk()
         ->assertSeeText(__('scheduling::filament.schedule.sections.target'))
