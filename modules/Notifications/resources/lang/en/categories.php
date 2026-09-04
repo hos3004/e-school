@@ -19,6 +19,7 @@ return [
     'assignment_update' => 'Assignment update',
     'session_changed' => 'Session change',
     'session_reminder' => 'Session reminder',
+    'schedule_summary' => 'Course schedule summary',
     'classroom_invitation' => 'Classroom invitation',
     'session_report' => 'Session report',
     'discipline_notice' => 'Discipline notice',

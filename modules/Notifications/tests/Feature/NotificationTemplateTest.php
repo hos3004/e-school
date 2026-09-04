@@ -16,6 +16,7 @@ it('seeds Arabic and English templates for all phase-one events and channels', f
     $this->seed(NotificationTemplateSeeder::class);
 
     $configuredEvents = array_keys((array) config('notifications.events'));
+    $eventCount = count($configuredEvents);
     sort($configuredEvents);
     $seededEvents = NotificationTemplate::query()
         ->distinct()
@@ -23,10 +24,10 @@ it('seeds Arabic and English templates for all phase-one events and channels', f
         ->all();
     sort($seededEvents);
 
-    expect(NotificationTemplate::query()->distinct()->count('event_key'))->toBe(26)
+    expect(NotificationTemplate::query()->distinct()->count('event_key'))->toBe($eventCount)
         ->and(NotificationTemplate::query()->distinct()->count('channel'))->toBe(3)
         ->and(NotificationTemplate::query()->distinct()->count('locale'))->toBe(2)
-        ->and(NotificationTemplate::query()->count())->toBe(156)
+        ->and(NotificationTemplate::query()->count())->toBe($eventCount * 3 * 2)
         ->and($seededEvents)->toBe($configuredEvents);
 });
 

@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 return [
+    'schedule.created' => [
+        'subject' => 'Course schedule confirmed',
+        'body' => 'The schedule for {{target_name}} in {{course_name}} ({{course_code}}) with {{teacher_name}} has been confirmed. Session duration: {{duration_minutes}} minutes. Total sessions: {{session_count}}. Session times: {{schedule_times}}',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
+    ],
     'registration.submitted' => [
         'subject' => 'Registration request received',
         'body' => 'Your registration request was received. You will be notified when the review is complete.',
@@ -65,8 +70,8 @@ return [
     ],
     'session.approaching' => [
         'subject' => 'Your session is approaching',
-        'body' => 'Reminder: the session starts at {{scheduled_start}}.',
-        'parameters' => ['scheduled_start'],
+        'body' => 'Reminder: your {{course_name}} session starts at {{scheduled_start}} and lasts {{duration_minutes}} minutes.',
+        'parameters' => ['course_name', 'scheduled_start', 'duration_minutes'],
     ],
     'session.joinable' => [
         'subject' => 'You can join the session now',

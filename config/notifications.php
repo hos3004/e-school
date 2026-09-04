@@ -67,6 +67,11 @@ return [
      * ما هو critical لا يخضع لساعات الهدوء ولا يستطيع المستخدم إيقافه.
      */
     'categories' => [
+        'schedule_summary' => [
+            'channels' => ['in_app', 'email'],
+            'critical' => false,
+            'respects_quiet_hours' => false,
+        ],
         'session_reminder' => [
             'channels' => ['in_app', 'email', 'whatsapp'],
             'critical' => false,
@@ -95,6 +100,12 @@ return [
      * التواصل حدثيًا؛ الحقول المدرجة يجب أن تحمل user IDs لا profile IDs.
      */
     'events' => [
+        'schedule.created' => [
+            'category' => 'schedule_summary',
+            'audiences' => ['student', 'teacher'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\Scheduling\Domain\Events\ScheduleCreated'],
+        ],
         'registration.submitted' => [
             'category' => 'registration_update',
             'audiences' => ['student', 'guardian', 'admin'],
@@ -323,6 +334,8 @@ return [
             'expires_at',
             'due_at',
         ],
+        'datetime_list_parameters' => ['schedule_times'],
+        'localized_parameters' => ['course_name', 'target_name'],
     ],
 
     /*

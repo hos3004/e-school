@@ -9,6 +9,7 @@ import Card, {
 import EmptyState from "@/Components/EmptyState";
 import ErrorState from "@/Components/ErrorState";
 import LoadingState from "@/Components/LoadingState";
+import SessionEmailPreference from "@/Components/SessionEmailPreference";
 import PageHeader from "@/Components/PageHeader";
 import StatusPill from "@/Components/StatusPill";
 import type { StatusColorMap } from "@/Components/StatusPill";
@@ -521,6 +522,7 @@ export default function Profile({
                 </div>
               </form>
             </Card>
+            <SessionEmailPreference />
           </div>
         )}
       </div>

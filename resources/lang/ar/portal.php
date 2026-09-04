@@ -515,4 +515,15 @@ return [
     'statuses.paid' => 'مدفوعة',
     'statuses.locked' => 'مقفلة',
 
+    'notifications.session_email.title' => 'إشعارات الجدول والحصص',
+    'notifications.session_email.description' => 'تحكم في رسائل البريد الخاصة بالجدول الكامل والتذكير قبل الحصة بساعة.',
+    'notifications.session_email.label' => 'استلام رسائل الجدول والتذكير عبر البريد',
+    'notifications.session_email.note' => 'عند التعطيل ستظل الإشعارات داخل المنصة متاحة.',
+    'notifications.session_email.loading' => 'جارٍ تحميل التفضيل…',
+    'notifications.session_email.saving' => 'جارٍ حفظ التفضيل…',
+    'notifications.session_email.saved' => 'تم حفظ التفضيل.',
+    'notifications.session_email.error' => 'تعذر تحميل أو حفظ التفضيل. حاول مرة أخرى.',
+    'notifications.session_email.enabled' => 'البريد مفعل للجدول وتذكير الحصة.',
+    'notifications.session_email.disabled' => 'تم تعطيل بريد الجدول وتذكير الحصة.',
+
 ];

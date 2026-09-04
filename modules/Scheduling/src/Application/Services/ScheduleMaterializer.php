@@ -79,8 +79,26 @@ final readonly class ScheduleMaterializer
                 );
             }
 
-            if ($this->staff->hasDeclaredAvailability((string) $schedule->staff_profile_id, $range->start)
-                && !$this->staff->isAvailableDuring((string) $schedule->staff_profile_id, $range->start, $range->end)) {
+            $hasDeclaredAvailability = $this->staff->hasDeclaredAvailability(
+                (string) $schedule->staff_profile_id,
+                $range->start,
+            );
+            $isWithinAvailability = $this->staff->isAvailableDuring(
+                (string) $schedule->staff_profile_id,
+                $range->start,
+                $range->end,
+            );
+            $individualRequiresDeclared = (string) $schedule->session_type === 'individual'
+                && (bool) config('scheduling.availability.individual_requires_declared');
+
+            if ($individualRequiresDeclared && (!$hasDeclaredAvailability || !$isWithinAvailability)) {
+                throw BusinessRuleViolation::make(
+                    'scheduling.outside_teacher_availability',
+                    'scheduling::errors.outside_teacher_availability',
+                );
+            }
+
+            if (!$individualRequiresDeclared && $hasDeclaredAvailability && !$isWithinAvailability) {
                 if ((string) config('scheduling.availability.outside_declared') === 'block') {
                     throw BusinessRuleViolation::make(
                         'scheduling.outside_teacher_availability',

@@ -41,6 +41,9 @@ interface SessionAdministrationQueries
     /** @return list<SessionAdministrationData> */
     public function forSchedule(string $organizationId, string $scheduleId, int $limit): array;
 
+    /** @return list<string> ISO-8601 UTC session start times in chronological order. */
+    public function startsForSchedule(string $organizationId, string $scheduleId, int $limit): array;
+
     /**
      * @param list<string> $statuses
      * @param list<string> $sessionTypes

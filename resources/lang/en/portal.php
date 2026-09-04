@@ -509,4 +509,15 @@ return [
     'statuses.paid' => 'Paid',
     'statuses.locked' => 'Locked',
 
+    'notifications.session_email.title' => 'Schedule and session emails',
+    'notifications.session_email.description' => 'Control full-schedule emails and the reminder sent one hour before a session.',
+    'notifications.session_email.label' => 'Receive schedule and reminder emails',
+    'notifications.session_email.note' => 'In-app notifications remain available when email is disabled.',
+    'notifications.session_email.loading' => 'Loading preference…',
+    'notifications.session_email.saving' => 'Saving preference…',
+    'notifications.session_email.saved' => 'Preference saved.',
+    'notifications.session_email.error' => 'The preference could not be loaded or saved. Try again.',
+    'notifications.session_email.enabled' => 'Email is enabled for schedules and session reminders.',
+    'notifications.session_email.disabled' => 'Schedule and session reminder emails are disabled.',
+
 ];

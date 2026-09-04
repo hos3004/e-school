@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Sessions\Application\Queries;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingQueries;
 use Modules\Sessions\Domain\Enums\SessionStatus;
@@ -71,6 +72,32 @@ final readonly class SessionSchedulingQueryService implements SessionSchedulingQ
             })
             ->pluck('id')
             ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
+    public function bookingsForTeacher(
+        string $organizationId,
+        string $staffProfileId,
+        CarbonImmutable $from,
+        CarbonImmutable $until,
+    ): array {
+        return Session::query()
+            ->forOrganization($organizationId)
+            ->where('staff_profile_id', $staffProfileId)
+            ->whereNotIn('status', [
+                SessionStatus::CancelledByStudent->value,
+                SessionStatus::CancelledByTeacher->value,
+                SessionStatus::CancelledBySchool->value,
+                SessionStatus::Postponed->value,
+                SessionStatus::Superseded->value,
+            ])
+            ->where('scheduled_start', '<', $until)
+            ->where('scheduled_end', '>', $from)
+            ->with(['participants' => static fn ($query) => $query->whereNull('revoked_at')])
+            ->orderBy('scheduled_start')
+            ->get()
+            ->map(static fn (Session $session): SessionSchedulingData => self::data($session))
             ->values()
             ->all();
     }

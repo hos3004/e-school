@@ -134,6 +134,19 @@ final readonly class SessionAdministrationQueryService implements SessionAdminis
             ->all();
     }
 
+    public function startsForSchedule(string $organizationId, string $scheduleId, int $limit): array
+    {
+        return Session::query()
+            ->forOrganization($organizationId)
+            ->where('schedule_id', $scheduleId)
+            ->orderBy('scheduled_start')
+            ->limit(max(1, $limit))
+            ->get(['scheduled_start'])
+            ->map(static fn (Session $session): string => $session->scheduled_start->toIso8601String())
+            ->values()
+            ->all();
+    }
+
     public function forReport(
         string $organizationId,
         CarbonImmutable $fromUtc,

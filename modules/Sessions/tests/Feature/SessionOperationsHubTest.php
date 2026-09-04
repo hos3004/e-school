@@ -26,6 +26,10 @@ use Modules\Groups\Domain\Models\GroupProgram;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 use Modules\Identity\Domain\Models\User;
+use Modules\Notifications\Database\Seeders\NotificationTemplateSeeder;
+use Modules\Notifications\Domain\Enums\Channel;
+use Modules\Notifications\Domain\Models\NotificationOutbox;
+use Modules\Notifications\Domain\Models\NotificationPreference;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Sessions\Application\Actions\CompleteSessionAction;
 use Modules\Sessions\Application\Actions\ConfirmSessionAction;
@@ -55,6 +59,10 @@ it('renders a tenant isolated session operations hub with real names and no join
     Filament::setCurrentPanel('admin');
     $fixture = sessionOperationsFixture();
     $this->actingAs($fixture['operator']);
+
+    $this->get(SessionResource::getUrl('index', panel: 'admin'))
+        ->assertOk()
+        ->assertSeeText(__('sessions::actions.dispatch_reminders'));
 
     $this->get(SessionResource::getUrl('view', ['record' => $fixture['session']], panel: 'admin'))
         ->assertOk()
@@ -246,6 +254,45 @@ it('allows verified guardian child visibility but requires acting authority for 
 
     $link->forceFill(['can_act_for' => true])->save();
     expect(Gate::forUser($guardianUser)->allows('postpone', $fixture['session']))->toBeTrue();
+});
+
+it('queues one-hour reminders once and respects the student email preference', function (): void {
+    CarbonImmutable::setTestNow('2026-10-10 08:00:00 UTC');
+    config([
+        'notifications.channels' => [
+            'in_app' => ['enabled' => true, 'always_on' => true],
+            'email' => ['enabled' => true],
+        ],
+        'notifications.categories.session_reminder' => [
+            'channels' => ['in_app', 'email'],
+            'critical' => false,
+            'respects_quiet_hours' => false,
+        ],
+        'scheduling.reminder_dispatch.before_minutes' => 60,
+    ]);
+    $fixture = sessionOperationsFixture([
+        'scheduled_start' => CarbonImmutable::now('UTC')->addMinutes(45),
+        'scheduled_end' => CarbonImmutable::now('UTC')->addMinutes(80),
+    ]);
+    $this->seed(NotificationTemplateSeeder::class);
+    NotificationPreference::query()->create([
+        'organization_id' => $fixture['organization']->id,
+        'user_id' => $fixture['studentUser']->id,
+        'category' => 'session_reminder',
+        'channel' => Channel::Email,
+        'enabled' => false,
+    ]);
+
+    $this->artisan('sessions:dispatch-reminders')->assertSuccessful();
+    $this->artisan('sessions:dispatch-reminders')->assertSuccessful();
+
+    $outbox = NotificationOutbox::query()->where('category', 'session_reminder')->get();
+    expect($outbox)->toHaveCount(3)
+        ->and($outbox->pluck('event_name')->unique()->all())->toBe(['session.approaching'])
+        ->and($outbox->where('user_id', $fixture['studentUser']->id)->pluck('channel')->all())->toBe(['in_app'])
+        ->and($outbox->where('user_id', $fixture['teacherUser']->id)->pluck('channel')->sort()->values()->all())
+        ->toBe(['email', 'in_app'])
+        ->and($fixture['session']->refresh()->reminder_sent_at)->not->toBeNull();
 });
 
 it('rolls the participant lifecycle migration down and reapplies it cleanly', function (): void {

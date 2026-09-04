@@ -13,4 +13,6 @@ return [
     'attendance_leave' => 'Participant left the session and attendance duration was calculated.',
     'apology_approved_reason' => 'Teacher apology approved and substitute search opened.',
     'apology_decided' => 'The teacher apology decision was recorded.',
+    'reminders_dispatched' => ':count session reminders were queued for delivery.',
+    'reminders_dispatched_manually' => 'The session reminder task ran successfully.',
 ];

@@ -429,6 +429,25 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
     {
         $format = (string) config('notifications.localization.datetime_format', 'Y-m-d H:i T');
 
+        foreach ((array) config('notifications.localization.localized_parameters', []) as $parameter) {
+            if (!is_string($parameter)) {
+                continue;
+            }
+
+            $value = data_get($payload, $parameter);
+            if (!is_array($value)) {
+                continue;
+            }
+
+            $localized = $value[$locale]
+                ?? $value[(string) config('notifications.localization.fallback_locale', 'ar')]
+                ?? reset($value);
+
+            if (is_string($localized)) {
+                data_set($payload, $parameter, $localized);
+            }
+        }
+
         foreach ((array) config('notifications.localization.datetime_parameters', []) as $parameter) {
             if (!is_string($parameter)) {
                 continue;
@@ -452,6 +471,35 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
             } catch (Throwable) {
                 // قيمة غير زمنية تبقى كما نشرها الحدث بدل إسقاط الإشعار كله.
             }
+        }
+
+        foreach ((array) config('notifications.localization.datetime_list_parameters', []) as $parameter) {
+            if (!is_string($parameter)) {
+                continue;
+            }
+
+            $values = data_get($payload, $parameter);
+            if (!is_array($values)) {
+                continue;
+            }
+
+            $formatted = [];
+            foreach ($values as $value) {
+                if (!is_string($value) || trim($value) === '') {
+                    continue;
+                }
+
+                try {
+                    $formatted[] = CarbonImmutable::parse($value, 'UTC')
+                        ->setTimezone(new CarbonTimeZone($timezone))
+                        ->locale($locale)
+                        ->translatedFormat($format);
+                } catch (Throwable) {
+                    $formatted[] = $value;
+                }
+            }
+
+            data_set($payload, $parameter, implode(PHP_EOL, $formatted));
         }
 
         $payload['recipient_timezone'] = $timezone;

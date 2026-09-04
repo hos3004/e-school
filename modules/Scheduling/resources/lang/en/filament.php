@@ -54,7 +54,19 @@ return [
             'governance_description' => 'Every schedule creation is logged for audit. Provide a brief reason for this operation.',
             'overview' => 'Schedule overview',
         ],
-        'targets' => ['group' => 'Group', 'student' => 'Individual student'],
+        'targets' => ['group' => 'Group placement', 'student' => 'Individual placement (one student)'],
+        'availability' => [
+            'title' => 'Teacher schedule summary',
+            'choose_available_time' => 'Choose an available time',
+            'booked_times_hidden' => 'Booked times are automatically removed from the list.',
+            'select_details' => 'Select the teacher, days, and duration to see available slots.',
+            'no_declared' => 'This teacher has no approved availability; an individual session cannot be booked.',
+            'overview' => ':available available times · :booked existing bookings · :planned sessions in the current selection.',
+        ],
+        'created' => [
+            'title' => ':count sessions booked successfully',
+            'body' => 'Target: :target · Course: :course · Teacher: :teacher · Duration: :duration minutes — Session times: :sessions — Other available times: :available',
+        ],
         'fields' => [
             'target_type' => 'Target type', 'target' => 'Group / student', 'group' => 'Group',
             'student' => 'Student', 'course' => 'Course', 'teacher' => 'Teacher',

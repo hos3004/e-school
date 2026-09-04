@@ -3,10 +3,13 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Livewire\Livewire;
 use Modules\Academics\Domain\Enums\SessionMode;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
@@ -23,6 +26,8 @@ use Modules\Groups\Domain\Models\GroupMembership;
 use Modules\Groups\Domain\Models\GroupProgram;
 use Modules\Groups\Domain\Models\GroupTeacher;
 use Modules\Identity\Domain\Models\User;
+use Modules\Notifications\Database\Seeders\NotificationTemplateSeeder;
+use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Scheduling\Application\Actions\ApprovePostponement;
 use Modules\Scheduling\Application\Actions\CreateScheduleAction;
@@ -30,11 +35,14 @@ use Modules\Scheduling\Application\Actions\RequestPostponement;
 use Modules\Scheduling\Application\Actions\UpdateScheduleAction;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Modules\Scheduling\Domain\Models\Schedule;
+use Modules\Scheduling\Presentation\Filament\Resources\ScheduleResource\Pages\CreateSchedule;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Modules\Staff\Domain\Enums\StaffGender;
+use Modules\Staff\Domain\Enums\TeacherAvailabilityApprovalStatus;
 use Modules\Staff\Domain\Models\StaffProfile;
+use Modules\Staff\Domain\Models\TeacherAvailability;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
 
@@ -102,6 +110,68 @@ it('creates a recurring group schedule with real sessions participants audit and
         ->and($newEnrollment->status)->toBe(EnrollmentStatus::Active)
         ->and(DB::table('session_participants')->whereIn('session_id', $sessions->pluck('id'))->count())->toBe(10)
         ->and(AuditLog::query()->where('action', 'scheduling.schedule_created')->where('auditable_id', $schedule->id)->exists())->toBeTrue();
+});
+
+it('creates an individual schedule and builds its notification from serialized session dates', function (): void {
+    CarbonImmutable::setTestNow('2026-10-10 08:00:00 UTC');
+    Gate::before(static fn (): bool => true);
+    Filament::setCurrentPanel('admin');
+    $fixture = schedulingFixture();
+    $individualCourse = Course::factory()->create([
+        'organization_id' => $fixture['organization']->id,
+        'level_id' => $fixture['level']->id,
+        'session_mode' => SessionMode::Individual,
+        'name' => ['ar' => 'القرآن الفردي', 'en' => 'Individual Quran'],
+    ]);
+    DB::table('teacher_courses')->insert([
+        'id' => (string) Str::ulid(),
+        'staff_profile_id' => $fixture['teacher']->id,
+        'course_id' => $individualCourse->id,
+        'qualified_at' => now('UTC'),
+        'qualified_by' => $fixture['operator']->id,
+        'created_at' => now('UTC'),
+        'updated_at' => now('UTC'),
+    ]);
+    TeacherAvailability::query()->create([
+        'staff_profile_id' => $fixture['teacher']->id,
+        'weekday' => 0,
+        'start_time' => '09:00',
+        'end_time' => '12:00',
+        'timezone' => 'UTC',
+        'effective_from' => '2026-10-01',
+        'effective_to' => '2026-12-31',
+        'approval_status' => TeacherAvailabilityApprovalStatus::Approved,
+    ]);
+    $this->actingAs($fixture['operator']);
+    $this->seed(NotificationTemplateSeeder::class);
+
+    Livewire::test(CreateSchedule::class)
+        ->fillForm([
+            'target_type' => 'student',
+            'course_id' => (string) $individualCourse->id,
+            'student_profile_id' => (string) $fixture['student']->id,
+            'staff_profile_id' => (string) $fixture['teacher']->id,
+            'weekdays' => [0],
+            'interval_weeks' => 1,
+            'duration_minutes' => 35,
+            'timezone' => 'UTC',
+            'starts_on' => '2026-10-11',
+            'ends_on' => '2026-10-11',
+            'reason' => 'اختبار إشعار حجز القرآن الفردي',
+        ])
+        ->set('data.start_time', '10:00')
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $schedule = Schedule::query()->latest('created_at')->firstOrFail();
+    $session = Session::query()->where('schedule_id', $schedule->id)->sole();
+    $outbox = NotificationOutbox::query()->where('category', 'schedule_summary')->get();
+    $emailBody = $outbox->firstWhere('channel', 'email')?->body ?? [];
+
+    expect($outbox)->toHaveCount(4)
+        ->and($outbox->pluck('user_id')->unique())->toHaveCount(2)
+        ->and(implode(' ', $emailBody))->toContain('القرآن الفردي')
+        ->and(implode(' ', $emailBody))->toContain($session->scheduled_start->format('Y-m-d'));
 });
 
 it('blocks teacher conflicts and preserves the locked window when a template is edited', function (): void {
@@ -172,6 +242,55 @@ it('blocks teacher conflicts and preserves the locked window when a template is 
             ->where('scheduled_start', '>=', CarbonImmutable::now('UTC')->addHours(48))
             ->get()
             ->every(fn (Session $session): bool => $session->scheduled_start->format('H:i') === '14:00'))->toBeTrue();
+});
+
+it('books an individual student only in approved teacher availability with configured durations', function (): void {
+    CarbonImmutable::setTestNow('2026-10-10 08:00:00 UTC');
+    $fixture = schedulingFixture();
+    $fixture['course']->update(['session_mode' => SessionMode::Individual]);
+    TeacherAvailability::query()->create([
+        'staff_profile_id' => $fixture['teacher']->id,
+        'weekday' => 0,
+        'start_time' => '09:00',
+        'end_time' => '12:00',
+        'timezone' => 'UTC',
+        'effective_from' => '2026-10-01',
+        'approval_status' => TeacherAvailabilityApprovalStatus::Approved,
+        'approved_by' => $fixture['operator']->id,
+        'approved_at' => now('UTC'),
+    ]);
+
+    $payload = schedulePayload($fixture, [
+        'target_type' => 'student',
+        'group_id' => null,
+        'student_profile_id' => (string) $fixture['student']->id,
+        'start_time' => '09:00',
+        'duration_minutes' => 25,
+        'ends_on' => '2026-10-11',
+    ]);
+    $schedule = app(CreateScheduleAction::class)->execute(
+        (string) $fixture['organization']->id,
+        $payload,
+        (string) $fixture['operator']->id,
+        'حجز القرآن الفردي داخل إتاحة المعلم',
+    );
+
+    expect($schedule->session_type)->toBe('individual')
+        ->and($schedule->duration_minutes)->toBe(25)
+        ->and(Session::query()->where('schedule_id', $schedule->id)->count())->toBe(1);
+
+    expect(fn () => app(CreateScheduleAction::class)->execute(
+        (string) $fixture['organization']->id,
+        [...$payload, 'duration_minutes' => 30],
+        (string) $fixture['operator']->id,
+        'رفض مدة غير معتمدة للفردي',
+    ))->toThrow(BusinessRuleViolation::class);
+    expect(fn () => app(CreateScheduleAction::class)->execute(
+        (string) $fixture['organization']->id,
+        [...$payload, 'start_time' => '08:00', 'duration_minutes' => 35],
+        (string) $fixture['operator']->id,
+        'رفض موعد خارج إتاحة المعلم',
+    ))->toThrow(BusinessRuleViolation::class);
 });
 
 it('runs the postponement lifecycle through the Sessions gateway and escalates monthly overflow', function (): void {

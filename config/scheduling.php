@@ -82,7 +82,16 @@ return [
      * 75 دقيقة هو الطول الحالي لحصص القرآن الجماعية.
      */
     'session_durations' => [30, 45, 60, 75, 90, 120],
+    'individual_session_durations' => [25, 35, 55],
     'default_duration_minutes' => 60,
+    'default_individual_duration_minutes' => 35,
+
+    'booking_slots' => [
+        'interval_minutes' => 5,
+        'day_start' => '00:00',
+        'day_end' => '23:59',
+        'preview_limit' => 8,
+    ],
 
     /*
      * الجدولة المتكررة.
@@ -110,8 +119,21 @@ return [
      */
     'reminders' => [
         'student' => [1440, 60, 10],
-        'teacher' => [1440, 30],
+        'teacher' => [1440, 60, 30],
         'guardian' => [1440],
+    ],
+
+    /*
+     * عامل إرسال تذكير البريد قبل الحصة. يحتفظ كل صف حصة بعلامة الإرسال
+     * لضمان عدم تكرار التذكير عند تشغيل المجدول كل دقيقة.
+     */
+    'reminder_dispatch' => [
+        'before_minutes' => 60,
+        'batch_size' => 200,
+    ],
+
+    'notification_summary' => [
+        'max_sessions' => 200,
     ],
 
     /*
@@ -224,6 +246,9 @@ return [
 
         // الجدولة خارج الإتاحة المعلنة: warn (تحذير للإدارة) أو block.
         'outside_declared' => env('AVAILABILITY_OUTSIDE_DECLARED', 'warn'),
+
+        // الحصة الفردية لا تُحجز إلا داخل إتاحة معتمدة للمعلم.
+        'individual_requires_declared' => true,
     ],
 
     'admin_hub' => [
