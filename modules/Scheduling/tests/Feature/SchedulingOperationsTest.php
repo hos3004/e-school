@@ -29,6 +29,7 @@ use Modules\Groups\Domain\Models\GroupTeacher;
 use Modules\Identity\Domain\Models\User;
 use Modules\Notifications\Database\Seeders\NotificationTemplateSeeder;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
+use Modules\Organization\Database\Seeders\GeographySeeder;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Scheduling\Application\Actions\ApprovePostponement;
 use Modules\Scheduling\Application\Actions\CreateScheduleAction;
@@ -44,6 +45,9 @@ use Modules\Staff\Domain\Enums\StaffGender;
 use Modules\Staff\Domain\Enums\TeacherAvailabilityApprovalStatus;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Domain\Models\TeacherAvailability;
+use Modules\Students\Domain\Enums\RegistrationStatus;
+use Modules\Students\Domain\Enums\StudentGender;
+use Modules\Students\Domain\Models\RegistrationApplication;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
 
@@ -353,9 +357,12 @@ it('runs the postponement lifecycle through the Sessions gateway and escalates m
     ))->toThrow(BusinessRuleViolation::class);
 });
 
-it('bulk places eligible Quran students into distinct non-overlapping teacher slots', function (): void {
+it('bulk places Quran students into distinct slots and activates a missing enrollment', function (): void {
     CarbonImmutable::setTestNow('2026-10-10 08:00:00 UTC');
+    $this->seed(GeographySeeder::class);
     $fixture = schedulingFixture();
+    $countryId = (string) DB::table('countries')->orderBy('id')->value('id');
+    $regionId = (string) DB::table('regions')->where('country_id', $countryId)->orderBy('id')->value('id');
     $individualCourse = Course::factory()->create([
         'organization_id' => $fixture['organization']->id,
         'level_id' => $fixture['level']->id,
@@ -388,14 +395,27 @@ it('bulk places eligible Quran students into distinct non-overlapping teacher sl
         'user_id' => $secondUser->id,
         'student_code' => 'ST-QURAN-002',
     ]);
-    Enrollment::query()->create([
+    $firstApplication = RegistrationApplication::query()->create([
         'organization_id' => $fixture['organization']->id,
+        'user_id' => $fixture['student']->user_id,
+        'student_profile_id' => $fixture['student']->id,
+        'status' => RegistrationStatus::WaitingAssignment,
+        'full_name' => 'طالب القرآن الأول',
+        'date_of_birth' => '2010-01-01',
+        'gender' => StudentGender::Male,
+        'country_id' => $countryId,
+        'region_id' => $regionId,
+    ]);
+    $secondApplication = RegistrationApplication::query()->create([
+        'organization_id' => $fixture['organization']->id,
+        'user_id' => $secondUser->id,
         'student_profile_id' => $secondStudent->id,
-        'program_id' => $fixture['program']->id,
-        'current_level_id' => $fixture['level']->id,
-        'status' => EnrollmentStatus::Active,
-        'applied_at' => now('UTC')->subMonth(),
-        'activated_at' => now('UTC')->subWeeks(2),
+        'status' => RegistrationStatus::WaitingAssignment,
+        'full_name' => 'طالب القرآن الثاني',
+        'date_of_birth' => '2011-01-01',
+        'gender' => StudentGender::Male,
+        'country_id' => $countryId,
+        'region_id' => $regionId,
     ]);
     $action = app(BulkCreateIndividualQuranSchedulesAction::class);
     $studentIds = [(string) $fixture['student']->id, (string) $secondStudent->id];
@@ -410,6 +430,7 @@ it('bulk places eligible Quran students into distinct non-overlapping teacher sl
         'UTC',
         '2026-10-11',
         '2026-10-11',
+        true,
     );
     $result = $action->execute(
         organizationId: (string) $fixture['organization']->id,
@@ -423,6 +444,7 @@ it('bulk places eligible Quran students into distinct non-overlapping teacher sl
         endsOn: '2026-10-11',
         actorId: (string) $fixture['operator']->id,
         reason: 'تسكين جماعي آمن في القرآن الفردي',
+        activateEnrollment: true,
     );
     $schedules = Schedule::query()
         ->where('course_id', $individualCourse->id)
@@ -437,6 +459,14 @@ it('bulk places eligible Quran students into distinct non-overlapping teacher sl
         ->toBe(collect($studentIds)->sort()->values()->all())
         ->and($schedules->pluck('start_time')->all())->toBe(['09:00:00', '09:35:00'])
         ->and(Session::query()->whereIn('schedule_id', $schedules->pluck('id'))->count())->toBe(2)
+        ->and(Enrollment::query()
+            ->where('student_profile_id', $secondStudent->id)
+            ->where('program_id', $fixture['program']->id)
+            ->where('status', EnrollmentStatus::Active)
+            ->exists())->toBeTrue()
+        ->and($firstApplication->fresh()->status)->toBe(RegistrationStatus::Assigned)
+        ->and($secondApplication->fresh()->status)->toBe(RegistrationStatus::Assigned)
+        ->and(AuditLog::query()->where('action', 'enrollments.created_by_placement')->exists())->toBeTrue()
         ->and($action->eligibleStudentIds((string) $fixture['organization']->id))->toBe([]);
 });
 
