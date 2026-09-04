@@ -46,6 +46,7 @@ final class IndividualQuranBulkPlacementAction
             ->modalWidth('4xl')
             ->fillForm(fn (Collection $records): array => [
                 'student_ids' => self::studentProfileIds($records),
+                'activate_enrollment' => $fromApplications,
                 'interval_weeks' => 1,
                 'duration_minutes' => (int) config('scheduling.default_individual_duration_minutes'),
                 'timezone' => (string) (auth()->user()?->getAttribute('timezone') ?? config('app.timezone')),
@@ -53,6 +54,7 @@ final class IndividualQuranBulkPlacementAction
             ])
             ->form([
                 Hidden::make('student_ids'),
+                Hidden::make('activate_enrollment'),
                 Select::make('staff_profile_id')
                     ->label(__('students::admin.individual_quran.teacher'))
                     ->options(fn (): array => self::action()->teacherOptions(self::organizationId()))
@@ -140,6 +142,8 @@ final class IndividualQuranBulkPlacementAction
                 endsOn: self::nullableString($data['ends_on'] ?? null),
                 actorId: (string) auth()->id(),
                 reason: (string) $data['reason'],
+                activateEnrollment: (bool) ($data['activate_enrollment'] ?? false),
+                correlationId: request()->header('X-Correlation-Id'),
             );
         } catch (BusinessRuleViolation $violation) {
             Notification::make()->title($violation->getMessage())->danger()->send();
@@ -170,6 +174,7 @@ final class IndividualQuranBulkPlacementAction
                 timezone: (string) ($get('timezone') ?: config('app.timezone')),
                 startsOn: self::nullableString($get('starts_on')),
                 endsOn: self::nullableString($get('ends_on')),
+                activateEnrollment: (bool) $get('activate_enrollment'),
             );
         } catch (BusinessRuleViolation $violation) {
             return new HtmlString('<p class="fi-color-danger text-sm">'.e($violation->getMessage()).'</p>');

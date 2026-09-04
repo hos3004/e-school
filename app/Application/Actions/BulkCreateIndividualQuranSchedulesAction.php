@@ -6,12 +6,19 @@ namespace App\Application\Actions;
 
 use App\Application\DTO\BulkIndividualSchedulePreview;
 use App\Application\DTO\BulkIndividualScheduleResult;
+use Carbon\CarbonImmutable;
 use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
+use Modules\Academics\Domain\Contracts\ProgramEligibilityEvaluator;
 use Modules\Academics\Domain\ValueObjects\AcademicCatalogItemData;
+use Modules\Academics\Domain\ValueObjects\ApplicantFacts;
+use Modules\Enrollments\Domain\Contracts\EnrollmentPlacementGateway;
 use Modules\Scheduling\Application\Actions\CreateScheduleAction;
 use Modules\Scheduling\Application\Queries\SchedulingAdministrationQueryService;
 use Modules\Scheduling\Application\Services\TeacherAvailabilityPlanner;
+use Modules\Students\Domain\Contracts\StudentPlacementGateway;
+use Modules\Students\Domain\ValueObjects\StudentPlacementData;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
 
 /**
  * منسق جذر للتسكين الفردي الجماعي؛ كل طالب يحصل على Schedule وخانة مستقلة.
@@ -23,6 +30,10 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
         private SchedulingAdministrationQueryService $scheduling,
         private TeacherAvailabilityPlanner $availability,
         private CreateScheduleAction $createSchedule,
+        private StudentPlacementGateway $students,
+        private EnrollmentPlacementGateway $enrollments,
+        private ProgramEligibilityEvaluator $eligibility,
+        private Transaction $transaction,
     ) {}
 
     /** @return array<string, string> */
@@ -63,10 +74,16 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
         string $timezone,
         ?string $startsOn,
         ?string $endsOn,
+        bool $activateEnrollment = false,
     ): BulkIndividualSchedulePreview {
         $selected = $this->normalizeIds($studentProfileIds);
         $this->guardSelectionLimit($selected);
-        $eligible = array_values(array_intersect($selected, $this->eligibleStudentIds($organizationId)));
+        $course = $this->course($organizationId);
+        $eligible = $course === null
+            ? []
+            : ($activateEnrollment
+                ? $this->placementReadyStudentIds($organizationId, $selected, $course)
+                : array_values(array_intersect($selected, $this->eligibleStudentIds($organizationId))));
 
         if ($staffProfileId === null || $staffProfileId === '' || $weekdays === []) {
             return new BulkIndividualSchedulePreview(count($selected), $eligible, 0, []);
@@ -109,6 +126,8 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
         ?string $endsOn,
         string $actorId,
         string $reason,
+        bool $activateEnrollment = false,
+        ?string $correlationId = null,
     ): BulkIndividualScheduleResult {
         $course = $this->course($organizationId);
         if ($course === null) {
@@ -128,6 +147,7 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
             $timezone,
             $startsOn,
             $endsOn,
+            $activateEnrollment,
         );
         if ($preview->eligibleCount() === 0) {
             throw BusinessRuleViolation::make(
@@ -147,19 +167,55 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
         $failed = [];
         foreach ($preview->eligibleStudentIds as $index => $studentProfileId) {
             try {
-                $schedule = $this->createSchedule->execute($organizationId, [
-                    'target_type' => 'student',
-                    'student_profile_id' => $studentProfileId,
-                    'course_id' => $course->id,
-                    'staff_profile_id' => $staffProfileId,
-                    'weekdays' => $weekdays,
-                    'interval_weeks' => max(1, $intervalWeeks),
-                    'start_time' => $preview->assignedStartTimes[$index],
-                    'duration_minutes' => $durationMinutes,
-                    'timezone' => $timezone,
-                    'starts_on' => $startsOn,
-                    'ends_on' => $endsOn,
-                ], $actorId, $reason);
+                $schedule = $this->transaction->run(function () use (
+                    $activateEnrollment,
+                    $organizationId,
+                    $studentProfileId,
+                    $course,
+                    $reason,
+                    $actorId,
+                    $correlationId,
+                    $staffProfileId,
+                    $weekdays,
+                    $intervalWeeks,
+                    $preview,
+                    $index,
+                    $durationMinutes,
+                    $timezone,
+                    $startsOn,
+                    $endsOn,
+                ) {
+                    if ($activateEnrollment) {
+                        $this->enrollments->activate(
+                            organizationId: $organizationId,
+                            studentProfileId: $studentProfileId,
+                            programId: (string) $course->programId,
+                            reason: $reason,
+                            actorId: $actorId,
+                            correlationId: $correlationId,
+                        );
+                    }
+
+                    $schedule = $this->createSchedule->execute($organizationId, [
+                        'target_type' => 'student',
+                        'student_profile_id' => $studentProfileId,
+                        'course_id' => $course->id,
+                        'staff_profile_id' => $staffProfileId,
+                        'weekdays' => $weekdays,
+                        'interval_weeks' => max(1, $intervalWeeks),
+                        'start_time' => $preview->assignedStartTimes[$index],
+                        'duration_minutes' => $durationMinutes,
+                        'timezone' => $timezone,
+                        'starts_on' => $startsOn,
+                        'ends_on' => $endsOn,
+                    ], $actorId, $reason);
+
+                    if ($activateEnrollment) {
+                        $this->students->markAssigned($organizationId, $studentProfileId);
+                    }
+
+                    return $schedule;
+                });
                 $created[$studentProfileId] = (string) $schedule->getKey();
             } catch (BusinessRuleViolation $violation) {
                 $failed[$studentProfileId] = $violation->getMessage();
@@ -180,6 +236,47 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
             ))
             ->first(static fn (AcademicCatalogItemData $course): bool => $course->code === $code
                 && in_array($course->sessionMode, ['individual', 'both'], true));
+    }
+
+    /**
+     * @param list<string> $studentProfileIds
+     * @return list<string>
+     */
+    private function placementReadyStudentIds(
+        string $organizationId,
+        array $studentProfileIds,
+        AcademicCatalogItemData $course,
+    ): array {
+        if ($course->programId === null) {
+            return [];
+        }
+
+        $scheduled = $this->scheduling->activeIndividualStudentIds($organizationId, $course->id);
+        $eligible = [];
+
+        foreach ($studentProfileIds as $studentProfileId) {
+            $student = $this->students->findCleared($studentProfileId);
+            if ($student === null
+                || !hash_equals($organizationId, $student->organizationId)
+                || in_array($studentProfileId, $scheduled, true)
+                || !$this->isEligibleForProgram($student, $course->programId)) {
+                continue;
+            }
+
+            $eligible[] = $studentProfileId;
+        }
+
+        return $eligible;
+    }
+
+    private function isEligibleForProgram(StudentPlacementData $student, string $programId): bool
+    {
+        return $this->eligibility->evaluate($programId, new ApplicantFacts(
+            dateOfBirth: $student->dateOfBirth === null ? null : CarbonImmutable::parse($student->dateOfBirth),
+            gender: $student->gender,
+            countryId: $student->countryId,
+            regionId: $student->regionId,
+        ))->eligible;
     }
 
     /**
