@@ -23,6 +23,7 @@ use App\Http\Controllers\Portal\StudentProfileController;
 use App\Http\Controllers\Portal\StudentProgramsController;
 use App\Http\Controllers\Portal\StudentReportsController;
 use App\Http\Controllers\Portal\StudentScheduleController;
+use App\Http\Controllers\Portal\StudentSessionApologyController;
 use App\Http\Controllers\Portal\StudentSessionController;
 use App\Http\Controllers\Portal\TeacherAttendanceController;
 use App\Http\Controllers\Portal\TeacherAvailabilityController;
@@ -122,6 +123,12 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::post('/student/sessions/{session}/postponement-requests', [SessionPostponementRequestController::class, 'student'])
         ->whereUlid('session')
         ->name('portal.student.sessions.postponement-requests.store');
+    Route::post('/student/sessions/{session}/apologies', StudentSessionApologyController::class)
+        ->whereUlid('session')
+        ->name('portal.student.sessions.apologies.store');
+    Route::post('/student/postponements/{postponement}/accept-alternative', [SessionPostponementRequestController::class, 'acceptAlternative'])
+        ->whereUlid('postponement')
+        ->name('portal.student.postponements.accept-alternative');
 
     Route::patch('/student/profile', [PortalProfileController::class, 'update'])
         ->name('portal.student.profile.update');
@@ -205,6 +212,9 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         ->whereUlid('postponement')
         ->name('portal.teacher.postponements.propose-alternative');
 
+    Route::post('/teacher/postponements/{postponement}/reject', [TeacherPostponementResponseController::class, 'reject'])
+        ->whereUlid('postponement')
+        ->name('portal.teacher.postponements.reject');
     Route::patch('/teacher/profile', [PortalProfileController::class, 'update'])
         ->name('portal.teacher.profile.update');
 

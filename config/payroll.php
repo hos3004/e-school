@@ -99,6 +99,13 @@ return [
             'student' => 'keep',
         ],
 
+        // اعتذار الطالب في الحصة الفردية: لا استحقاق لمعلم الحصة،
+        // ويصبح عدم الاستحقاق خصمًا فقط لصاحب العقد الشهري.
+        'individual_student_apology' => [
+            'teacher' => 'deduct',
+            'student' => 'keep',
+        ],
+
         // إلغاء مقبول للحصة — يُخصم من المعلم ثمن حصة (قرار العميل).
         'cancelled_accepted' => [
             'teacher' => 'deduct',
@@ -116,6 +123,13 @@ return [
         'teacher_absent' => [
             'teacher' => 'deduct',
             'student' => 'refund',
+        ],
+
+        // اعتذار المعلم المعتمد: لا أجر للحصة، وخصم للعقد الشهري فقط
+        // وفق خريطة أثر أساس العقد أدناه.
+        'teacher_apology' => [
+            'teacher' => 'deduct',
+            'student' => 'keep',
         ],
 
         // الحصة مؤجَّلة — لا تُحتسب للمعلم إلا عند إقامتها فعلًا (قرار العميل).
@@ -149,6 +163,49 @@ return [
         'primary_teacher_outcome' => 'deduct',
         'requires_approval' => true,
         'approver_permission' => 'session.assign_substitute',
+    ],
+
+    /*
+     * الأثر الفعلي حسب أساس العقد.
+     *
+     * معلم الحصة لا يُنشأ عليه دين عند عدم التنفيذ؛ فقط لا تُضاف له قيدة
+     * استحقاق. أما صاحب الراتب الشهري فيُخصم منه سعر حصة. إبقاء هذه
+     * المصفوفة في الإعدادات يمنع تثبيت سياسة المدرسة داخل المستمع.
+     */
+    'contract_basis_effects' => [
+        'per_session' => [
+            'full' => 'full',
+            'deduct' => 'none',
+            'deferred' => 'deferred',
+        ],
+        'salary' => [
+            'full' => 'none',
+            'deduct' => 'deduct',
+            'deferred' => 'none',
+        ],
+        'hybrid' => [
+            'full' => 'full',
+            'deduct' => 'deduct',
+            'deferred' => 'deferred',
+        ],
+    ],
+
+    /*
+     * عند غياب سعر حصة مستقل في العقد الشهري، قيمة الحصة =
+     * الراتب الأساسي ÷ الهدف الشهري للحصص، بالتقريب لأقرب وحدة صغرى؛
+     * نصف الوحدة يُقرّب إلى أعلى بحساب أعداد صحيحة.
+     */
+    'salary_session_value' => [
+        'enabled' => true,
+    ],
+
+    'teacher_apology' => [
+        'approved_outcome' => 'teacher_apology',
+    ],
+
+    'student_apology' => [
+        'applies_to_status' => 'excused',
+        'individual_outcome' => 'individual_student_apology',
     ],
 
     /*

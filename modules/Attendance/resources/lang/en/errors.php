@@ -19,4 +19,6 @@ return [
     'invalid_session_duration' => 'The session duration must be a positive number of minutes.',
     'override_reason_required' => 'Overriding the derived attendance status requires a written reason of at least :min_chars characters.',
     'override_no_change' => 'Cannot override with the same current status (:status) — pick a genuinely different status.',
+    'sheet_teacher_not_assigned' => 'Only the teacher assigned to this session can submit or override its attendance sheet.',
+    'sheet_teacher_not_present' => 'The attendance sheet cannot be changed manually until the teacher has joined the room during the official session time.',
 ];

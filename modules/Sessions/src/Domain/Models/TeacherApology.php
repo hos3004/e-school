@@ -29,6 +29,10 @@ use Shared\Concerns\HasUlid;
  * @property string|null $substitution_id
  * @property int|null $occurrence_in_window
  * @property int|null $window_days
+ * @property CarbonImmutable|null $substitute_search_started_at
+ * @property CarbonImmutable|null $last_substitute_search_at
+ * @property list<string>|null $substitute_candidate_ids
+ * @property int $substitute_candidate_count
  *
  * اعتذار معلم عن حصة.
  *
@@ -58,6 +62,10 @@ final class TeacherApology extends Model
         'substitution_id',
         'occurrence_in_window',
         'window_days',
+        'substitute_search_started_at',
+        'last_substitute_search_at',
+        'substitute_candidate_ids',
+        'substitute_candidate_count',
     ];
 
     protected function casts(): array
@@ -70,6 +78,10 @@ final class TeacherApology extends Model
             'notice_minutes' => 'integer',
             'occurrence_in_window' => 'integer',
             'window_days' => 'integer',
+            'substitute_search_started_at' => 'immutable_datetime',
+            'last_substitute_search_at' => 'immutable_datetime',
+            'substitute_candidate_ids' => 'array',
+            'substitute_candidate_count' => 'integer',
         ];
     }
 

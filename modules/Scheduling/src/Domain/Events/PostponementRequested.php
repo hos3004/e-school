@@ -8,11 +8,15 @@ use Shared\Domain\DomainEvent;
 
 final class PostponementRequested extends DomainEvent
 {
+    /** @param list<string> $studentUserIds */
     public function __construct(
         public readonly string $requestId,
         public readonly string $sessionId,
         public readonly ?string $studentProfileId,
         public readonly string $proposedStart,
+        public readonly ?string $organizationId = null,
+        public readonly array $studentUserIds = [],
+        public readonly ?string $teacherUserId = null,
         ?string $actorId = null,
     ) {
         parent::__construct($actorId);
@@ -38,6 +42,9 @@ final class PostponementRequested extends DomainEvent
             'session_id' => $this->sessionId,
             'student_profile_id' => $this->studentProfileId,
             'proposed_start' => $this->proposedStart,
+            'organization_id' => $this->organizationId,
+            'student_user_ids' => $this->studentUserIds,
+            'teacher_user_id' => $this->teacherUserId,
         ];
     }
 }

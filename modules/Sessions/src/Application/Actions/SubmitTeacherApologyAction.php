@@ -19,12 +19,11 @@ use Shared\Support\BusinessRuleViolation;
 /**
  * تقديم المعلم اعتذارًا عن حصة.
  *
- * التقديم وحده **لا يغيّر شيئًا في الحصة**: لا يلغيها ولا يفرّغ المعلم منها
- * ولا يبدأ بحثًا عن بديل. كل ذلك معلّق على اعتماد المشرف
+ * التقديم لا يلغي الحصة ولا يفرّغ المعلم منها. يُعتمد الاعتذار تلقائيًا في
+ * نفس المسار، ثم يبدأ البحث الفوري والدوري عن بديل بلا موافقة إدارية
  * (docs/client-answers.md §ي).
  *
- * التقديم المتأخر عن المهلة **مقبول** ويُعلَّم `is_late_notice` ليراه المشرف —
- * لأن الظرف الطارئ لا يُعرّف بمهلة، لكن تكراره يجب أن يكون مرئيًا.
+ * المهلة إلزامية؛ الاعتذار داخل الساعة الأخيرة مرفوض كقاعدة عمل.
  */
 final readonly class SubmitTeacherApologyAction
 {
@@ -32,6 +31,7 @@ final readonly class SubmitTeacherApologyAction
         private Dispatcher $events,
         private AuditRecorder $audit,
         private StaffQueries $staff,
+        private DecideTeacherApologyAction $decisions,
     ) {}
 
     public function execute(
@@ -64,7 +64,7 @@ final readonly class SubmitTeacherApologyAction
         $alreadyOpen = TeacherApology::query()
             ->where('session_id', $sessionId)
             ->where('staff_profile_id', $staffProfileId)
-            ->where('status', ApologyStatus::Submitted)
+            ->whereIn('status', [ApologyStatus::Submitted, ApologyStatus::Approved])
             ->exists();
 
         if ($alreadyOpen) {
@@ -79,7 +79,14 @@ final readonly class SubmitTeacherApologyAction
             false,
         );
 
-        $minNotice = (int) config('scheduling.apology.min_notice_minutes', 120);
+        $minNotice = (int) config('scheduling.apology.min_notice_minutes');
+        if ($noticeMinutes < $minNotice) {
+            throw BusinessRuleViolation::make(
+                'sessions.apology_notice_not_met',
+                'sessions::errors.apology_notice_not_met',
+                ['required' => $minNotice, 'actual' => max(0, $noticeMinutes)],
+            );
+        }
 
         $actorId = $this->teacherUserId((string) $session->organization_id, $staffProfileId);
         $apology = DB::transaction(function () use ($session, $staffProfileId, $reason, $now, $noticeMinutes, $minNotice, $actorId): TeacherApology {
@@ -130,7 +137,21 @@ final readonly class SubmitTeacherApologyAction
             actorId: $actorId,
         ));
 
-        return $apology;
+        if ($actorId === null) {
+            throw BusinessRuleViolation::make(
+                'sessions.apology_teacher_account_missing',
+                'sessions::errors.apology_teacher_account_missing',
+            );
+        }
+
+        return $this->decisions->approve(
+            apologyId: (string) $apology->id,
+            decidedBy: $actorId,
+            decisionReason: trim($reason),
+            now: $now,
+            expectedOrganizationId: (string) $session->organization_id,
+            expectedSessionId: (string) $session->id,
+        );
     }
 
     /**

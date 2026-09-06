@@ -32,16 +32,6 @@ final class EnrollmentsServiceProvider extends BaseModuleServiceProvider
         ];
     }
 
-    /**
-     * أحداث هذا الموديول يستهلكها موديولات أخرى؛ لا مستمعين داخليين حاليًا.
-     *
-     * @return array<class-string, list<class-string>>
-     */
-    protected function listeners(): array
-    {
-        return [];
-    }
-
     /** @return array<class-string, class-string> */
     protected function bindings(): array
     {

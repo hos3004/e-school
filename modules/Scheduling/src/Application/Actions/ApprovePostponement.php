@@ -6,6 +6,7 @@ namespace Modules\Scheduling\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Scheduling\Application\Services\PostponementRecipientResolver;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Modules\Scheduling\Domain\Events\PostponementScheduled;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
@@ -22,6 +23,7 @@ final readonly class ApprovePostponement
         private SessionSchedulingQueries $sessionQueries,
         private SessionSchedulingGateway $sessions,
         private AuditRecorder $audit,
+        private PostponementRecipientResolver $recipients,
     ) {}
 
     public function execute(
@@ -111,11 +113,15 @@ final readonly class ApprovePostponement
             return $request;
         });
 
+        $recipients = $this->recipients->forSession($organizationId, (string) $updated->session_id, $updated->requested_for_student_id);
         event(new PostponementScheduled(
             requestId: (string) $updated->getKey(),
             sessionId: (string) $updated->session_id,
             makeupSessionId: (string) $updated->makeup_session_id,
             agreedStart: $agreedStart->toIso8601String(),
+            organizationId: $organizationId,
+            studentUserIds: $recipients['student_user_ids'],
+            teacherUserId: $recipients['teacher_user_id'],
             actorId: $approvedBy,
         ));
 

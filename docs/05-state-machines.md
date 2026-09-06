@@ -158,10 +158,11 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Requested : الطالب يطلب (قبل 15 دقيقة على الأقل)
+    [*] --> Requested : الطالب يطلب (قبل 60 دقيقة على الأقل)
+    [*] --> Scheduled : المعلم يؤجل مباشرة ويحدد الموعد
     Requested --> Scheduled : المعلم يؤكد الموعد المقترح
     Requested --> AlternativeProposed : المعلم يرشّح موعدًا آخر
-    Requested --> Rejected : المعلم أو الإدارة ترفض
+    Requested --> Rejected : المعلم يرفض بسبب مكتوب
     Requested --> Withdrawn : الطالب يسحب الطلب
     Requested --> Expired : انقضت مهلة رد المعلم (12 ساعة)
 

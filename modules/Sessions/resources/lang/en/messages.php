@@ -13,6 +13,10 @@ return [
     'attendance_leave' => 'Participant left the session and attendance duration was calculated.',
     'apology_approved_reason' => 'Teacher apology approved and substitute search opened.',
     'apology_decided' => 'The teacher apology decision was recorded.',
+    'student_apology_submitted' => 'The student apology was recorded for this session.',
+    'student_apology_attendance_reason' => 'Apology recorded before the session.',
     'reminders_dispatched' => ':count session reminders were queued for delivery.',
     'reminders_dispatched_manually' => 'The session reminder task ran successfully.',
+    'substitute_search_updated' => 'The automatic substitute candidate search was refreshed.',
+    'substitute_search_summary' => 'Automatic substitute search refreshed :count pending apologies.',
 ];

@@ -39,6 +39,7 @@ final readonly class RecordAttendanceAction
         int $leftBeforeMinutes = 0,
         ?string $organizationId = null,
         ?string $actorId = null,
+        ?AttendanceStatus $forcedStatus = null,
         ?string $reason = null,
     ): Attendance {
         $this->assertParticipantGiven($sessionParticipantId);
@@ -47,7 +48,7 @@ final readonly class RecordAttendanceAction
         $participant = $this->resolveActiveParticipant($sessionParticipantId, $organizationId);
         $reason = trim($reason ?? (string) __('attendance::messages.record_reason'));
 
-        $derivedStatus = AttendanceStatus::deriveFromMinutes(
+        $derivedStatus = $forcedStatus ?? AttendanceStatus::deriveFromMinutes(
             attendedMinutes: $attendedMinutes,
             sessionMinutes: $sessionMinutes,
             joinedAfterMinutes: $joinedAfterMinutes,

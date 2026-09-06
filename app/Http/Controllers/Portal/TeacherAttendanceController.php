@@ -37,6 +37,7 @@ final class TeacherAttendanceController extends Controller
         $this->sheet->execute(
             organizationId: $organizationId,
             sessionId: $session,
+            staffProfileId: $staffProfileId,
             statuses: $validated['statuses'],
             actorId: $actorId,
             reason: isset($validated['reason']) ? (string) $validated['reason'] : null,

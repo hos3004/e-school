@@ -302,7 +302,7 @@ it('books an individual student only in approved teacher availability with confi
     ))->toThrow(BusinessRuleViolation::class);
 });
 
-it('runs the postponement lifecycle through the Sessions gateway and escalates monthly overflow', function (): void {
+it('runs the postponement lifecycle through the Sessions gateway without admin approval', function (): void {
     CarbonImmutable::setTestNow('2026-10-10 08:00:00 UTC');
     config()->set('scheduling.postponement.max_per_student_per_month', 1);
     $fixture = schedulingFixture();
@@ -334,7 +334,7 @@ it('runs the postponement lifecycle through the Sessions gateway and escalates m
     );
 
     expect($request->requires_admin_review)->toBeFalse()
-        ->and($overflow->requires_admin_review)->toBeTrue();
+        ->and($overflow->requires_admin_review)->toBeFalse();
 
     $approved = app(ApprovePostponement::class)->execute(
         (string) $fixture['organization']->id,
@@ -632,7 +632,7 @@ it('allows the original teacher after substitution and guards invalid duplicate 
     );
 
     expect($request->requested_for_student_id)->toBeNull()
-        ->and($request->requires_admin_review)->toBeTrue()
+        ->and($request->requires_admin_review)->toBeFalse()
         ->and(AuditLog::query()
             ->where('action', 'scheduling.postponement_requested')
             ->where('auditable_id', $request->id)

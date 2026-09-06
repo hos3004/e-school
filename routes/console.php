@@ -26,6 +26,7 @@ Schedule::command('notifications:retry-failed')->everyFifteenMinutes()->withoutO
 Schedule::command('notifications:dispatch-due')->everyMinute()->withoutOverlapping();
 
 Schedule::command('sessions:dispatch-reminders')->everyMinute()->withoutOverlapping();
+Schedule::command('sessions:search-substitutes')->everyFiveMinutes()->withoutOverlapping();
 
 Artisan::command('classroom:sync-recordings', function (RecordingSynchronizer $synchronizer): int {
     $this->info(__('virtualclassroom::messages.recordings_synced', [

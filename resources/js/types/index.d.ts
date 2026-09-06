@@ -125,6 +125,7 @@ export interface PostponementRequest {
     status: string;
     approveUrl: string;
     proposeAlternativeUrl: string;
+    rejectUrl: string;
 }
 
 export type StatusColor = 'neutral' | 'brand' | 'success' | 'warning' | 'danger';

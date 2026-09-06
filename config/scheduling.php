@@ -8,7 +8,7 @@ declare(strict_types=1);
  * كل رقم هنا سياسة مدرسية — يُقرأ من هذا الملف أو من إعدادات المؤسسة،
  * وممنوع نسخه داخل كود الموديولات. انظر docs/13-scheduling-rules.md
  *
- * مرجع القرار: إجابات العميل — الإلغاء قبل ساعة، التأجيل قبل ربع ساعة،
+ * مرجع القرار: إجابات العميل — الإلغاء والتأجيل قبل ساعة،
  * وما دون ذلك يُحتسب تغيّبًا.
  */
 return [
@@ -20,11 +20,19 @@ return [
         // الإلغاء: يجب الإخطار قبل الموعد بـ 60 دقيقة على الأقل.
         'cancellation_minutes' => env('SCHEDULING_CANCEL_NOTICE', 60),
 
-        // التأجيل: يجب تقديم الطلب قبل الموعد بـ 15 دقيقة على الأقل.
-        'postponement_minutes' => env('SCHEDULING_POSTPONE_NOTICE', 15),
+        // التأجيل: يجب تقديم الطلب قبل الموعد بـ 60 دقيقة على الأقل.
+        'postponement_minutes' => env('SCHEDULING_POSTPONE_NOTICE', 60),
 
         // ما دون هاتين المهلتين يُسجَّل تلقائيًا كـ no_show (تغيّب بدون عذر).
         'below_notice_outcome' => 'no_show',
+    ],
+
+    /*
+     * اعتذار الطالب يخضع لنفس مهلة الساعة. في الجماعي يُعذر المشارك فقط؛
+     * وفي الفردي تصبح الحصة معتذرًا عنها.
+     */
+    'student_apology' => [
+        'min_notice_minutes' => (int) env('STUDENT_APOLOGY_MIN_NOTICE_MINUTES', 60),
     ],
 
     /*
@@ -149,18 +157,17 @@ return [
     /*
      * اعتذار المعلم عن الحصة.
      *
-     * قاعدة العميل 2026-08-22: الاعتذار **لا يُلغي الحصة**. بعد اعتماد
-     * المشرف يبدأ البحث عن بديل، ويظل المعلم الأصلي مسجَّلًا في الحصة.
+     * الاعتذار **لا يُلغي الحصة** ويُعتمد فورًا دون موافقة إدارية.
+     * يبدأ البحث عن بديل، ويظل المعلم الأصلي مسجَّلًا في الحصة.
      * سُلَّم المتابعة والنافذة المتحركة في config/discipline.php ('teacher').
      */
     'apology' => [
         'requires_reason' => true,
-        'requires_approval' => true,
+        'requires_approval' => false,
         'approver_permission' => 'session.apology.approve',
 
-        // أقل مهلة قبل الحصة لتقديم اعتذار (بالدقائق). ما دونها يُقبل لكنه
-        // يُعلَّم late_notice ويظهر للمشرف.
-        'min_notice_minutes' => (int) env('APOLOGY_MIN_NOTICE_MINUTES', 120),
+        // الاعتذار يجب أن يصل قبل الحصة بساعة على الأقل.
+        'min_notice_minutes' => (int) env('APOLOGY_MIN_NOTICE_MINUTES', 60),
 
         // مهلة رد المشرف قبل تصعيد الطلب (بالساعات).
         'approver_sla_hours' => 6,

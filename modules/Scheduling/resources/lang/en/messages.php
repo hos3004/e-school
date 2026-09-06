@@ -13,4 +13,6 @@ return [
     'teacher_approved_postponement' => 'The teacher approved the proposed time.',
     'postponement_approved' => 'The postponement time was approved.',
     'postponement_alternative_proposed' => 'The alternative time was sent.',
+    'student_approved_postponement' => 'The student approved the alternative time proposed by the teacher.',
+    'postponement_rejected' => 'The postponement request was rejected.',
 ];

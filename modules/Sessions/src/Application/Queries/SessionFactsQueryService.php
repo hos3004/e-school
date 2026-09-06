@@ -6,7 +6,9 @@ namespace Modules\Sessions\Application\Queries;
 
 use Carbon\CarbonImmutable;
 use Modules\Sessions\Domain\Contracts\SessionFactsQueries;
+use Modules\Sessions\Domain\Enums\ApologyStatus;
 use Modules\Sessions\Domain\Models\Session;
+use Modules\Sessions\Domain\Models\TeacherApology;
 use Modules\Sessions\Domain\ValueObjects\SessionPayrollFacts;
 
 final readonly class SessionFactsQueryService implements SessionFactsQueries
@@ -39,6 +41,16 @@ final readonly class SessionFactsQueryService implements SessionFactsQueries
             makeupForSessionId: $session->makeup_for_session_id === null
                 ? null
                 : (string) $session->makeup_for_session_id,
+            hasApprovedTeacherApology: TeacherApology::query()
+                ->where('session_id', $session->getKey())
+                ->whereIn('status', [
+                    ApologyStatus::Approved,
+                    ApologyStatus::Covered,
+                ])
+                ->exists(),
+            hasStudentApology: $session->participants()
+                ->whereNotNull('excused_at')
+                ->exists(),
         );
     }
 }

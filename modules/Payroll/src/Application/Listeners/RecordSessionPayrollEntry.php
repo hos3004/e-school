@@ -10,6 +10,7 @@ use Modules\Academics\Domain\Contracts\ProgramRulesQueries;
 use Modules\Payroll\Application\Actions\RecordPayrollEntryAction;
 use Modules\Payroll\Application\Services\PayrollPeriodResolver;
 use Modules\Sessions\Domain\Contracts\SessionFactsQueries;
+use Modules\Sessions\Domain\Events\TeacherApologyDecided;
 use Modules\Sessions\Domain\ValueObjects\SessionPayrollFacts;
 use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Modules\Staff\Domain\Enums\RateScope;
@@ -57,25 +58,34 @@ final readonly class RecordSessionPayrollEntry
             return;
         }
 
-        $outcomeKey = $this->outcomeKeyFor($facts);
+        $isApprovedApology = $event instanceof TeacherApologyDecided
+            && $event->substituteRequired
+            && $event->decision === 'approved';
 
-        if ($outcomeKey === null) {
+        if (!$isApprovedApology
+            && $facts->hasApprovedTeacherApology
+            && !$facts->hasSubstitute()) {
             return;
         }
 
-        $teacherEffect = (string) config("payroll.outcomes.{$outcomeKey}.teacher", 'none');
+        $outcomeKey = $isApprovedApology
+            ? config('payroll.teacher_apology.approved_outcome')
+            : $this->outcomeKeyFor($facts);
 
-        if ($teacherEffect === 'none') {
+        if (!is_string($outcomeKey)) {
             return;
         }
 
-        $entryType = config("payroll.entry_types.{$teacherEffect}");
+        $configuredEffect = (string) config("payroll.outcomes.{$outcomeKey}.teacher", 'none');
 
-        if (!is_string($entryType)) {
+        if ($configuredEffect === 'none') {
             return;
         }
 
-        $rate = $this->resolveRate($facts);
+        $staffProfileId = $isApprovedApology
+            ? $event->staffProfileId
+            : $facts->staffProfileId;
+        $rate = $this->resolveRate($facts, $staffProfileId, $configuredEffect === 'deduct');
 
         if ($rate === null) {
             /*
@@ -85,10 +95,25 @@ final readonly class RecordSessionPayrollEntry
              */
             Log::warning('payroll.entry.rate_unresolved', [
                 'session_id' => $facts->sessionId,
-                'staff_profile_id' => $facts->staffProfileId,
+                'staff_profile_id' => $staffProfileId,
                 'outcome' => $outcomeKey,
             ]);
 
+            return;
+        }
+
+        $teacherEffect = config(
+            "payroll.contract_basis_effects.{$rate['contract_basis']}.{$configuredEffect}",
+            $configuredEffect,
+        );
+
+        if (!is_string($teacherEffect) || $teacherEffect === 'none') {
+            return;
+        }
+
+        $entryType = config("payroll.entry_types.{$teacherEffect}");
+
+        if (!is_string($entryType)) {
             return;
         }
 
@@ -102,7 +127,7 @@ final readonly class RecordSessionPayrollEntry
             $this->record->execute(
                 organizationId: $facts->organizationId,
                 payrollPeriodId: (string) $period->getKey(),
-                staffProfileId: $facts->staffProfileId,
+                staffProfileId: $staffProfileId,
                 teacherContractId: $rate['contract_id'],
                 entryType: $entryType,
                 outcomeKey: $outcomeKey,
@@ -154,6 +179,17 @@ final readonly class RecordSessionPayrollEntry
             return is_string($makeup) ? $makeup : $mapped;
         }
 
+        $studentApology = config('payroll.student_apology');
+        if (
+            $facts->hasStudentApology
+            && is_array($studentApology)
+            && ($studentApology['applies_to_status'] ?? null) === $facts->status
+        ) {
+            $individualOutcome = $studentApology['individual_outcome'] ?? null;
+
+            return is_string($individualOutcome) ? $individualOutcome : $mapped;
+        }
+
         return $this->applyLateCancellation($facts, $mapped);
     }
 
@@ -190,18 +226,25 @@ final readonly class RecordSessionPayrollEntry
     /**
      * @return array{money: Money, scope: RateScope, rate_id: string, contract_id: string, contract_basis: string}|null
      */
-    private function resolveRate(SessionPayrollFacts $facts): ?array
-    {
+    private function resolveRate(
+        SessionPayrollFacts $facts,
+        string $staffProfileId,
+        bool $forDeduction,
+    ): ?array {
         $programIds = $this->programs->programIdsOfCourse($facts->courseId);
         $programId = $programIds === [] ? null : (string) reset($programIds);
 
-        return $this->rates->resolve(
-            staffProfileId: $facts->staffProfileId,
-            sessionDate: $facts->scheduledStart,
-            programId: $programId,
-            courseId: $facts->courseId,
-            sessionType: $facts->sessionType,
-        );
+        $arguments = [
+            'staffProfileId' => $staffProfileId,
+            'sessionDate' => $facts->scheduledStart,
+            'programId' => $programId,
+            'courseId' => $facts->courseId,
+            'sessionType' => $facts->sessionType,
+        ];
+
+        return $forDeduction
+            ? $this->rates->resolveDeduction(...$arguments)
+            : $this->rates->resolve(...$arguments);
     }
 
     private function sessionIdOf(DomainEvent $event): ?string

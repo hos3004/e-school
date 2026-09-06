@@ -24,5 +24,6 @@ final readonly class SessionParticipantAdministrationData
         public ?string $lastLeftAt,
         public int $attendedMinutes,
         public bool $invitationActive,
+        public ?string $excusedAt = null,
     ) {}
 }

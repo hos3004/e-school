@@ -141,9 +141,16 @@ it('persists a failed provisioning attempt and retries the same classroom safely
 });
 
 it('reprovisions a remote classroom that ended before a portal join', function (): void {
-    $participantId = $this->createSessionParticipant();
+    $fixture = new class
+    {
+        use CreatesSessionParticipant {
+            createSessionParticipant as public;
+        }
+    };
+    $participantId = $fixture->createSessionParticipant();
     $sessionId = (string) DB::table('session_participants')->where('id', $participantId)->value('session_id');
-    $operatorId = (string) User::query()->where('organization_id', $this->organizationId)->value('id');
+    $organizationId = (string) DB::table('sessions')->where('id', $sessionId)->value('organization_id');
+    $operatorId = (string) User::query()->where('organization_id', $organizationId)->value('id');
     $provider = Mockery::mock(VirtualClassroomProvider::class);
     $provider->shouldReceive('name')->andReturn('bigbluebutton');
     $provider->shouldReceive('createClassroom')
@@ -163,14 +170,14 @@ it('reprovisions a remote classroom that ended before a portal join', function (
     $first = app(ProvisionClassroomAction::class)->execute(
         $sessionId,
         'فصل سينتهي عند المزوّد',
-        organizationId: $this->organizationId,
+        organizationId: $organizationId,
         actorId: $operatorId,
         reason: 'تجهيز الفصل قبل دخول المعلم',
     );
     $recovered = app(ProvisionClassroomAction::class)->execute(
         $sessionId,
         'فصل بديل بعد انتهاء الغرفة الأولى',
-        organizationId: $this->organizationId,
+        organizationId: $organizationId,
         actorId: $operatorId,
         reason: 'إعادة التجهيز عند طلب دخول المعلم',
         ensureRemoteIsRunning: true,

@@ -9,6 +9,7 @@ use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Models\Attendance;
 use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
 use Modules\Sessions\Domain\ValueObjects\SessionParticipantAdministrationData;
+use Modules\VirtualClassroom\Domain\Contracts\ClassroomPresenceQueries;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -36,6 +37,7 @@ final readonly class RecordAttendanceSheetAction
         private RecordAttendanceAction $record,
         private OverrideAttendanceAction $override,
         private ConfirmAttendanceAction $confirm,
+        private ClassroomPresenceQueries $classroomPresence,
     ) {}
 
     /**
@@ -45,6 +47,7 @@ final readonly class RecordAttendanceSheetAction
     public function execute(
         string $organizationId,
         string $sessionId,
+        string $staffProfileId,
         array $statuses,
         string $actorId,
         ?string $reason = null,
@@ -55,6 +58,27 @@ final readonly class RecordAttendanceSheetAction
             throw BusinessRuleViolation::make(
                 'attendance.sheet.no_participants',
                 'attendance::errors.sheet_no_participants',
+            );
+        }
+
+        if ($participants[0]->staffProfileId !== $staffProfileId) {
+            throw BusinessRuleViolation::make(
+                'attendance.sheet.teacher_not_assigned',
+                'attendance::errors.sheet_teacher_not_assigned',
+            );
+        }
+
+        $scheduledStart = CarbonImmutable::parse($participants[0]->scheduledStart, 'UTC');
+        $scheduledEnd = CarbonImmutable::parse($participants[0]->scheduledEnd, 'UTC');
+        if (!$this->classroomPresence->wasUserPresent(
+            $sessionId,
+            $actorId,
+            $scheduledStart,
+            $scheduledEnd,
+        )) {
+            throw BusinessRuleViolation::make(
+                'attendance.sheet.teacher_not_present',
+                'attendance::errors.sheet_teacher_not_present',
             );
         }
 
@@ -142,15 +166,17 @@ final readonly class RecordAttendanceSheetAction
     private function minutesFor(AttendanceStatus $target, int $sessionMinutes): array
     {
         $thresholds = (array) config('academic.attendance.thresholds');
-        $late = (int) ($thresholds['late_after_minutes'] ?? 10);
-        $leftEarly = (int) ($thresholds['left_early_before_minutes'] ?? 10);
-        $partial = (int) ($thresholds['partial_min_percent'] ?? 40);
+        $late = (int) $thresholds['late_after_minutes'];
+        $leftEarly = (int) $thresholds['left_early_before_minutes'];
+        $partial = (int) $thresholds['partial_min_percent'];
+        $full = (int) $thresholds['present_min_percent'];
+        $partialAttendance = intdiv($partial + $full, 2);
 
         return match ($target) {
             AttendanceStatus::Present => [$sessionMinutes, 0, 0],
             AttendanceStatus::Late => [max(1, $sessionMinutes - $late), $late, 0],
             AttendanceStatus::LeftEarly => [max(1, $sessionMinutes - $leftEarly), 0, $leftEarly],
-            AttendanceStatus::Partial => [max(1, (int) round($sessionMinutes * ($partial + 5) / 100)), 0, 0],
+            AttendanceStatus::Partial => [max(1, (int) round($sessionMinutes * $partialAttendance / 100)), 0, 0],
             default => [0, 0, 0],
         };
     }

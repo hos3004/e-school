@@ -44,11 +44,34 @@ return [
     ],
     'teacher.apology.submitted' => [
         'subject' => 'Teacher apology received',
-        'body' => 'The apology request was received and will be reviewed by a supervisor.',
+        'body' => 'The teacher apology was recorded and approved, and the substitute search started.',
+    ],
+    'student.apology.submitted' => [
+        'subject' => 'Student apology recorded',
+        'body' => 'The student apology was recorded and the relevant parties were notified.',
+    ],
+    'postponement.requested' => [
+        'subject' => 'Session postponement requested',
+        'body' => 'A request to postpone the session to {{proposed_start}} was recorded and the relevant parties were notified.',
+        'parameters' => ['proposed_start'],
+    ],
+    'postponement.alternative_proposed' => [
+        'subject' => 'Teacher proposed an alternative time',
+        'body' => 'The teacher proposed {{teacher_proposed_start}} as an alternative session time.',
+        'parameters' => ['teacher_proposed_start'],
+    ],
+    'postponement.scheduled' => [
+        'subject' => 'Session postponed',
+        'body' => 'The alternative session time was confirmed for {{agreed_start}}.',
+        'parameters' => ['agreed_start'],
+    ],
+    'postponement.rejected' => [
+        'subject' => 'Postponement request rejected',
+        'body' => 'The session postponement request was rejected. Review the recorded reason in the platform.',
     ],
     'teacher.apology.approved' => [
         'subject' => 'Apology approved',
-        'body' => 'The supervisor approved the teacher apology and substitute follow-up has started.',
+        'body' => 'The teacher apology was approved automatically and the substitute search started.',
     ],
     'teacher.apology.rejected' => [
         'subject' => 'Apology not approved',
@@ -62,6 +85,11 @@ return [
         'subject' => 'Substitute teacher assigned',
         'body' => 'A substitute teacher was assigned for the session scheduled at {{scheduled_start}}.',
         'parameters' => ['scheduled_start'],
+    ],
+    'session.substitute.candidates_updated' => [
+        'subject' => 'Substitute candidates updated',
+        'body' => 'The automatic search found {{candidate_count}} qualified and available substitute candidates for the session.',
+        'parameters' => ['candidate_count'],
     ],
     'session.substitute.changed' => [
         'subject' => 'Substitute teacher changed',

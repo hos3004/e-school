@@ -62,6 +62,13 @@ return [
 
     'default_channels' => ['in_app', 'email'],
 
+    // حل جمهور العمليات إلى الأدوار النظامية؛ التصفية بالمؤسسة تتم عبر Identity.
+    'audience_roles' => [
+        'supervisor' => ['academic_supervisor', 'registrar'],
+        'admin' => ['platform_admin'],
+        'administrator' => ['platform_admin'],
+    ],
+
     /*
      * تصنيف الإشعارات وقنواتها الافتراضية.
      * ما هو critical لا يخضع لساعات الهدوء ولا يستطيع المستخدم إيقافه.
@@ -163,23 +170,62 @@ return [
             'recipient_fields' => ['teacher_user_id', 'supervisor_user_ids', 'admin_user_ids'],
             'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologySubmitted'],
         ],
+        'student.apology.submitted' => [
+            'category' => 'session_changed',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_id', 'teacher_user_id'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\StudentSessionApologized'],
+        ],
+        'postponement.requested' => [
+            'category' => 'postponement_request',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\PostponementRequested'],
+        ],
+        'postponement.alternative_proposed' => [
+            'category' => 'postponement_request',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\PostponementAlternativeProposed'],
+        ],
+        'postponement.scheduled' => [
+            'category' => 'session_changed',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\PostponementScheduled'],
+        ],
+        'postponement.rejected' => [
+            'category' => 'postponement_request',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\PostponementRejected'],
+        ],
         'teacher.apology.approved' => [
             'category' => 'teacher_workflow',
-            'audiences' => ['teacher', 'supervisor'],
+            'audiences' => ['teacher', 'supervisor', 'admin'],
             'recipient_fields' => ['teacher_user_id', 'supervisor_user_ids'],
-            'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologyApproved'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologyDecided'],
+            'payload_match' => ['decision' => 'approved'],
         ],
         'teacher.apology.rejected' => [
             'category' => 'teacher_workflow',
             'audiences' => ['teacher', 'supervisor'],
             'recipient_fields' => ['teacher_user_id', 'supervisor_user_ids'],
-            'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologyRejected'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologyDecided'],
+            'payload_match' => ['decision' => 'rejected'],
         ],
         'session.substitute.required' => [
             'category' => 'teacher_workflow',
             'audiences' => ['supervisor', 'admin'],
             'recipient_fields' => ['supervisor_user_ids', 'admin_user_ids'],
-            'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionSubstituteRequired'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologyDecided'],
+            'payload_match' => ['substitute_required' => true],
+        ],
+        'session.substitute.candidates_updated' => [
+            'category' => 'teacher_workflow',
+            'audiences' => ['supervisor', 'admin'],
+            'recipient_fields' => [],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\SubstituteCandidatesUpdated'],
         ],
         'session.substitute.assigned' => [
             'category' => 'session_changed',

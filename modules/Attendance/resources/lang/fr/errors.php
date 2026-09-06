@@ -14,4 +14,6 @@ return [
     'invalid_session_duration' => 'La durée de la séance doit être positive.',
     'override_reason_required' => 'La dérogation exige un motif d’au moins :min_chars caractères.',
     'override_no_change' => 'Le nouveau statut doit être différent du statut actuel (:status).',
+    'sheet_teacher_not_assigned' => 'Seul l’enseignant affecté à cette séance peut enregistrer ou modifier la présence.',
+    'sheet_teacher_not_present' => 'La présence ne peut être modifiée manuellement avant que l’enseignant ait rejoint la salle pendant l’horaire officiel.',
 ];

@@ -36,4 +36,11 @@ return [
     'apology_invalid_transition' => 'انتقال غير مسموح للاعتذار من :from إلى :to.',
     'apology_must_not_change_session' => 'خطأ داخلي: اعتماد الاعتذار غيّر حالة الحصة. الاعتذار لا يُلغي الحصة أبدًا.',
     'apology_context_mismatch' => 'الاعتذار المحدد لا ينتمي إلى هذه الحصة أو المؤسسة.',
+    'apology_notice_not_met' => 'يجب تقديم الاعتذار قبل الحصة بـ :required دقيقة على الأقل.',
+    'apology_teacher_account_missing' => 'تعذر تحديد حساب المعلم المكلّف بالحصة.',
+    'student_apology_reason_required' => 'سبب اعتذار الطالب مطلوب.',
+    'student_apology_participant_not_found' => 'الطالب غير مسجل في هذه الحصة.',
+    'student_apology_already_submitted' => 'تم تسجيل الاعتذار عن هذه الحصة بالفعل.',
+    'student_apology_session_closed' => 'لا يمكن الاعتذار عن حصة حالتها :status.',
+    'student_apology_notice_not_met' => 'يجب تقديم الاعتذار قبل الحصة بـ :required دقيقة على الأقل.',
 ];

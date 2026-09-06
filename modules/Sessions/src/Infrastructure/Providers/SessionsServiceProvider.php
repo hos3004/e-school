@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\Sessions\Infrastructure\Providers;
 
 use Modules\Sessions\Application\Console\DispatchSessionReminders;
+use Modules\Sessions\Application\Console\SearchPendingSubstitutes;
+use Modules\Sessions\Application\Listeners\StartAutomaticSubstituteSearch;
 use Modules\Sessions\Application\Policies\SessionParticipantPolicy;
 use Modules\Sessions\Application\Policies\SessionPolicy;
 use Modules\Sessions\Application\Policies\SessionStatusHistoryPolicy;
@@ -13,12 +15,15 @@ use Modules\Sessions\Application\Queries\SessionFactsQueryService;
 use Modules\Sessions\Application\Queries\SessionOperationsQueryService;
 use Modules\Sessions\Application\Queries\SessionParticipantAdministrationQueryService;
 use Modules\Sessions\Application\Queries\SessionSchedulingQueryService;
+use Modules\Sessions\Application\Services\SessionParticipantAttendanceService;
 use Modules\Sessions\Application\Services\SessionSchedulingService;
 use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 use Modules\Sessions\Domain\Contracts\SessionFactsQueries;
 use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
+use Modules\Sessions\Domain\Contracts\SessionParticipantAttendanceGateway;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingGateway;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingQueries;
+use Modules\Sessions\Domain\Events\TeacherApologyDecided;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\SessionParticipant;
 use Modules\Sessions\Domain\Models\SessionStatusHistory;
@@ -31,6 +36,11 @@ final class SessionsServiceProvider extends BaseModuleServiceProvider
         return 'Sessions';
     }
 
+    protected function listeners(): array
+    {
+        return [TeacherApologyDecided::class => [StartAutomaticSubstituteSearch::class]];
+    }
+
     /**
      * @return array<class-string, class-string>
      */
@@ -41,6 +51,7 @@ final class SessionsServiceProvider extends BaseModuleServiceProvider
             SessionFactsQueries::class => SessionFactsQueryService::class,
             SessionSchedulingQueries::class => SessionSchedulingQueryService::class,
             SessionSchedulingGateway::class => SessionSchedulingService::class,
+            SessionParticipantAttendanceGateway::class => SessionParticipantAttendanceService::class,
             SessionParticipantAdministrationQueries::class => SessionParticipantAdministrationQueryService::class,
         ];
     }
@@ -65,6 +76,6 @@ final class SessionsServiceProvider extends BaseModuleServiceProvider
     {
         parent::boot();
 
-        $this->commands([DispatchSessionReminders::class]);
+        $this->commands([DispatchSessionReminders::class, SearchPendingSubstitutes::class]);
     }
 }

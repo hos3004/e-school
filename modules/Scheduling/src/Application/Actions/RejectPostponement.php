@@ -6,6 +6,7 @@ namespace Modules\Scheduling\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Scheduling\Application\Services\PostponementRecipientResolver;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Modules\Scheduling\Domain\Events\PostponementRejected;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
@@ -14,7 +15,11 @@ use Shared\Support\Transaction;
 
 final readonly class RejectPostponement
 {
-    public function __construct(private Transaction $transaction, private AuditRecorder $audit) {}
+    public function __construct(
+        private Transaction $transaction,
+        private AuditRecorder $audit,
+        private PostponementRecipientResolver $recipients,
+    ) {}
 
     public function execute(
         string $organizationId,
@@ -63,10 +68,14 @@ final readonly class RejectPostponement
             return $request;
         });
 
+        $recipients = $this->recipients->forSession($organizationId, (string) $request->session_id, $request->requested_for_student_id);
         event(new PostponementRejected(
             requestId: (string) $request->getKey(),
             sessionId: (string) $request->session_id,
             reason: $reason,
+            organizationId: $organizationId,
+            studentUserIds: $recipients['student_user_ids'],
+            teacherUserId: $recipients['teacher_user_id'],
             actorId: $rejectedBy,
         ));
 

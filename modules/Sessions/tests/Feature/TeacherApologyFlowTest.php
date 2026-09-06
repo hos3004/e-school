@@ -96,7 +96,7 @@ function apologySession(array $overrides = []): Session
     return $session->refresh();
 }
 
-it('يقبل الاعتذار بسبب مكتوب ولا يمس الحصة عند التقديم', function (): void {
+it('يعتمد الاعتذار فورًا بسبب مكتوب ولا يمس الحصة', function (): void {
     $session = apologySession();
 
     $apology = app(SubmitTeacherApologyAction::class)->execute(
@@ -105,8 +105,14 @@ it('يقبل الاعتذار بسبب مكتوب ولا يمس الحصة عن�
         'ظرف عائلي طارئ',
     );
 
-    expect($apology->status)->toBe(ApologyStatus::Submitted)
-        ->and($apology->reason)->toBe('ظرف عائلي طارئ');
+    $apology->refresh();
+
+    expect($apology->status)->toBe(ApologyStatus::Approved)
+        ->and($apology->substitute_search_started_at)->not->toBeNull()
+        ->and($apology->last_substitute_search_at)->not->toBeNull()
+        ->and($apology->reason)->toBe('ظرف عائلي طارئ')
+        ->and($apology->is_late_notice)->toBeFalse()
+        ->and((int) config('scheduling.apology.min_notice_minutes'))->toBe(60);
 
     // الحصة لم تتغيّر بأي شكل عند مجرد التقديم.
     expect($session->refresh()->status)->toBe(SessionStatus::Scheduled)
@@ -132,11 +138,6 @@ it('لا يُلغي الحصة عند اعتماد الاعتذار — القا
         'مرض مفاجئ',
     );
 
-    app(DecideTeacherApologyAction::class)->approve(
-        (string) $apology->id,
-        Fixtures::userId(),
-    );
-
     $session->refresh();
 
     // هذا هو بيت القصيد: الحصة قائمة، والمعلم ما زال مسندًا حتى يُختار بديل.
@@ -147,6 +148,20 @@ it('لا يُلغي الحصة عند اعتماد الاعتذار — القا
     expect($apology->refresh()->status)->toBe(ApologyStatus::Approved)
         ->and($apology->status->awaitsSubstitute())->toBeTrue();
 });
+it('يرفض الاعتذار إذا تبقى أقل من مهلة الساعة', function (): void {
+    $now = CarbonImmutable::now('UTC');
+    $session = apologySession([
+        'scheduled_start' => $now->addMinutes(59),
+        'scheduled_end' => $now->addMinutes(119),
+    ]);
+
+    app(SubmitTeacherApologyAction::class)->execute(
+        (string) $session->id,
+        (string) $session->staff_profile_id,
+        'اعتذار متأخر',
+        $now,
+    );
+})->throws(BusinessRuleViolation::class);
 
 it('يمنع رفض الاعتذار بلا سبب مكتوب', function (): void {
     $session = apologySession();
