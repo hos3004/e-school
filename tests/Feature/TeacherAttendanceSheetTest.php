@@ -95,6 +95,25 @@ final class TeacherAttendanceSheetTest extends TestCase
         )->assertRedirect()->assertSessionHasErrors();
     }
 
+    public function test_assigned_teacher_without_verified_room_presence_cannot_change_the_sheet(): void
+    {
+        Gate::define('attendance.record', static fn (): bool => true);
+
+        $context = $this->sessionContext(teacherPresent: false);
+
+        $this->actingAs($context['teacher_user'])
+            ->from('/teacher/sessions/'.$context['session_id'])
+            ->post('/teacher/sessions/'.$context['session_id'].'/attendance', [
+                'statuses' => [$context['student_profile_id'] => AttendanceStatus::Present->value],
+            ])
+            ->assertRedirect('/teacher/sessions/'.$context['session_id'])
+            ->assertSessionHasErrors('business_rule');
+
+        $this->assertFalse(
+            Attendance::query()->where('session_participant_id', $context['participant_id'])->exists(),
+        );
+    }
+
     public function test_a_status_outside_the_enum_is_refused(): void
     {
         Gate::define('attendance.record', static fn (): bool => true);
@@ -110,7 +129,7 @@ final class TeacherAttendanceSheetTest extends TestCase
     /**
      * @return array<string, string>
      */
-    private function sessionContext(): array
+    private function sessionContext(bool $teacherPresent = true): array
     {
         $now = CarbonImmutable::now('UTC');
         $organizationId = (string) Str::ulid();
@@ -234,6 +253,36 @@ final class TeacherAttendanceSheetTest extends TestCase
             'attended_minutes' => 0,
             'created_at' => $now,
         ]);
+
+        if ($teacherPresent) {
+            $classroomId = (string) Str::ulid();
+            DB::table('classrooms')->insert([
+                'id' => $classroomId,
+                'session_id' => $sessionId,
+                'provider' => 'bigbluebutton',
+                'external_id' => 'ATTENDANCE-'.$sessionId,
+                'moderator_secret' => 'moderator-secret',
+                'attendee_secret' => 'attendee-secret',
+                'created_remote_at' => $now->subHours(3),
+                'status' => 'ended',
+                'started_at' => $now->subHours(3),
+                'ended_at' => $now->subHours(2),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            DB::table('classroom_events')->insert([
+                'id' => (string) Str::ulid(),
+                'classroom_id' => $classroomId,
+                'idempotency_key' => hash('sha256', $classroomId.'|'.$teacherUserId),
+                'event_type' => 'participant_joined',
+                'external_user_id' => $teacherUserId,
+                'user_id' => $teacherUserId,
+                'occurred_at' => $now->subHours(3)->addMinutes(5),
+                'payload' => json_encode(['role' => 'moderator'], JSON_THROW_ON_ERROR),
+                'created_at' => $now,
+            ]);
+        }
 
         return [
             'teacher_user' => User::query()->findOrFail($teacherUserId),

@@ -20,6 +20,7 @@ final readonly class SessionParticipantAdministrationData
         public string $sessionStatus,
         public string $scheduledStart,
         public string $scheduledEnd,
+        public ?string $excusedAt,
         public ?string $firstJoinedAt,
         public ?string $lastLeftAt,
         public int $attendedMinutes,

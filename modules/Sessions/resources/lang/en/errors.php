@@ -36,4 +36,11 @@ return [
     'apology_invalid_transition' => 'Apology transition from :from to :to is not allowed.',
     'apology_must_not_change_session' => 'Internal error: approving the apology changed the session status. An apology never cancels a session.',
     'apology_context_mismatch' => 'The selected apology does not belong to this session or organization.',
+    'apology_notice_not_met' => 'The apology must be submitted at least :required minutes before the session.',
+    'apology_teacher_account_missing' => 'The assigned teacher account could not be resolved.',
+    'student_apology_reason_required' => 'The student apology reason is required.',
+    'student_apology_participant_not_found' => 'The student is not registered in this session.',
+    'student_apology_already_submitted' => 'An apology has already been submitted for this session.',
+    'student_apology_session_closed' => 'A session in :status status cannot be apologized for.',
+    'student_apology_notice_not_met' => 'The apology must be submitted at least :required minutes before the session.',
 ];

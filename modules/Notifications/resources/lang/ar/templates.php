@@ -44,11 +44,34 @@ return [
     ],
     'teacher.apology.submitted' => [
         'subject' => 'تم استلام اعتذار المعلم',
-        'body' => 'تم استلام طلب الاعتذار وسيُراجع من المشرف.',
+        'body' => 'تم تسجيل اعتذار المعلم واعتماده، وبدأ البحث عن بديل.',
+    ],
+    'student.apology.submitted' => [
+        'subject' => 'تم تسجيل اعتذار الطالب',
+        'body' => 'تم تسجيل اعتذار الطالب عن الحصة وإخطار الأطراف المعنية.',
+    ],
+    'postponement.requested' => [
+        'subject' => 'طلب تأجيل حصة',
+        'body' => 'تم تسجيل طلب تأجيل الحصة إلى {{proposed_start}} وإخطار الأطراف المعنية.',
+        'parameters' => ['proposed_start'],
+    ],
+    'postponement.alternative_proposed' => [
+        'subject' => 'اقترح المعلم موعدًا بديلًا',
+        'body' => 'اقترح المعلم موعدًا بديلًا للحصة في {{teacher_proposed_start}}.',
+        'parameters' => ['teacher_proposed_start'],
+    ],
+    'postponement.scheduled' => [
+        'subject' => 'تم تأجيل الحصة',
+        'body' => 'تم اعتماد الموعد البديل للحصة في {{agreed_start}}.',
+        'parameters' => ['agreed_start'],
+    ],
+    'postponement.rejected' => [
+        'subject' => 'رُفض طلب التأجيل',
+        'body' => 'رُفض طلب تأجيل الحصة. راجع السبب المسجل في المنصة.',
     ],
     'teacher.apology.approved' => [
         'subject' => 'تم اعتماد الاعتذار',
-        'body' => 'اعتمد المشرف اعتذار المعلم وبدأت متابعة توفير البديل.',
+        'body' => 'تم اعتماد اعتذار المعلم تلقائيًا وبدأ البحث عن بديل.',
     ],
     'teacher.apology.rejected' => [
         'subject' => 'لم يُعتمد الاعتذار',
@@ -62,6 +85,11 @@ return [
         'subject' => 'تم تعيين معلم بديل',
         'body' => 'تم تعيين معلم بديل للحصة المقررة في {{scheduled_start}}.',
         'parameters' => ['scheduled_start'],
+    ],
+    'session.substitute.candidates_updated' => [
+        'subject' => 'تحديث مرشحي المعلم البديل',
+        'body' => 'وجد البحث التلقائي {{candidate_count}} مرشحًا متاحًا ومؤهلًا للحصة.',
+        'parameters' => ['candidate_count'],
     ],
     'session.substitute.changed' => [
         'subject' => 'تغيّر المعلم البديل',

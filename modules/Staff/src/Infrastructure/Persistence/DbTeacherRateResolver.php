@@ -10,6 +10,7 @@ use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Modules\Staff\Domain\Enums\RateScope;
 use Modules\Staff\Domain\Models\TeacherContract;
 use Modules\Staff\Domain\Models\TeacherRate;
+use Shared\ValueObjects\Money;
 
 final readonly class DbTeacherRateResolver implements TeacherRateResolver
 {
@@ -90,5 +91,57 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
         }
 
         return null;
+    }
+
+    public function resolveDeduction(
+        string $staffProfileId,
+        CarbonImmutable $sessionDate,
+        ?string $programId = null,
+        ?string $courseId = null,
+        ?string $sessionType = null,
+    ): ?array {
+        $rate = $this->resolve(
+            $staffProfileId,
+            $sessionDate,
+            $programId,
+            $courseId,
+            $sessionType,
+        );
+
+        if ($rate !== null) {
+            return $rate;
+        }
+
+        if (config('payroll.salary_session_value.enabled', true) !== true) {
+            return null;
+        }
+
+        $contract = TeacherContract::query()
+            ->forProfile($staffProfileId)
+            ->activeOn($sessionDate)
+            ->orderByDesc('effective_from')
+            ->first();
+
+        if ($contract === null
+            || !$contract->basis->requiresBaseAmount()
+            || $contract->base_amount === null
+            || $contract->monthly_target_sessions === null
+            || $contract->monthly_target_sessions <= 0) {
+            return null;
+        }
+
+        $minorUnits = (int) round(
+            $contract->base_amount / $contract->monthly_target_sessions,
+            0,
+            PHP_ROUND_HALF_UP,
+        );
+
+        return [
+            'money' => Money::of($minorUnits, $contract->currency ?? 'EGP'),
+            'scope' => RateScope::Default,
+            'rate_id' => (string) $contract->getKey(),
+            'contract_id' => (string) $contract->getKey(),
+            'contract_basis' => $contract->basis->value,
+        ];
     }
 }

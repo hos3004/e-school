@@ -29,6 +29,9 @@ interface StudentSessionShowProps extends LoadablePageProps {
   postponementRequestUrl?: string;
   postponementRequest?: PostponementSummary | null;
   canRequestPostponement?: boolean;
+  studentApologyUrl?: string;
+  studentApology?: StudentApologySummary | null;
+  canSubmitApology?: boolean;
 }
 
 interface PostponementSummary {
@@ -36,6 +39,13 @@ interface PostponementSummary {
   status: string;
   reason: string;
   proposedStart: string;
+  teacherProposedStart: string | null;
+  acceptAlternativeUrl: string;
+}
+
+interface StudentApologySummary {
+  submittedAt: string;
+  reason: string;
 }
 
 const sessionStatusColors: StatusColorMap = {
@@ -109,6 +119,9 @@ export default function Show({
   postponementRequest = null,
   canRequestPostponement = false,
   loading = false,
+  studentApologyUrl = "",
+  studentApology = null,
+  canSubmitApology = false,
   error = null,
 }: StudentSessionShowProps) {
   const t = useI18n();
@@ -116,11 +129,31 @@ export default function Show({
   const now = useJoinClock(session);
   const pageTitle = session?.title ?? t("student.sessions.details_title");
   const postponementForm = useForm({ proposed_start: "", reason: "" });
+  const apologyForm = useForm({ reason: "" });
+  const [acceptingAlternative, setAcceptingAlternative] = useState(false);
   const submitPostponement = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     postponementForm.post(postponementRequestUrl, { preserveScroll: true });
   };
 
+  const submitApology = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    apologyForm.post(studentApologyUrl, {
+      preserveScroll: true,
+    });
+  };
+
+  const acceptAlternative = () => {
+    if (!postponementRequest?.acceptAlternativeUrl) {
+      return;
+    }
+
+    router.post(postponementRequest.acceptAlternativeUrl, {}, {
+      preserveScroll: true,
+      onStart: () => setAcceptingAlternative(true),
+      onFinish: () => setAcceptingAlternative(false),
+    });
+  };
   const content = (() => {
     if (loading) {
       return (
@@ -309,6 +342,55 @@ export default function Show({
             </Card>
           ) : null}
 
+          {studentApology ? (
+            <Card as="section">
+              <CardHeader>
+                <CardTitle as="h2">{t("student.apology.title")}</CardTitle>
+                <CardDescription>
+                  {t("student.apology.recorded")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="mt-4 text-sm text-[var(--ink-muted)]">
+                {studentApology.reason}
+              </CardContent>
+            </Card>
+          ) : canSubmitApology && studentApologyUrl ? (
+            <Card as="section">
+              <CardHeader>
+                <CardTitle as="h2">{t("student.apology.title")}</CardTitle>
+                <CardDescription>
+                  {t("student.apology.description")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="mt-5">
+                <form className="space-y-4" onSubmit={submitApology}>
+                  <label className="block text-sm font-semibold text-[var(--ink)]">
+                    {t("student.apology.reason")}
+                    <textarea
+                      className="mt-2 min-h-24 w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3"
+                      disabled={apologyForm.processing}
+                      onChange={(event) =>
+                        apologyForm.setData("reason", event.target.value)
+                      }
+                      required
+                      value={apologyForm.data.reason}
+                    />
+                  </label>
+                  <Button
+                    disabled={apologyForm.processing}
+                    fullWidth
+                    type="submit"
+                    variant="secondary"
+                  >
+                    {apologyForm.processing
+                      ? t("actions.processing")
+                      : t("student.apology.submit")}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          ) : null}
+
           {postponementRequest ? (
             <Card as="section">
               <CardHeader>
@@ -320,6 +402,32 @@ export default function Show({
               </CardHeader>
               <CardContent className="mt-4 text-sm text-[var(--ink-muted)]">
                 {postponementRequest.reason}
+                {postponementRequest.teacherProposedStart ? (
+                  <div className="mt-4 rounded-lg bg-[var(--surface-subtle)] p-4">
+                    <p className="font-semibold text-[var(--ink)]">
+                      {t("postponement.teacher_alternative")}
+                    </p>
+                    <time dateTime={postponementRequest.teacherProposedStart}>
+                      {formatDateTime(
+                        postponementRequest.teacherProposedStart,
+                        locale,
+                        session.timezone,
+                      )}
+                    </time>
+                  </div>
+                ) : null}
+                {postponementRequest.acceptAlternativeUrl ? (
+                  <Button
+                    className="mt-4"
+                    disabled={acceptingAlternative}
+                    onClick={acceptAlternative}
+                    type="button"
+                  >
+                    {acceptingAlternative
+                      ? t("actions.processing")
+                      : t("postponement.accept_alternative")}
+                  </Button>
+                ) : null}
               </CardContent>
             </Card>
           ) : canRequestPostponement && postponementRequestUrl ? (

@@ -36,4 +36,11 @@ return [
     'apology_invalid_transition' => 'Le passage de :from à :to n’est pas autorisé pour cette demande.',
     'apology_must_not_change_session' => 'Erreur interne : l’approbation a modifié le statut de la séance.',
     'apology_context_mismatch' => 'La demande sélectionnée n’appartient pas à cette séance ou organisation.',
+    'apology_notice_not_met' => 'L’indisponibilité doit être signalée au moins :required minutes avant la séance.',
+    'apology_teacher_account_missing' => 'Le compte de l’enseignant affecté est introuvable.',
+    'student_apology_reason_required' => 'Le motif de l’absence excusée est obligatoire.',
+    'student_apology_participant_not_found' => 'L’élève n’est pas inscrit à cette séance.',
+    'student_apology_already_submitted' => 'Une excuse a déjà été envoyée pour cette séance.',
+    'student_apology_session_closed' => 'Une séance au statut :status ne peut plus être excusée.',
+    'student_apology_notice_not_met' => 'L’excuse doit être envoyée au moins :required minutes avant la séance.',
 ];

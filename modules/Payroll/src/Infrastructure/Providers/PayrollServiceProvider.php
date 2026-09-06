@@ -18,6 +18,7 @@ use Modules\Sessions\Domain\Events\SessionCompleted;
 use Modules\Sessions\Domain\Events\SessionExcused;
 use Modules\Sessions\Domain\Events\SessionNoShowRecorded;
 use Modules\Sessions\Domain\Events\SessionPostponed;
+use Modules\Sessions\Domain\Events\TeacherApologyDecided;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class PayrollServiceProvider extends BaseModuleServiceProvider
@@ -50,6 +51,7 @@ final class PayrollServiceProvider extends BaseModuleServiceProvider
             SessionExcused::class => [$accrual],
             SessionCancelled::class => [$accrual],
             SessionPostponed::class => [$accrual],
+            TeacherApologyDecided::class => [$accrual],
         ];
     }
 

@@ -6,12 +6,14 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Portal\Support\PortalData;
+use App\Http\Requests\Portal\RejectPostponementRequest;
 use App\Http\Requests\Portal\RespondToPostponementRequest;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Modules\Scheduling\Application\Actions\ApprovePostponement;
 use Modules\Scheduling\Application\Actions\ProposePostponementAlternative;
+use Modules\Scheduling\Application\Actions\RejectPostponement;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingQueries;
 
@@ -22,6 +24,7 @@ final class TeacherPostponementResponseController extends Controller
         private readonly SessionSchedulingQueries $sessions,
         private readonly ApprovePostponement $approvePostponement,
         private readonly ProposePostponementAlternative $proposeAlternative,
+        private readonly RejectPostponement $rejectPostponement,
     ) {}
 
     public function approve(Request $request, string $postponement): RedirectResponse
@@ -33,7 +36,7 @@ final class TeacherPostponementResponseController extends Controller
         $this->approvePostponement->execute(
             $organizationId,
             (string) $record->getKey(),
-            (string) $request->user()?->getAuthIdentifier(),
+            (string) $request->user()->getAuthIdentifier(),
             $record->proposed_by_teacher_start ?? $record->proposed_start,
             (string) __('scheduling::messages.teacher_approved_postponement'),
         );
@@ -56,6 +59,21 @@ final class TeacherPostponementResponseController extends Controller
         );
 
         return back()->with('success', __('scheduling::messages.postponement_alternative_proposed'));
+    }
+
+    public function reject(RejectPostponementRequest $request, string $postponement): RedirectResponse
+    {
+        [$record, $organizationId] = $this->assignedRequest($request, $postponement);
+        abort_if($record->requires_admin_review, 403);
+
+        $this->rejectPostponement->execute(
+            $organizationId,
+            (string) $record->getKey(),
+            (string) $request->user()?->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
+
+        return back()->with('success', __('scheduling::messages.postponement_rejected'));
     }
 
     /** @return array{PostponementRequest, string} */

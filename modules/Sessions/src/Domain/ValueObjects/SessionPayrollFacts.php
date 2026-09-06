@@ -29,6 +29,10 @@ final readonly class SessionPayrollFacts
         public CarbonImmutable $scheduledEnd,
         /** الحصة الأصلية التي جاءت هذه تلافيًا لها، إن وُجدت. */
         public ?string $makeupForSessionId,
+        /** اعتذار المعلم الأصلي معتمد، فلا يستحق الحصة بنفسه. */
+        public bool $hasApprovedTeacherApology,
+        /** يوجد مشارك قدّم اعتذار طالب مسجّلًا على الحصة. */
+        public bool $hasStudentApology,
     ) {}
 
     public function isMakeup(): bool

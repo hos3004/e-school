@@ -27,7 +27,6 @@ use Modules\Identity\Domain\Models\User;
 use Modules\Recordings\Application\Actions\GrantRecordingAccessAction;
 use Modules\Recordings\Domain\Models\Recording;
 use Modules\Sessions\Application\Actions\AssignSubstituteTeacherAction;
-use Modules\Sessions\Application\Actions\DecideTeacherApologyAction;
 use Modules\Sessions\Application\Actions\SubmitTeacherApologyAction;
 use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 use Modules\Sessions\Domain\Enums\ApologyStatus;
@@ -213,13 +212,7 @@ final class Task03AcceptanceTest extends TestCase
         $submitApology = app(SubmitTeacherApologyAction::class);
         $apology = $submitApology->execute((string) $session->id, $originalTeacherId, 'ظرف صحي طارئ');
 
-        $this->assertEquals(ApologyStatus::Submitted, $apology->status);
-
-        /** @var DecideTeacherApologyAction $decideApology */
-        $decideApology = app(DecideTeacherApologyAction::class);
-        $decidedApology = $decideApology->approve((string) $apology->id, Fixtures::userId());
-
-        $this->assertEquals(ApologyStatus::Approved, $decidedApology->status);
+        $this->assertEquals(ApologyStatus::Approved, $apology->status);
 
         /** @var AssignSubstituteTeacherAction $assignSubstitute */
         $assignSubstitute = app(AssignSubstituteTeacherAction::class);
@@ -227,6 +220,9 @@ final class Task03AcceptanceTest extends TestCase
 
         $this->assertEquals($substituteTeacherId, $updatedSession->staff_profile_id);
         $this->assertEquals($originalTeacherId, $updatedSession->original_teacher_id);
+        $this->assertEquals(ApologyStatus::Covered, $apology->refresh()->status);
+        $this->assertNotNull($apology->substitution_id);
+        $this->assertFalse($apology->status->awaitsSubstitute());
     }
 
     public function test_attendance_duration_calculation_and_confirmation(): void

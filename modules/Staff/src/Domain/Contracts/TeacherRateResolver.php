@@ -32,4 +32,18 @@ interface TeacherRateResolver
         ?string $courseId = null,
         ?string $sessionType = null,
     ): ?array;
+
+    /**
+     * يحل قيمة الخصم للحصة. في العقد الشهري يمكن اشتقاقها من
+     * الراتب الأساسي والهدف الشهري عندما لا يوجد سعر مستقل للحصة.
+     *
+     * @return array{money: Money, scope: RateScope, rate_id: string, contract_id: string, contract_basis: string}|null
+     */
+    public function resolveDeduction(
+        string $staffProfileId,
+        CarbonImmutable $sessionDate,
+        ?string $programId = null,
+        ?string $courseId = null,
+        ?string $sessionType = null,
+    ): ?array;
 }

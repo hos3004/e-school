@@ -131,6 +131,7 @@ final readonly class SessionParticipantAdministrationQueryService implements Ses
             firstJoinedAt: $participant->first_joined_at?->toIso8601String(),
             lastLeftAt: $participant->last_left_at?->toIso8601String(),
             attendedMinutes: (int) $participant->attended_minutes,
+            excusedAt: $participant->excused_at?->toIso8601String(),
             invitationActive: $participant->revoked_at === null && !$participant->trashed(),
         );
     }

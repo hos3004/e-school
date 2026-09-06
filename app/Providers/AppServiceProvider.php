@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Infrastructure\Identity\OrganizationUsernamePrefixAdapter;
+use App\Listeners\ApplyAutomaticDisciplineFreeze;
+use App\Listeners\FinalizeClassroomAttendance;
 use App\Listeners\SyncClassroomRecordings;
+use App\Listeners\TrackClassroomParticipantAttendance;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
@@ -13,8 +16,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Modules\Discipline\Domain\Events\DisciplineActionApplied;
 use Modules\Identity\Domain\Contracts\OrganizationUsernamePrefixProvider;
 use Modules\VirtualClassroom\Domain\Events\ClassroomEnded;
+use Modules\VirtualClassroom\Domain\Events\ClassroomParticipantJoined;
+use Modules\VirtualClassroom\Domain\Events\ClassroomParticipantLeft;
 use Shared\Support\DatabaseTransaction;
 use Shared\Support\Transaction;
 
@@ -30,6 +36,10 @@ final class AppServiceProvider extends ServiceProvider
     {
         Event::listen(ClassroomEnded::class, SyncClassroomRecordings::class);
 
+        Event::listen(ClassroomParticipantJoined::class, TrackClassroomParticipantAttendance::class);
+        Event::listen(ClassroomParticipantLeft::class, TrackClassroomParticipantAttendance::class);
+        Event::listen(ClassroomEnded::class, FinalizeClassroomAttendance::class);
+        Event::listen(DisciplineActionApplied::class, ApplyAutomaticDisciplineFreeze::class);
         // التواريخ دائمًا UTC داخليًا — العرض بتوقيت المستخدم فقط.
         Date::use(CarbonImmutable::class);
 

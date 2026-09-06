@@ -133,4 +133,20 @@ final class AccessControlQueryService implements AccessControlQuerier
 
         return isset($this->effectivePermissions[$key][$permissionName]);
     }
+
+    public function modelIdsForRoleNames(string $modelType, array $roleNames): array
+    {
+        if ($roleNames === []) {
+            return [];
+        }
+
+        return DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_type', $modelType)
+            ->whereIn('roles.name', $roleNames)
+            ->distinct()
+            ->pluck('model_has_roles.model_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+    }
 }

@@ -12,6 +12,8 @@ use Modules\Payroll\Domain\Enums\PayrollPeriodStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\SessionCancelled;
 use Modules\Sessions\Domain\Events\SessionCompleted;
+use Modules\Sessions\Domain\Events\SessionExcused;
+use Modules\Sessions\Domain\Events\TeacherApologyDecided;
 use Tests\TestCase;
 
 /**
@@ -104,11 +106,179 @@ final class SessionPayrollAccrualTest extends TestCase
         );
     }
 
-    public function test_teacher_cancellation_records_a_negative_deduction(): void
+    public function test_per_session_teacher_apology_adds_no_entitlement_or_debt(): void
     {
         $context = $this->payrollContext(
             ratePiastres: 5_000,
+            sessionStatus: SessionStatus::Scheduled,
+        );
+
+        Event::dispatch(new TeacherApologyDecided(
+            sessionId: $context['session_id'],
+            organizationId: $context['organization_id'],
+            courseId: $context['course_id'],
+            staffProfileId: $context['staff_profile_id'],
+            apologyId: (string) Str::ulid(),
+            teacherUserId: null,
+            decision: 'approved',
+            substituteRequired: true,
+            occurrenceInWindow: 1,
+            windowDays: 30,
+            escalationAction: 'record',
+            createsEscalation: false,
+            scheduledStart: CarbonImmutable::now('UTC')->addDay()->toIso8601String(),
+        ));
+
+        $this->assertSame(0, DB::table('payroll_entries')->count());
+    }
+
+    public function test_salary_teacher_apology_records_a_session_value_deduction(): void
+    {
+        $context = $this->payrollContext(
+            ratePiastres: null,
+            sessionStatus: SessionStatus::Scheduled,
+            contractBasis: 'salary',
+            baseAmountPiastres: 60_000,
+            monthlyTargetSessions: 12,
+        );
+
+        Event::dispatch(new TeacherApologyDecided(
+            sessionId: $context['session_id'],
+            organizationId: $context['organization_id'],
+            courseId: $context['course_id'],
+            staffProfileId: $context['staff_profile_id'],
+            apologyId: (string) Str::ulid(),
+            teacherUserId: null,
+            decision: 'approved',
+            substituteRequired: true,
+            occurrenceInWindow: 1,
+            windowDays: 30,
+            escalationAction: 'record',
+            createsEscalation: false,
+            scheduledStart: CarbonImmutable::now('UTC')->addDay()->toIso8601String(),
+        ));
+
+        $entry = DB::table('payroll_entries')
+            ->where('session_id', $context['session_id'])
+            ->first();
+
+        $this->assertNotNull($entry);
+        $this->assertSame('session_deduction', $entry->entry_type);
+        $this->assertSame('teacher_apology', $entry->outcome_key);
+        $this->assertSame(-5_000, (int) $entry->amount);
+    }
+
+    public function test_an_ordinary_excused_session_keeps_the_teacher_entitlement(): void
+    {
+        $context = $this->payrollContext(
+            ratePiastres: 5_000,
+            sessionStatus: SessionStatus::Excused,
+        );
+
+        Event::dispatch(new SessionExcused(
+            sessionId: $context['session_id'],
+            organizationId: $context['organization_id'],
+            courseId: $context['course_id'],
+            staffProfileId: $context['staff_profile_id'],
+            reason: 'عذر إداري لا ينتج عن اعتذار الطالب.',
+        ));
+
+        $entry = DB::table('payroll_entries')
+            ->where('session_id', $context['session_id'])
+            ->sole();
+
+        $this->assertSame('session_earning', $entry->entry_type);
+        $this->assertSame('student_excused', $entry->outcome_key);
+        $this->assertSame(5_000, (int) $entry->amount);
+    }
+
+    public function test_all_group_students_apologizing_does_not_remove_teacher_entitlement(): void
+    {
+        $context = $this->payrollContext(
+            ratePiastres: 5_000,
+            sessionStatus: SessionStatus::Completed,
+            sessionType: 'group',
+        );
+        $this->markStudentApology($context);
+        $this->markStudentApology($context);
+
+        Event::dispatch(new SessionCompleted(
+            sessionId: $context['session_id'],
+            organizationId: $context['organization_id'],
+            courseId: $context['course_id'],
+            staffProfileId: $context['staff_profile_id'],
+            attendedMinutes: 60,
+        ));
+
+        $entry = DB::table('payroll_entries')
+            ->where('session_id', $context['session_id'])
+            ->sole();
+
+        $this->assertSame('session_earning', $entry->entry_type);
+        $this->assertSame('completed', $entry->outcome_key);
+        $this->assertSame(5_000, (int) $entry->amount);
+    }
+
+    public function test_individual_student_apology_gives_per_session_teacher_no_entitlement_or_debt(): void
+    {
+        $context = $this->payrollContext(
+            ratePiastres: 5_000,
+            sessionStatus: SessionStatus::Excused,
+            sessionType: 'individual',
+        );
+        $this->markStudentApology($context);
+
+        Event::dispatch(new SessionExcused(
+            sessionId: $context['session_id'],
+            organizationId: $context['organization_id'],
+            courseId: $context['course_id'],
+            staffProfileId: $context['staff_profile_id'],
+            reason: 'اعتذار طالب فردي.',
+        ));
+
+        $this->assertSame(
+            0,
+            DB::table('payroll_entries')->where('session_id', $context['session_id'])->count(),
+        );
+    }
+
+    public function test_individual_student_apology_deducts_one_session_value_from_salary_teacher(): void
+    {
+        $context = $this->payrollContext(
+            ratePiastres: null,
+            sessionStatus: SessionStatus::Excused,
+            contractBasis: 'salary',
+            baseAmountPiastres: 60_000,
+            monthlyTargetSessions: 12,
+            sessionType: 'individual',
+        );
+        $this->markStudentApology($context);
+
+        Event::dispatch(new SessionExcused(
+            sessionId: $context['session_id'],
+            organizationId: $context['organization_id'],
+            courseId: $context['course_id'],
+            staffProfileId: $context['staff_profile_id'],
+            reason: 'اعتذار طالب فردي.',
+        ));
+
+        $entry = DB::table('payroll_entries')
+            ->where('session_id', $context['session_id'])
+            ->sole();
+
+        $this->assertSame('session_deduction', $entry->entry_type);
+        $this->assertSame('individual_student_apology', $entry->outcome_key);
+        $this->assertSame(-5_000, (int) $entry->amount);
+    }
+
+    public function test_salary_teacher_cancellation_records_a_negative_deduction(): void
+    {
+        $context = $this->payrollContext(
+            ratePiastres: null,
             sessionStatus: SessionStatus::CancelledByTeacher,
+            contractBasis: 'salary',
+            baseAmountPiastres: 60_000,
+            monthlyTargetSessions: 12,
         );
 
         Event::dispatch(new SessionCancelled(
@@ -216,6 +386,10 @@ final class SessionPayrollAccrualTest extends TestCase
     private function payrollContext(
         ?int $ratePiastres,
         SessionStatus $sessionStatus = SessionStatus::Completed,
+        string $contractBasis = 'per_session',
+        ?int $baseAmountPiastres = null,
+        ?int $monthlyTargetSessions = null,
+        string $sessionType = 'group',
     ): array {
         $organizationId = (string) Str::ulid();
         DB::table('organizations')->insert([
@@ -258,7 +432,9 @@ final class SessionPayrollAccrualTest extends TestCase
             'id' => $contractId,
             'organization_id' => $organizationId,
             'staff_profile_id' => $staffProfileId,
-            'basis' => 'per_session',
+            'basis' => $contractBasis,
+            'base_amount' => $baseAmountPiastres,
+            'monthly_target_sessions' => $monthlyTargetSessions,
             'effective_from' => $sessionStart->subMonth()->toDateString(),
             'currency' => 'EGP',
             'created_at' => now(),
@@ -316,7 +492,7 @@ final class SessionPayrollAccrualTest extends TestCase
             'course_id' => $courseId,
             'staff_profile_id' => $staffProfileId,
             'original_teacher_id' => $staffProfileId,
-            'session_type' => 'group',
+            'session_type' => $sessionType,
             'title' => json_encode(['ar' => 'حصة', 'en' => 'Session'], JSON_THROW_ON_ERROR),
             'status' => $sessionStatus->value,
             'scheduled_start' => $sessionStart,
@@ -331,6 +507,59 @@ final class SessionPayrollAccrualTest extends TestCase
             'contract_id' => $contractId,
             'course_id' => $courseId,
             'session_id' => $sessionId,
+            'program_id' => $programId,
         ];
+    }
+
+    /** @param array<string, string> $context */
+    private function markStudentApology(array $context): void
+    {
+        $now = CarbonImmutable::now('UTC');
+        $studentUserId = (string) Str::ulid();
+        DB::table('users')->insert([
+            'id' => $studentUserId,
+            'organization_id' => $context['organization_id'],
+            'name' => 'طالب',
+            'email' => Str::lower(Str::random(10)).'@example.test',
+            'password' => bcrypt('password-for-tests'),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $studentProfileId = (string) Str::ulid();
+        DB::table('student_profiles')->insert([
+            'id' => $studentProfileId,
+            'organization_id' => $context['organization_id'],
+            'user_id' => $studentUserId,
+            'student_code' => 'PR-STUDENT-'.Str::upper(Str::random(6)),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $enrollmentId = (string) Str::ulid();
+        DB::table('enrollments')->insert([
+            'id' => $enrollmentId,
+            'organization_id' => $context['organization_id'],
+            'student_profile_id' => $studentProfileId,
+            'program_id' => $context['program_id'],
+            'status' => 'active',
+            'applied_at' => $now->subMonth(),
+            'activated_at' => $now->subMonth(),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        DB::table('session_participants')->insert([
+            'id' => (string) Str::ulid(),
+            'session_id' => $context['session_id'],
+            'student_profile_id' => $studentProfileId,
+            'enrollment_id' => $enrollmentId,
+            'join_url_token' => Str::random(64),
+            'invited_at' => $now->subDay(),
+            'excused_at' => $now->subDays(3),
+            'excused_by' => $studentUserId,
+            'excuse_reason' => 'اعتذار طالب فردي.',
+            'created_at' => $now,
+        ]);
     }
 }

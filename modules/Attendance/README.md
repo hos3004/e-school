@@ -14,11 +14,13 @@
 
 - `Sessions` (المشاركة والحصة).
 - `VirtualClassroom` عبر أحداث `classroom.participant_joined/left`.
+- إثبات حضور المعلم يُقرأ من العقد العام `VirtualClassroom.ClassroomPresenceQueries`.
 - مفاتيح المخالفات تُقرأ من `config/discipline.php → countable_events`.
 
 ## قواعد خاصة
 
 - الحالة تُستنبط آليًا من الدقائق (`deriveFromMinutes`) ثم **يعتمدها المعلم** — الاقتراح ليس قرارًا.
+- لا يعتمد المعلم الكشف أو يتجاوزه إلا بعد ثبوت حضوره في الغرفة خلال الفترة الرسمية.
 - **قيد قاعدة بيانات**: `CHECK (status = derived_status OR override_reason IS NOT NULL)` — لا تعديل على الحضور المشتق بلا سبب مكتوب.
 - أي تعديل بعد الاعتماد يُسجَّل في `audit_log` بسبب مكتوب.
 - عتبات الحضور من `config/academic.php → attendance.thresholds` — لا أرقام في الكود.

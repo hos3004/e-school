@@ -18,10 +18,15 @@ use Shared\Concerns\HasUlid;
  * @property string $session_id
  * @property string $student_profile_id
  * @property string $enrollment_id
+ * @property CarbonImmutable|null $excused_at
+ * @property string|null $excused_by
+ * @property string|null $excuse_reason
  * @property string|null $join_url_token
  * @property CarbonImmutable|null $invited_at
  * @property CarbonImmutable|null $first_joined_at
  * @property CarbonImmutable|null $last_left_at
+ * @property CarbonImmutable|null $current_joined_at
+ * @property int $attended_seconds
  * @property CarbonImmutable|null $revoked_at
  * @property string|null $revoked_by
  * @property string|null $revocation_reason
@@ -51,6 +56,11 @@ final class SessionParticipant extends Model
         'revocation_reason',
         'first_joined_at',
         'last_left_at',
+        'excused_at',
+        'excused_by',
+        'excuse_reason',
+        'current_joined_at',
+        'attended_seconds',
         'attended_minutes',
     ];
 
@@ -59,6 +69,9 @@ final class SessionParticipant extends Model
         return [
             'invited_at' => 'immutable_datetime',
             'revoked_at' => 'immutable_datetime',
+            'current_joined_at' => 'immutable_datetime',
+            'excused_at' => 'immutable_datetime',
+            'attended_seconds' => 'int',
             'first_joined_at' => 'immutable_datetime',
             'last_left_at' => 'immutable_datetime',
             'attended_minutes' => 'int',

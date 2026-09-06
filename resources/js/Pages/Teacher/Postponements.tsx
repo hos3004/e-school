@@ -36,6 +36,10 @@ interface AlternativeFormData {
   reason: string;
 }
 
+interface RejectFormData {
+  reason: string;
+}
+
 interface RequestCardProps {
   request: PostponementRequest;
   statusColors: StatusColorMap;
@@ -68,11 +72,17 @@ function RequestCard({ request, statusColors }: RequestCardProps) {
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
   const [alternativeOpen, setAlternativeOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
   const alternativeForm = useForm<AlternativeFormData>({
     proposed_start_at: "",
     reason: "",
   });
   const alternativeFormId = "postponement-alternative-" + request.id;
+  const rejectForm = useForm<RejectFormData>({
+    reason: "",
+  });
+  const rejectFormId = "postponement-reject-" + request.id;
+
 
   const approve = () => {
     setApproveError(null);
@@ -98,6 +108,7 @@ function RequestCard({ request, statusColors }: RequestCardProps) {
   const toggleAlternative = () => {
     setApproveError(null);
     alternativeForm.clearErrors();
+    setRejectOpen(false);
     setAlternativeOpen((current) => !current);
   };
 
@@ -113,6 +124,25 @@ function RequestCard({ request, statusColors }: RequestCardProps) {
     });
   };
 
+
+  const toggleReject = () => {
+    setApproveError(null);
+    rejectForm.clearErrors();
+    setAlternativeOpen(false);
+    setRejectOpen((current) => !current);
+  };
+
+  const reject = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    rejectForm.post(request.rejectUrl, {
+      preserveScroll: true,
+      onSuccess: () => {
+        rejectForm.reset();
+        setRejectOpen(false);
+      },
+    });
+  };
   return (
     <Card
       as="article"
@@ -185,7 +215,7 @@ function RequestCard({ request, statusColors }: RequestCardProps) {
           {request.approveUrl ? (
             <Button
               className="w-full sm:w-auto"
-              disabled={approving || alternativeForm.processing}
+              disabled={approving || alternativeForm.processing || rejectForm.processing}
               onClick={approve}
               type="button"
             >
@@ -199,7 +229,7 @@ function RequestCard({ request, statusColors }: RequestCardProps) {
               aria-controls={alternativeFormId}
               aria-expanded={alternativeOpen}
               className="w-full sm:w-auto"
-              disabled={approving || alternativeForm.processing}
+              disabled={approving || alternativeForm.processing || rejectForm.processing}
               onClick={toggleAlternative}
               type="button"
               variant="secondary"
@@ -207,6 +237,21 @@ function RequestCard({ request, statusColors }: RequestCardProps) {
               {alternativeOpen
                 ? t("actions.cancel")
                 : t("teacher.postponements.actions.propose_alternative")}
+            </Button>
+          ) : null}
+          {request.rejectUrl ? (
+            <Button
+              aria-controls={rejectFormId}
+              aria-expanded={rejectOpen}
+              className="w-full sm:w-auto"
+              disabled={approving || alternativeForm.processing || rejectForm.processing}
+              onClick={toggleReject}
+              type="button"
+              variant="danger"
+            >
+              {rejectOpen
+                ? t("actions.cancel")
+                : t("teacher.postponements.actions.reject")}
             </Button>
           ) : null}
         </CardFooter>
@@ -310,10 +355,60 @@ function RequestCard({ request, statusColors }: RequestCardProps) {
             </div>
           </form>
         ) : null}
+        {rejectOpen && request.rejectUrl ? (
+          <form
+            className="mt-5 space-y-5 border-t border-[var(--ink-muted)]/25 pt-5"
+            id={rejectFormId}
+            onSubmit={reject}
+          >
+            <div>
+              <label
+                className="block text-sm font-semibold text-[var(--ink)]"
+                htmlFor={rejectFormId + "-reason"}
+              >
+                {t("teacher.postponements.reject.reason_label")}
+              </label>
+              <textarea
+                aria-invalid={Boolean(rejectForm.errors.reason)}
+                className={teacherFieldClasses + " min-h-28 py-3"}
+                disabled={rejectForm.processing}
+                id={rejectFormId + "-reason"}
+                name="reason"
+                onChange={(event) =>
+                  rejectForm.setData("reason", event.target.value)
+                }
+                placeholder={t("teacher.postponements.reject.reason_placeholder")}
+                required
+                value={rejectForm.data.reason}
+              />
+              <FieldError
+                id={rejectFormId + "-reason-error"}
+                message={rejectForm.errors.reason}
+              />
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <Button disabled={rejectForm.processing} type="submit" variant="danger">
+                {rejectForm.processing
+                  ? t("actions.saving")
+                  : t("teacher.postponements.reject.submit")}
+              </Button>
+              <Button
+                disabled={rejectForm.processing}
+                onClick={toggleReject}
+                type="button"
+                variant="ghost"
+              >
+                {t("actions.cancel")}
+              </Button>
+            </div>
+          </form>
+        ) : null}
       </div>
     </Card>
   );
 }
+
 
 export default function TeacherPostponements({
   requests = [],

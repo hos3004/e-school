@@ -207,6 +207,140 @@ final class PortalWriteRoutesTest extends TestCase
         $this->assertNotNull(DB::table('teacher_availability')->find($foreignId));
     }
 
+    public function test_student_submits_a_session_apology_through_the_portal(): void
+    {
+        Gate::define('session.postpone.request', static fn (): bool => true);
+
+        $context = $this->academicContext();
+
+        $this->actingAs($context['student_user'])
+            ->from('/student/sessions/'.$context['session_id'])
+            ->post('/student/sessions/'.$context['session_id'].'/apologies', [
+                'reason' => 'موعد طبي معروف قبل الحصة.',
+            ])
+            ->assertRedirect('/student/sessions/'.$context['session_id'])
+            ->assertSessionHas('success');
+
+        $participant = DB::table('session_participants')
+            ->where('session_id', $context['session_id'])
+            ->where('student_profile_id', $context['student_profile_id'])
+            ->sole();
+
+        $this->assertNotNull($participant->excused_at);
+        $this->assertSame((string) $context['student_user']->getKey(), $participant->excused_by);
+        $this->assertSame('موعد طبي معروف قبل الحصة.', $participant->excuse_reason);
+        $this->assertSame('scheduled', DB::table('sessions')->find($context['session_id'])->status);
+    }
+
+    public function test_student_session_apology_requires_the_postponement_request_permission(): void
+    {
+        Gate::define('session.postpone.request', static fn (): bool => false);
+
+        $context = $this->academicContext();
+
+        $this->actingAs($context['student_user'])
+            ->post('/student/sessions/'.$context['session_id'].'/apologies', [
+                'reason' => 'محاولة بلا صلاحية.',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($context['student_user'])
+            ->post('/student/postponements/'.Str::ulid().'/accept-alternative')
+            ->assertForbidden();
+
+        $this->assertNull(
+            DB::table('session_participants')
+                ->where('session_id', $context['session_id'])
+                ->value('excused_at'),
+        );
+    }
+
+    public function test_user_without_a_student_profile_cannot_apologize_for_a_session(): void
+    {
+        Gate::define('session.postpone.request', static fn (): bool => true);
+
+        $context = $this->academicContext();
+        $outsider = $this->persistedUser($context['organization_id'], [
+            'email' => 'apology.outsider@example.test',
+        ]);
+
+        $this->actingAs($outsider)
+            ->post('/student/sessions/'.$context['session_id'].'/apologies', [
+                'reason' => 'محاولة اعتذار عن طالب آخر.',
+            ])
+            ->assertForbidden();
+
+        $this->assertNull(
+            DB::table('session_participants')
+                ->where('session_id', $context['session_id'])
+                ->value('excused_at'),
+        );
+    }
+
+    public function test_student_requests_postponement_and_assigned_teacher_approves_it(): void
+    {
+        Gate::define('session.postpone.request', static fn (): bool => true);
+        Gate::define('session.postpone.approve', static fn (): bool => true);
+
+        $context = $this->academicContext();
+        $proposedStart = CarbonImmutable::now('UTC')->addDays(2);
+
+        $this->actingAs($context['student_user'])
+            ->from('/student/sessions/'.$context['session_id'])
+            ->post('/student/sessions/'.$context['session_id'].'/postponement-requests', [
+                'proposed_start' => $proposedStart->toIso8601String(),
+                'reason' => 'لدي اختبار في الموعد الأصلي.',
+            ])
+            ->assertRedirect('/student/sessions/'.$context['session_id'])
+            ->assertSessionHas('success');
+
+        $request = DB::table('postponement_requests')
+            ->where('session_id', $context['session_id'])
+            ->sole();
+
+        $this->assertSame('requested', $request->status);
+        $this->assertFalse((bool) $request->requires_admin_review);
+
+        $this->actingAs($context['teacher_user'])
+            ->from('/teacher/postponements')
+            ->post('/teacher/postponements/'.$request->id.'/approve')
+            ->assertRedirect('/teacher/postponements')
+            ->assertSessionHas('success');
+
+        $approved = DB::table('postponement_requests')->find($request->id);
+
+        $this->assertSame('scheduled', $approved->status);
+        $this->assertNotNull($approved->makeup_session_id);
+        $this->assertSame('postponed', DB::table('sessions')->find($context['session_id'])->status);
+    }
+
+    public function test_assigned_teacher_postpones_a_session_without_admin_approval(): void
+    {
+        Gate::define('session.postpone.request', static fn (): bool => true);
+
+        $context = $this->academicContext();
+        $proposedStart = CarbonImmutable::now('UTC')->addDays(2);
+
+        $this->actingAs($context['teacher_user'])
+            ->from('/teacher/sessions/'.$context['session_id'])
+            ->post('/teacher/sessions/'.$context['session_id'].'/postponement-requests', [
+                'proposed_start' => $proposedStart->toIso8601String(),
+                'reason' => 'ارتباط طارئ للمعلم.',
+            ])
+            ->assertRedirect('/teacher/sessions/'.$context['session_id'])
+            ->assertSessionHas('success');
+
+        $request = DB::table('postponement_requests')
+            ->where('session_id', $context['session_id'])
+            ->sole();
+
+        $this->assertSame('scheduled', $request->status);
+        $this->assertFalse((bool) $request->requires_admin_review);
+        $this->assertNull($request->requested_for_student_id);
+        $this->assertNotNull($request->makeup_session_id);
+        $this->assertSame('postponed', DB::table('sessions')->find($context['session_id'])->status);
+    }
+
     public function test_portal_profile_update_persists_the_editable_fields_only(): void
     {
         $context = $this->academicContext();
@@ -435,6 +569,7 @@ final class PortalWriteRoutesTest extends TestCase
             'staff_profile_id' => $staffProfileId,
             'course_id' => $courseId,
             'group_id' => $groupId,
+            'session_id' => $sessionId,
             'assignment_id' => $assignmentId,
         ];
     }

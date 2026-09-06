@@ -45,4 +45,12 @@ interface AccessControlQuerier
         string $permissionName,
         string $guardName,
     ): bool;
+
+    /**
+     * معرّفات النماذج المسندة إلى أي دور من الأسماء المطلوبة.
+     *
+     * @param list<string> $roleNames
+     * @return list<string>
+     */
+    public function modelIdsForRoleNames(string $modelType, array $roleNames): array;
 }

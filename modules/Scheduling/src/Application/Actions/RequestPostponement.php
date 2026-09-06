@@ -6,6 +6,7 @@ namespace Modules\Scheduling\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Scheduling\Application\Services\PostponementRecipientResolver;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Modules\Scheduling\Domain\Events\PostponementRequested;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
@@ -21,6 +22,7 @@ final readonly class RequestPostponement
         private SessionSchedulingQueries $sessions,
         private SessionAdministrationQueries $sessionAdministration,
         private AuditRecorder $audit,
+        private PostponementRecipientResolver $recipients,
     ) {}
 
     public function execute(
@@ -82,8 +84,7 @@ final readonly class RequestPostponement
             throw BusinessRuleViolation::make('postponement.already_pending', 'scheduling::errors.postponement_already_pending');
         }
 
-        $requiresAdminReview = $studentProfileId === null
-            || $this->monthlyLimitReached($organizationId, $studentProfileId);
+        $requiresAdminReview = false;
         $request = $this->transaction->run(function () use (
             $organizationId,
             $sessionId,
@@ -127,30 +128,18 @@ final readonly class RequestPostponement
             return $request;
         });
 
+        $recipients = $this->recipients->forSession($organizationId, $sessionId, $studentProfileId);
         event(new PostponementRequested(
             requestId: (string) $request->getKey(),
             sessionId: $sessionId,
             studentProfileId: $studentProfileId,
             proposedStart: $proposedStart->toIso8601String(),
+            organizationId: $organizationId,
+            studentUserIds: $recipients['student_user_ids'],
+            teacherUserId: $recipients['teacher_user_id'],
             actorId: $requestedBy,
         ));
 
         return $request;
-    }
-
-    private function monthlyLimitReached(string $organizationId, string $studentProfileId): bool
-    {
-        $max = (int) config('scheduling.postponement.max_per_student_per_month');
-        if ($max === 0) {
-            return false;
-        }
-        $now = CarbonImmutable::now('UTC');
-
-        return PostponementRequest::query()
-            ->forOrganization($organizationId)
-            ->where('requested_for_student_id', $studentProfileId)
-            ->whereNotIn('status', [PostponementStatus::Rejected->value, PostponementStatus::Withdrawn->value])
-            ->whereBetween('created_at', [$now->startOfMonth(), $now->endOfMonth()])
-            ->count() >= $max;
     }
 }

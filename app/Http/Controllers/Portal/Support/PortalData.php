@@ -1212,7 +1212,7 @@ final readonly class PortalData
         ];
     }
 
-    /** @return array{id: string, status: string, reason: string, proposedStart: string}|null */
+    /** @return array{id: string, status: string, reason: string, proposedStart: string, teacherProposedStart: ?string, acceptAlternativeUrl: string}|null */
     public function postponementForSession(string $sessionId, string $userId, string $organizationId): ?array
     {
         $row = DB::table('postponement_requests')
@@ -1220,7 +1220,7 @@ final readonly class PortalData
             ->where('session_id', $sessionId)
             ->where('requested_by', $userId)
             ->orderByDesc('created_at')
-            ->first(['id', 'status', 'reason', 'proposed_start']);
+            ->first(['id', 'status', 'reason', 'proposed_start', 'proposed_by_teacher_start']);
 
         if ($row === null) {
             return null;
@@ -1231,6 +1231,35 @@ final readonly class PortalData
             'status' => (string) $row->status,
             'reason' => (string) $row->reason,
             'proposedStart' => (string) $this->iso($row->proposed_start),
+            'teacherProposedStart' => $row->proposed_by_teacher_start === null
+                ? null
+                : (string) $this->iso($row->proposed_by_teacher_start),
+            'acceptAlternativeUrl' => (string) $row->status === 'alternative_proposed'
+                ? route('portal.student.postponements.accept-alternative', ['postponement' => (string) $row->id])
+                : '',
+        ];
+    }
+
+    /** @return array{submittedAt: string, reason: string}|null */
+    public function studentApologyForSession(
+        string $sessionId,
+        string $studentProfileId,
+        string $organizationId,
+    ): ?array {
+        $row = DB::table('session_participants')
+            ->join('sessions', 'sessions.id', '=', 'session_participants.session_id')
+            ->where('sessions.organization_id', $organizationId)
+            ->where('session_participants.session_id', $sessionId)
+            ->where('session_participants.student_profile_id', $studentProfileId)
+            ->whereNotNull('session_participants.excused_at')
+            ->first([
+                'session_participants.excused_at',
+                'session_participants.excuse_reason',
+            ]);
+
+        return $row === null ? null : [
+            'submittedAt' => (string) $this->iso($row->excused_at),
+            'reason' => (string) $row->excuse_reason,
         ];
     }
 
@@ -1407,12 +1436,15 @@ final readonly class PortalData
             'reason' => (string) $row->reason,
             'requestedStartAt' => (string) $this->iso($row->proposed_start),
             'status' => (string) $row->request_status,
-            'approveUrl' => (bool) $row->requires_admin_review
+            'approveUrl' => (bool) $row->requires_admin_review || (string) $row->request_status !== 'requested'
                 ? ''
                 : route('portal.teacher.postponements.approve', ['postponement' => (string) $row->request_id]),
-            'proposeAlternativeUrl' => (bool) $row->requires_admin_review
+            'proposeAlternativeUrl' => (bool) $row->requires_admin_review || (string) $row->request_status !== 'requested'
                 ? ''
                 : route('portal.teacher.postponements.propose-alternative', ['postponement' => (string) $row->request_id]),
+            'rejectUrl' => (bool) $row->requires_admin_review || (string) $row->request_status !== 'requested'
+                ? ''
+                : route('portal.teacher.postponements.reject', ['postponement' => (string) $row->request_id]),
         ])->values()->all();
     }
 

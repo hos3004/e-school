@@ -64,6 +64,10 @@ final class StudentSessionController extends Controller
             ),
             'canRequestPostponement' => (bool) $request->user()?->can('session.postpone.request')
                 && in_array((string) $session['status'], ['scheduled', 'confirmed'], true),
+            'studentApologyUrl' => route('portal.student.sessions.apologies.store', ['session' => $id]),
+            'studentApology' => $this->data->studentApologyForSession($id, $studentId, $organizationId),
+            'canSubmitApology' => (bool) $request->user()?->can('session.postpone.request')
+                && in_array((string) $session['status'], ['scheduled', 'confirmed'], true),
         ]);
     }
 }

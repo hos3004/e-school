@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Discipline\Infrastructure\Providers;
 
+use Modules\Attendance\Domain\Events\AttendanceConfirmed;
+use Modules\Discipline\Application\Listeners\RecordConfirmedAbsenceViolation;
 use Modules\Discipline\Application\Policies\DisciplineActionPolicy;
 use Modules\Discipline\Application\Policies\ReactivationRequestPolicy;
 use Modules\Discipline\Application\Policies\ViolationEventPolicy;
@@ -30,7 +32,9 @@ final class DisciplineServiceProvider extends BaseModuleServiceProvider
      */
     protected function listeners(): array
     {
-        return [];
+        return [
+            AttendanceConfirmed::class => [RecordConfirmedAbsenceViolation::class],
+        ];
     }
 
     /**
