@@ -7,6 +7,7 @@ namespace Modules\Scheduling\Domain\Models;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -89,5 +90,11 @@ final class Schedule extends Model
     public function scopeForStaff(Builder $query, string $staffProfileId): Builder
     {
         return $query->where('staff_profile_id', $staffProfileId);
+    }
+
+    /** @return HasMany<ScheduleWeeklySlot, $this> */
+    public function weeklySlots(): HasMany
+    {
+        return $this->hasMany(ScheduleWeeklySlot::class)->orderBy('weekday');
     }
 }

@@ -37,7 +37,7 @@ return [
         ],
         'fields' => [
             'target_type' => 'Type de cible', 'target' => 'Groupe / étudiant', 'group' => 'Groupe', 'student' => 'Étudiant',
-            'course' => 'Cours', 'teacher' => 'Enseignant', 'weekdays' => 'Jours des séances',
+            'course' => 'Cours', 'teacher' => 'Enseignant', 'weekdays' => 'Jours des séances', 'weekly_slots' => 'Jours et horaires', 'weekday' => 'Jour de la séance',
             'interval_weeks' => 'Répéter toutes les (semaines)', 'start_time' => 'Heure locale', 'duration' => 'Durée',
             'timezone' => 'Fuseau horaire', 'starts_on' => 'Début du modèle', 'ends_on' => 'Fin',
             'reason' => 'Motif de l’opération', 'reason_help' => 'Conservé dans le journal d’audit.',

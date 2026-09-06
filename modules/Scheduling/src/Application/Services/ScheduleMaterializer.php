@@ -10,11 +10,13 @@ use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Scheduling\Application\Data\MaterializationResult;
 use Modules\Scheduling\Domain\Models\Schedule;
+use Modules\Scheduling\Domain\Models\ScheduleWeeklySlot;
 use Modules\Scheduling\Domain\ValueObjects\WeeklyRecurrence;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingGateway;
 use Modules\Sessions\Domain\ValueObjects\ScheduledParticipantData;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 use Shared\Support\BusinessRuleViolation;
+use Shared\ValueObjects\TimeRange;
 
 final readonly class ScheduleMaterializer
 {
@@ -44,15 +46,7 @@ final readonly class ScheduleMaterializer
 
         $startsOn = CarbonImmutable::parse($schedule->starts_on->toDateString(), $schedule->timezone);
         $fromMoment = ($from ?? $now)->max($startsOn->utc());
-        $rule = WeeklyRecurrence::fromRRule((string) $schedule->rrule);
-        $ranges = $rule->occurrences(
-            anchorDate: $startsOn,
-            fromDate: $fromMoment->setTimezone($schedule->timezone),
-            throughDate: $horizon->setTimezone($schedule->timezone),
-            startTime: (string) $schedule->start_time,
-            durationMinutes: (int) $schedule->duration_minutes,
-            timezone: (string) $schedule->timezone,
-        );
+        $ranges = $this->occurrences($schedule, $startsOn, $fromMoment, $horizon);
 
         $course = $this->academics->coursesByIds(
             (string) $schedule->organization_id,
@@ -128,6 +122,51 @@ final readonly class ScheduleMaterializer
         $schedule->forceFill(['materialized_until' => $materializedUntil])->save();
 
         return new MaterializationResult($created, $warnings, $materializedUntil);
+    }
+
+    /** @return list<TimeRange> */
+    private function occurrences(
+        Schedule $schedule,
+        CarbonImmutable $startsOn,
+        CarbonImmutable $fromMoment,
+        CarbonImmutable $horizon,
+    ): array {
+        $rule = WeeklyRecurrence::fromRRule((string) $schedule->rrule);
+        $slots = $schedule->weeklySlots()->get();
+        if ($slots->isEmpty()) {
+            return $rule->occurrences(
+                anchorDate: $startsOn,
+                fromDate: $fromMoment->setTimezone($schedule->timezone),
+                throughDate: $horizon->setTimezone($schedule->timezone),
+                startTime: (string) $schedule->start_time,
+                durationMinutes: (int) $schedule->duration_minutes,
+                timezone: (string) $schedule->timezone,
+            );
+        }
+
+        $ranges = [];
+        foreach ($slots as $slot) {
+            if (!$slot instanceof ScheduleWeeklySlot) {
+                continue;
+            }
+
+            $slotRule = WeeklyRecurrence::fromWeekdays([$slot->weekday], $rule->intervalWeeks);
+            array_push($ranges, ...$slotRule->occurrences(
+                anchorDate: $startsOn,
+                fromDate: $fromMoment->setTimezone($schedule->timezone),
+                throughDate: $horizon->setTimezone($schedule->timezone),
+                startTime: (string) $slot->start_time,
+                durationMinutes: (int) $schedule->duration_minutes,
+                timezone: (string) $schedule->timezone,
+            ));
+        }
+
+        usort(
+            $ranges,
+            static fn ($left, $right): int => $left->start->getTimestamp() <=> $right->start->getTimestamp(),
+        );
+
+        return $ranges;
     }
 
     /** @return list<ScheduledParticipantData> */

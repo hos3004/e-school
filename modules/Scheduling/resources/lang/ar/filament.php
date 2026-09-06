@@ -79,6 +79,8 @@ return [
             'course' => 'الكورس',
             'teacher' => 'المعلم',
             'weekdays' => 'أيام الحصص',
+            'weekly_slots' => 'أيام ومواعيد الحصص',
+            'weekday' => 'يوم الحصة',
             'interval_weeks' => 'التكرار كل عدد أسابيع',
             'start_time' => 'وقت البداية المحلي',
             'duration' => 'مدة الحصة',

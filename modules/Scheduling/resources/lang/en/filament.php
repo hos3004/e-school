@@ -70,7 +70,7 @@ return [
         'fields' => [
             'target_type' => 'Target type', 'target' => 'Group / student', 'group' => 'Group',
             'student' => 'Student', 'course' => 'Course', 'teacher' => 'Teacher',
-            'weekdays' => 'Session days', 'interval_weeks' => 'Repeat every (weeks)',
+            'weekdays' => 'Session days', 'weekly_slots' => 'Session days and times', 'weekday' => 'Session day', 'interval_weeks' => 'Repeat every (weeks)',
             'start_time' => 'Local start time', 'duration' => 'Session duration',
             'timezone' => 'Timezone', 'starts_on' => 'Template starts on', 'ends_on' => 'Ends on',
             'reason' => 'Operation reason',

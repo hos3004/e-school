@@ -13,6 +13,7 @@ use Modules\Groups\Domain\ValueObjects\SchedulingGroupData;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
 use Modules\Scheduling\Domain\Models\Schedule;
+use Modules\Scheduling\Domain\ValueObjects\WeeklyRecurrence;
 use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingQueries;
 use Modules\Staff\Domain\Contracts\StaffQueries;
@@ -169,6 +170,52 @@ final class SchedulingAdministrationQueryService
                 (string) $schedule->student_profile_id => (string) $schedule->getKey(),
             ])
             ->all();
+    }
+
+    /**
+     * @return array<string, array{
+     *   id: string, staff_profile_id: string, duration_minutes: int, timezone: string,
+     *   starts_on: string, ends_on: string|null, interval_weeks: int,
+     *   weekly_slots: list<array{weekday: int, start_time: string}>
+     * }>
+     */
+    public function activeIndividualScheduleSummariesByStudent(string $organizationId, string $courseId): array
+    {
+        return Schedule::query()
+            ->forOrganization($organizationId)
+            ->where('course_id', $courseId)
+            ->where('session_type', 'individual')
+            ->where('is_active', true)
+            ->whereNotNull('student_profile_id')
+            ->with('weeklySlots')
+            ->latest('created_at')
+            ->get()
+            ->unique('student_profile_id')
+            ->mapWithKeys(static function (Schedule $schedule): array {
+                $rule = WeeklyRecurrence::fromRRule((string) $schedule->rrule);
+                $slots = $schedule->weeklySlots
+                    ->map(static fn ($slot): array => [
+                        'weekday' => (int) $slot->weekday,
+                        'start_time' => substr((string) $slot->start_time, 0, 5),
+                    ])->values()->all();
+                if ($slots === []) {
+                    $slots = array_map(static fn (int $weekday): array => [
+                        'weekday' => $weekday,
+                        'start_time' => substr((string) $schedule->start_time, 0, 5),
+                    ], $rule->weekdays);
+                }
+
+                return [(string) $schedule->student_profile_id => [
+                    'id' => (string) $schedule->getKey(),
+                    'staff_profile_id' => (string) $schedule->staff_profile_id,
+                    'duration_minutes' => (int) $schedule->duration_minutes,
+                    'timezone' => (string) $schedule->timezone,
+                    'starts_on' => $schedule->starts_on->toDateString(),
+                    'ends_on' => $schedule->ends_on?->toDateString(),
+                    'interval_weeks' => $rule->intervalWeeks,
+                    'weekly_slots' => $slots,
+                ]];
+            })->all();
     }
 
     public function groupLabel(string $organizationId, ?string $groupId): string

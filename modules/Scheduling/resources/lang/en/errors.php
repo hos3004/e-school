@@ -40,6 +40,7 @@ return [
     'individual_quran_course_missing' => 'The Individual Quran course is missing or inactive.',
     'individual_student_not_eligible' => 'The student is not currently eligible for Individual Quran placement or already has an active schedule.',
     'individual_slot_unavailable' => 'The selected session time is no longer available. Choose another time from the list.',
+    'weekly_slots_invalid' => 'Choose one valid time for each distinct session weekday.',
     'bulk_no_eligible_students' => 'None of the selected students is eligible for Individual Quran placement.',
     'bulk_insufficient_slots' => 'Available independent slots (:slots) are fewer than eligible students (:students).',
     'bulk_limit_exceeded' => 'No more than :maximum students can be placed in one operation.',

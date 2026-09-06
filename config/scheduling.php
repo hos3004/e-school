@@ -98,6 +98,9 @@ return [
         'bulk_max_students' => 50,
         'max_interval_weeks' => 12,
         'reason_max_length' => 1000,
+        // نافذة العرض الافتراضية في صفحة التسكين؛ لا تغيّر إتاحة المعلم الفعلية.
+        'selection_window_start' => '06:00',
+        'selection_window_end' => '23:00',
     ],
 
     /*
