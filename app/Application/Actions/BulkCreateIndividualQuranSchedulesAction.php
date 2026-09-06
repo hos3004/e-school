@@ -67,6 +67,16 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
             : $this->scheduling->activeIndividualSchedulesByStudent($organizationId, $course->id);
     }
 
+    /** @return array<string, array<string, mixed>> */
+    public function activeScheduleSummariesByStudent(string $organizationId): array
+    {
+        $course = $this->course($organizationId);
+
+        return $course === null
+            ? []
+            : $this->scheduling->activeIndividualScheduleSummariesByStudent($organizationId, $course->id);
+    }
+
     /** @return list<string> */
     public function eligibleStudentIds(string $organizationId): array
     {
@@ -138,8 +148,34 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
         ?string $startsOn,
         ?string $endsOn,
     ): array {
+        return $this->availabilityDetails(
+            $organizationId,
+            $staffProfileId,
+            $weekdays,
+            $intervalWeeks,
+            $durationMinutes,
+            $timezone,
+            $startsOn,
+            $endsOn,
+        )['available_start_times'];
+    }
+
+    /**
+     * @param list<int|string> $weekdays
+     * @return array{available_start_times: list<string>, has_declared_availability: bool}
+     */
+    public function availabilityDetails(
+        string $organizationId,
+        ?string $staffProfileId,
+        array $weekdays,
+        int $intervalWeeks,
+        int $durationMinutes,
+        string $timezone,
+        ?string $startsOn,
+        ?string $endsOn,
+    ): array {
         if ($staffProfileId === null || $staffProfileId === '' || $weekdays === []) {
-            return [];
+            return ['available_start_times' => [], 'has_declared_availability' => false];
         }
 
         $overview = $this->availability->overview(
@@ -154,18 +190,20 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
             requireDeclaredAvailability: false,
         );
 
-        return $overview['available_start_times'];
+        return [
+            'available_start_times' => $overview['available_start_times'],
+            'has_declared_availability' => $overview['has_declared_availability'],
+        ];
     }
 
-    /** @param list<int|string> $weekdays */
+    /** @param list<array{weekday: int|string, start_time: string}> $weeklySlots */
     public function executeSingle(
         string $organizationId,
         string $studentProfileId,
         string $staffProfileId,
-        array $weekdays,
+        array $weeklySlots,
         int $intervalWeeks,
         int $durationMinutes,
-        string $startTime,
         string $timezone,
         string $startsOn,
         ?string $endsOn,
@@ -194,31 +232,53 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
             );
         }
 
-        $availableTimes = $this->availableStartTimes(
-            organizationId: $organizationId,
-            staffProfileId: $staffProfileId,
-            weekdays: $weekdays,
-            intervalWeeks: $intervalWeeks,
-            durationMinutes: $durationMinutes,
-            timezone: $timezone,
-            startsOn: $startsOn,
-            endsOn: $endsOn,
-        );
-        if (!in_array($startTime, $availableTimes, true)) {
+        $normalizedSlots = [];
+        foreach ($weeklySlots as $slot) {
+            $weekday = (int) $slot['weekday'];
+            $startTime = $slot['start_time'];
+            if (isset($normalizedSlots[$weekday]) || $weekday < 0 || $weekday > 6 || $startTime === '') {
+                throw BusinessRuleViolation::make(
+                    'scheduling.weekly_slots_invalid',
+                    'scheduling::errors.weekly_slots_invalid',
+                );
+            }
+
+            $availableTimes = $this->availableStartTimes(
+                organizationId: $organizationId,
+                staffProfileId: $staffProfileId,
+                weekdays: [$weekday],
+                intervalWeeks: $intervalWeeks,
+                durationMinutes: $durationMinutes,
+                timezone: $timezone,
+                startsOn: $startsOn,
+                endsOn: $endsOn,
+            );
+            if (!in_array($startTime, $availableTimes, true)) {
+                throw BusinessRuleViolation::make(
+                    'scheduling.individual_slot_unavailable',
+                    'scheduling::errors.individual_slot_unavailable',
+                    ['weekday' => $weekday],
+                );
+            }
+
+            $normalizedSlots[$weekday] = ['weekday' => $weekday, 'start_time' => $startTime];
+        }
+        if ($normalizedSlots === []) {
             throw BusinessRuleViolation::make(
-                'scheduling.individual_slot_unavailable',
-                'scheduling::errors.individual_slot_unavailable',
+                'scheduling.weekly_slots_invalid',
+                'scheduling::errors.weekly_slots_invalid',
             );
         }
+        ksort($normalizedSlots);
+        $normalizedSlots = array_values($normalizedSlots);
 
         return $this->transaction->run(function () use (
             $organizationId,
             $studentProfileId,
             $course,
             $staffProfileId,
-            $weekdays,
+            $normalizedSlots,
             $intervalWeeks,
-            $startTime,
             $durationMinutes,
             $timezone,
             $startsOn,
@@ -231,9 +291,10 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
                 'student_profile_id' => $studentProfileId,
                 'course_id' => $course->id,
                 'staff_profile_id' => $staffProfileId,
-                'weekdays' => $weekdays,
+                'weekdays' => array_column($normalizedSlots, 'weekday'),
+                'weekly_slots' => $normalizedSlots,
                 'interval_weeks' => max(1, $intervalWeeks),
-                'start_time' => $startTime,
+                'start_time' => $normalizedSlots[0]['start_time'],
                 'duration_minutes' => $durationMinutes,
                 'timezone' => $timezone,
                 'starts_on' => $startsOn,

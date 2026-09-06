@@ -117,7 +117,7 @@ interface StudentDirectory
 | Groups | `groups` · `group_programs` · `group_teachers` · `group_memberships` |
 | Enrollments | `enrollments` · `enrollment_status_history` |
 | Content | `course_materials` |
-| Scheduling | `schedules` · `postponement_requests` |
+| Scheduling | `schedules` · `schedule_weekly_slots` · `postponement_requests` |
 | Sessions | `sessions` · `session_status_history` · `session_participants` |
 | Attendance | `attendances` |
 | VirtualClassroom | `classrooms` · `classroom_events` |

@@ -37,6 +37,7 @@ use Modules\Scheduling\Application\Actions\RequestPostponement;
 use Modules\Scheduling\Application\Actions\UpdateScheduleAction;
 use Modules\Scheduling\Domain\Enums\PostponementStatus;
 use Modules\Scheduling\Domain\Models\Schedule;
+use Modules\Scheduling\Domain\Models\ScheduleWeeklySlot;
 use Modules\Scheduling\Presentation\Filament\Resources\ScheduleResource\Pages\CreateSchedule;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
@@ -158,7 +159,9 @@ it('creates an individual schedule and builds its notification from serialized s
             'course_id' => (string) $individualCourse->id,
             'student_profile_id' => (string) $fixture['student']->id,
             'staff_profile_id' => (string) $fixture['teacher']->id,
-            'weekdays' => [0],
+            'weekly_slots' => [
+                ['weekday' => 0, 'start_time' => '10:00'],
+            ],
             'interval_weeks' => 1,
             'duration_minutes' => 35,
             'timezone' => 'UTC',
@@ -166,7 +169,6 @@ it('creates an individual schedule and builds its notification from serialized s
             'ends_on' => '2026-10-11',
             'reason' => 'اختبار إشعار حجز القرآن الفردي',
         ])
-        ->set('data.start_time', '10:00')
         ->call('create')
         ->assertHasNoFormErrors();
 
@@ -391,6 +393,16 @@ it('bulk places Quran students into distinct slots and activates a missing enrol
         'effective_to' => '2026-12-31',
         'approval_status' => TeacherAvailabilityApprovalStatus::Approved,
     ]);
+    TeacherAvailability::query()->create([
+        'staff_profile_id' => $fixture['teacher']->id,
+        'weekday' => 3,
+        'start_time' => '12:00',
+        'end_time' => '13:00',
+        'timezone' => 'UTC',
+        'effective_from' => '2026-10-01',
+        'effective_to' => '2026-12-31',
+        'approval_status' => TeacherAvailabilityApprovalStatus::Approved,
+    ]);
     $secondUser = User::factory()->inOrganization((string) $fixture['organization']->id)->create();
     $secondStudent = StudentProfile::factory()->create([
         'organization_id' => $fixture['organization']->id,
@@ -521,23 +533,36 @@ it('bulk places Quran students into distinct slots and activates a missing enrol
     $this->get(StudentProfileResource::getUrl('individual-quran', panel: 'admin'))
         ->assertOk()
         ->assertSee(__('students::admin.individual_quran.save_action'), false)
-        ->assertSee('placementRows.'.((string) $thirdStudent->id).'.start_time', false)
+        ->assertSee(__('students::admin.individual_quran.days_and_times'), false)
         ->assertSee(__('students::admin.individual_quran.edit_action'), false)
         ->assertSee(route('filament.admin.resources.schedules.edit', ['record' => $schedules->first()->id]), false)
         ->assertSee('!bg-success-50', false);
 
     $component = Livewire::test(IndividualQuranPlacement::class)
+        ->set('sharedSettings.duration_minutes', 55)
+        ->assertSet('placementRows.'.$thirdStudent->id.'.duration_minutes', 55)
+        ->set('placementRows.'.$thirdStudent->id.'.use_custom_settings', true)
+        ->set('placementRows.'.$thirdStudent->id.'.duration_minutes', 25)
+        ->set('sharedSettings.duration_minutes', 35)
+        ->assertSet('placementRows.'.$thirdStudent->id.'.duration_minutes', 25)
+        ->set('placementRows.'.$thirdStudent->id.'.use_custom_settings', false)
+        ->assertSet('placementRows.'.$thirdStudent->id.'.duration_minutes', 35)
         ->set('placementRows.'.$thirdStudent->id.'.staff_profile_id', (string) $fixture['teacher']->id)
-        ->set('placementRows.'.$thirdStudent->id.'.weekdays', [0])
+        ->set('placementRows.'.$thirdStudent->id.'.weekdays', [0, 3])
         ->set('placementRows.'.$thirdStudent->id.'.duration_minutes', 35)
         ->set('placementRows.'.$thirdStudent->id.'.timezone', 'UTC')
         ->set('placementRows.'.$thirdStudent->id.'.starts_on', '2026-10-11')
-        ->set('placementRows.'.$thirdStudent->id.'.ends_on', '2026-10-11')
+        ->set('placementRows.'.$thirdStudent->id.'.ends_on', '2026-10-14')
         ->set('placementRows.'.$thirdStudent->id.'.interval_weeks', 1)
-        ->set('placementRows.'.$thirdStudent->id.'.start_time', '09:00')
+        ->set('placementRows.'.$thirdStudent->id.'.slot_times', [
+            0 => '09:00',
+            3 => '12:00',
+        ])
+        ->assertSet('placementRows.'.$thirdStudent->id.'.slot_times.0', '09:00')
+        ->assertSet('placementRows.'.$thirdStudent->id.'.slot_times.3', '12:00')
         ->call('savePlacement', (string) $thirdStudent->id)
-        ->assertHasErrors('placementRows.'.$thirdStudent->id.'.start_time')
-        ->set('placementRows.'.$thirdStudent->id.'.start_time', '10:10')
+        ->assertHasErrors('placementRows.'.$thirdStudent->id.'.slot_times.0')
+        ->set('placementRows.'.$thirdStudent->id.'.slot_times.0', '10:10')
         ->call('savePlacement', (string) $thirdStudent->id)
         ->assertHasNoErrors();
 
@@ -548,9 +573,28 @@ it('bulk places Quran students into distinct slots and activates a missing enrol
 
     expect($thirdSchedule->staff_profile_id)->toBe((string) $fixture['teacher']->id)
         ->and($thirdSchedule->start_time)->toBe('10:10:00')
+        ->and(ScheduleWeeklySlot::query()
+            ->where('schedule_id', $thirdSchedule->id)
+            ->orderBy('weekday')
+            ->get(['weekday', 'start_time'])
+            ->map(fn (ScheduleWeeklySlot $slot): array => [
+                'weekday' => $slot->weekday,
+                'start_time' => $slot->start_time,
+            ])->all())->toBe([
+                ['weekday' => 0, 'start_time' => '10:10:00'],
+                ['weekday' => 3, 'start_time' => '12:00:00'],
+            ])
+        ->and(Session::query()->where('schedule_id', $thirdSchedule->id)->count())->toBe(2)
         ->and($thirdApplication->fresh()->status)->toBe(RegistrationStatus::Assigned)
         ->and(Schedule::query()->where('course_id', $individualCourse->id)->count())->toBe(3)
         ->and($component->get('placementRows.'.((string) $thirdStudent->id)))->toBeNull();
+
+    $this->get(StudentProfileResource::getUrl('individual-quran', panel: 'admin'))
+        ->assertOk()
+        ->assertSee('10:10', false)
+        ->assertSee('12:00', false)
+        ->assertSee('2026-10-11', false)
+        ->assertSee(route('filament.admin.resources.schedules.edit', ['record' => $thirdSchedule->id]), false);
 });
 
 it('allows the original teacher after substitution and guards invalid duplicate and foreign requests', function (): void {

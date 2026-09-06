@@ -67,6 +67,8 @@ final readonly class ScheduleDefinitionValidator
             throw BusinessRuleViolation::make('scheduling.timezone_invalid', 'scheduling::errors.timezone_invalid');
         }
 
+        $this->validateWeeklySlots($data['weekly_slots'] ?? [], $studentId !== null);
+
         if ($groupId !== null) {
             $this->validateGroup(
                 $organizationId,
@@ -93,6 +95,32 @@ final readonly class ScheduleDefinitionValidator
         );
         if (!isset($enrollment[$studentId])) {
             throw BusinessRuleViolation::make('scheduling.student_not_schedulable', 'scheduling::errors.student_not_schedulable');
+        }
+    }
+
+    private function validateWeeklySlots(mixed $slots, bool $individual): void
+    {
+        if ($slots === []) {
+            return;
+        }
+        if (!$individual || !is_array($slots)) {
+            throw BusinessRuleViolation::make('scheduling.weekly_slots_invalid', 'scheduling::errors.weekly_slots_invalid');
+        }
+
+        $weekdays = [];
+        foreach ($slots as $slot) {
+            if (!is_array($slot)
+                || !isset($slot['weekday'], $slot['start_time'])
+                || !is_int($slot['weekday'])
+                || $slot['weekday'] < 0
+                || $slot['weekday'] > 6
+                || !is_string($slot['start_time'])
+                || preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $slot['start_time']) !== 1
+                || in_array($slot['weekday'], $weekdays, true)) {
+                throw BusinessRuleViolation::make('scheduling.weekly_slots_invalid', 'scheduling::errors.weekly_slots_invalid');
+            }
+
+            $weekdays[] = $slot['weekday'];
         }
     }
 

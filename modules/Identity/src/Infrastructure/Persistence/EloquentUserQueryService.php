@@ -75,6 +75,7 @@ final readonly class EloquentUserQueryService implements UserQueryService
             email: $user->email,
             avatarPath: $user->avatar_path,
             status: $user->status->value,
+            timezone: (string) ($user->timezone ?: config('app.timezone')),
         );
     }
 }

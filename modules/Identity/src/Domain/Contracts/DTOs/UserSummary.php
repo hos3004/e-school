@@ -16,6 +16,7 @@ final readonly class UserSummary
         public ?string $email,
         public ?string $avatarPath,
         public string $status,
+        public string $timezone,
     ) {}
 
     /**
@@ -30,6 +31,7 @@ final readonly class UserSummary
             'email' => $this->email,
             'avatar_path' => $this->avatarPath,
             'status' => $this->status,
+            'timezone' => $this->timezone,
         ];
     }
 }

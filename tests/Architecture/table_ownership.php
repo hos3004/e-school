@@ -83,6 +83,7 @@ return [
 
     // Scheduling
     'schedules' => 'Scheduling',
+    'schedule_weekly_slots' => 'Scheduling',
     'postponement_requests' => 'Scheduling',
 
     // Sessions

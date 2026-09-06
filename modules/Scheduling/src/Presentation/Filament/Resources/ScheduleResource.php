@@ -10,6 +10,7 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -97,6 +98,7 @@ final class ScheduleResource extends Resource
                                 $set('course_id', null);
                                 $set('staff_profile_id', null);
                                 $set('start_time', null);
+                                $set('weekly_slots', []);
                             })
                             ->required(),
                         Select::make('group_id')
@@ -166,7 +168,34 @@ final class ScheduleResource extends Resource
                         ->columns(4)
                         ->live()
                         ->afterStateUpdated(fn (Set $set): mixed => $set('start_time', null))
-                        ->required()
+                        ->visible(fn (Get $get): bool => $get('target_type') !== 'student')
+                        ->required(fn (Get $get): bool => $get('target_type') !== 'student')
+                        ->columnSpanFull(),
+                    Repeater::make('weekly_slots')
+                        ->label(__('scheduling::filament.schedule.fields.weekly_slots'))
+                        ->schema([
+                            Select::make('weekday')
+                                ->label(__('scheduling::filament.schedule.fields.weekday'))
+                                ->options(self::weekdayOptions())
+                                ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                ->live()
+                                ->required(),
+                            Select::make('start_time')
+                                ->label(__('scheduling::filament.schedule.fields.start_time'))
+                                ->options(fn (Get $get, ?Schedule $record): array => self::individualSlotTimeOptions($get, $record))
+                                ->placeholder(__('scheduling::filament.schedule.availability.choose_available_time'))
+                                ->helperText(__('scheduling::filament.schedule.availability.booked_times_hidden'))
+                                ->searchable()
+                                ->native(false)
+                                ->required(),
+                        ])
+                        ->columns(2)
+                        ->defaultItems(1)
+                        ->minItems(1)
+                        ->maxItems(7)
+                        ->reorderable(false)
+                        ->visible(fn (Get $get): bool => $get('target_type') === 'student')
+                        ->required(fn (Get $get): bool => $get('target_type') === 'student')
                         ->columnSpanFull(),
                     Grid::make(1)->schema([
                         TextInput::make('interval_weeks')
@@ -186,7 +215,8 @@ final class ScheduleResource extends Resource
                             ->searchable()
                             ->native(false)
                             ->live()
-                            ->required(),
+                            ->visible(fn (Get $get): bool => $get('target_type') !== 'student')
+                            ->required(fn (Get $get): bool => $get('target_type') !== 'student'),
                         Select::make('duration_minutes')
                             ->label(__('scheduling::filament.schedule.fields.duration'))
                             ->options(fn (Get $get): array => collect(self::durationChoices(
@@ -325,6 +355,33 @@ final class ScheduleResource extends Resource
     private static function availableStartTimeOptions(Get $get, ?Schedule $record): array
     {
         $overview = self::availabilityOverview($get, $record);
+
+        return collect($overview['available_start_times'])
+            ->mapWithKeys(static fn (string $time): array => [$time => $time])
+            ->all();
+    }
+
+    /** @return array<string, string> */
+    private static function individualSlotTimeOptions(Get $get, ?Schedule $record): array
+    {
+        $weekday = $get('weekday');
+        if (!is_numeric($weekday)) {
+            return [];
+        }
+
+        $overview = app(TeacherAvailabilityPlanner::class)->overview(
+            organizationId: self::organizationId(),
+            staffProfileId: self::nullableString($get('../../staff_profile_id')),
+            weekdays: [(int) $weekday],
+            intervalWeeks: max(1, (int) $get('../../interval_weeks')),
+            durationMinutes: (int) $get('../../duration_minutes'),
+            timezone: self::nullableString($get('../../timezone')) ?? (string) config('app.timezone'),
+            startsOn: self::nullableString($get('../../starts_on')),
+            endsOn: self::nullableString($get('../../ends_on')),
+            selectedStartTime: self::nullableString($get('start_time')),
+            requireDeclaredAvailability: false,
+            ignoreScheduleId: $record === null ? null : (string) $record->getKey(),
+        );
 
         return collect($overview['available_start_times'])
             ->mapWithKeys(static fn (string $time): array => [$time => $time])

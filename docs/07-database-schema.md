@@ -258,6 +258,15 @@ schedules (
 )
 -- CHECK (group_id IS NOT NULL OR student_profile_id IS NOT NULL)
 
+schedule_weekly_slots (
+  id, organization_id, schedule_id,
+  weekday SMALLINT, start_time TIME,
+  created_at, updated_at
+)
+-- UNIQUE (schedule_id, weekday)
+-- الجدول الفردي قد يملك ساعة مختلفة لكل يوم؛ الجداول القديمة بلا خانات
+-- فرعية تستمر باستخدام rrule + schedules.start_time للتوافق.
+
 sessions (
   id, organization_id, schedule_id NULL,
   group_id NULL, course_id, staff_profile_id,

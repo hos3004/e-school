@@ -40,6 +40,7 @@ return [
     'individual_quran_course_missing' => 'كورس القرآن الفردي غير موجود أو غير مفعّل.',
     'individual_student_not_eligible' => 'الطالب غير مؤهل حاليًا لتسكين القرآن الفردي أو لديه جدول نشط.',
     'individual_slot_unavailable' => 'موعد الحصة المختار لم يعد متاحًا. اختر موعدًا آخر من القائمة.',
+    'weekly_slots_invalid' => 'يجب اختيار ساعة صالحة ومختلفة لكل يوم من أيام الحصص.',
     'bulk_no_eligible_students' => 'لا يوجد ضمن التحديد طالب مؤهل لتسكين القرآن الفردي.',
     'bulk_insufficient_slots' => 'الخانات المستقلة المتاحة (:slots) أقل من عدد الطلاب المؤهلين (:students).',
     'bulk_limit_exceeded' => 'لا يمكن تسكين أكثر من :maximum طالب في عملية واحدة.',
