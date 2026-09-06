@@ -6,6 +6,7 @@ namespace Modules\Content\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Arr;
 use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Content\Application\Services\MaterialVersionRecorder;
@@ -113,7 +114,7 @@ final readonly class UploadCourseMaterialAction
         $result = $this->transaction->run(function () use ($organizationId, $data, $type, $sizeBytes, $visibleFrom, $visibleTo, $actorId, $reason): array {
             $material = new CourseMaterial;
             $material->fill([
-                ...$data,
+                ...Arr::except($data, ['reason']),
                 'organization_id' => $organizationId,
                 'type' => $type,
                 'status' => MaterialStatus::Draft,

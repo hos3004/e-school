@@ -141,6 +141,17 @@ final readonly class OperationalReportQueryService implements OperationalReportQ
         $groupIds = $this->stringIds([$criteria->groupId]);
         $courseIds = $this->stringIds([$criteria->courseId]);
 
+        if ($criteria->forcedToOwnTeacher) {
+            $available = $this->options($criteria);
+
+            return [
+                'students' => array_intersect_key($available['students'], array_flip($studentIds)),
+                'teachers' => array_intersect_key($available['teachers'], array_flip($teacherIds)),
+                'groups' => array_intersect_key($available['groups'], array_flip($groupIds)),
+                'courses' => array_intersect_key($available['courses'], array_flip($courseIds)),
+            ];
+        }
+
         return [
             'students' => $studentIds === []
                 ? []
@@ -283,7 +294,7 @@ final readonly class OperationalReportQueryService implements OperationalReportQ
             courseId: $session->courseId,
             course: (string) ($context['course_labels'][$session->courseId] ?? __('reporting::operational.unknown_course')),
             groupId: $session->groupId,
-            group: (string) ($context['group_labels'][$session->groupId] ?? __('reporting::operational.unknown_group')),
+            group: $session->groupId === '' ? '' : (string) ($context['group_labels'][$session->groupId] ?? __('reporting::operational.unknown_group')),
             actualTeacherId: $session->staffProfileId,
             actualTeacher: (string) ($context['teacher_names'][$session->staffProfileId] ?? __('reporting::operational.unknown_teacher')),
             originalTeacherId: $originalTeacherId,

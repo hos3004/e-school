@@ -1,0 +1,550 @@
+.console-shell .quran-workspace {
+  --quran-border: #dbe4e8;
+  --quran-muted: #6d7e85;
+}
+.console-shell .quran-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  color: #476559;
+  font-size: 14px;
+}
+.console-shell .quran-context > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.console-shell .quran-context b {
+  font-weight: 550;
+}
+.console-shell .quran-context svg {
+  color: #a47a2c;
+}
+.console-shell .quran-operation-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 0 15px;
+  flex-wrap: wrap;
+}
+.console-shell .quran-operation-links .inline-link {
+  font-size: 13px;
+}
+.console-shell .quran-stats .stat {
+  text-decoration: none;
+  color: inherit;
+}
+.console-shell .quran-tabs {
+  margin-top: 8px;
+}
+.console-shell .quran-feedback {
+  margin: 16px 22px;
+}
+.console-shell .quran-time {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.console-shell .quran-day-time label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+.console-shell .quran-day-time label > span {
+  min-width: 54px;
+  color: #586c73;
+}
+.console-shell .quran-day-time input {
+  direction: ltr;
+  min-width: 112px;
+}
+.console-shell .quran-placement {
+  min-width: 1110px;
+}
+.console-shell .quran-placement td:first-child {
+  min-width: 185px;
+}
+.console-shell .quran-placement td:nth-child(2) {
+  min-width: 175px;
+}
+.console-shell .quran-placement td:nth-child(3) {
+  min-width: 175px;
+}
+.console-shell .quran-placement td:nth-child(4) {
+  min-width: 185px;
+}
+.console-shell .quran-placement td:nth-child(5) {
+  min-width: 190px;
+}
+.console-shell .quran-placement td:nth-child(6) {
+  min-width: 170px;
+}
+.console-shell .quran-placement td {
+  vertical-align: top;
+}
+.console-shell .quran-approve {
+  margin-top: 10px;
+  display: flex;
+}
+.console-shell .quran-duration {
+  margin-top: 7px;
+}
+.console-shell .quran-row-link {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.console-shell .quran-days {
+  position: relative;
+}
+.console-shell .quran-days > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  list-style: none;
+  white-space: normal;
+}
+.console-shell .quran-days > summary::-webkit-details-marker {
+  display: none;
+}
+.console-shell .quran-days > summary:after {
+  content: "⌄";
+  font-size: 16px;
+  color: #6d7e85;
+}
+.console-shell .quran-days fieldset {
+  border: 1px solid #c5d2d6;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px #183f411a;
+  margin-top: 6px;
+  padding: 5px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 175px;
+}
+.console-shell .quran-days label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.console-shell .quran-days input {
+  accent-color: #087a68;
+  width: 16px;
+  height: 16px;
+}
+.console-shell .quran-saved-times {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.console-shell .quran-saved-times small {
+  display: block;
+  color: var(--quran-muted);
+  font-size: 11px;
+}
+.console-shell .quran-policy {
+  padding: 6px 24px 26px;
+  max-width: 940px;
+}
+.console-shell .quran-policy h2 {
+  font-size: 22px;
+  font-weight: 650;
+}
+.console-shell .quran-policy p {
+  font-size: 14px;
+  color: var(--quran-muted);
+  margin-top: 8px;
+  line-height: 1.9;
+}
+.console-shell .quran-policy dl {
+  margin-block: 22px;
+}
+.console-shell .quran-rule {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 24px;
+  padding: 18px 0;
+  border-top: 1px solid var(--quran-border);
+  font-size: 14px;
+}
+.console-shell .quran-rule dt {
+  font-weight: 600;
+}
+.console-shell .quran-rule dd {
+  margin: 0;
+  color: var(--quran-muted);
+  line-height: 1.9;
+}
+.console-shell .quran-rule ul {
+  list-style: none;
+  padding: 10px 0 0;
+}
+.console-shell .quran-teacher-student {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--quran-border);
+  display: flex;
+  align-items: start;
+  gap: 16px;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.console-shell .quran-search {
+  display: flex;
+  gap: 8px;
+  max-width: 350px;
+}
+.console-shell .quran-table-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 2px 22px 16px;
+  color: var(--quran-muted);
+  font-size: 12px;
+}
+.console-shell .quran-period-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.console-shell .quran-period-picker input {
+  width: 165px;
+}
+.console-shell .quran-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+.console-shell .quran-empty {
+  padding: 32px 22px;
+  text-align: center;
+  color: var(--quran-muted);
+  line-height: 1.9;
+}
+.console-shell .quran-empty p {
+  font-size: 13px;
+}
+.console-shell .quran-error {
+  color: #a52b30;
+  background: #fff4f3;
+  border: 1px solid #f0d4d2;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.8;
+  margin-top: 8px;
+  max-width: 100%;
+}
+.console-shell .quran-registration-stages {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 0 22px 20px;
+}
+.console-shell .quran-registration-stages a {
+  border: 1px solid var(--quran-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  display: flex;
+  gap: 22px;
+  color: #176a5d;
+}
+.console-shell .quran-registration-stages b {
+  font-variant-numeric: tabular-nums;
+}
+.console-shell .quran-sheet {
+  position: fixed;
+  inset: 0 auto 0 0;
+  margin: 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  width: min(560px, 100vw);
+  max-width: 100vw;
+  border: 0;
+  border-right: 1px solid var(--quran-border);
+  padding: 0;
+  background: #fff;
+  color: #243c46;
+  box-shadow: 10px 0 50px #1b3c4924;
+  direction: rtl;
+}
+.console-shell .quran-sheet::backdrop {
+  background: #19343f55;
+}
+.console-shell .quran-sheet > header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  border-bottom: 1px solid var(--quran-border);
+}
+.console-shell .quran-sheet h2 {
+  font-size: 21px;
+  font-weight: 650;
+}
+.console-shell .quran-sheet-body {
+  padding: 24px;
+}
+.console-shell .quran-close {
+  font-size: 25px;
+  min-width: 44px;
+  padding: 0;
+}
+.console-shell .quran-sheet-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.console-shell .quran-detail-section {
+  padding: 22px 0;
+  border-top: 1px solid var(--quran-border);
+  font-size: 14px;
+  line-height: 1.9;
+}
+.console-shell .quran-detail-section h3 {
+  font-size: 16px;
+  font-weight: 650;
+  margin-bottom: 14px;
+}
+.console-shell .quran-detail-section p {
+  margin-top: 8px;
+}
+.console-shell .quran-editor fieldset {
+  border: 0;
+  padding: 0;
+  margin: 20px 0;
+}
+.console-shell .quran-editor .field {
+  margin-bottom: 18px;
+}
+.console-shell .quran-editor .field-grid {
+  gap: 0 18px;
+}
+.console-shell .quran-editor-times {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.console-shell .quran-editor-times .quran-day-time {
+  padding: 10px 12px;
+  background: #f6f9f9;
+  border-radius: 8px;
+}
+.console-shell .quran-editor-times .inline-link {
+  font-size: 12px;
+  margin: 8px 0;
+}
+.console-shell .quran-availability {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 6px 12px;
+  border-bottom: 1px solid var(--quran-border);
+  padding: 14px 0;
+  font-size: 13px;
+}
+.console-shell .quran-availability small {
+  grid-column: 1/-1;
+  color: var(--quran-muted);
+}
+.console-shell .quran-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.console-shell .quran-workspace button:focus-visible,
+.console-shell .quran-workspace a:focus-visible,
+.console-shell .quran-workspace summary:focus-visible {
+  outline: 2px solid #087a68;
+  outline-offset: 3px;
+}
+.console-shell .quran-workspace bdi {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 760px) {
+  .console-shell .quran-context {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    font-size: 13px;
+  }
+  .console-shell .quran-rule {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 14px 0;
+  }
+  .console-shell .quran-policy {
+    padding: 4px 16px 20px;
+  }
+  .console-shell .quran-policy h2 {
+    font-size: 20px;
+  }
+  .console-shell .quran-feedback {
+    margin: 12px 16px;
+  }
+  .console-shell .quran-operation-links {
+    gap: 2px 18px;
+  }
+  .console-shell .quran-search {
+    max-width: none;
+    width: 100%;
+  }
+  .console-shell .quran-search input {
+    min-width: 0;
+  }
+  .console-shell .quran-table-context {
+    padding: 2px 16px 14px;
+  }
+  .console-shell .quran-pagination {
+    flex-wrap: wrap;
+  }
+  .console-shell .quran-sheet > header {
+    padding: 16px;
+  }
+  .console-shell .quran-sheet-body {
+    padding: 16px;
+  }
+  .console-shell .quran-sheet-summary {
+    align-items: flex-start;
+  }
+  .console-shell .quran-registration-stages {
+    padding: 0 16px 16px;
+  }
+  .console-shell .quran-registration-stages a {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.console-shell .quran-availability-page > .panel {
+  margin-bottom: 22px;
+}
+.console-shell .quran-availability-form form {
+  padding: 0 22px 22px;
+}
+.console-shell .quran-availability-form fieldset {
+  border: 0;
+  padding: 0;
+  margin-bottom: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.console-shell .quran-availability-table {
+  min-width: 860px;
+}
+@media (max-width: 760px) {
+  .console-shell .quran-availability-form fieldset {
+    grid-template-columns: 1fr;
+  }
+  .console-shell .quran-availability-form form {
+    padding: 0 16px 16px;
+  }
+}
+
+.console-shell .quran-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border: 1px solid var(--quran-border);
+  border-radius: 12px;
+  background: #fff;
+  margin-bottom: 26px;
+}
+.console-shell .quran-stats .stat {
+  padding: 19px 23px;
+  position: relative;
+  display: block;
+}
+.console-shell .quran-stats .stat + .stat:before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 22px;
+  width: 1px;
+  background: var(--quran-border);
+}
+.console-shell .quran-stats .stat-label {
+  font-size: 13px;
+  color: #5c7178;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.console-shell .quran-stats .stat-value {
+  display: block;
+  font-size: 28px;
+  font-weight: 650;
+  line-height: 1.4;
+  margin-top: 7px;
+  font-variant-numeric: tabular-nums;
+}
+.console-shell .quran-detail-section .definition {
+  display: block;
+  border: 0;
+  padding: 0;
+}
+.console-shell .quran-detail-section .definition > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--quran-border);
+  padding: 12px 0;
+}
+@media (max-width: 760px) {
+  .console-shell .quran-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .console-shell .quran-stats .stat {
+    padding: 15px 16px;
+  }
+  .console-shell .quran-stats .stat:nth-child(3):before {
+    display: none;
+  }
+  .console-shell .quran-stats .stat:nth-child(n + 3) {
+    border-top: 1px solid var(--quran-border);
+  }
+}
+
+.console-shell .quran-history-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 0 22px 16px;
+  color: #5c7178;
+}
+.console-shell .quran-history-toggle input {
+  accent-color: #176957;
+  width: 16px;
+  height: 16px;
+}

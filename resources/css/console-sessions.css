@@ -1,0 +1,349 @@
+/* Scoped extension of the approved white/teal console layout. */
+.console-shell .sessions-workspace {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+.console-shell .sessions-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.console-shell .sessions-heading h2 {
+  font-size: 17px;
+  font-weight: 650;
+}
+.console-shell .sessions-heading small,
+.console-shell .sessions-muted {
+  color: #75858b;
+  font-size: 12px;
+}
+.console-shell .sessions-date-tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.console-shell .sessions-date-tools input {
+  width: 158px;
+}
+.console-shell .sessions-view-tabs {
+  display: flex;
+  gap: 3px;
+  border: 1px solid #e2eaea;
+  border-radius: 9px;
+  padding: 3px;
+  background: #f7f9f9;
+}
+.console-shell .sessions-view-tabs a {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  min-height: 38px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.console-shell .sessions-view-tabs a[aria-current="page"] {
+  color: #0c7869;
+  background: white;
+  box-shadow: 0 1px 4px #1f443410;
+}
+.console-shell .sessions-calendar-scroll {
+  overflow-x: auto;
+}
+.console-shell .sessions-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(145px, 1fr));
+  min-width: 1040px;
+}
+.console-shell .sessions-calendar.day {
+  grid-template-columns: 1fr;
+  min-width: 0;
+}
+.console-shell .sessions-day {
+  min-width: 0;
+  border-inline-end: 1px solid #e5ebeb;
+  min-height: 300px;
+  padding-bottom: 14px;
+}
+.console-shell .sessions-day:last-child {
+  border-inline-end: 0;
+}
+.console-shell .sessions-day > header {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 4px;
+  padding: 15px 8px;
+  font-size: 13px;
+  background: #fbfcfc;
+  border-bottom: 1px solid #e5ebeb;
+}
+.console-shell .sessions-day > header small {
+  color: #75858b;
+  font-size: 11px;
+}
+.console-shell .sessions-day.is-today > header {
+  color: #0b7b6b;
+  background: #edf7f3;
+}
+.console-shell .sessions-event {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: start;
+  width: calc(100% - 16px);
+  margin: 10px 8px 0;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #dcece7;
+  border-inline-start: 3px solid #268879;
+  background: #f1f8f5;
+  cursor: pointer;
+}
+.console-shell .sessions-event:hover {
+  background: #e8f3ef;
+}
+.console-shell .sessions-event:focus-visible {
+  outline: 2px solid #0c7869;
+  outline-offset: 2px;
+}
+.console-shell .sessions-event b {
+  font-size: 12px;
+  direction: ltr;
+  align-self: start;
+}
+.console-shell .sessions-event strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.console-shell .sessions-event small {
+  font-size: 11px;
+  color: #627872;
+}
+.console-shell .sessions-event[data-status="superseded"] {
+  background: #f6f7f7;
+  border-color: #dce1e2;
+}
+.console-shell .sessions-event[data-status="awaiting_review"] {
+  background: #fff8eb;
+  border-color: #e9d4a1;
+}
+.console-shell .sessions-empty {
+  text-align: center;
+  padding: 35px 15px;
+  font-size: 13px;
+  color: #8b999e;
+}
+.console-shell .sessions-table-scroll {
+  overflow: auto;
+}
+.console-shell .sessions-table {
+  min-width: 820px;
+}
+.console-shell .sessions-table td > small {
+  display: block;
+  color: #819096;
+  font-size: 11px;
+  margin-top: 4px;
+}
+.console-shell .sessions-link {
+  text-align: start;
+  color: #147969;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 36px;
+}
+.console-shell .sessions-status {
+  display: inline-flex;
+  border-radius: 5px;
+  padding: 4px 7px;
+  font-size: 11px;
+  color: #277264;
+  background: #edf6f2;
+}
+.console-shell .sessions-status[data-status="awaiting_review"] {
+  background: #fff5de;
+  color: #8d6824;
+}
+.console-shell .sessions-status[data-status="superseded"] {
+  background: #f0f3f3;
+  color: #748489;
+}
+.console-shell .sessions-history {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 14px 23px;
+  color: #70848a;
+}
+.console-shell .sessions-history input {
+  width: 16px;
+  height: 16px;
+  accent-color: #137b6b;
+}
+.console-shell .sessions-alert {
+  background: #fff5ef;
+  color: #854724;
+  padding: 15px 20px;
+  margin: 16px;
+  border: 1px solid #efd8c8;
+  border-radius: 9px;
+  font-size: 13px;
+}
+.console-shell .sessions-note {
+  background: #f0f6f4;
+  color: #657f76;
+  padding: 15px 20px;
+  margin: 20px 24px 0;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.9;
+}
+.console-shell .sessions-editor .sessions-field-note {
+  grid-column: 1/-1;
+  font-size: 12px;
+  line-height: 1.9;
+  color: #7a8c90;
+}
+.console-shell .sessions-field-note a {
+  margin-inline-start: 10px;
+}
+.console-shell .sessions-error {
+  color: #a6443b;
+  font-size: 12px;
+}
+.console-shell .sessions-days {
+  grid-column: 1/-1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+}
+.console-shell .sessions-days legend {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.console-shell .sessions-days label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 11px;
+  border: 1px solid #dfe9e6;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.console-shell .sessions-days label:has(input:checked) {
+  background: #ecf7f1;
+  border-color: #329484;
+  color: #0c7565;
+}
+.console-shell .sessions-days input {
+  width: 15px;
+  height: 15px;
+  accent-color: #137b6b;
+}
+.console-shell .sessions-availability {
+  grid-column: 1/-1;
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  margin-top: 4px;
+}
+.console-shell .sessions-availability > button {
+  justify-self: start;
+}
+.console-shell .sessions-availability p {
+  color: #778a8f;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.console-shell .sessions-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  max-height: 190px;
+  overflow: auto;
+  margin-top: 10px;
+}
+.console-shell .sessions-times button {
+  min-width: 70px;
+  font-size: 12px;
+}
+.console-shell .sessions-sheet {
+  width: min(520px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  position: fixed;
+  margin: 0;
+  inset: 0 auto 0 0;
+  border: 0;
+  padding: 0;
+  background: #fff;
+  color: inherit;
+}
+.console-shell .sessions-sheet::backdrop {
+  background: #173d3544;
+}
+.console-shell .sessions-sheet > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px;
+  border-bottom: 1px solid #e5ebeb;
+  gap: 12px;
+}
+.console-shell .sessions-sheet h2 {
+  font-size: 20px;
+  font-weight: 650;
+}
+.console-shell .sessions-sheet-body {
+  padding: 24px;
+}
+.console-shell .sessions-sheet dl {
+  margin: 20px 0;
+}
+.console-shell .sessions-definition {
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 13px 0;
+  border-bottom: 1px solid #edf1f0;
+  font-size: 13px;
+}
+.console-shell .sessions-definition dt {
+  color: #79898f;
+}
+.console-shell .sessions-definition dd {
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+.console-shell .sessions-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (max-width: 640px) {
+  .console-shell .sessions-heading {
+    align-items: start;
+  }
+  .console-shell .sessions-date-tools {
+    width: 100%;
+  }
+  .console-shell .sessions-view-tabs {
+    margin-inline-start: auto;
+  }
+  .console-shell .sessions-note {
+    margin: 16px 16px 0;
+  }
+  .console-shell .sessions-sheet-body {
+    padding: 18px;
+  }
+}

@@ -8,7 +8,11 @@ use Modules\Payroll\Application\Listeners\RecordSessionPayrollEntry;
 use Modules\Payroll\Application\Policies\PayrollAdjustmentPolicy;
 use Modules\Payroll\Application\Policies\PayrollEntryPolicy;
 use Modules\Payroll\Application\Policies\PayrollPeriodPolicy;
+use Modules\Payroll\Application\Queries\TeacherDuesQueryService;
 use Modules\Payroll\Application\Queries\TeacherEarningsQueryService;
+use Modules\Payroll\Application\Services\TeacherDuesOperationService;
+use Modules\Payroll\Domain\Contracts\TeacherDuesOperations;
+use Modules\Payroll\Domain\Contracts\TeacherDuesQueries;
 use Modules\Payroll\Domain\Contracts\TeacherEarningsQueries;
 use Modules\Payroll\Domain\Models\PayrollAdjustment;
 use Modules\Payroll\Domain\Models\PayrollEntry;
@@ -62,6 +66,8 @@ final class PayrollServiceProvider extends BaseModuleServiceProvider
     {
         return [
             TeacherEarningsQueries::class => TeacherEarningsQueryService::class,
+            TeacherDuesQueries::class => TeacherDuesQueryService::class,
+            TeacherDuesOperations::class => TeacherDuesOperationService::class,
         ];
     }
 

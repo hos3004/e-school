@@ -59,7 +59,21 @@ final readonly class BulkPlacementPreflight
 
     public function eligibleCount(): int
     {
-        return count($this->eligible());
+        return count($this->eligibleStudentProfileIds());
+    }
+
+    /** A student with multiple selected requests needs only one seat. Existing members need none. */
+    public function requiredSeats(): int
+    {
+        return count(array_unique(array_map(
+            static fn (BulkPlacementCandidate $candidate): string => (string) $candidate->studentProfileId,
+            array_filter($this->eligible(), static fn (BulkPlacementCandidate $candidate): bool => !$candidate->alreadyMember),
+        )));
+    }
+
+    public function skippedExistingCount(): int
+    {
+        return count(array_unique(array_map(static fn (BulkPlacementCandidate $candidate): string => (string) $candidate->studentProfileId, $this->alreadyMembers())));
     }
 
     /** هل يوجد ما يستحق التنفيذ أصلًا؟ */
@@ -71,9 +85,9 @@ final readonly class BulkPlacementPreflight
     /** @return list<string> معرّفات ملفات الطلاب الصالحين */
     public function eligibleStudentProfileIds(): array
     {
-        return array_values(array_map(
+        return array_values(array_unique(array_map(
             static fn (BulkPlacementCandidate $candidate): string => (string) $candidate->studentProfileId,
             $this->eligible(),
-        ));
+        )));
     }
 }

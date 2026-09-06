@@ -9,7 +9,9 @@ use Modules\Discipline\Application\Listeners\RecordConfirmedAbsenceViolation;
 use Modules\Discipline\Application\Policies\DisciplineActionPolicy;
 use Modules\Discipline\Application\Policies\ReactivationRequestPolicy;
 use Modules\Discipline\Application\Policies\ViolationEventPolicy;
+use Modules\Discipline\Application\Queries\DisciplineFollowupQueryService;
 use Modules\Discipline\Application\Queries\ReactivationRequestQueryService;
+use Modules\Discipline\Domain\Contracts\DisciplineFollowupQueries;
 use Modules\Discipline\Domain\Contracts\ReactivationRequestQueries;
 use Modules\Discipline\Domain\Models\DisciplineAction;
 use Modules\Discipline\Domain\Models\ReactivationRequest;
@@ -55,6 +57,7 @@ final class DisciplineServiceProvider extends BaseModuleServiceProvider
     protected function bindings(): array
     {
         return [
+            DisciplineFollowupQueries::class => DisciplineFollowupQueryService::class,
             EscalationLadder::class => EscalationLadder::class,
             ReactivationRequestQueries::class => ReactivationRequestQueryService::class,
         ];

@@ -19,6 +19,8 @@ use Shared\Concerns\HasUlid;
  * @property string $slug
  * @property array<string, string> $title
  * @property array<string, string>|null $description
+ * @property string|null $preferred_program_id
+ * @property string|null $preferred_course_id
  * @property bool $is_active
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
@@ -38,6 +40,8 @@ final class RegistrationForm extends Model
         'title',
         'description',
         'is_active',
+        'preferred_program_id',
+        'preferred_course_id',
     ];
 
     /** @return array<string, string> */

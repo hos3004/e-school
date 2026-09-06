@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Students\Application\Actions;
 
+use Modules\Students\Domain\Contracts\RegistrationOfferingQueries;
 use Modules\Students\Domain\Enums\RegistrationQuestionType;
 use Modules\Students\Domain\Models\RegistrationApplication;
 use Modules\Students\Domain\Models\RegistrationForm;
@@ -18,6 +19,7 @@ final readonly class SubmitPublicRegistrationFormAction
         private CreateRegistrationApplicationAction $create,
         private SubmitRegistrationApplicationAction $submit,
         private Transaction $transaction,
+        private RegistrationOfferingQueries $offerings,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -31,12 +33,23 @@ final readonly class SubmitPublicRegistrationFormAction
         }
 
         return $this->transaction->run(function () use ($form, $data): RegistrationApplication {
+            $form = RegistrationForm::query()->forOrganization($form->organization_id)->lockForUpdate()->findOrFail($form->id);
+            if (!$form->is_active) {
+                throw BusinessRuleViolation::make('registration.form_unavailable', 'students::errors.registration_form_unavailable');
+            }
+            if ($form->preferred_course_id !== null && !$this->offerings->isAvailable(
+                $form->organization_id, (string) $form->preferred_program_id, $form->preferred_course_id,
+            )) {
+                throw BusinessRuleViolation::make('registration.offering_invalid', 'students::validation.registration_offering_invalid');
+            }
             $evaluation = is_array($data['evaluation'] ?? null) ? $data['evaluation'] : [];
             unset($data['evaluation']);
 
             $application = $this->create->execute([
                 ...$data,
                 'registration_form_id' => (string) $form->getKey(),
+                'preferred_program_id' => $form->preferred_program_id,
+                'preferred_course_id' => $form->preferred_course_id,
                 'evaluation_answers' => $this->answerSnapshot($form, $evaluation),
             ], $form->organization_id, null);
 

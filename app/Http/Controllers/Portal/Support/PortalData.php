@@ -38,7 +38,7 @@ final readonly class PortalData
             ->first([
                 'student_profiles.id', 'student_profiles.student_code',
                 'student_profiles.country', 'student_profiles.city',
-                'student_profiles.date_of_birth', 'users.name', 'users.email', 'users.phone',
+                'student_profiles.date_of_birth', 'student_profiles.joined_at', 'users.name', 'users.email', 'users.phone',
             ]);
 
         return $row === null ? null : [
@@ -50,6 +50,7 @@ final readonly class PortalData
             'country' => $row->country,
             'city' => $row->city,
             'dateOfBirth' => $row->date_of_birth,
+            'joinedAt' => $this->iso($row->joined_at),
         ];
     }
 
@@ -369,7 +370,7 @@ final readonly class PortalData
             ->join('users', 'users.id', '=', 'staff_profiles.user_id')
             ->where('staff_profiles.user_id', $userId)->where('staff_profiles.organization_id', $organizationId)
             ->whereNull('staff_profiles.deleted_at')->first([
-                'staff_profiles.id', 'staff_profiles.staff_code', 'staff_profiles.bio', 'staff_profiles.specializations',
+                'staff_profiles.id', 'staff_profiles.staff_code', 'staff_profiles.bio', 'staff_profiles.specializations', 'staff_profiles.hired_at',
                 'users.name', 'users.email', 'users.phone',
             ]);
         if ($row === null) {
@@ -379,7 +380,7 @@ final readonly class PortalData
         return ['id' => (string) $row->id, 'name' => (string) $row->name, 'code' => (string) $row->staff_code,
             'email' => (string) $row->email, 'phone' => $row->phone,
             'specializations' => array_values(array_filter((array) $this->json($row->specializations))),
-            'bio' => $this->json($row->bio)];
+            'bio' => $this->json($row->bio), 'joinedAt' => $row->hired_at];
     }
 
     /**
@@ -1057,6 +1058,16 @@ final readonly class PortalData
             ->get();
 
         return $this->mapSessions($rows, $locale);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function teacherWeekSessions(string $staffProfileId, string $locale, string $timezone, string $organizationId): array
+    {
+        $now = CarbonImmutable::now($this->validTimezone($timezone));
+
+        return $this->mapSessions($this->teacherSessionsQuery($staffProfileId, $organizationId)
+            ->whereBetween('sessions.scheduled_start', [$now->startOfWeek()->utc(), $now->endOfWeek()->utc()])
+            ->orderBy('sessions.scheduled_start')->get(), $locale);
     }
 
     /**

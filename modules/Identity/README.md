@@ -23,3 +23,6 @@
 - **مختوم** (`config/modules.php → sealed_domains`): بيانات اعتماد وجلسات — ممنوع أي وصول جانبي، ويُفرض آليًا في `tests/Architecture`.
 - الحساب الموقوف لا يُحذف ولا بياناته: `status = suspended` يمنع الدخول فقط (قاعدة «لا حذف»).
 - `email` و`username` بنوع `CITEXT` وفريدتان على مستوى المنصة.
+
+
+قراءة نشاط الحساب عبر UserSummary::isActive() وUserAccountData::isActive() ضمن DTOs العقود العامة تبقي تفسير UserStatus داخل Identity؛ لا تحتاج الموديولات الأخرى لاستيراد enum دورة حياة الحساب.

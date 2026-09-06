@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use DateTimeZone;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
+use Modules\Organization\Domain\Contracts\SchoolClockQueries;
 use Modules\Reporting\Domain\Exceptions\InvalidReportCriteria;
 use Modules\Reporting\Domain\ValueObjects\OperationalReportCriteria;
 use Modules\Sessions\Domain\Enums\SessionStatus;
@@ -16,7 +17,7 @@ use Throwable;
 
 final readonly class OperationalReportCriteriaFactory
 {
-    public function __construct(private StaffQueries $staffQueries) {}
+    public function __construct(private StaffQueries $staffQueries, private SchoolClockQueries $schoolClock) {}
 
     /** @param array<string, mixed> $input */
     public function fromInput(array $input, Authenticatable $user): OperationalReportCriteria
@@ -27,9 +28,10 @@ final readonly class OperationalReportCriteriaFactory
             throw new InvalidReportCriteria(__('reporting::messages.organization_required'));
         }
 
-        $timezone = $this->timezone((string) (data_get($user, 'timezone') ?: config('app.timezone')));
+        $clock = $this->schoolClock->forOrganization($organizationId);
+        $timezone = $this->timezone((string) (data_get($user, 'timezone') ?: $clock['timezone']));
         $preset = $this->preset($input['preset'] ?? null);
-        [$fromLocal, $untilLocalExclusive] = $this->period($preset, $input, $timezone);
+        [$fromLocal, $untilLocalExclusive] = $this->period($preset, $input, $timezone, $clock['week_starts_at']);
 
         $maxDays = max(1, (int) config('reporting.operational.max_period_days'));
         if ($fromLocal->greaterThanOrEqualTo($untilLocalExclusive)
@@ -73,10 +75,9 @@ final readonly class OperationalReportCriteriaFactory
      * @param array<string, mixed> $input
      * @return array{CarbonImmutable, CarbonImmutable}
      */
-    private function period(string $preset, array $input, string $timezone): array
+    private function period(string $preset, array $input, string $timezone, int $weekStartsAt): array
     {
         $today = CarbonImmutable::now($timezone)->startOfDay();
-        $weekStartsAt = (int) config('reporting.operational.week_starts_at');
 
         return match ($preset) {
             'today' => [$today, $today->addDay()],

@@ -11,6 +11,7 @@ use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\Contracts\GroupProvisioningGateway;
 use Modules\Students\Domain\Contracts\StudentAdmissionQueries;
+use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\ValueObjects\AdmissionCandidateData;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
@@ -61,19 +62,19 @@ final readonly class BulkAssignStudentsToGroupAction
             $candidates,
         );
 
-        $eligibleCount = count(array_filter(
-            $verdicts,
-            static fn (BulkPlacementCandidate $verdict): bool => $verdict->eligible,
-        ));
+        $requiredSeats = count(array_unique(array_map(
+            static fn (BulkPlacementCandidate $verdict): string => (string) $verdict->studentProfileId,
+            array_filter($verdicts, static fn (BulkPlacementCandidate $verdict): bool => $verdict->eligible && !$verdict->alreadyMember),
+        )));
 
         return new BulkPlacementPreflight(
             candidates: array_values($verdicts),
             remainingSeats: $group?->remainingSeats,
             groupLabel: $group === null ? null : $this->groupLabel($group->name, $group->code),
             groupIsDraft: $group?->isDraft() ?? true,
-            capacityWarning: $group !== null && $eligibleCount > $group->remainingSeats
+            capacityWarning: $group !== null && $requiredSeats > $group->remainingSeats
                 ? __('students::admin.bulk_placement.capacity_warning', [
-                    'eligible' => $eligibleCount,
+                    'eligible' => $requiredSeats,
                     'remaining' => $group->remainingSeats,
                 ])
                 : null,
@@ -164,7 +165,7 @@ final readonly class BulkAssignStudentsToGroupAction
 
             $eligible = $preflight->eligible();
 
-            if (count($eligible) > $group->remainingSeats) {
+            if ($preflight->requiredSeats() > $group->remainingSeats) {
                 throw BusinessRuleViolation::make(
                     'groups.capacity_reached',
                     'groups::errors.capacity_reached',
@@ -189,11 +190,15 @@ final readonly class BulkAssignStudentsToGroupAction
                     actorId: $actorId,
                     correlationId: $correlationId,
                     reason: $reason,
+                    applicationId: $candidate->applicationId,
                 );
 
-                $placed[] = (string) $candidate->studentProfileId;
+                if (!$candidate->alreadyMember) {
+                    $placed[] = (string) $candidate->studentProfileId;
+                }
             }
 
+            $placed = array_values(array_unique($placed));
             $this->audit->record(
                 organizationId: $actorOrganizationId,
                 actorId: $actorId,
@@ -213,7 +218,7 @@ final readonly class BulkAssignStudentsToGroupAction
                     // معرّفات ملفات لا بيانات شخصية ولا إجابات تسجيل.
                     'student_profile_ids' => $placed,
                     'placed_count' => count($placed),
-                    'skipped_existing_count' => count($preflight->alreadyMembers()),
+                    'skipped_existing_count' => $preflight->skippedExistingCount(),
                 ],
                 reason: $reason,
                 correlationId: $correlationId,
@@ -225,7 +230,7 @@ final readonly class BulkAssignStudentsToGroupAction
                 groupWasCreated: $groupWasCreated,
                 groupIsDraft: $group->isDraft(),
                 placedStudentProfileIds: $placed,
-                skippedExistingCount: count($preflight->alreadyMembers()),
+                skippedExistingCount: $preflight->skippedExistingCount(),
             );
         });
     }
@@ -276,6 +281,10 @@ final readonly class BulkAssignStudentsToGroupAction
         }
 
         if (isset($existingMemberIds[$candidate->studentProfileId])) {
+            if ($candidate->status === RegistrationStatus::WaitingAssignment->value) {
+                return BulkPlacementCandidate::eligible($candidate->applicationId, $candidate->studentProfileId, $candidate->fullName, $candidate->displayCode(), alreadyMember: true);
+            }
+
             return BulkPlacementCandidate::alreadyMember(
                 $candidate->applicationId,
                 $candidate->studentProfileId,

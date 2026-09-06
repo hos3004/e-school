@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Modules\Identity\Database\Factories\UserFactory;
@@ -31,6 +32,12 @@ function authTestOrganizationId(): string
 
     return $id;
 }
+
+// These tests cover the established appearance; the new gated entry has its own suite.
+beforeEach(function (): void {
+    config(['console.enabled' => false]);
+    Http::fake(['api.pwnedpasswords.com/*' => Http::response('', 200)]);
+});
 
 it('renders the inertia login page with the unified identifier field', function (): void {
     $this->get('/login')

@@ -46,6 +46,14 @@ final class CourseMaterialPolicy
         return $user->can('content.manage') && $this->sameOrganization($user, $material);
     }
 
+    /** @param list<string> $authorizedCourseIds Trusted IDs resolved from enrollment / current assignment. */
+    public function viewForLearning(mixed $user, CourseMaterial $material, array $authorizedCourseIds): bool
+    {
+        return $user->can('content.view') && $this->sameOrganization($user, $material)
+            && !$material->trashed() && $material->isCurrentlyVisible()
+            && in_array((string) $material->course_id, $authorizedCourseIds, true);
+    }
+
     private function sameOrganization(mixed $user, CourseMaterial $material): bool
     {
         $organizationId = data_get($user, 'organization_id');

@@ -34,7 +34,7 @@
             }
 
             var path = window.location.pathname;
-            if (path.indexOf('/admin') === 0) return { placement: 'dashboard', page_key: '' };
+            if (/^\/(?:admin|v2|manage)(?:\/|$)/.test(path)) return { placement: 'dashboard', page_key: '' };
 
             var map = [
                 ['/student/schedule', 'student.schedule'],

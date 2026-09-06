@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Identity\Domain\Contracts\DTOs;
 
+use Modules\Identity\Domain\Enums\UserStatus;
+
 /**
  * ملخّص مستخدم للعرض خارج الموديول — بلا أي بيانات حسّاسة.
  */
@@ -18,6 +20,12 @@ final readonly class UserSummary
         public string $status,
         public string $timezone,
     ) {}
+
+    /** Account lifecycle interpretation remains inside Identity. */
+    public function isActive(): bool
+    {
+        return $this->status === UserStatus::Active->value;
+    }
 
     /**
      * @return array<string, mixed>

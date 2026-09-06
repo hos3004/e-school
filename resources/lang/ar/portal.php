@@ -304,6 +304,8 @@ return [
     'attendance.statuses.no_show' => 'لم يحضر',
     'attendance.statuses.technical_issue' => 'مشكلة تقنية',
     'attendance.statuses.not_held' => 'لم تُعقد',
+    'statuses.recorded' => 'مسجل',
+    'statuses.deferred' => 'مؤجل للفترة التالية',
     'statuses.active' => 'نشط',
     'statuses.suspended' => 'موقوف',
     'statuses.frozen' => 'مجمّد',

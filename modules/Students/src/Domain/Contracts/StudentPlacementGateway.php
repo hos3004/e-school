@@ -8,7 +8,7 @@ use Modules\Students\Domain\ValueObjects\StudentPlacementData;
 
 interface StudentPlacementGateway
 {
-    public function findCleared(string $studentProfileId): ?StudentPlacementData;
+    public function findCleared(string $studentProfileId, ?string $applicationId = null): ?StudentPlacementData;
 
-    public function markAssigned(string $organizationId, string $studentProfileId): void;
+    public function markAssigned(string $organizationId, string $studentProfileId, ?string $applicationId = null): void;
 }

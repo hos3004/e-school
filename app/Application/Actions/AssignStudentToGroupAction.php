@@ -50,6 +50,7 @@ final readonly class AssignStudentToGroupAction
         ?string $actorId = null,
         ?string $correlationId = null,
         ?string $reason = null,
+        ?string $applicationId = null,
     ): EnrollmentPlacementData {
         $reason = $reason === null ? null : trim($reason);
 
@@ -70,8 +71,9 @@ final readonly class AssignStudentToGroupAction
             $actorId,
             $correlationId,
             $reason,
+            $applicationId,
         ): array {
-            $student = $this->students->findCleared($studentProfileId);
+            $student = $this->students->findCleared($studentProfileId, $applicationId);
 
             if ($student === null) {
                 throw BusinessRuleViolation::make(
@@ -165,7 +167,7 @@ final readonly class AssignStudentToGroupAction
                 correlationId: $correlationId,
             );
 
-            $this->students->markAssigned($student->organizationId, $studentProfileId);
+            $this->students->markAssigned($student->organizationId, $studentProfileId, $applicationId);
 
             $this->audit->record(
                 organizationId: $student->organizationId,
@@ -177,6 +179,7 @@ final readonly class AssignStudentToGroupAction
                 oldValues: ['registration_status' => $student->status],
                 newValues: [
                     'registration_status' => 'assigned',
+                    'application_id' => $student->applicationId,
                     'program_id' => $programId,
                     'course_id' => $courseId,
                     'group_id' => $groupId,

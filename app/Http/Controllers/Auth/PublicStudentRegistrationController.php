@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Inertia;
 use Inertia\Response;
+use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Students\Application\Actions\SubmitPublicRegistrationFormAction;
 use Modules\Students\Domain\Models\RegistrationApplication;
@@ -34,13 +35,24 @@ final class PublicStudentRegistrationController extends Controller
             ], $geography->regionsOf($country['id']));
         }
 
+        $consoleRegistration = (bool) config('console.enabled');
+        $academics = app(AcademicCatalogQueries::class);
+        $course = $form->preferred_course_id === null ? null
+            : ($academics->coursesByIds((string) $form->organization_id, [$form->preferred_course_id])[$form->preferred_course_id] ?? null);
+        $programId = $form->preferred_program_id ?? $course?->programId;
+        $program = $programId === null ? null
+            : ($academics->programsByIds((string) $form->organization_id, [$programId])[$programId] ?? null);
+
         return Inertia::render('Auth/RegisterStudent', [
+            'consoleRegistration' => $consoleRegistration,
             'countries' => $countries,
             'regions' => $regions,
             'registrationForm' => [
                 'slug' => $form->slug,
                 'title' => $form->localizedTitle(),
                 'description' => $form->localizedDescription(),
+                'course' => $course?->name[$locale] ?? null,
+                'program' => $program?->name[$locale] ?? null,
             ],
             'questions' => $this->activeQuestions($form),
             'submitUrl' => route('register.student.form.store', ['formSlug' => $form->slug]),
@@ -103,7 +115,7 @@ final class PublicStudentRegistrationController extends Controller
 
     public function showSubmitted(Request $request): Response
     {
-        return Inertia::render('Auth/RegistrationSubmitted', ['applicationId' => $request->query('id')]);
+        return Inertia::render('Auth/RegistrationSubmitted', ['applicationId' => is_string($request->query('id')) ? $request->query('id') : null, 'consoleRegistration' => (bool) config('console.enabled')]);
     }
 
     public function showStatus(string $id): Response
@@ -115,7 +127,7 @@ final class PublicStudentRegistrationController extends Controller
         RateLimiter::hit($key, 60);
         $application = RegistrationApplication::query()->find($id);
 
-        return Inertia::render('Auth/ApplicationStatus', ['application' => $application ? [
+        return Inertia::render('Auth/ApplicationStatus', ['consoleRegistration' => (bool) config('console.enabled'), 'application' => $application ? [
             'id' => $application->id, 'applicant_name' => $this->maskedName($application->full_name),
             'status' => $application->status->value, 'created_at' => $application->created_at?->toIso8601String(),
         ] : null]);

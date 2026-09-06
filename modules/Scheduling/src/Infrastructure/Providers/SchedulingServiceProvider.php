@@ -10,7 +10,9 @@ use Modules\Scheduling\Application\Listeners\SyncStudentAssignedToGroupSessions;
 use Modules\Scheduling\Application\Listeners\SyncStudentLeftGroupSessions;
 use Modules\Scheduling\Application\Policies\PostponementRequestPolicy;
 use Modules\Scheduling\Application\Policies\SchedulePolicy;
+use Modules\Scheduling\Application\Queries\IndividualTeachingAssignmentQueries;
 use Modules\Scheduling\Application\Queries\SchedulingAdministrationQueryService;
+use Modules\Scheduling\Domain\Contracts\IndividualTeachingAssignments;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
 use Modules\Scheduling\Domain\Models\Schedule;
 use Shared\Module\BaseModuleServiceProvider;
@@ -34,7 +36,10 @@ final class SchedulingServiceProvider extends BaseModuleServiceProvider
     /** @return array<class-string, class-string> */
     protected function scopedBindings(): array
     {
-        return [SchedulingAdministrationQueryService::class => SchedulingAdministrationQueryService::class];
+        return [
+            SchedulingAdministrationQueryService::class => SchedulingAdministrationQueryService::class,
+            IndividualTeachingAssignments::class => IndividualTeachingAssignmentQueries::class,
+        ];
     }
 
     /** @return array<class-string, list<class-string>> */

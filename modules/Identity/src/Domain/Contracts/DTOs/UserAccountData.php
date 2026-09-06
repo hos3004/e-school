@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Identity\Domain\Contracts\DTOs;
 
+use Modules\Identity\Domain\Enums\UserStatus;
+
 /** بيانات الحساب العامة التي يجوز إعادتها للموديولات الأخرى. */
 final readonly class UserAccountData
 {
@@ -16,4 +18,10 @@ final readonly class UserAccountData
         public ?string $phone,
         public string $status,
     ) {}
+
+    /** Account lifecycle interpretation remains inside Identity. */
+    public function isActive(): bool
+    {
+        return $this->status === UserStatus::Active->value;
+    }
 }

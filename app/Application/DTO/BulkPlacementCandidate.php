@@ -26,8 +26,9 @@ final readonly class BulkPlacementCandidate
         string $studentProfileId,
         string $name,
         string $code,
+        bool $alreadyMember = false,
     ): self {
-        return new self($applicationId, $studentProfileId, $name, $code, true, null, false);
+        return new self($applicationId, $studentProfileId, $name, $code, true, null, $alreadyMember);
     }
 
     /** موجود بالفعل في المجموعة — لا يُعدّ فشلًا، ولا يُنشئ عضوية ثانية. */

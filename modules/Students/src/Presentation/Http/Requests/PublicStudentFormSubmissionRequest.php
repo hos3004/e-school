@@ -8,6 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
+use Modules\Students\Domain\Contracts\RegistrationOfferingQueries;
 use Modules\Students\Domain\Enums\RegistrationQuestionType;
 use Modules\Students\Domain\Enums\StudentGender;
 use Modules\Students\Domain\Models\RegistrationForm;
@@ -76,7 +77,14 @@ final class PublicStudentFormSubmissionRequest extends FormRequest
     /** @return list<callable(Validator): void> */
     public function after(): array
     {
-        return [$this->validateGeography(...)];
+        return [$this->validateGeography(...), function (Validator $validator): void {
+            $form = $this->registrationForm();
+            if ($form->preferred_course_id !== null && !app(RegistrationOfferingQueries::class)->isAvailable(
+                $form->organization_id, (string) $form->preferred_program_id, $form->preferred_course_id,
+            )) {
+                $validator->errors()->add('form', __('students::validation.registration_offering_invalid'));
+            }
+        }];
     }
 
     protected function prepareForValidation(): void

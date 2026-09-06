@@ -1,0 +1,293 @@
+/* Shared presentation only: filter state and submission stay in each page. */
+:is(.console-shell, .learning-app.learning-portal) .console-filter-bar {
+  --filter-control-height: 38px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px 12px;
+  width: 100%;
+  padding: 14px 16px;
+  margin: 0 0 14px;
+  border: 0;
+  border-bottom: 1px solid #e3eae8;
+  border-radius: 0;
+  background: #fff;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-bar > *,
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-bar
+  :is(.field, .console-field, .lp-field) {
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-bar
+  :is(.field, .console-field, .lp-field) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  :is(.console-filter-bar, .console-filter-single)
+  :is(.field, .console-field, .lp-field)
+  > :is(label, span),
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-single
+  > span {
+  color: #61747b;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  :is(.console-filter-bar, .console-filter-single)
+  :is(input:not([type="checkbox"]):not([type="radio"]), select) {
+  width: 100%;
+  height: var(--filter-control-height, 38px);
+  min-height: var(--filter-control-height, 38px);
+  padding: 6px 10px;
+  border: 1px solid #d2ddda;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #28433c;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: none;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-bar
+  :is(button, .console-button, .lp-btn, .inline-link, .lp-text-action) {
+  min-height: var(--filter-control-height);
+  height: auto;
+  padding-block: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-bar
+  :is(.inline-link, .lp-text-action) {
+  display: inline-flex;
+  align-items: center;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-search {
+  grid-column: span 2;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-column: span 2;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f4f7f5;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-actions {
+  display: flex;
+  align-items: center;
+  align-self: end;
+  flex-wrap: wrap;
+  grid-column: span 2;
+  gap: 8px 12px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-row {
+  display: contents;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-full,
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-bar
+  > :is(.console-feedback, .console-full) {
+  grid-column: 1 / -1;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-span-three {
+  grid-column: span 3;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  :is(.console-filter-pills, .console-filter-pills-bar) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-pills .pill {
+  padding: 6px 10px;
+  min-height: var(--filter-control-height, 38px);
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-bar--short {
+  grid-template-columns: minmax(200px, 2fr) minmax(140px, 1fr) auto;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-bar--short
+  .console-filter-actions {
+  grid-column: auto;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-single {
+  --filter-control-height: 38px;
+  gap: 4px;
+  max-width: 360px;
+  margin-block: 14px;
+}
+:is(.console-shell, .learning-app.learning-portal) .console-filter-choices {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 10px 18px;
+  border-top: 1px solid #e3eae8;
+  padding: 10px 0 0;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-choices
+  legend {
+  margin-bottom: 4px;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-choices
+  fieldset
+  > div {
+  gap: 2px 10px;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-choices
+  label {
+  min-height: 30px;
+}
+:is(.console-shell, .learning-app.learning-portal)
+  .console-filter-report
+  .console-filter-actions {
+  padding-top: 6px;
+}
+.learning-app.learning-portal
+  .console-filter-bar
+  .lp-library-search-input
+  input {
+  padding-inline-start: 34px;
+}
+.learning-app.learning-portal
+  .console-filter-bar
+  .lp-library-search-input
+  > svg {
+  top: calc(var(--filter-control-height) / 2 - 8px);
+}
+@media (max-width: 1280px) {
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-bar:not(.console-filter-bar--short) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-span-three {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 950px) {
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-bar:not(.console-filter-bar--short) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  :is(.console-shell, .learning-app.learning-portal) .console-filter-choices {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 700px) {
+  :is(.console-shell, .learning-app.learning-portal) .console-filter-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    padding: 12px;
+    gap: 10px;
+  }
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-bar--short
+    > :first-child {
+    grid-column: 1 / -1;
+  }
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-bar--short
+    .console-filter-actions {
+    grid-column: auto;
+  }
+}
+@media (max-width: 700px), (pointer: coarse) {
+  :is(.console-shell, .learning-app.learning-portal)
+    :is(.console-filter-bar, .console-filter-single) {
+    --filter-control-height: 44px;
+  }
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-choices
+    label {
+    min-height: 44px;
+  }
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-pills-bar
+    button {
+    min-height: 44px;
+  }
+}
+@media (max-width: 430px) {
+  :is(.console-shell, .learning-app.learning-portal) .console-filter-bar {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  :is(.console-shell, .learning-app.learning-portal) .console-filter-bar > *,
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-bar
+    :is(
+      .console-filter-search,
+      .console-filter-range,
+      .console-filter-actions
+    ) {
+    grid-column: 1 / -1;
+  }
+  :is(.console-shell, .learning-app.learning-portal) .console-filter-range {
+    padding: 6px;
+    gap: 6px;
+  }
+}
+/* Short choices can share a touch row; long values remain full width. */
+@media (max-width: 700px) {
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-bar
+    .console-filter-mobile-full {
+    grid-column: 1 / -1;
+  }
+}
+@media (min-width: 360px) and (max-width: 430px) {
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-bar.console-filter-mobile-pairs {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-bar.console-filter-mobile-pairs
+    > * {
+    grid-column: auto;
+  }
+  :is(.console-shell, .learning-app.learning-portal)
+    .console-filter-bar.console-filter-mobile-pairs
+    :is(
+      .console-filter-search,
+      .console-filter-range,
+      .console-filter-actions,
+      .console-filter-full,
+      .console-filter-mobile-full,
+      .console-feedback
+    ) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media print {
+  :is(.console-shell, .learning-app.learning-portal)
+    :is(
+      .console-filter-bar,
+      .console-filter-single,
+      .console-filter-pills-bar
+    ) {
+    display: none !important;
+  }
+}

@@ -30,3 +30,7 @@
 - القيد المقبول لا ينتقل إلى `active` عبر الإجراء العام؛ يجب أن يمر بتسكين
   برنامج → كورس → مجموعة متاحة عبر `AssignStudentToGroupAction`.
 - `UNIQUE (student_profile_id, program_id) WHERE deleted_at IS NULL` — قيد واحد نشط لكل برنامج.
+
+## عقد المتابعة الإداري
+
+ينشر `EnrollmentFollowupQueries` بيانات قيود المؤسسة عبر `FollowupEnrollmentData` وسجل انتقالاتها، دون نماذج Eloquent أو joins خارجية. تستهلكه واجهة `/manage/followup`. إجراءات pause/freeze/request/reactivate القائمة تظل مالكة الكتابة والسياسات وآلة الحالات.

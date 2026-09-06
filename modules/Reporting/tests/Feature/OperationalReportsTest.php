@@ -15,6 +15,7 @@ use Modules\Attendance\Domain\Contracts\AttendanceAdministrationQueries;
 use Modules\Attendance\Domain\ValueObjects\AttendanceAdministrationData;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\ValueObjects\SchedulingGroupData;
+use Modules\Organization\Domain\Contracts\SchoolClockQueries;
 use Modules\Reporting\Application\Queries\OperationalReportQueryService;
 use Modules\Reporting\Application\Services\OperationalReportCriteriaFactory;
 use Modules\Reporting\Domain\Contracts\OperationalReportQuery;
@@ -28,6 +29,12 @@ use Modules\Sessions\Domain\ValueObjects\SessionAdministrationData;
 use Modules\Sessions\Domain\ValueObjects\SessionParticipantAdministrationData;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
+
+beforeEach(function (): void {
+    $clock = Mockery::mock(SchoolClockQueries::class);
+    $clock->shouldReceive('forOrganization')->with('org-1')->andReturn(['timezone' => 'UTC', 'week_starts_at' => 6]);
+    $this->app->instance(SchoolClockQueries::class, $clock);
+});
 
 it('builds one complete row and summary through batched module contracts', function (): void {
     app()->setLocale('en');
@@ -166,7 +173,7 @@ it('converts an inclusive local date range to a half-open UTC period across DST'
     Gate::define('staff.view.any', fn (): bool => true);
 
     $staff = Mockery::mock(StaffQueries::class);
-    $criteria = (new OperationalReportCriteriaFactory($staff))->fromInput([
+    $criteria = (new OperationalReportCriteriaFactory($staff, app(SchoolClockQueries::class)))->fromInput([
         'preset' => 'custom',
         'from' => '2026-03-29',
         'until' => '2026-03-29',

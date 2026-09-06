@@ -19,6 +19,13 @@ final class SetLocale
 {
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->is('manage', 'manage/*', 'learn', 'learn/*')
+            || ((bool) config('console.enabled') && $request->is('login', 'forgot-password', 'reset-password', 'reset-password/*', 'two-factor-challenge', 'register/student', 'register/student/*', 'register/submitted', 'register/status/*'))) {
+            App::setLocale('ar');
+
+            return $next($request);
+        }
+
         $supported = config('app.supported_locales', ['ar']);
 
         $locale = data_get($request->user(), 'locale')

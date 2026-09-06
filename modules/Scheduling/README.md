@@ -43,3 +43,7 @@
 - حدود التأجيل: 4 طلبات شهريًا للطالب، نافذة إقامة حصة التلافي 30 يومًا، SLA رد المعلم 12 ساعة ثم تصعيد للإدارة (`Expired`).
 - **الإلغاء لا ينشئ حصة تلافي إطلاقًا** — التأجيل وحده يقابله تلافي.
 - الطالب لا يملك زر إلغاء حاليًا (`features.student_cancellation = false`) — «طلب تأجيل» فقط.
+
+## Console v2 read contract
+
+IndividualTeachingAssignments returns immutable assignment values for a teacher in one organization from active individual schedules owned by Scheduling. Learning portals combine these DTOs with their existing public queries to authorize student profiles; this module does not read student, staff or group tables.

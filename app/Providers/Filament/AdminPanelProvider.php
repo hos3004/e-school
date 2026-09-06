@@ -17,6 +17,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -109,7 +110,7 @@ final class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->id('admin')
-            ->path('admin')
+            ->path((bool) config('console.enabled') && (bool) config('console.primary') ? 'v2' : 'admin')
             ->login(Login::class)
             ->brandName(config('app.name'))
             ->defaultThemeMode(ThemeMode::Light)
@@ -126,6 +127,16 @@ final class AdminPanelProvider extends PanelProvider
             ->maxContentWidth(Width::Full)
             // خمسة أقسام لا أكثر. الترتيب والتداخل داخلها في App\Filament\AdminNavigation.
             ->navigationGroups(AdminNavigation::groups())
+            ->navigationItems([
+                NavigationItem::make('console-primary')
+                    ->label(static fn (): string => (string) __('console.nav.current'))
+                    ->url(static fn (): string => route('console.home'))
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->sort(-100)
+                    ->visible(static fn (): bool => (bool) config('console.enabled')
+                        && (bool) config('console.primary')
+                        && (bool) auth()->user()?->can('admin.panel.access')),
+            ])
             ->resources([
                 MonthlyReportResource::class,
                 SessionReportResource::class,

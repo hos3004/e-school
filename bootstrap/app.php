@@ -50,7 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
          * صفحة Inertia هناك لظهرت مفاتيح الترجمة خامًا بدل النص.
          */
         $exceptions->render(function (NotFoundHttpException $exception, Request $request): ?Response {
-            if ($request->expectsJson() || $request->is('admin/*', 'admin', 'api/*')) {
+            if ($request->expectsJson() || $request->is('admin/*', 'admin', 'v2/*', 'v2', 'api/*')) {
                 return null;
             }
 

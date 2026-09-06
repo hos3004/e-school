@@ -21,6 +21,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Modules\Content\Application\Queries\ContentAdministrationQueryService;
 use Modules\Content\Domain\Enums\MaterialStatus;
 use Modules\Content\Domain\Enums\MaterialType;
@@ -123,7 +124,14 @@ final class CourseMaterialResource extends Resource
                         ->live(),
                     FileUpload::make('path')
                         ->label(__('content::fields.file'))
-                        ->disk((string) config('content.uploads.disk'))
+                        // Read existing files from their recorded disk; all newly uploaded files use the current default.
+                        ->disk(fn (?CourseMaterial $record): string => $record?->disk ?: (string) config('content.uploads.disk'))
+                        ->visibility(fn (?CourseMaterial $record): string => ($record?->disk ?: config('content.uploads.disk')) === 'public' ? 'public' : 'private')
+                        ->saveUploadedFileUsing(static fn (TemporaryUploadedFile $file, FileUpload $component): string|false => $file->storeAs(
+                            $component->getDirectory(),
+                            $component->getUploadedFileNameForStorage($file),
+                            ['disk' => (string) config('content.uploads.disk'), 'visibility' => config('content.uploads.disk') === 'public' ? 'public' : 'private'],
+                        ))
                         ->directory('course-materials')
                         ->acceptedFileTypes((array) config('content.uploads.accepted_mime_types'))
                         ->maxSize(((int) config('content.uploads.max_size_mb')) * 1024)

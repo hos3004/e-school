@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Organization\Application\Actions\CreateAcademicCalendar;
 use Modules\Organization\Database\Factories\AcademicCalendarFactory;
@@ -10,6 +11,8 @@ use Modules\Organization\Domain\Events\AcademicCalendarCreated;
 use Modules\Organization\Domain\Models\AcademicCalendar;
 use Shared\Support\BusinessRuleViolation;
 use Tests\TestCase;
+
+uses(RefreshDatabase::class);
 
 it('creates an academic calendar and dispatches the event', function (): void {
     /** @var TestCase $this */

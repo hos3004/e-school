@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Console\Support\ConsoleContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Lang;
@@ -51,11 +52,14 @@ final class HandleInertiaRequests extends Middleware
              * والمسار نفسه غير مسجَّل حين تكون الميزة مطفأة — فلا يعتمد المنع
              * على الإخفاء وحده.
              */
+            'console' => $request->is('manage', 'manage/*', 'learn', 'learn/*')
+                ? app(ConsoleContext::class)->forRequest($request)
+                : null,
             'features' => [
                 'payroll' => (bool) config('features.payroll'),
             ],
             'locale' => $locale,
-            'supportedLocales' => Locales::supported(),
+            'supportedLocales' => $request->is('manage', 'manage/*', 'learn', 'learn/*') ? ['ar'] : Locales::supported(),
             'direction' => in_array($locale, (array) config('app.rtl_locales', ['ar']), true)
                 ? 'rtl'
                 : 'ltr',
@@ -90,6 +94,13 @@ final class HandleInertiaRequests extends Middleware
                 ...$translations,
                 ...Arr::dot(['marketing' => $marketing]),
             ];
+        }
+
+        foreach (['console', 'console_dashboard', 'console_sessions', 'console_group', 'console_directory', 'console_profiles', 'console_people', 'console_courses', 'console_quran', 'console_settings', 'console_registration', 'console_followup', 'console_dues', 'learning', 'learning_library', 'public_registration'] as $namespace) {
+            $dictionary = Lang::get($namespace, [], $locale);
+            if (is_array($dictionary)) {
+                $translations = [...$translations, ...Arr::dot([$namespace => $dictionary])];
+            }
         }
 
         return array_map(

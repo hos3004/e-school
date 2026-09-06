@@ -7,6 +7,13 @@ declare(strict_types=1);
 */
 
 return [
+    'library' => [
+        'per_page' => 18,
+        'preview_items' => 3,
+        'storage_directories' => ['course-materials'],
+        'storage_disks' => ['public', 'local', 'r2'],
+    ],
+
     'reason_max_length' => 1000,
 
     'uploads' => [
@@ -34,6 +41,6 @@ return [
         ],
 
         // القرص الافتراضي لتخزين المواد.
-        'disk' => env('CONTENT_DISK', 'public'),
+        'disk' => env('CONTENT_DISK', env('CONSOLE_ENABLED', false) ? 'local' : 'public'),
     ],
 ];

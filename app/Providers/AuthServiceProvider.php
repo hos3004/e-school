@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Controllers\Learning\LearningLoginResponse;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -14,10 +15,12 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
+use Laravel\Fortify\Contracts\LoginResponse;
 use Laravel\Fortify\Contracts\LoginViewResponse;
 use Laravel\Fortify\Contracts\RequestPasswordResetLinkViewResponse;
 use Laravel\Fortify\Contracts\ResetPasswordViewResponse;
 use Laravel\Fortify\Contracts\TwoFactorChallengeViewResponse;
+use Laravel\Fortify\Contracts\TwoFactorLoginResponse;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Http\Responses\SimpleViewResponse;
 use Modules\Identity\Application\Actions\RecordUserLogin;
@@ -36,6 +39,8 @@ final class AuthServiceProvider extends ServiceProvider
         // حقلا username/email يُقرآن من config/fortify.php ('login' و'email').
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
+        app()->bind(LoginResponse::class, LearningLoginResponse::class);
+        app()->bind(TwoFactorLoginResponse::class, LearningLoginResponse::class);
         $this->bindViews();
         $this->authenticateByIdentifier();
         $this->recordSuccessfulLogins();
@@ -45,8 +50,10 @@ final class AuthServiceProvider extends ServiceProvider
     private function bindViews(): void
     {
         app()->singleton(LoginViewResponse::class, static fn (): LoginViewResponse => new SimpleViewResponse(
-            static fn (Request $request) => Inertia::render('Auth/Login', [
+            static fn (Request $request) => Inertia::render(config('console.enabled') ? 'Auth/LearningLogin' : 'Auth/Login', [
+                'portal' => in_array($request->query('portal'), ['student', 'teacher'], true) ? $request->query('portal') : 'student',
                 'action' => route('login'),
+                'status' => $request->session()->get('status'),
                 'flash' => [
                     'success' => $request->session()->get('success'),
                     'error' => $request->session()->get('error'),
@@ -56,20 +63,20 @@ final class AuthServiceProvider extends ServiceProvider
         ));
 
         app()->singleton(RequestPasswordResetLinkViewResponse::class, static fn (): RequestPasswordResetLinkViewResponse => new SimpleViewResponse(
-            static fn (Request $request) => Inertia::render('Auth/ForgotPassword', [
+            static fn (Request $request) => Inertia::render(config('console.enabled') ? 'Auth/LearningForgotPassword' : 'Auth/ForgotPassword', [
                 'status' => $request->session()->get('status'),
             ]),
         ));
 
         app()->singleton(ResetPasswordViewResponse::class, static fn (): ResetPasswordViewResponse => new SimpleViewResponse(
-            static fn (Request $request) => Inertia::render('Auth/ResetPassword', [
+            static fn (Request $request) => Inertia::render(config('console.enabled') ? 'Auth/LearningResetPassword' : 'Auth/ResetPassword', [
                 'token' => (string) $request->route('token', ''),
                 'email' => (string) $request->input('email', ''),
             ]),
         ));
 
         app()->singleton(TwoFactorChallengeViewResponse::class, static fn (): TwoFactorChallengeViewResponse => new SimpleViewResponse(
-            static fn () => Inertia::render('Auth/TwoFactorChallenge'),
+            static fn () => Inertia::render(config('console.enabled') ? 'Auth/LearningTwoFactorChallenge' : 'Auth/TwoFactorChallenge'),
         ));
 
         /*
@@ -107,7 +114,14 @@ final class AuthServiceProvider extends ServiceProvider
             /** @var string $hash */
             $hash = (string) $user->getAuthPassword();
 
-            return Hash::check($password, $hash) ? $user : null;
+            if (!Hash::check($password, $hash)) {
+                return null;
+            }
+            if ((bool) config('console.enabled') && in_array($request->input('portal'), ['student', 'teacher'], true)) {
+                $request->session()->put('learning.portal', $request->input('portal'));
+            }
+
+            return $user;
         });
     }
 

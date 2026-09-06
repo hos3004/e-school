@@ -41,6 +41,8 @@ use App\Http\Controllers\Portal\TeacherSessionReportController;
 use App\Http\Controllers\Portal\TeacherStudentController;
 use App\Http\Controllers\Portal\TeacherStudentsController;
 use App\Http\Controllers\UpdateLocaleController;
+use App\Http\Middleware\EnsureConsoleEnabled;
+use App\Http\Middleware\RedirectPrimaryLearningPortal;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -81,7 +83,7 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         ->name('portal.recordings.watch');
 
     Route::get('/student', StudentDashboardController::class)
-        ->middleware('can:session.view')
+        ->middleware(['can:session.view', RedirectPrimaryLearningPortal::class])
         ->name('portal.student.dashboard');
     Route::get('/student/schedule', StudentScheduleController::class)
         ->middleware('can:schedule.view')
@@ -137,7 +139,7 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         ->name('portal.student.profile.password');
 
     Route::get('/teacher', TeacherDashboardController::class)
-        ->middleware('can:session.view')
+        ->middleware(['can:session.view', RedirectPrimaryLearningPortal::class])
         ->name('portal.teacher.dashboard');
     Route::get('/teacher/schedule', TeacherScheduleController::class)
         ->middleware('can:schedule.view')
@@ -239,3 +241,20 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::get('/guardian/notifications', [PortalNotificationsController::class, 'guardian'])
         ->name('portal.guardian.notifications');
 });
+
+// The new workspace remains gated independently from the established routes.
+Route::middleware([EnsureConsoleEnabled::class, 'auth', 'auth.session'])
+    ->group(function (): void {
+        Route::prefix('manage')->name('console.')->middleware('can:admin.panel.access')
+            ->group(function (): void {
+                require __DIR__.'/console-web.php';
+                require __DIR__.'/console-people.php';
+                require __DIR__.'/console-courses.php';
+                require __DIR__.'/console-registration.php';
+                require __DIR__.'/console-followup.php';
+                require __DIR__.'/console-dues.php';
+            });
+        require __DIR__.'/learning.php';
+    });
+
+require __DIR__.'/console-primary.php';

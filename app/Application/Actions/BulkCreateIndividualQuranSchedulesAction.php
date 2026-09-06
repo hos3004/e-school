@@ -209,6 +209,7 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
         ?string $endsOn,
         string $actorId,
         string $reason,
+        ?string $applicationId = null,
     ): string {
         $course = $this->course($organizationId);
         if ($course === null) {
@@ -285,6 +286,7 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
             $endsOn,
             $actorId,
             $reason,
+            $applicationId,
         ): string {
             $schedule = $this->createSchedule->execute($organizationId, [
                 'target_type' => 'student',
@@ -301,8 +303,8 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
                 'ends_on' => $endsOn,
             ], $actorId, $reason);
 
-            if ($this->students->findCleared($studentProfileId) !== null) {
-                $this->students->markAssigned($organizationId, $studentProfileId);
+            if ($this->students->findCleared($studentProfileId, $applicationId) !== null) {
+                $this->students->markAssigned($organizationId, $studentProfileId, $applicationId);
             }
 
             return (string) $schedule->getKey();

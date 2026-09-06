@@ -234,3 +234,79 @@ if ($user->hasRole('teacher')) { ... }
 
 كل مورد **ممنوع افتراضيًا**. الوصول يحتاج صلاحية صريحة.
 `Gate::before` مخصص لـ `platform_admin` فقط، ومع ذلك تُسجَّل أفعاله في التدقيق.
+
+## 6. مسارات اللوحة المستقلة Console v2
+
+جميع `/manage/*` تتطلب ميزة console وتسجيل دخول وحسابًا نشطًا و`admin.panel.access`، إضافةً إلى صلاحية المورد أدناه. لا صلاحيات جديدة ولا فحص باسم الدور.
+
+| المورد / العملية | الحارس الإضافي |
+|---|---|
+| تقرير اليوم والتقارير | `report.view`؛ ملخص الصفحة لا يُرسل دونها |
+| PDF التقرير | `report.view` + `report.export` |
+| الطلاب: قراءة / إنشاء / تعديل | `student.view.any` / `student.create` / `student.update` مع Policy المورد والمؤسسة |
+| المعلمون: قراءة / إنشاء وتعديل الملف | `staff.view.any` / `staff.contract.update` مع Policy المورد والمؤسسة |
+| تعديل اسم/هاتف/توقيت حساب مرتبط | `UserPolicy::update` فوق صلاحية الملف؛ حقول الحساب للقراءة دونها |
+| العقود والأسعار في الملف | `staff.contract.view`؛ لا تُرسل للخادم العميل دونها |
+| البرامج والمستويات | `program.manage` مع نطاق المؤسسة |
+| الكورسات | `course.manage` مع نطاق المؤسسة |
+| المجموعات قراءة / كتابة وإسناد وتفعيل | `group.view` / `group.manage` مع Policies والإجراءات القائمة |
+| القرآن الفردي قراءة / تسكين واقتراح الإتاحة | `student.view.any` / إضافة `schedule.manage` |
+| الإعدادات قراءة / تعديل | `organizations.view` / `organizations.update` للمؤسسة الحالية فقط |
+
+`/learn/*` تتطلب ميزة console وتسجيل الدخول والحساب النشط وملف الطالب/المعلم الخاص. صفحة الحصة تعتمد Policy الحصة، الحضور `attendance.record`، التقرير `session_report.create`، دخول الفصل `session.join`. ملف الطالب للمعلم يتطلب `student.view` وإسنادًا نشطًا مؤسسيًا؛ لا تمنح معرفة المعرّف الوصول. تعديل الحساب الذاتي يمر بطلبات وسياسات الهوية الحالية.
+
+### توسعة إعدادات اللوحة الجديدة
+
+كل المسارات التالية تحتاج الدخول للوحة الجديدة وقراءة المؤسسة، وتتحقق من مؤسسة المستخدم في الخادم:
+- بادئة اسم المستخدم: organizations.manage_settings + OrganizationPolicy::manageSettings.
+- توجيه أنواع التنبيه: settings.manage + NotificationCategorySettingPolicy.
+- عرض التقويمات وإنشاؤها واعتمادها وإغلاقها: academic_calendars.view_any مع الصلاحية الخاصة بالفعل وسياسة التقويم.
+- عرض العطلات وإنشاؤها وإزالتها: holidays.view_any مع الصلاحية الخاصة بالفعل وسياسة العطلة. ربط تقويم يتطلب قراءته والتحقق من المؤسسة.
+
+### مركز المتابعة الجديد `/manage/followup`
+
+هذا المركز يركّب الموارد القائمة ولا ينشئ صلاحيات بديلة. يشترط الدخول صلاحيات `admin.panel.access` و`student.view.any` و`enrollment.view` و`attendance.view` و`discipline.view_any`، مع علم تفعيل Console وحساب نشط.
+
+| العملية | الحراسة الإضافية |
+|---|---|
+| تعليق القيد مؤقتًا | `EnrollmentPolicy::pause` |
+| تجميد القيد | `EnrollmentPolicy::freeze` |
+| استئناف التعليق | `EnrollmentPolicy::reactivate` |
+| تقديم طلب عودة | `EnrollmentPolicy::requestReactivation` و`ReactivationRequestPolicy::create` |
+| مراجعة التقييم وحسم الطلب | `EnrollmentPolicy::reactivate` و`ReactivationRequestPolicy::decide` |
+| تصحيح الحضور وقبول العذر | `AttendancePolicy::override`، و`ViolationEventPolicy::waive` لكل مخالفة غياب مرتبطة قبل حفظ أي تغيير |
+
+جميع معرّفات الموارد مقيدة بمؤسسة المستخدم، والقرارات تتحقق من الحالة الحالية تحت قفل ومعاملة. لا تمنح صلاحية قراءة المركز أي قدرة كتابة.
+
+
+### التسجيل والتسكين والمستحقات في Console
+
+| المسار / الفعل | الصلاحيات والقيود |
+|---|---|
+| نماذج التسجيل والطلبات وقبولها | student.create مع سياسات النماذج والطلب، وتأكيد ربط هوية الحساب الموجود، ونطاق المؤسسة |
+| جدول التسكين وفحصه وحفظه | student.view.any + enrollment.create + group.manage؛ مراجعة الأهلية والسعة والمعلم عبر إجراء التسكين الحالي ومعاملة واحدة |
+| كشف حصص المعلمين ومستحقاتهم | payroll.view مع تفعيل features.payroll، ومؤسسة المعلم والفترة |
+| اقتراح مكافأة أو تسوية | payroll.view + الصلاحية المحددة في payroll.adjustments.propose_permission وسياسة التسوية |
+| اعتماد أو رفض التسوية | payroll.view + payroll.adjustments.approve_permission؛ فصل المقترح عن المعتمد وحماية الفترة المدفوعة |
+
+لا تمنح هذه الصفحات صلاحية صرف أو تغيير حالة الفترة المالية. التصحيح قيد مستقل، والقيمة التاريخية للحصة لا تتغير بتغيير السعر الحالي.
+
+### تقويم الحصص والجداول والقرآن والإتاحة في Console
+
+هذه واجهات للموارد الحالية، دون صلاحيات أو أدوار جديدة:
+
+| المسار / العملية | الصلاحيات والسياسة والنطاق |
+|---|---|
+| GET /manage/sessions | session.view + student.view.any؛ حصص ومشاركو مؤسسة المستخدم فقط، وتوقيت الحساب وبداية أسبوع المؤسسة |
+| جداول المجموعة داخل التقويم | schedule.view + SchedulePolicy::viewAny؛ القوالب الجماعية للمؤسسة فقط |
+| GET /manage/schedules/create وPOST /manage/schedules | schedule.manage + SchedulePolicy::create؛ تحقق وجهة المجموعة والكورس والمعلم والإسناد في CreateScheduleAction |
+| GET /manage/schedules/{schedule}/edit وPATCH /manage/schedules/{schedule} | schedule.manage + SchedulePolicy::update؛ جدول جماعي من المؤسسة، قفل قبل التعديل، ومنع تبديل المجموعة أو الكورس أثناء تحريره |
+| GET /manage/schedules/availability | schedule.manage؛ مجموعة وكورس ومعلم صالحون من المؤسسة، واستثناء جدول موجود يتطلب SchedulePolicy::update وتطابق الوجهة |
+| PATCH /manage/quran/{student}/schedules/{schedule} | student.view.any + schedule.manage + SchedulePolicy::update؛ تطابق الطالب والكورس الفردي والمؤسسة وحساب الطالب النشط |
+| تسكين طلب قرآن مقبول جديد | student.view.any + schedule.manage + enrollment.create + RegistrationApplicationPolicy::scheduleIndividual؛ قفل الطلب المختار، تحقق الأهلية والحالة، معاملة واحدة للقيد والجدول وحالة الطلب |
+| GET /manage/teachers/{teacher}/availability | staff.view + StaffProfilePolicy::view؛ ملف المعلم المسموح من المؤسسة فقط |
+| إضافة نافذة إتاحة | staff.view + staff.availability.create وسياسة إضافة إتاحة الملف؛ المعلم وحسابه نشطان |
+| اعتماد/رفض نافذة إتاحة | staff.view + staff.availability.approve + TeacherAvailabilityPolicy::approve؛ نافذة المعلم المحدد والحالة المسموحة |
+| إزالة نافذة إتاحة معلقة/مرفوضة | staff.view + staff.contract.update + TeacherAvailabilityPolicy::delete؛ الإجراء الحالي يمنع إزالة المعتمدة |
+
+لا تنفذ واجهة التقويم تعديلًا مباشرًا على حصة أو حضور أو دفتر مستحقات. إجراء UpdateScheduleAction يحافظ على الماضي والمهلة المحمية، ويعيد توليد المستقبل داخل معاملة وتدقيق. معرفة معرّف مورد أو إرساله من المتصفح لا تمنح الوصول إلى مؤسسة أخرى.
