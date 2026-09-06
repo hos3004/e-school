@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Organization\Application\Actions\UpsertOrganizationSetting;
 use Modules\Organization\Database\Factories\OrganizationFactory;
@@ -9,6 +10,8 @@ use Modules\Organization\Domain\Events\OrganizationSettingUpdated;
 use Modules\Organization\Domain\Models\OrganizationSetting;
 use Shared\Support\BusinessRuleViolation;
 use Tests\TestCase;
+
+uses(RefreshDatabase::class);
 
 it('creates then updates the same setting key without duplicating rows', function (): void {
     /** @var TestCase $this */

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Organization\Application\Actions\AddHoliday;
 use Modules\Organization\Database\Factories\HolidayFactory;
@@ -11,6 +12,8 @@ use Modules\Organization\Domain\Events\HolidayAdded;
 use Modules\Organization\Domain\Models\Holiday;
 use Shared\Support\BusinessRuleViolation;
 use Tests\TestCase;
+
+uses(RefreshDatabase::class);
 
 it('adds a holiday and dispatches HolidayAdded', function (): void {
     /** @var TestCase $this */

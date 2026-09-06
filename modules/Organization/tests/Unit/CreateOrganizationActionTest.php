@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Organization\Application\Actions\CreateOrganization;
 use Modules\Organization\Database\Factories\OrganizationFactory;
@@ -9,6 +10,8 @@ use Modules\Organization\Domain\Events\OrganizationCreated;
 use Modules\Organization\Domain\Models\Organization;
 use Shared\Support\BusinessRuleViolation;
 use Tests\TestCase;
+
+uses(RefreshDatabase::class);
 
 it('creates an organization and dispatches OrganizationCreated', function (): void {
     /** @var TestCase $this */
