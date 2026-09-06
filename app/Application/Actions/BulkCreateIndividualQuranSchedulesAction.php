@@ -105,6 +105,43 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
             return new BulkIndividualSchedulePreview(count($selected), $eligible, 0, []);
         }
 
+        $slots = $this->nonOverlappingTimes($this->availableStartTimes(
+            organizationId: $organizationId,
+            staffProfileId: $staffProfileId,
+            weekdays: $weekdays,
+            intervalWeeks: $intervalWeeks,
+            durationMinutes: $durationMinutes,
+            timezone: $timezone,
+            startsOn: $startsOn,
+            endsOn: $endsOn,
+        ), $durationMinutes);
+
+        return new BulkIndividualSchedulePreview(
+            selectedCount: count($selected),
+            eligibleStudentIds: $eligible,
+            availableSlotCount: count($slots),
+            assignedStartTimes: array_slice($slots, 0, count($eligible)),
+        );
+    }
+
+    /**
+     * @param list<int|string> $weekdays
+     * @return list<string>
+     */
+    public function availableStartTimes(
+        string $organizationId,
+        ?string $staffProfileId,
+        array $weekdays,
+        int $intervalWeeks,
+        int $durationMinutes,
+        string $timezone,
+        ?string $startsOn,
+        ?string $endsOn,
+    ): array {
+        if ($staffProfileId === null || $staffProfileId === '' || $weekdays === []) {
+            return [];
+        }
+
         $overview = $this->availability->overview(
             organizationId: $organizationId,
             staffProfileId: $staffProfileId,
@@ -116,14 +153,99 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
             endsOn: $endsOn,
             requireDeclaredAvailability: false,
         );
-        $slots = $this->nonOverlappingTimes($overview['available_start_times'], $durationMinutes);
 
-        return new BulkIndividualSchedulePreview(
-            selectedCount: count($selected),
-            eligibleStudentIds: $eligible,
-            availableSlotCount: count($slots),
-            assignedStartTimes: array_slice($slots, 0, count($eligible)),
+        return $overview['available_start_times'];
+    }
+
+    /** @param list<int|string> $weekdays */
+    public function executeSingle(
+        string $organizationId,
+        string $studentProfileId,
+        string $staffProfileId,
+        array $weekdays,
+        int $intervalWeeks,
+        int $durationMinutes,
+        string $startTime,
+        string $timezone,
+        string $startsOn,
+        ?string $endsOn,
+        string $actorId,
+        string $reason,
+    ): string {
+        $course = $this->course($organizationId);
+        if ($course === null) {
+            throw BusinessRuleViolation::make(
+                'scheduling.individual_quran_course_missing',
+                'scheduling::errors.individual_quran_course_missing',
+            );
+        }
+
+        if (!in_array($studentProfileId, $this->eligibleStudentIds($organizationId), true)) {
+            throw BusinessRuleViolation::make(
+                'scheduling.individual_student_not_eligible',
+                'scheduling::errors.individual_student_not_eligible',
+            );
+        }
+
+        if (!array_key_exists($staffProfileId, $this->teacherOptions($organizationId))) {
+            throw BusinessRuleViolation::make(
+                'scheduling.teacher_not_eligible',
+                'scheduling::errors.teacher_not_eligible',
+            );
+        }
+
+        $availableTimes = $this->availableStartTimes(
+            organizationId: $organizationId,
+            staffProfileId: $staffProfileId,
+            weekdays: $weekdays,
+            intervalWeeks: $intervalWeeks,
+            durationMinutes: $durationMinutes,
+            timezone: $timezone,
+            startsOn: $startsOn,
+            endsOn: $endsOn,
         );
+        if (!in_array($startTime, $availableTimes, true)) {
+            throw BusinessRuleViolation::make(
+                'scheduling.individual_slot_unavailable',
+                'scheduling::errors.individual_slot_unavailable',
+            );
+        }
+
+        return $this->transaction->run(function () use (
+            $organizationId,
+            $studentProfileId,
+            $course,
+            $staffProfileId,
+            $weekdays,
+            $intervalWeeks,
+            $startTime,
+            $durationMinutes,
+            $timezone,
+            $startsOn,
+            $endsOn,
+            $actorId,
+            $reason,
+        ): string {
+            $schedule = $this->createSchedule->execute($organizationId, [
+                'target_type' => 'student',
+                'student_profile_id' => $studentProfileId,
+                'course_id' => $course->id,
+                'staff_profile_id' => $staffProfileId,
+                'weekdays' => $weekdays,
+                'interval_weeks' => max(1, $intervalWeeks),
+                'start_time' => $startTime,
+                'duration_minutes' => $durationMinutes,
+                'timezone' => $timezone,
+                'starts_on' => $startsOn,
+                'ends_on' => $endsOn,
+            ], $actorId, $reason);
+
+            if ($this->students->findCleared($studentProfileId) !== null) {
+                $this->students->markAssigned($organizationId, $studentProfileId);
+            }
+
+            return (string) $schedule->getKey();
+        });
     }
 
     /**
@@ -226,7 +348,7 @@ final readonly class BulkCreateIndividualQuranSchedulesAction
                         'ends_on' => $endsOn,
                     ], $actorId, $reason);
 
-                    if ($activateEnrollment) {
+                    if ($this->students->findCleared($studentProfileId) !== null) {
                         $this->students->markAssigned($organizationId, $studentProfileId);
                     }
 
