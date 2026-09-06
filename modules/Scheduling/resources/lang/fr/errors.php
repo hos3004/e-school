@@ -33,6 +33,8 @@ return [
     'teacher_on_leave' => 'L’enseignant est en congé approuvé le :date.',
     'outside_teacher_availability' => 'Le créneau est hors des disponibilités approuvées de l’enseignant.',
     'individual_quran_course_missing' => 'Le cours de Coran individuel est introuvable ou inactif.',
+    'individual_student_not_eligible' => 'L’étudiant n’est pas éligible au placement individuel ou possède déjà un planning actif.',
+    'individual_slot_unavailable' => 'L’horaire choisi n’est plus disponible. Sélectionnez un autre horaire dans la liste.',
     'bulk_no_eligible_students' => 'Aucun étudiant sélectionné n’est éligible au placement individuel.',
     'bulk_insufficient_slots' => 'Les créneaux indépendants disponibles (:slots) sont moins nombreux que les étudiants éligibles (:students).',
     'bulk_limit_exceeded' => 'Vous ne pouvez pas placer plus de :maximum étudiants en une seule opération.',

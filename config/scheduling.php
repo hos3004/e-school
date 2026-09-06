@@ -96,6 +96,8 @@ return [
     'individual_quran' => [
         'course_code' => 'C-QURAN-IND',
         'bulk_max_students' => 50,
+        'max_interval_weeks' => 12,
+        'reason_max_length' => 1000,
     ],
 
     /*

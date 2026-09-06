@@ -81,7 +81,7 @@ final class IndividualQuranBulkPlacementAction
                     ->label(__('students::admin.individual_quran.interval_weeks'))
                     ->numeric()
                     ->minValue(1)
-                    ->maxValue(12)
+                    ->maxValue((int) config('scheduling.individual_quran.max_interval_weeks'))
                     ->default(1)
                     ->live()
                     ->required(),
@@ -107,7 +107,7 @@ final class IndividualQuranBulkPlacementAction
                 Textarea::make('reason')
                     ->label(__('students::admin.individual_quran.reason'))
                     ->helperText(__('students::admin.individual_quran.reason_help'))
-                    ->maxLength(1000)
+                    ->maxLength((int) config('scheduling.individual_quran.reason_max_length'))
                     ->required()
                     ->columnSpanFull(),
             ])
