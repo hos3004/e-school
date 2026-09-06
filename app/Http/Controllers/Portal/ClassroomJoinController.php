@@ -145,6 +145,7 @@ final class ClassroomJoinController
             organizationId: $organizationId,
             actorId: $userId,
             reason: __('virtualclassroom::messages.portal_provision_reason'),
+            ensureRemoteIsRunning: true,
         );
 
         return redirect()->away($this->generateJoinUrl->execute(

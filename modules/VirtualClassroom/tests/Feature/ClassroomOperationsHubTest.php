@@ -25,6 +25,8 @@ use Modules\VirtualClassroom\Domain\Enums\ClassroomStatus;
 use Modules\VirtualClassroom\Domain\Exceptions\ClassroomProviderException;
 use Modules\VirtualClassroom\Domain\Models\Classroom;
 use Modules\VirtualClassroom\Domain\Models\ClassroomEvent;
+use Modules\VirtualClassroom\Domain\ValueObjects\ClassroomSpec;
+use Modules\VirtualClassroom\Domain\ValueObjects\RemoteClassroom;
 use Modules\VirtualClassroom\Domain\ValueObjects\WebhookEvent;
 use Modules\VirtualClassroom\Infrastructure\Providers\NullProvider;
 use Modules\VirtualClassroom\Presentation\Filament\Pages\ClassroomConnectionSettings;
@@ -136,6 +138,53 @@ it('persists a failed provisioning attempt and retries the same classroom safely
             'virtualclassroom.provision_failed',
             'virtualclassroom.provisioned',
         ]);
+});
+
+it('reprovisions a remote classroom that ended before a portal join', function (): void {
+    $participantId = $this->createSessionParticipant();
+    $sessionId = (string) DB::table('session_participants')->where('id', $participantId)->value('session_id');
+    $operatorId = (string) User::query()->where('organization_id', $this->organizationId)->value('id');
+    $provider = Mockery::mock(VirtualClassroomProvider::class);
+    $provider->shouldReceive('name')->andReturn('bigbluebutton');
+    $provider->shouldReceive('createClassroom')
+        ->twice()
+        ->andReturnUsing(static fn (ClassroomSpec $spec): RemoteClassroom => new RemoteClassroom(
+            externalId: $spec->externalMeetingId,
+            moderatorSecret: 'moderator-'.$spec->externalMeetingId,
+            attendeeSecret: 'attendee-'.$spec->externalMeetingId,
+            createdAt: CarbonImmutable::now('UTC'),
+        ));
+    $provider->shouldReceive('isRunning')
+        ->once()
+        ->with('SES-'.$sessionId)
+        ->andReturnFalse();
+    app()->instance(VirtualClassroomProvider::class, $provider);
+
+    $first = app(ProvisionClassroomAction::class)->execute(
+        $sessionId,
+        'فصل سينتهي عند المزوّد',
+        organizationId: $this->organizationId,
+        actorId: $operatorId,
+        reason: 'تجهيز الفصل قبل دخول المعلم',
+    );
+    $recovered = app(ProvisionClassroomAction::class)->execute(
+        $sessionId,
+        'فصل بديل بعد انتهاء الغرفة الأولى',
+        organizationId: $this->organizationId,
+        actorId: $operatorId,
+        reason: 'إعادة التجهيز عند طلب دخول المعلم',
+        ensureRemoteIsRunning: true,
+    );
+
+    expect($first->external_id)->toBe('SES-'.$sessionId)
+        ->and($recovered->id)->toBe($first->id)
+        ->and($recovered->external_id)->toBe('SES-'.$sessionId.'-R2')
+        ->and($recovered->status)->toBe(ClassroomStatus::Provisioned)
+        ->and($recovered->provision_attempts)->toBe(2)
+        ->and(AuditLog::query()
+            ->where('auditable_id', $recovered->id)
+            ->where('action', 'virtualclassroom.remote_classroom_unavailable')
+            ->exists())->toBeTrue();
 });
 
 it('maps webhook participant identities and lifecycle into local events and audit', function (): void {

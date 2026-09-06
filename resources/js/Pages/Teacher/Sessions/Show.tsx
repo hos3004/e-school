@@ -174,6 +174,9 @@ export default function TeacherSessionShow({
   const t = useI18n();
   const locale = useLocale();
   const joinNow = useJoinClock(session);
+  const [isEditingAttendance, setIsEditingAttendance] = useState(() =>
+    attendance.some((record) => record.status === "pending"),
+  );
   const attendanceForm = useForm<AttendanceFormData>({
     statuses: initialStatuses(attendance),
     reason: "",
@@ -198,6 +201,12 @@ export default function TeacherSessionShow({
       ...attendance.map((record) => record.status),
     ]),
   );
+  const attendanceRequiresReason = attendance.some(
+    (record) =>
+      Boolean(record.recordedAt) &&
+      (attendanceForm.data.statuses[record.studentId] ?? record.status) !==
+        record.status,
+  );
 
   const retry = () => {
     router.reload({
@@ -216,7 +225,29 @@ export default function TeacherSessionShow({
     event.preventDefault();
     attendanceForm.post(attendanceUpdateUrl, {
       preserveScroll: true,
+      onSuccess: () => {
+        attendanceForm.setData("reason", "");
+        setIsEditingAttendance(false);
+      },
     });
+  };
+
+  const editAttendance = () => {
+    attendanceForm.clearErrors();
+    attendanceForm.setData({
+      statuses: initialStatuses(attendance),
+      reason: "",
+    });
+    setIsEditingAttendance(true);
+  };
+
+  const cancelAttendanceEdit = () => {
+    attendanceForm.clearErrors();
+    attendanceForm.setData({
+      statuses: initialStatuses(attendance),
+      reason: "",
+    });
+    setIsEditingAttendance(false);
   };
 
   const submitReport = (event: FormEvent<HTMLFormElement>) => {
@@ -502,7 +533,7 @@ export default function TeacherSessionShow({
                   )}
                   title={t("teacher.sessions.show.attendance.empty.title")}
                 />
-              ) : (
+              ) : isEditingAttendance ? (
                 <form className="space-y-6" onSubmit={submitAttendance}>
                   <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)]">
                     <ul
@@ -613,7 +644,7 @@ export default function TeacherSessionShow({
                       placeholder={t(
                         "teacher.sessions.show.attendance.reason_placeholder",
                       )}
-                      required
+                      required={attendanceRequiresReason}
                       value={attendanceForm.data.reason}
                     />
                     <FieldError
@@ -622,7 +653,20 @@ export default function TeacherSessionShow({
                     />
                   </div>
 
-                  <div className="flex justify-end">
+                  <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
+                    {attendance.every(
+                      (record) => record.status !== "pending",
+                    ) ? (
+                      <Button
+                        className="w-full sm:w-auto"
+                        disabled={attendanceForm.processing}
+                        onClick={cancelAttendanceEdit}
+                        type="button"
+                        variant="secondary"
+                      >
+                        {t("actions.cancel")}
+                      </Button>
+                    ) : null}
                     <Button
                       className="w-full sm:w-auto"
                       disabled={attendanceForm.processing}
@@ -634,6 +678,43 @@ export default function TeacherSessionShow({
                     </Button>
                   </div>
                 </form>
+              ) : (
+                <div className="space-y-5">
+                  <p className="rounded-[var(--radius-md)] bg-[var(--brand-soft)] p-4 text-sm text-[var(--ink)]">
+                    {t("teacher.sessions.show.attendance.saved_description")}
+                  </p>
+                  <ul
+                    aria-label={t(
+                      "teacher.sessions.show.attendance.saved_roster_label",
+                    )}
+                    className="divide-y divide-[var(--line)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)]"
+                  >
+                    {attendance.map((record) => (
+                      <li
+                        className="flex flex-wrap items-center justify-between gap-3 bg-[var(--surface)] p-4"
+                        key={record.id}
+                      >
+                        <span className="font-semibold text-[var(--ink)]">
+                          {record.studentName}
+                        </span>
+                        <StatusPill
+                          colorMap={statusColors}
+                          status={record.status}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex justify-end">
+                    <Button
+                      className="w-full sm:w-auto"
+                      onClick={editAttendance}
+                      type="button"
+                      variant="secondary"
+                    >
+                      {t("teacher.sessions.show.attendance.edit")}
+                    </Button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>

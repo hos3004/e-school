@@ -16,6 +16,7 @@ use Modules\AcademicReports\Domain\Models\SessionReportStudent;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
+use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\ValueObjects\SessionAdministrationData;
 use Modules\Sessions\Domain\ValueObjects\SessionParticipantAdministrationData;
 use Shared\Support\BusinessRuleViolation;
@@ -159,7 +160,7 @@ it('rejects scores outside the allowed scale', function (): void {
     }
 });
 
-it('accepts an original teacher after substitution and audits the tenant-scoped report', function (): void {
+it('accepts an assigned teacher from the moment the session is in progress and audits the report', function (): void {
     Event::fake([SessionReportSubmitted::class]);
     $context = SessionReportFactory::createSessionContext();
     $organizationId = (string) DB::table('sessions')
@@ -178,7 +179,7 @@ it('accepts an original teacher after substitution and audits the tenant-scoped 
         groupId: (string) Str::ulid(),
         courseId: $courseId,
         staffProfileId: (string) Str::ulid(),
-        status: 'completed',
+        status: SessionStatus::InProgress->value,
         title: ['ar' => 'حصة اختبار'],
         scheduledStart: now('UTC')->subHour()->toIso8601String(),
         scheduledEnd: now('UTC')->toIso8601String(),
@@ -195,7 +196,7 @@ it('accepts an original teacher after substitution and audits the tenant-scoped 
         groupId: null,
         staffProfileId: $context['staff_profile_id'],
         sessionTitle: ['ar' => 'حصة اختبار'],
-        sessionStatus: 'completed',
+        sessionStatus: SessionStatus::InProgress->value,
         scheduledStart: now('UTC')->subHour()->toIso8601String(),
         scheduledEnd: now('UTC')->toIso8601String(),
         firstJoinedAt: null,

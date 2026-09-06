@@ -12,6 +12,7 @@ use Modules\AcademicReports\Domain\Models\SessionReportStudent;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
+use Modules\Sessions\Domain\Enums\SessionStatus;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -64,7 +65,11 @@ final readonly class SubmitSessionReportAction
             );
         }
 
-        if (!in_array($session->status, ['awaiting_review', 'completed'], true)) {
+        if (!in_array($session->status, [
+            SessionStatus::InProgress->value,
+            SessionStatus::AwaitingReview->value,
+            SessionStatus::Completed->value,
+        ], true)) {
             throw BusinessRuleViolation::make(
                 'academicreports.session_report.invalid_session_state',
                 'academicreports::errors.session_report_invalid_session_state',
