@@ -713,7 +713,11 @@ export default function Dashboard({
                     </bdi>{" "}
                     · {slot.timezone}{" "}
                     <span className="lp-tag">
-                      {t(`statuses.${slot.approvalStatus}`)}
+                      {t(
+                        slot.approvalStatus === "approved"
+                          ? "console_quran.availability_live"
+                          : `statuses.${slot.approvalStatus}`,
+                      )}
                     </span>
                   </p>
                 ))

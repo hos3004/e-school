@@ -1,3 +1,4 @@
+import BrandLogo from "@/Components/BrandLogo";
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     type ChangeEvent,
@@ -471,16 +472,7 @@ export default function AppLayout({
                         ].join(' ')}
                         href={homeHref}
                     >
-                        <span
-                            aria-hidden="true"
-                            className="hidden size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand)] text-[var(--ink-inverse)] shadow-[0_1px_2px_rgb(20_37_54/0.14)] sm:flex"
-                        >
-                            <svg className="size-5" fill="none" viewBox="0 0 24 24">
-                                <path d="m4 6.5 8-3 8 3-8 3-8-3Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
-                                <path d="M7 8.2v5.6c0 1.4 2.2 2.7 5 2.7s5-1.3 5-2.7V8.2M20 7v6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-                            </svg>
-                        </span>
-                        <span className="truncate">{t('app.name')}</span>
+                        <BrandLogo label={t('app.name')} className="block h-auto w-[125px] shrink-0 sm:w-[150px]" />
                     </Link>
 
                     <div className="ms-auto flex min-w-0 items-center gap-2 sm:gap-4">
@@ -570,15 +562,7 @@ export default function AppLayout({
                         role="dialog"
                     >
                         <div className="flex min-h-[4.5rem] items-center gap-3 border-b border-[var(--line)] px-4">
-                            <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand)] text-[var(--ink-inverse)]">
-                                <svg className="size-5" fill="none" viewBox="0 0 24 24">
-                                    <path d="m4 6.5 8-3 8 3-8 3-8-3Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
-                                    <path d="M7 8.2v5.6c0 1.4 2.2 2.7 5 2.7s5-1.3 5-2.7V8.2M20 7v6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-                                </svg>
-                            </span>
-                            <span className="min-w-0 flex-1 truncate font-semibold">
-                                {t('app.name')}
-                            </span>
+                            <BrandLogo label={t('app.name')} className="block h-auto w-[150px] flex-1" />
                             <button
                                 aria-label={t('navigation.close')}
                                 className={[

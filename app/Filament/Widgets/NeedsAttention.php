@@ -92,7 +92,7 @@ final class NeedsAttention extends Widget
                     'heroicon-o-arrow-path',
                     'info',
                 ),
-                $this->item(
+                ...((bool) config('scheduling.availability.teacher_requires_approval') ? [$this->item(
                     'availability_unapproved',
                     $this->scopedVia('teacher_availability', 'staff_profiles', 'staff_profile_id')
                         ->where('teacher_availability.approval_status', 'pending')
@@ -101,7 +101,7 @@ final class NeedsAttention extends Widget
                     '/admin/staff-profiles',
                     'heroicon-o-calendar-days',
                     'warning',
-                ),
+                )] : []),
                 ...((bool) config('features.payroll') ? [
                     $this->item(
                         'payroll_adjustments_pending',

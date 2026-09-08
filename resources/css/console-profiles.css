@@ -69,7 +69,7 @@
 .people-profile .pp-section-subtitle{font-size:12px;color:var(--pp-muted);margin-bottom:16px!important}
 .people-profile .pp-prose{white-space:pre-wrap}
 .people-profile .pp-print-brand{display:flex;align-items:center;gap:10px}
-.people-profile .pp-print-brand img{width:100px;max-height:50px;object-fit:contain}
+.people-profile .pp-print-brand svg{width:100px;max-height:50px;object-fit:contain}
 .people-profile .pp-attachment-link{font-weight:600;color:var(--pp-green)}
 @media print{
  body:has(.people-profile) :is(.console-rail,.console-topbar,.console-footer,.console-notice,.console-heading,.console-mobile-nav,.learning-header,.learning-nav,.learning-footer,.learning-skip,.learning-no-print){display:none!important}

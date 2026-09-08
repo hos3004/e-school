@@ -160,7 +160,7 @@ return [
         'no_pending_attendance' => 'كل حالات الحضور مسجلة للحصص التي تحتاج متابعة.',
         'no_pending_reports' => 'لا توجد تقارير حصص تنتظر الإرسال.',
         'professional_kicker' => 'مساحتك المهنية', 'progress_kicker' => 'من الحضور إلى الإنجاز',
-        'no_availability' => 'لم تُسجل فترات إتاحة بعد.', 'manage_availability' => 'مراجعة وطلب تعديل الإتاحة',
+        'no_availability' => 'لم تُسجل فترات إتاحة بعد.', 'manage_availability' => 'إدارة أوقات الإتاحة',
         'ledger_sessions' => 'حصة في كشف الفترة', 'no_earnings' => 'لا توجد قيود مستحقات مسجلة حتى الآن.',
         'earnings_details' => 'تفاصيل حصصي والتسويات', 'earnings_unavailable' => 'كشف المستحقات غير متاح لهذا الحساب حاليًا.',
         'progress_title' => 'استمرارك ظاهر في تقدمك',
@@ -186,7 +186,7 @@ return [
         'score' => 'الدرجة', 'save_grade' => 'حفظ الدرجة والمراجعة', 'waiting_submission' => 'بانتظار إجابة الطالب قبل الرصد.', 'attachment' => 'مرفق',
     ],
     'services' => [
-        'request_availability' => 'إرسال الإتاحة للمراجعة', 'withdraw_availability' => 'سحب هذه الفترة غير المعتمدة',
+        'request_availability' => 'حفظ أوقات الإتاحة', 'withdraw_availability' => 'سحب هذه الفترة',
         'search_lessons' => 'ابحث باسم الحصة أو الدراسة أو المعلم', 'print_reports' => 'طباعة التقارير',
         'earnings_hint' => 'كشف حصصك والتسويات المعتمدة، من القيود المسجلة في حسابك.',
         'period' => 'الفترة', 'lesson_entries' => 'تفاصيل الحصص', 'adjustments' => 'المكافآت والتسويات المعتمدة',

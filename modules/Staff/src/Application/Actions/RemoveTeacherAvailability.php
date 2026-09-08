@@ -12,10 +12,8 @@ use Modules\Staff\Domain\Models\TeacherAvailability;
 use Shared\Support\BusinessRuleViolation;
 
 /**
- * حذف نافذة إتاحة لم تُعتمد بعد.
- *
- * الإتاحة المعتمدة داخلة في التسكين والجدولة، فسحبها قرار إداري لا تراجع
- * ذاتي من المعلم؛ لذلك يُمنع حذفها من هنا ويُترك للمشرف عبر مسار الاعتماد.
+ * سحب نافذة إتاحة للترشيحات القادمة فقط؛ لا يغيّر أي حصة أو تسكين قائم.
+ * عند تفعيل سياسة المراجعة القديمة تبقى النوافذ المعتمدة محمية.
  */
 final readonly class RemoveTeacherAvailability
 {
@@ -28,7 +26,8 @@ final readonly class RemoveTeacherAvailability
         ?string $actorId = null,
         ?string $reason = null,
     ): void {
-        if ($availability->approval_status === TeacherAvailabilityApprovalStatus::Approved) {
+        if ((bool) config('scheduling.availability.teacher_requires_approval')
+            && $availability->approval_status === TeacherAvailabilityApprovalStatus::Approved) {
             throw BusinessRuleViolation::make(
                 'staff.availability_approved_not_removable',
                 'staff::errors.availability_approved_not_removable',

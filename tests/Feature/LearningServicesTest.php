@@ -114,19 +114,21 @@ final class LearningServicesTest extends TestCase
         $this->assertDatabaseMissing('session_participants', ['session_id' => $session->id, 'excused_by' => $foreign->id]);
     }
 
-    public function test_teacher_availability_starts_pending_and_cannot_remove_foreign_or_approved_slot(): void
+    public function test_teacher_availability_is_immediate_and_only_owner_can_withdraw_without_changing_sessions(): void
     {
         [$teacher,$student,$session] = $this->fixture();
-        $this->actingAs($teacher, 'web')->get('/learn/teacher/availability')->assertOk()->assertInertia(fn (Assert $page): Assert => $page->component('Learning/Availability')->where('canCreate', true));
+        $this->actingAs($teacher, 'web')->get('/learn/teacher/availability')->assertOk()->assertInertia(fn (Assert $page): Assert => $page->component('Learning/Availability')->where('canCreate', true)->where('teacher.approval_required', false));
         $this->from('/learn/teacher/availability')->post('/learn/teacher/availability', ['weekday' => 2, 'start_time' => '18:00', 'end_time' => '20:00', 'timezone' => 'Africa/Cairo', 'effective_from' => '2026-09-10', 'effective_to' => null])->assertRedirect('/learn/teacher/availability')->assertSessionHasNoErrors();
         $slot = DB::table('teacher_availability')->sole();
-        $this->assertSame('pending', $slot->approval_status);
+        $this->assertSame('approved', $slot->approval_status);
+        $this->assertNull($slot->approved_by);
         $this->assertSame((string) $session->staff_profile_id, $slot->staff_profile_id);
         [$other] = $this->fixture();
         $this->actingAs($other, 'web')->delete('/learn/teacher/availability/'.$slot->id)->assertNotFound();
-        DB::table('teacher_availability')->where('id', $slot->id)->update(['approval_status' => 'approved']);
-        $this->actingAs($teacher, 'web')->delete('/learn/teacher/availability/'.$slot->id)->assertForbidden();
-        $this->assertDatabaseHas('teacher_availability', ['id' => $slot->id]);
+        $this->actingAs($teacher, 'web')->delete('/learn/teacher/availability/'.$slot->id)->assertRedirect();
+        $this->assertDatabaseMissing('teacher_availability', ['id' => $slot->id]);
+        $this->assertDatabaseHas('sessions', ['id' => $session->id, 'staff_profile_id' => $session->staff_profile_id]);
+        $this->assertDatabaseHas('audit_log', ['action' => 'staff.availability_removed', 'auditable_id' => $slot->id, 'actor_id' => $teacher->id]);
         $this->actingAs($student, 'web')->get('/learn/teacher/availability')->assertForbidden();
     }
 

@@ -51,6 +51,31 @@ final class PublicStudentRegistrationTest extends TestCase
         ]);
     }
 
+    public function test_public_registration_accepts_turkey_and_a_country_outside_the_priority_list(): void
+    {
+        $geography = app(GeographyQueries::class);
+        foreach (['TR', 'CA'] as $iso2) {
+            $country = $geography->findCountryByIso2($iso2);
+            self::assertNotNull($country);
+            $region = $geography->regionsOf($country->id)[0];
+            $email = strtolower($iso2).'.public@example.test';
+            $this->post('/register/student', [
+                ...$this->validStudentData(), 'email' => $email,
+                'country_id' => $country->id, 'region_id' => $region->id,
+            ])->assertSessionHasNoErrors()->assertRedirectContains('/register/submitted');
+            $this->assertDatabaseHas('registration_applications', [
+                'email' => $email, 'country_id' => $country->id, 'region_id' => $region->id, 'status' => 'submitted',
+            ]);
+        }
+    }
+
+    public function test_free_text_country_cannot_bypass_canonical_geography_validation(): void
+    {
+        $this->post('/register/student', [...$this->validStudentData(), 'country_id' => 'تركيا'])
+            ->assertSessionHasErrors('country_id');
+        $this->assertDatabaseCount('registration_applications', 0);
+    }
+
     public function test_legacy_registration_route_returns_not_found_without_a_published_form(): void
     {
         $this->form->update(['is_active' => false]);

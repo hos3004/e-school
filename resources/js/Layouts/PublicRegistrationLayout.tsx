@@ -1,3 +1,4 @@
+import BrandLogo from "@/Components/BrandLogo";
 import { Link } from "@inertiajs/react";
 import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
@@ -24,10 +25,7 @@ export default function PublicRegistrationLayout({
             className="pr-brand"
             aria-label={t("public_registration.brand")}
           >
-            <img
-              src="/images/academy-brand.png"
-              alt={t("public_registration.brand")}
-            />
+            <BrandLogo label={t("public_registration.brand")} />
           </Link>
           <span className="pr-header-title">
             {t("public_registration.portal")}

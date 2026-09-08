@@ -20,7 +20,12 @@ export default function Availability({
   defaults,
   timezones,
 }: {
-  teacher: { name: string; active: boolean; slots: Slot[] };
+  teacher: {
+    name: string;
+    active: boolean;
+    approval_required: boolean;
+    slots: Slot[];
+  };
   canCreate: boolean;
   defaults: { timezone: string; effective_from: string };
   timezones: string[];
@@ -45,7 +50,13 @@ export default function Availability({
             {t("learning.workspace.professional_kicker")}
           </div>
           <h1>{t("learning.availability")}</h1>
-          <p>{t("console_quran.availability_pending_help")}</p>
+          <p>
+            {t(
+              teacher.approval_required
+                ? "console_quran.availability_pending_help"
+                : "console_quran.availability_immediate_help",
+            )}
+          </p>
         </div>
         <Link className="lp-text-action" href="/learn/teacher#progress">
           {t("learning.back_portal")}
@@ -75,7 +86,12 @@ export default function Availability({
                     )}
                   </small>
                   <span className="lp-tag">
-                    {t(`statuses.${slot.approval_status}`)}
+                    {t(
+                      !teacher.approval_required &&
+                        slot.approval_status === "approved"
+                        ? "console_quran.availability_live"
+                        : `statuses.${slot.approval_status}`,
+                    )}
                   </span>
                   {slot.decision_reason && (
                     <small>{slot.decision_reason}</small>

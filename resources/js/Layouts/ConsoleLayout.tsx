@@ -1,3 +1,4 @@
+import BrandLogo from "@/Components/BrandLogo";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -99,7 +100,7 @@ export default function ConsoleLayout({
           aria-label={t("console.brand")}
         >
           <span className="console-brand-crop">
-            <img src="/images/academy-brand.png" alt={t("console.brand")} />
+            <BrandLogo label={t("console.brand")} />
           </span>
           <small className="console-brand-caption">
             {t("console.environment")}
@@ -158,7 +159,7 @@ export default function ConsoleLayout({
             aria-label={t("console.brand")}
           >
             <span className="console-brand-crop">
-              <img src="/images/academy-brand.png" alt={t("console.brand")} />
+              <BrandLogo label={t("console.brand")} />
             </span>
           </Link>
           <button

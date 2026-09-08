@@ -84,6 +84,46 @@ final class TeacherAvailabilityDecisionTest extends TestCase
         }
     }
 
+    public function test_policy_activation_is_scoped_dry_by_default_idempotent_and_audited_without_notifications(): void
+    {
+        config()->set('scheduling.availability.teacher_requires_approval', false);
+        [$organization, , $pending] = $this->context();
+        [, , $foreign] = $this->context();
+        $rejected = $pending->replicate();
+        $rejected->id = (string) str()->ulid();
+        $rejected->approval_status = TeacherAvailabilityApprovalStatus::Rejected;
+        $rejected->weekday = 2;
+        $rejected->save();
+
+        $this->artisan('staff:activate-pending-availability', ['--organization' => $organization->id])->assertSuccessful();
+        self::assertSame(TeacherAvailabilityApprovalStatus::Pending, $pending->fresh()->approval_status);
+        $this->artisan('staff:activate-pending-availability', ['--organization' => $organization->id, '--apply' => true])->assertSuccessful();
+
+        self::assertSame(TeacherAvailabilityApprovalStatus::Approved, $pending->fresh()->approval_status);
+        self::assertNull($pending->fresh()->approved_by);
+        self::assertSame(TeacherAvailabilityApprovalStatus::Rejected, $rejected->fresh()->approval_status);
+        self::assertSame(TeacherAvailabilityApprovalStatus::Pending, $foreign->fresh()->approval_status);
+        $this->assertDatabaseHas('audit_log', [
+            'organization_id' => $organization->id,
+            'auditable_id' => $pending->id,
+            'action' => 'staff.availability_activated',
+            'actor_type' => 'system',
+            'actor_id' => null,
+        ]);
+        $this->artisan('staff:activate-pending-availability', ['--organization' => $organization->id, '--apply' => true])->assertSuccessful();
+        self::assertSame(1, DB::table('audit_log')->where('action', 'staff.availability_activated')->count());
+        Event::assertNotDispatched(TeacherAvailabilityApproved::class);
+    }
+
+    public function test_policy_activation_requires_explicit_scope_and_disabled_review_policy(): void
+    {
+        [$organization, , $pending] = $this->context();
+        $this->artisan('staff:activate-pending-availability', ['--apply' => true])->assertFailed();
+        config()->set('scheduling.availability.teacher_requires_approval', true);
+        $this->artisan('staff:activate-pending-availability', ['--organization' => $organization->id, '--apply' => true])->assertFailed();
+        self::assertSame(TeacherAvailabilityApprovalStatus::Pending, $pending->fresh()->approval_status);
+    }
+
     /** @return array{Organization, User, TeacherAvailability} */
     private function context(): array
     {
@@ -93,7 +133,7 @@ final class TeacherAvailabilityDecisionTest extends TestCase
         $profile = StaffProfile::query()->create([
             'organization_id' => (string) $organization->id,
             'user_id' => (string) $teacher->id,
-            'staff_code' => 'TCH-AVAILABILITY-001',
+            'staff_code' => 'TCH-AV-'.str()->random(8),
             'employment_type' => EmploymentType::Contractor,
             'gender' => StaffGender::Female,
             'hired_at' => now()->toDateString(),

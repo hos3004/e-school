@@ -18,10 +18,20 @@ use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Domain\Models\TeacherAvailability;
 use Modules\Staff\Infrastructure\Persistence\DbTeacherRateResolver;
+use Modules\Staff\Presentation\Console\ActivatePendingAvailabilityCommand;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class StaffServiceProvider extends BaseModuleServiceProvider
 {
+    public function boot(): void
+    {
+        parent::boot();
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([ActivatePendingAvailabilityCommand::class]);
+        }
+    }
+
     protected function moduleName(): string
     {
         return 'Staff';

@@ -27,7 +27,6 @@ use Modules\Groups\Domain\Models\GroupTeacher;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Database\Seeders\GeographySeeder;
 use Modules\Organization\Domain\Models\Organization;
-use Modules\Staff\Application\Actions\ApproveTeacherAvailabilityAction;
 use Modules\Staff\Application\Actions\SetTeacherAvailability;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Modules\Staff\Domain\Enums\StaffGender;
@@ -59,6 +58,7 @@ final class Task02AcceptanceTest extends TestCase
 
     public function test_public_registration_acceptance_and_placement_are_tenant_safe_and_atomic(): void
     {
+        config()->set('scheduling.availability.teacher_requires_approval', false);
         (new GeographySeeder)->run();
 
         $organization = Organization::factory()->create();
@@ -145,21 +145,10 @@ final class Task02AcceptanceTest extends TestCase
             timezone: 'UTC',
             effectiveFrom: CarbonImmutable::today('UTC'),
         );
-        $approvedAvailability = app(ApproveTeacherAvailabilityAction::class)->execute(
-            $availability,
-            (string) $reviewer->id,
-            'اعتماد الفترة ضمن سيناريو القبول التشغيلي للمرحلة الأولى',
-        );
-        app(ApproveTeacherAvailabilityAction::class)->execute(
-            $approvedAvailability,
-            (string) $reviewer->id,
-            'إعادة إرسال نفس قرار الاعتماد للتحقق من عدم تكرار الحدث',
-        );
-
-        self::assertSame(TeacherAvailabilityApprovalStatus::Approved, $approvedAvailability->approval_status);
-        self::assertSame((string) $reviewer->id, $approvedAvailability->approved_by);
-        self::assertNotNull($approvedAvailability->approved_at);
-        Event::assertDispatchedTimes(TeacherAvailabilityApproved::class, 1);
+        self::assertSame(TeacherAvailabilityApprovalStatus::Approved, $availability->approval_status);
+        self::assertNull($availability->approved_by);
+        self::assertNotNull($availability->approved_at);
+        Event::assertNotDispatched(TeacherAvailabilityApproved::class);
 
         $payload = [
             'full_name' => 'طالب المرحلة الأولى',

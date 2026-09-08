@@ -5,6 +5,7 @@ export type Choice = {
   value: string;
   label: string;
   iso2?: string;
+  code?: string;
   timezones?: string[];
 };
 export type PersonKind = "students" | "teachers";

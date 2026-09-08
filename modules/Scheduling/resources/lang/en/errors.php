@@ -36,7 +36,7 @@ return [
     'student_not_schedulable' => 'The student has no enrollment that permits scheduling in this program.',
     'schedule_inactive' => 'The schedule template is inactive.',
     'teacher_on_leave' => 'The teacher is on approved leave on :date.',
-    'outside_teacher_availability' => 'The time is outside the teacher’s approved availability.',
+    'outside_teacher_availability' => 'The time is outside the teacher’s declared availability.',
     'individual_quran_course_missing' => 'The Individual Quran course is missing or inactive.',
     'individual_student_not_eligible' => 'The student is not currently eligible for Individual Quran placement or already has an active schedule.',
     'individual_slot_unavailable' => 'The selected session time is no longer available. Choose another time from the list.',

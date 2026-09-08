@@ -1,3 +1,4 @@
+import BrandLogo from "@/Components/BrandLogo";
 import { Head, Link } from "@inertiajs/react";
 import { useEffect, type PropsWithChildren } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -19,7 +20,7 @@ export default function LearningEntryLayout({
       <header className="lp-entry-header">
         <Link href="/" className="lp-brand">
           <span className="lp-logo">
-            <img src="/images/academy-brand.png" alt={t("learning.brand")} />
+            <BrandLogo label={t("learning.brand")} />
           </span>
         </Link>
         <Link href="/" className="lp-back">

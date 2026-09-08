@@ -123,6 +123,11 @@ final class PortalWriteRoutesTest extends TestCase
                 ->where('staff_profile_id', $context['staff_profile_id'])
                 ->count(),
         );
+        $this->assertDatabaseHas('teacher_availability', [
+            'staff_profile_id' => $context['staff_profile_id'],
+            'approval_status' => 'approved',
+            'approved_by' => null,
+        ]);
 
         $this->assertSame(
             0,
@@ -153,6 +158,7 @@ final class PortalWriteRoutesTest extends TestCase
 
     public function test_teacher_cannot_delete_approved_availability(): void
     {
+        config()->set('scheduling.availability.teacher_requires_approval', true);
         Gate::define('staff.availability.create', static fn (): bool => true);
 
         $context = $this->academicContext();

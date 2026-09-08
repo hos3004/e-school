@@ -264,7 +264,7 @@ final class PeopleController extends Controller
 
         return response()->json([
             'regions' => $country === '' ? [] : array_map(fn ($region): array => [
-                'value' => $region->id, 'label' => $this->localized($region->name),
+                'value' => $region->id, 'label' => $this->localized($region->name), 'code' => $region->code,
             ], $this->geography->regionsOf($country)),
             'courses' => $this->choices($this->profiles->courseOptions($organizationId, $input['program_id'] ?? null)),
             'accounts' => array_key_exists('search', $input) && $request->user()->can($this->createPermission($kind))

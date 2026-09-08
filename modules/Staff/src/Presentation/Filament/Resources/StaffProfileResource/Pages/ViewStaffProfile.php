@@ -733,7 +733,7 @@ final class ViewStaffProfile extends ViewRecord
             ->label(__('staff::admin.availability.add_action'))
             ->icon('heroicon-o-clock')
             ->color('primary')
-            ->visible(fn (): bool => (bool) auth()->user()?->can('staff.availability.approve'))
+            ->visible(fn (): bool => (bool) auth()->user()?->can('staff.availability.create'))
             ->schema([
                 Select::make('weekday')
                     ->label(__('staff::admin.hub.fields.weekday'))
@@ -770,6 +770,8 @@ final class ViewStaffProfile extends ViewRecord
             ->action(function (array $data): void {
                 /** @var StaffProfile $record */
                 $record = $this->record;
+                $this->authorize('create', TeacherAvailability::class);
+                abort_unless(auth()->user()?->can('staff.availability.create'), 403);
 
                 $this->guard(fn () => app(SetTeacherAvailability::class)->execute(
                     profile: $record,
@@ -793,12 +795,12 @@ final class ViewStaffProfile extends ViewRecord
             ->label(__('staff::admin.availability.cancel_action'))
             ->icon('heroicon-o-trash')
             ->color('danger')
-            ->visible(fn (): bool => $this->pendingAvailabilityOptions() !== []
-                && (auth()->user()?->can('staff.availability.approve') ?? false))
+            ->visible(fn (): bool => $this->removableAvailabilityOptions() !== []
+                && (auth()->user()?->can('staff.contract.update') ?? false))
             ->schema([
                 Select::make('availability_id')
                     ->label(__('staff::admin.availability.slot'))
-                    ->options(fn (): array => $this->pendingAvailabilityOptions())
+                    ->options(fn (): array => $this->removableAvailabilityOptions())
                     ->required(),
                 Textarea::make('reason')
                     ->label(__('staff::filament.profile.fields.reason'))
@@ -818,6 +820,8 @@ final class ViewStaffProfile extends ViewRecord
                     return;
                 }
 
+                $this->authorize('delete', $availability);
+
                 $this->guard(fn () => app(RemoveTeacherAvailability::class)->execute(
                     availability: $availability,
                     actorId: $this->actorId(),
@@ -834,7 +838,7 @@ final class ViewStaffProfile extends ViewRecord
             ->label(__('staff::admin.availability.decision_action'))
             ->icon('heroicon-o-check-badge')
             ->color('primary')
-            ->visible(fn (): bool => $this->pendingAvailabilityOptions() !== []
+            ->visible(fn (): bool => (bool) config('scheduling.availability.teacher_requires_approval') && $this->pendingAvailabilityOptions() !== []
                 && (auth()->user()?->can('staff.availability.approve') ?? false))
             ->schema([
                 Select::make('availability_id')
@@ -1016,9 +1020,15 @@ final class ViewStaffProfile extends ViewRecord
     /** @return array<string, string> */
     private function pendingAvailabilityOptions(): array
     {
+        return $this->removableAvailabilityOptions(true);
+    }
+
+    /** @return array<string, string> */
+    private function removableAvailabilityOptions(bool $pendingOnly = false): array
+    {
         return TeacherAvailability::query()
             ->forProfile((string) $this->record->getKey())
-            ->where('approval_status', TeacherAvailabilityApprovalStatus::Pending)
+            ->when($pendingOnly || (bool) config('scheduling.availability.teacher_requires_approval'), fn ($query) => $query->where('approval_status', TeacherAvailabilityApprovalStatus::Pending))
             ->orderBy('weekday')
             ->orderBy('start_time')
             ->get()

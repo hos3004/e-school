@@ -37,6 +37,7 @@ interface Props extends LoadablePageProps {
   defaultTimezone?: string;
   storeUrl?: string;
   canManage?: boolean;
+  approvalRequired?: boolean;
 }
 
 const approvalColors: StatusColorMap<string> = {
@@ -57,6 +58,7 @@ export default function Availability({
   defaultTimezone = "UTC",
   storeUrl = "",
   canManage = false,
+  approvalRequired = false,
   loading = false,
   error = null,
 }: Props) {
@@ -259,7 +261,11 @@ export default function Availability({
               )}
 
               <p className="mt-4 text-xs leading-6 text-[var(--ink-muted)]">
-                {t("teacher.availability.approval_note")}
+                {t(
+                  approvalRequired
+                    ? "teacher.availability.approval_note"
+                    : "console_quran.availability_immediate_help",
+                )}
               </p>
             </Card>
 
@@ -303,8 +309,16 @@ export default function Availability({
                         <StatusPill
                           colorMap={approvalColors}
                           status={slot.approvalStatus}
+                          label={
+                            !approvalRequired &&
+                            slot.approvalStatus === "approved"
+                              ? t("console_quran.availability_live")
+                              : undefined
+                          }
                         />
-                        {canManage && slot.approvalStatus !== "approved" ? (
+                        {canManage &&
+                        (!approvalRequired ||
+                          slot.approvalStatus !== "approved") ? (
                           <Button
                             aria-label={`${t("actions.remove")} — ${t(`weekdays.${String(slot.weekday)}`)}`}
                             onClick={() =>

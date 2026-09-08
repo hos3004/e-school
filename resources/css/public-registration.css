@@ -61,15 +61,6 @@
   direction: ltr;
   background: #fff;
 }
-.pr-brand img {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  width: 225%;
-  max-width: none;
-  height: auto;
-  transform: translateY(-50%);
-}
 .pr-header-title {
   border-inline-start: 1px solid var(--line);
   padding-inline-start: 23px;

@@ -31,7 +31,7 @@ final class PublicStudentRegistrationController extends Controller
         $regions = [];
         foreach ($countries as $country) {
             $regions[$country['id']] = array_map(static fn ($region): array => [
-                'id' => $region->id, 'name' => $region->name[$locale] ?? $region->name['en'] ?? $region->code,
+                'id' => $region->id, 'name' => $region->name[$locale] ?? $region->name['en'] ?? $region->code, 'code' => $region->code,
             ], $geography->regionsOf($country['id']));
         }
 

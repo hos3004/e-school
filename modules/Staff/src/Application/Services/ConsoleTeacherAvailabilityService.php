@@ -34,12 +34,13 @@ final readonly class ConsoleTeacherAvailabilityService
         return [
             'id' => $teacher->id, 'name' => $account !== null && $account->organizationId === $organizationId ? $account->name : $teacher->staff_code,
             'active' => $teacher->isActive() && ($account?->isActive() ?? false),
+            'approval_required' => (bool) config('scheduling.availability.teacher_requires_approval'),
             'slots' => TeacherAvailability::query()->forProfile($teacherId)->orderBy('weekday')->orderBy('start_time')->get()->map(static fn (TeacherAvailability $slot): array => [
                 'id' => $slot->id, 'weekday' => $slot->weekday, 'start_time' => substr($slot->start_time, 0, 5), 'end_time' => substr($slot->end_time, 0, 5),
                 'timezone' => $slot->timezone, 'effective_from' => $slot->effective_from->toDateString(), 'effective_to' => $slot->effective_to?->toDateString(),
                 'approval_status' => $slot->approval_status->value, 'decision_reason' => $slot->decision_reason,
-                'can_decide' => $slot->approval_status === TeacherAvailabilityApprovalStatus::Pending && Gate::allows('approve', $slot),
-                'can_remove' => $slot->approval_status !== TeacherAvailabilityApprovalStatus::Approved && Gate::allows('delete', $slot),
+                'can_decide' => (bool) config('scheduling.availability.teacher_requires_approval') && $slot->approval_status === TeacherAvailabilityApprovalStatus::Pending && Gate::allows('approve', $slot),
+                'can_remove' => (!(bool) config('scheduling.availability.teacher_requires_approval') || $slot->approval_status !== TeacherAvailabilityApprovalStatus::Approved) && Gate::allows('delete', $slot),
             ])->all(),
         ];
     }

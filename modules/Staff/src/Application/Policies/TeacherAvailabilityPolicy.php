@@ -46,7 +46,10 @@ final class TeacherAvailabilityPolicy
 
         return $profile !== null
             && $this->sameOrganization($user, $profile)
-            && $user->can('staff.contract.update');
+            && ($user->can('staff.contract.update')
+                || (!(bool) config('scheduling.availability.teacher_requires_approval')
+                    && (string) $profile->user_id === (string) $user->getAuthIdentifier()
+                    && $user->can('staff.availability.create')));
     }
 
     public function approve(Authenticatable&Authorizable $user, TeacherAvailability $availability): bool

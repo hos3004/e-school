@@ -16,7 +16,13 @@ interface Slot {
   can_remove: boolean;
 }
 interface Props {
-  teacher: { id: string; name: string; active: boolean; slots: Slot[] };
+  teacher: {
+    id: string;
+    name: string;
+    active: boolean;
+    approval_required: boolean;
+    slots: Slot[];
+  };
   canCreate: boolean;
   defaults: { timezone: string; effective_from: string };
 }
@@ -68,7 +74,11 @@ export default function QuranAvailability({
               <div>
                 <h2>{t("console_quran.availability_add")}</h2>
                 <p className="cell-sub">
-                  {t("console_quran.availability_pending_help")}
+                  {t(
+                    teacher.approval_required
+                      ? "console_quran.availability_pending_help"
+                      : "console_quran.availability_immediate_help",
+                  )}
                 </p>
               </div>
             </div>
@@ -202,7 +212,11 @@ export default function QuranAvailability({
             <div>
               <h2>{t("console_quran.declared_availability")}</h2>
               <p className="cell-sub">
-                {t("console_quran.availability_approved_protection")}
+                {t(
+                  teacher.approval_required
+                    ? "console_quran.availability_approved_protection"
+                    : "console_quran.availability_removal_help",
+                )}
               </p>
             </div>
           </div>
@@ -220,7 +234,9 @@ export default function QuranAvailability({
                     "slots",
                     "timezone",
                     "placement_period",
-                    "availability_decision",
+                    teacher.approval_required
+                      ? "availability_decision"
+                      : "availability_state",
                     "action",
                   ].map((key) => (
                     <th key={key} scope="col">
@@ -260,7 +276,12 @@ export default function QuranAvailability({
                               : "slate")
                         }
                       >
-                        {t("console_quran.approval." + slot.approval_status)}
+                        {t(
+                          !teacher.approval_required &&
+                            slot.approval_status === "approved"
+                            ? "console_quran.availability_live"
+                            : "console_quran.approval." + slot.approval_status,
+                        )}
                       </span>
                       {slot.decision_reason && (
                         <small className="cell-sub">

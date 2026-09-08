@@ -113,6 +113,8 @@ final class AdminPanelProvider extends PanelProvider
             ->path((bool) config('console.enabled') && (bool) config('console.primary') ? 'v2' : 'admin')
             ->login(Login::class)
             ->brandName(config('app.name'))
+            ->brandLogo(fn () => view('filament.brand-logo'))
+            ->brandLogoHeight('3.5rem')
             ->defaultThemeMode(ThemeMode::Light)
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->colors([

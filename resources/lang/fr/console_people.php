@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    'country_search' => 'Saisissez ou choisissez un pays',
+    'country_hint' => 'Saisissez le nom du pays, par exemple Turquie ou Canada.',
+    'country_choose_valid' => 'Choisissez un pays dans les suggestions.',
     'students' => 'Élèves',
     'teachers' => 'Enseignants',
     'student' => 'Élève',

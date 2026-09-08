@@ -1,3 +1,4 @@
+import BrandLogo from "@/Components/BrandLogo";
 import { Head, Link, usePage } from "@inertiajs/react";
 import type { PropsWithChildren } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -29,7 +30,7 @@ export default function LearningLayout({
             aria-label={t("learning.brand")}
           >
             <span className="lp-logo">
-              <img src="/images/academy-brand.png" alt={t("learning.brand")} />
+              <BrandLogo label={t("learning.brand")} />
             </span>
           </Link>
           <span className="lp-portal-name">{t(`learning.${kind}_portal`)}</span>

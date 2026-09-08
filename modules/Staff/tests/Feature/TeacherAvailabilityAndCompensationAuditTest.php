@@ -82,6 +82,15 @@ final class TeacherAvailabilityAndCompensationAuditTest extends TestCase
         self::assertNotNull($second->id);
     }
 
+    public function test_open_ended_availability_cannot_overlap_a_future_window(): void
+    {
+        [, $admin, $profile] = $this->context();
+        $set = app(SetTeacherAvailability::class);
+        $set->execute($profile, 2, '09:00', '12:00', 'UTC', '2027-01-01', '2027-12-31', (string) $admin->id);
+        $this->expectException(BusinessRuleViolation::class);
+        $set->execute($profile, 2, '10:00', '11:00', 'UTC', '2026-12-01', null, (string) $admin->id);
+    }
+
     public function test_remove_availability_records_audit_and_keeps_approved_protected(): void
     {
         [$organization, $admin, $profile] = $this->context();

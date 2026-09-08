@@ -87,14 +87,6 @@
   background: #fff;
   direction: ltr;
 }
-.learning-brand-crop img {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  width: 225%;
-  max-width: none;
-  transform: translateY(-50%);
-}
 .learning-portal-label {
   border-inline-start: 1px solid var(--learning-line);
   padding-inline-start: 25px;
@@ -1246,16 +1238,6 @@
   overflow: hidden;
   direction: ltr;
   background: #fff;
-}
-.lp-logo img {
-  display: block;
-  position: absolute;
-  right: 0;
-  top: 50%;
-  width: 225%;
-  max-width: none;
-  height: auto;
-  transform: translateY(-50%);
 }
 .lp-btn {
   min-height: 44px !important;

@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 return [
+    'availability_audit_remove' => 'Withdraw teacher availability.',
+    'availability_audit_create' => 'Add teacher availability.',
+    'availability_page_description' => 'Available teaching times and their effective dates.',
+    'availability_live' => 'Available for scheduling',
+    'availability_state' => 'Status',
+    'availability_removal_help' => 'Withdraw a period to stop suggesting it for new placements. Booked sessions stay unchanged and are managed from the session schedule.',
+    'availability_immediate_help' => 'Save your available times to use them immediately in placement and scheduling, without waiting for approval.',
     'title' => 'Individual Quran',
     'description' => 'One student, one teacher and a clear schedule. Prepare and save each row.',
     'filter_status' => 'Placement status',

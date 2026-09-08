@@ -113,6 +113,7 @@ final class StaffProfileAuthorizationTest extends TestCase
             ->postJson('/api/staff/availability', ['staff_profile_id' => $ownProfileId, ...$payload])
             ->assertCreated()
             ->assertJsonPath('data.staff_profile_id', $ownProfileId);
+        $this->assertDatabaseHas('teacher_availability', ['staff_profile_id' => $ownProfileId, 'approval_status' => 'approved', 'approved_by' => null]);
     }
 
     public function test_availability_creation_cannot_cross_organization_even_with_staff_view_any(): void

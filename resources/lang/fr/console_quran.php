@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 return [
+    'availability_audit_remove' => 'Retirer une disponibilité.',
+    'availability_audit_create' => 'Ajouter une disponibilité.',
+    'availability_page_description' => 'Horaires disponibles et dates de validité.',
+    'availability_live' => 'Disponible',
+    'availability_state' => 'État',
+    'availability_removal_help' => 'Retirez un créneau des nouvelles affectations. Les séances réservées restent inchangées et se gèrent depuis le planning.',
+    'availability_immediate_help' => 'Enregistrez vos horaires pour les utiliser immédiatement dans les affectations, sans attendre une approbation.',
     'title' => 'Coran individuel',
     'description' => 'Un élève, un enseignant et un planning clair. Préparez et enregistrez chaque ligne.',
     'filter_status' => 'État d’affectation',

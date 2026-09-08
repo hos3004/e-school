@@ -2,6 +2,7 @@ import { Head, useForm } from "@inertiajs/react";
 import { useEffect, useRef, type FormEvent } from "react";
 
 import Button from "@/Components/Button";
+import CountryInput from "@/Components/CountryInput";
 import GuestLayout from "@/Layouts/GuestLayout";
 import PublicRegistrationLayout from "@/Layouts/PublicRegistrationLayout";
 import { BookOpen, CheckCircle2, ShieldCheck } from "lucide-react";
@@ -11,6 +12,7 @@ interface Option {
   id: string;
   name: string;
   iso2?: string;
+  code?: string;
 }
 
 interface RegistrationFormSummary {
@@ -349,25 +351,38 @@ export default function RegisterStudent({
             htmlFor="country_id"
           >
             {t("auth.register.country")}
-            <select
+            <CountryInput
               id="country_id"
               className={inputClass}
+              options={countries.map((country) => ({
+                value: country.id,
+                label: country.name,
+                iso2: country.iso2,
+              }))}
               value={form.data.country_id}
               required
               aria-invalid={Boolean(errors.country_id)}
-              aria-describedby={errors.country_id ? "country-error" : undefined}
-              onChange={(event) => {
-                form.setData("country_id", event.target.value);
-                form.setData("region_id", "");
+              aria-describedby={
+                errors.country_id ? "country-error" : "country-hint"
+              }
+              onChange={(value) => {
+                form.setData("country_id", value);
+                const countryRegions = regions[value] ?? [];
+                form.setData(
+                  "region_id",
+                  countryRegions.length === 1 &&
+                    countryRegions[0]?.code === "UNSPECIFIED"
+                    ? countryRegions[0].id
+                    : "",
+                );
               }}
+            />
+            <span
+              id="country-hint"
+              className="mt-1 block text-xs font-normal text-[var(--ink-muted)]"
             >
-              <option value="">{t("auth.register.choose")}</option>
-              {countries.map((country) => (
-                <option key={country.id} value={country.id}>
-                  {country.name}
-                </option>
-              ))}
-            </select>
+              {t("console_people.country_hint")}
+            </span>
             {errors.country_id && (
               <span
                 id="country-error"

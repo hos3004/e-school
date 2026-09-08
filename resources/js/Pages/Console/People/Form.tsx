@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from "@inertiajs/react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
+import CountryInput from "@/Components/CountryInput";
 import {
   Choice,
   Field,
@@ -173,6 +174,12 @@ export default function PeopleForm(props: Props) {
       })
       .then((result) => {
         setRegions(result.regions);
+        if (
+          result.regions.length === 1 &&
+          result.regions[0]?.code === "UNSPECIFIED"
+        ) {
+          setData("region_id", result.regions[0].value);
+        }
         if (isStudent) setCourses(result.courses);
       })
       .catch((error) => {
@@ -183,7 +190,14 @@ export default function PeopleForm(props: Props) {
         if (!controller.signal.aborted) setOptionsLoading(false);
       });
     return () => controller.abort();
-  }, [data.country_id, data.preferred_program_id, optionsUrl, isStudent, t]);
+  }, [
+    data.country_id,
+    data.preferred_program_id,
+    optionsUrl,
+    isStudent,
+    t,
+    setData,
+  ]);
 
   async function suggestUsername(force = false) {
     if (
@@ -705,18 +719,37 @@ export default function PeopleForm(props: Props) {
                 !creating,
               )}
               {input("date_of_birth", "date", !isStudent || !creating)}
-              {select("country_id", countries, false, (value) => {
-                setData("region_id", "");
-                if (creating) {
-                  const zones =
-                    countries.find((country) => country.value === value)
-                      ?.timezones ?? [];
-                  setData(
-                    "timezone",
-                    zones.length === 1 ? (zones[0] ?? "") : "",
-                  );
-                }
-              })}
+              <Field
+                name="country_id"
+                label={t("console_people.fields.country_id")}
+                error={errors.country_id}
+                hint={t("console_people.country_hint")}
+              >
+                <CountryInput
+                  id="country_id"
+                  className={fieldClass}
+                  options={countries}
+                  value={data.country_id}
+                  required
+                  aria-invalid={Boolean(errors.country_id)}
+                  aria-describedby={
+                    errors.country_id ? "country_id-error" : "country_id-hint"
+                  }
+                  onChange={(value) => {
+                    setData("country_id", value);
+                    setData("region_id", "");
+                    if (creating) {
+                      const zones =
+                        countries.find((country) => country.value === value)
+                          ?.timezones ?? [];
+                      setData(
+                        "timezone",
+                        zones.length === 1 ? (zones[0] ?? "") : "",
+                      );
+                    }
+                  }}
+                />
+              </Field>
               {select("region_id", regions)}
               {optionsLoading && (
                 <p role="status" className="text-xs text-slate-500">

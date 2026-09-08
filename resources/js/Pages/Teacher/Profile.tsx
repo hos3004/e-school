@@ -325,6 +325,11 @@ export default function Profile({
                       <StatusPill
                         colorMap={approvalColors}
                         status={slot.approvalStatus}
+                        label={
+                          slot.approvalStatus === "approved"
+                            ? t("console_quran.availability_live")
+                            : undefined
+                        }
                       />
                     </li>
                   ))}

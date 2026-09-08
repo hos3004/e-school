@@ -265,8 +265,35 @@ final class ConsoleQuranTest extends TestCase
         $this->patchJson($url, $this->payload())->assertUnprocessable()->assertJsonValidationErrors('placement');
     }
 
+    public function test_availability_is_immediately_usable_for_placement_without_approval_permission(): void
+    {
+        config()->set('scheduling.availability.teacher_requires_approval', false);
+        foreach (['staff.view', 'staff.view.any', 'staff.availability.create', 'staff.contract.update'] as $permission) {
+            Gate::define($permission, static fn (): bool => true);
+        }
+        Gate::define('staff.availability.approve', static fn (): bool => false);
+        $url = '/manage/teachers/'.$this->teacher->id.'/availability';
+        $data = ['weekday' => 1, 'start_time' => '10:00', 'end_time' => '15:00', 'timezone' => 'UTC', 'effective_from' => '2026-10-01', 'effective_to' => '2026-12-31'];
+        $this->post($url, $data)->assertRedirect()->assertSessionHasNoErrors();
+        $slot = TeacherAvailability::query()->where('staff_profile_id', $this->teacher->id)->where('weekday', 1)->firstOrFail();
+        $this->assertSame(TeacherAvailabilityApprovalStatus::Approved, $slot->approval_status);
+        $this->assertNull($slot->approved_by);
+        $query = [...$this->payload(), 'weekdays' => [1]];
+        unset($query['weekly_slots']);
+        $this->getJson('/manage/quran/availability?'.http_build_query($query))->assertOk()->assertJsonFragment(['10:00']);
+        $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('teacher.approval_required', false)
+            ->where('teacher.slots.1.can_decide', false));
+        $this->postJson($url, $data)->assertUnprocessable()->assertJsonValidationErrors('availability');
+        $this->assertDatabaseHas('audit_log', ['action' => 'staff.availability_set', 'auditable_id' => $slot->id, 'actor_id' => $this->actor->id]);
+        $this->assertDatabaseMissing('audit_log', ['action' => 'staff.availability_decided', 'auditable_id' => $slot->id]);
+        $this->delete($url.'/'.$slot->id)->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('teacher_availability', ['id' => $slot->id]);
+    }
+
     public function test_availability_editor_creates_pending_then_approves_and_preserves_approved_windows(): void
     {
+        config()->set('scheduling.availability.teacher_requires_approval', true);
         foreach (['staff.view', 'staff.view.any', 'staff.availability.create', 'staff.availability.approve', 'staff.contract.update'] as $permission) {
             Gate::define($permission, static fn (): bool => true);
         }
@@ -291,6 +318,7 @@ final class ConsoleQuranTest extends TestCase
 
     public function test_availability_editor_scopes_teacher_window_and_each_write_permission(): void
     {
+        config()->set('scheduling.availability.teacher_requires_approval', true);
         foreach (['staff.view', 'staff.view.any', 'staff.availability.create', 'staff.availability.approve', 'staff.contract.update'] as $permission) {
             Gate::define($permission, static fn (): bool => true);
         }

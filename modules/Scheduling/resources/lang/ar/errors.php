@@ -36,7 +36,7 @@ return [
     'student_not_schedulable' => 'الطالب لا يملك قيدًا يسمح بجدولته في برنامج الكورس.',
     'schedule_inactive' => 'قالب الجدول متوقف.',
     'teacher_on_leave' => 'المعلم في إجازة معتمدة بتاريخ :date.',
-    'outside_teacher_availability' => 'الموعد خارج الإتاحة المعتمدة للمعلم.',
+    'outside_teacher_availability' => 'الموعد خارج الإتاحة المعلنة للمعلم.',
     'individual_quran_course_missing' => 'كورس القرآن الفردي غير موجود أو غير مفعّل.',
     'individual_student_not_eligible' => 'الطالب غير مؤهل حاليًا لتسكين القرآن الفردي أو لديه جدول نشط.',
     'individual_slot_unavailable' => 'موعد الحصة المختار لم يعد متاحًا. اختر موعدًا آخر من القائمة.',

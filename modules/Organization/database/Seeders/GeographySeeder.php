@@ -76,5 +76,7 @@ final class GeographySeeder extends Seeder
                 }
             }
         });
+
+        $this->call(AdditionalCountriesSeeder::class);
     }
 }

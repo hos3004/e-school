@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    'country_search' => 'اكتب اسم الدولة أو اخترها',
+    'country_hint' => 'يمكنك كتابة اسم أي دولة بالعربية للوصول إليها، مثل تركيا أو كندا.',
+    'country_choose_valid' => 'اختر اسم دولة من النتائج المقترحة.',
     'person_kind' => 'نوع الحساب', 'new_registration' => 'تسجيل جديد', 'not_entered' => 'لم يدخل بعد',
     'copy_password' => 'نسخ كلمة المرور', 'password_copied' => 'نُسخت كلمة المرور.', 'password_copy_failed' => 'تعذر النسخ التلقائي؛ حدد كلمة المرور وانسخها.',
     'study_link' => 'الدراسة أو الارتباط', 'no_study_link' => 'لا توجد دراسة مرتبطة بعد',

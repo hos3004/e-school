@@ -307,6 +307,6 @@ if ($user->hasRole('teacher')) { ... }
 | GET /manage/teachers/{teacher}/availability | staff.view + StaffProfilePolicy::view؛ ملف المعلم المسموح من المؤسسة فقط |
 | إضافة نافذة إتاحة | staff.view + staff.availability.create وسياسة إضافة إتاحة الملف؛ المعلم وحسابه نشطان |
 | اعتماد/رفض نافذة إتاحة | staff.view + staff.availability.approve + TeacherAvailabilityPolicy::approve؛ نافذة المعلم المحدد والحالة المسموحة |
-| إزالة نافذة إتاحة معلقة/مرفوضة | staff.view + staff.contract.update + TeacherAvailabilityPolicy::delete؛ الإجراء الحالي يمنع إزالة المعتمدة |
+| إزالة نافذة إتاحة | staff.view + TeacherAvailabilityPolicy::delete؛ إداري المؤسسة يحتاج staff.contract.update، وصاحب النافذة يحتاج staff.availability.create عند تعطيل المراجعة؛ لا تتغير الحصص المحجوزة |
 
 لا تنفذ واجهة التقويم تعديلًا مباشرًا على حصة أو حضور أو دفتر مستحقات. إجراء UpdateScheduleAction يحافظ على الماضي والمهلة المحمية، ويعيد توليد المستقبل داخل معاملة وتدقيق. معرفة معرّف مورد أو إرساله من المتصفح لا تمنح الوصول إلى مؤسسة أخرى.

@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'availability_live' => 'متاحة للجدولة',
+    'availability_state' => 'الحالة',
+    'availability_removal_help' => 'يمكنك سحب فترة لإيقاف اقتراحها في التسكين الجديد. الحصص المحجوزة تبقى كما هي وتُدار من جدول الحصص.',
+    'availability_immediate_help' => 'احفظ أوقاتك المتاحة لتظهر فورًا في التسكين والجدولة، دون انتظار موافقة.',
     'title' => 'القرآن الفردي',
     'description' => 'طالب ومعلم وجدول واضح. جهّز كل صف واحفظه مباشرة.',
     'filter_status' => 'حالة التسكين',
@@ -131,7 +135,7 @@ return [
     'policy_relationship' => 'الطالب ومعلمه',
     'policy_relationship_text' => 'جدول فردي لكل طالب مع معلم أساسي. يحتفظ سجل الحصص بالمعلم الفعلي وبالبديل عند حدوث استبدال.',
     'policy_eligibility' => 'أهلية التسكين',
-    'policy_declared_required' => 'قيد دراسي يسمح بالجدولة ومعلم مؤهل للكورس. يلزم وجود إتاحة معتمدة تغطي كل موعد وعدم وجود حصة متعارضة.',
+    'policy_declared_required' => 'قيد دراسي يسمح بالجدولة ومعلم مؤهل للكورس. يلزم وجود إتاحة معلنة تغطي كل موعد وعدم وجود حصة متعارضة.',
     'policy_qualification' => 'قيد دراسي يسمح بالجدولة ومعلم مؤهل للكورس، مع فحص الإتاحة والتعارض عند الحفظ.',
     'policy_times' => 'المدد المعتمدة: :durations دقيقة. يمكن اختيار وقت مختلف لكل يوم، وتُعرض منطقة الجدول الزمنية بجانبه. التوقيت الافتراضي:',
     'policy_changes' => 'تعديل الجدول والتأجيل',
@@ -160,7 +164,7 @@ return [
     'ladder' => ['notice' => 'تنبيه', 'warning' => 'تحذير', 'freeze_enrollment' => 'تجميد القيد'],
     'end_time' => 'وقت النهاية',
     'availability_title' => 'إتاحة المعلم',
-    'availability_page_description' => 'أوقات العمل المتاحة للجدولة، مع حالة اعتماد كل نافذة وفترة سريانها.',
+    'availability_page_description' => 'أوقات المعلم المتاحة للجدولة وفترة سريانها.',
     'availability_add' => 'إضافة وقت متاح',
     'availability_pending_help' => 'تُضاف النافذة للمراجعة أولًا؛ ثم يعتمدها المسؤول المختص.',
     'availability_decision' => 'الاعتماد',
@@ -169,10 +173,10 @@ return [
     'availability_withdraw' => 'سحب النافذة',
     'availability_inactive_teacher' => 'ملف المعلم أو حسابه غير نشط؛ راجع حالته قبل إضافة إتاحة جديدة.',
     'availability_approved_protection' => 'النافذة المعتمدة محفوظة ولا تقبل التعديل أو الحذف وفق السياسة الحالية. يمكنك إضافة نافذة جديدة غير متعارضة.',
-    'availability_audit_create' => 'إضافة نافذة إتاحة من لوحة الإدارة للمراجعة.',
+    'availability_audit_create' => 'إضافة نافذة إتاحة المعلم.',
     'availability_audit_approved' => 'اعتماد نافذة إتاحة المعلم من لوحة الإدارة.',
     'availability_audit_rejected' => 'رفض نافذة إتاحة المعلم من لوحة الإدارة.',
-    'availability_audit_remove' => 'سحب نافذة إتاحة غير معتمدة من لوحة الإدارة.',
+    'availability_audit_remove' => 'سحب نافذة إتاحة المعلم.',
     'availability_saved' => 'تم حفظ إجراء الإتاحة.',
     'show_replaced' => 'إظهار المواعيد السابقة التي استُبدلت عند تعديل الجدول',
     'days' => [

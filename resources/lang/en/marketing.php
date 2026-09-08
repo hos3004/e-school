@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'brand_alt' => 'Tele Course Academy and Tele Quran logo',
+    'brand_alt' => 'Tele Course Academy logo',
     'topbar' => 'Live online classes and selected in-person learning experiences in Istanbul',
     'a11y' => ['skip' => 'Skip to content', 'home' => 'Back to home', 'main_nav' => 'Main navigation', 'mobile_nav' => 'Mobile navigation'],
     'nav' => ['home' => 'Home', 'about' => 'About', 'programs' => 'Programs', 'projects' => 'Student work', 'activities' => 'Activities', 'faq' => 'FAQ', 'contact' => 'Contact', 'login' => 'Sign in', 'join' => 'Join now', 'menu' => 'Menu', 'close' => 'Close'],

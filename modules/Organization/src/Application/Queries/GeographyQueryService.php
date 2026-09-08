@@ -99,7 +99,7 @@ final class GeographyQueryService implements GeographyQueries
             iso2: $this->requiredString($data, 'iso2'),
             iso3: $this->requiredString($data, 'iso3'),
             name: $this->localizedName($data['name'] ?? null),
-            phoneCode: $this->requiredString($data, 'phone_code'),
+            phoneCode: is_string($data['phone_code'] ?? null) ? $data['phone_code'] : '',
             isActive: $this->boolean($data, 'is_active'),
             sortOrder: $this->integer($data, 'sort_order'),
         );

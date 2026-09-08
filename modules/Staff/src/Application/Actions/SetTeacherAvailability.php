@@ -64,10 +64,13 @@ final readonly class SetTeacherAvailability
             );
         }
 
-        $this->assertNoTimeOverlap($profile, $weekday, $startTime, $endTime, $from, $to);
+        $approvalRequired = (bool) config('scheduling.availability.teacher_requires_approval');
 
-        $availability = DB::transaction(function () use ($profile, $weekday, $startTime, $endTime, $timezone, $from, $to): TeacherAvailability {
-            return TeacherAvailability::query()->create([
+        return DB::transaction(function () use ($profile, $weekday, $startTime, $endTime, $timezone, $from, $to, $approvalRequired, $actorId, $reason): TeacherAvailability {
+            StaffProfile::query()->whereKey($profile->id)->lockForUpdate()->firstOrFail();
+            $this->assertNoTimeOverlap($profile, $weekday, $startTime, $endTime, $from, $to);
+
+            $availability = TeacherAvailability::query()->create([
                 'staff_profile_id' => $profile->id,
                 'weekday' => $weekday,
                 'start_time' => $startTime,
@@ -75,30 +78,34 @@ final readonly class SetTeacherAvailability
                 'timezone' => $timezone,
                 'effective_from' => $from,
                 'effective_to' => $to,
+                'approval_status' => $approvalRequired ? TeacherAvailabilityApprovalStatus::Pending : TeacherAvailabilityApprovalStatus::Approved,
+                'approved_at' => $approvalRequired ? null : now()->utc(),
             ]);
+
+            if ($actorId !== null) {
+                $this->audit->record(
+                    organizationId: (string) $profile->organization_id,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'staff.availability_set',
+                    auditableType: 'teacher_availability',
+                    auditableId: (string) $availability->getKey(),
+                    oldValues: null,
+                    newValues: [
+                        'approval_status' => $availability->approval_status->value,
+                        'activation_mode' => $approvalRequired ? 'review' : 'immediate',
+                        'weekday' => $weekday,
+                        'start_time' => $startTime,
+                        'end_time' => $endTime,
+                        'effective_from' => $from->toDateString(),
+                        'effective_to' => $to?->toDateString(),
+                    ],
+                    reason: trim((string) $reason) === '' ? null : trim((string) $reason),
+                );
+            }
+
+            return $availability;
         });
-
-        if ($actorId !== null) {
-            $this->audit->record(
-                organizationId: (string) $profile->organization_id,
-                actorId: $actorId,
-                actorType: 'user',
-                action: 'staff.availability_set',
-                auditableType: 'teacher_availability',
-                auditableId: (string) $availability->getKey(),
-                oldValues: null,
-                newValues: [
-                    'weekday' => $weekday,
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
-                    'effective_from' => $from->toDateString(),
-                    'effective_to' => $to?->toDateString(),
-                ],
-                reason: trim((string) $reason) === '' ? null : trim((string) $reason),
-            );
-        }
-
-        return $availability;
     }
 
     /**
@@ -117,7 +124,7 @@ final readonly class SetTeacherAvailability
             ->forProfile((string) $profile->getKey())
             ->where('weekday', $weekday)
             ->where('approval_status', '!=', TeacherAvailabilityApprovalStatus::Rejected->value)
-            ->whereDate('effective_from', '<=', $to ?? $from)
+            ->when($to !== null, fn ($query) => $query->whereDate('effective_from', '<=', $to))
             ->where(
                 fn ($query) => $query
                     ->whereNull('effective_to')

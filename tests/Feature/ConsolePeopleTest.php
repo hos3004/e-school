@@ -106,6 +106,41 @@ final class ConsolePeopleTest extends TestCase
         $response->assertRedirect(route('console.students.show', ['profile' => $student->id]));
     }
 
+    public function test_new_country_supports_student_creation_and_teacher_profile_editing_with_timezone(): void
+    {
+        [$organization, $actor, $program, $course, $oldCountry, $oldRegion] = $this->context();
+        $geography = app(GeographyQueries::class);
+        $turkey = $geography->findCountryByIso2('TR');
+        self::assertNotNull($turkey);
+        $region = $geography->regionsOf($turkey->id)[0];
+        $this->actingAs($actor)->get('/manage/students/create')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('countries', 249)
+            ->where('countries.22.iso2', 'TR')->where('countries.22.label', 'تركيا')
+            ->where('countries.22.timezones.0', 'Europe/Istanbul'));
+        $this->getJson('/manage/students/form-options?country_id='.$turkey->id)
+            ->assertOk()->assertJsonPath('regions.0.code', 'UNSPECIFIED');
+        $this->post('/manage/students', [
+            ...$this->studentData((string) $program->id, (string) $course->id, $turkey->id, $region->id),
+            'timezone' => 'Europe/Istanbul', 'city' => 'إسطنبول',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        $user = User::query()->where('username', 'console.student')->firstOrFail();
+        self::assertSame('Europe/Istanbul', $user->timezone);
+        $this->assertDatabaseHas('student_profiles', ['user_id' => $user->id, 'country_id' => $turkey->id, 'region_id' => $region->id, 'city' => 'إسطنبول']);
+
+        $teacherUser = User::factory()->inOrganization((string) $organization->id)->create();
+        $teacher = StaffProfile::query()->create([
+            'organization_id' => $organization->id, 'user_id' => $teacherUser->id, 'staff_code' => 'T998',
+            'employment_type' => 'contractor', 'country_id' => $oldCountry, 'region_id' => $oldRegion,
+        ]);
+        $this->put('/manage/teachers/'.$teacher->id, [
+            'country_id' => $turkey->id, 'region_id' => $region->id, 'staff_code' => 'T998',
+            'employment_type' => 'contractor', 'timezone' => 'Europe/Istanbul',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        self::assertSame($turkey->id, $teacher->fresh()->country_id);
+        self::assertSame($region->id, $teacher->fresh()->region_id);
+        self::assertSame('Europe/Istanbul', $teacherUser->fresh()->timezone);
+    }
+
     public function test_taken_username_does_not_create_partial_student_records(): void
     {
         [$organization, $actor, $program, $course, $country, $region] = $this->context();

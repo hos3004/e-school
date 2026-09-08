@@ -1,3 +1,4 @@
+import BrandLogo from "@/Components/BrandLogo";
 import { Link, router, usePage } from "@inertiajs/react";
 import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
 import {
@@ -1204,7 +1205,7 @@ export default function ProfileView({
       </div>
       <footer className="pp-print-footer">
         <div className="pp-print-brand">
-          <img src="/images/academy-brand.png" alt={t("learning.brand")} />
+          <BrandLogo label={t("learning.brand")} />
           <span>
             {tr("print_footer")}
             <br />
