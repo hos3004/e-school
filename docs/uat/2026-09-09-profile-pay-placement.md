@@ -19,3 +19,6 @@ Validation:
 
 Private backup: /opt/eschool-backups/profile-pay-20260909/ contains pre-change database, environment/assets, source revision, baseline static analysis and rehearsal reports.
 Private operational scripts and manifest remain outside Git in storage/app/private; no passwords or personal workbook data are committed.
+
+## Production deployment confirmed
+Production fast-forwarded to 8ead1ee on 2026-09-09; four migrations applied. Fresh pre-deployment dump is database-before-deploy.dump. Settings initialized and 17 per-session teacher contracts created. Production verification: 18 schedules, 49 weekly slots, 425 future lessons and matching participants; 55 students / 56 pending links; 73 active enrollments; three students without source teacher remain approved. No conflicts, no payroll entries, no duplicate users. All five course defaults now match 25/35 minutes. Homepage and login return HTTPS 200. Actual imported student and teacher login smoke checks confirm mandatory profile completion and direct-route protection, without changing their profiles. No JavaScript errors. App, Horizon and scheduler restarted successfully.
