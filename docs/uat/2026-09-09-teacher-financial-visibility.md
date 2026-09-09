@@ -21,3 +21,7 @@ The attached workbook is analyzed without importing or changing its data: 16 nam
 - TypeScript and ESLint pass. Production Vite build passes using configLoader runner because shared dependencies are mounted read-only.
 - Targeted PHPStan and Pint pass. Full-project baseline static-analysis issues documented in the previous deployment are not suppressed or expanded.
 - Migration applies, rolls back and reapplies on the populated isolated production clone, retaining all 17 teachers with visibility enabled.
+
+## Deployment confirmed
+
+Production fast-forwarded to 18b2855 on 2026-09-09 after a fresh database and environment/assets backup under /opt/eschool-backups/teacher-financial-visibility-20260909. Migration applied successfully. All 17 teacher flags remain visible by default; live counts service reads 425 upcoming lessons, with 94 users and zero payroll entries unchanged. Homepage and login return HTTPS 200. App, Horizon and scheduler are running; isolated preview container stopped. Final regression: 109 passing / 3265 assertions, focused 7 passing / 89 assertions, final administration checks 2 passing / 15 assertions.
