@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Portal\Support\PortalData;
+use App\Services\TeacherSessionCounts;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -46,6 +47,7 @@ final class TeacherDashboardController extends Controller
                     $locale,
                     $organizationId,
                 ),
+            'sessionCounts' => $staffId === null ? null : app(TeacherSessionCounts::class)->forTeacher($organizationId, $staffId, (string) data_get($request->user(), 'timezone', 'UTC')),
             'statusColors' => $this->data->statusColors(),
         ]);
     }

@@ -56,7 +56,7 @@ final class HandleInertiaRequests extends Middleware
                 ? app(ConsoleContext::class)->forRequest($request)
                 : null,
             'features' => [
-                'payroll' => (bool) config('features.payroll'),
+                'payroll' => (bool) config('features.payroll') && ($user === null || $user->can('payroll.view')),
             ],
             'locale' => $locale,
             'supportedLocales' => $request->is('manage', 'manage/*', 'learn', 'learn/*') ? ['ar'] : Locales::supported(),
@@ -96,7 +96,7 @@ final class HandleInertiaRequests extends Middleware
             ];
         }
 
-        foreach (['profile_completion', 'session_pay', 'console', 'console_dashboard', 'console_sessions', 'console_group', 'console_directory', 'console_profiles', 'console_people', 'console_courses', 'console_quran', 'console_settings', 'console_registration', 'console_followup', 'console_dues', 'learning', 'learning_library', 'public_registration'] as $namespace) {
+        foreach (['teacher_visibility', 'profile_completion', 'session_pay', 'console', 'console_dashboard', 'console_sessions', 'console_group', 'console_directory', 'console_profiles', 'console_people', 'console_courses', 'console_quran', 'console_settings', 'console_registration', 'console_followup', 'console_dues', 'learning', 'learning_library', 'public_registration'] as $namespace) {
             $dictionary = Lang::get($namespace, [], $locale);
             if (is_array($dictionary)) {
                 $translations = [...$translations, ...Arr::dot([$namespace => $dictionary])];

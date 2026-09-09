@@ -14,6 +14,7 @@ use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
 /**
+ * @property bool $financials_visible
  * @property string $id
  * @property string $organization_id
  * @property string $user_id
@@ -59,6 +60,7 @@ final class StaffProfile extends Model
     protected function casts(): array
     {
         return [
+            'financials_visible' => 'boolean',
             'employment_type' => EmploymentType::class,
             'gender' => StaffGender::class,
             'date_of_birth' => 'immutable_date',

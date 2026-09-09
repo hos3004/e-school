@@ -8,6 +8,7 @@ use App\Http\Controllers\Console\ReportsController;
 use App\Http\Controllers\Console\SessionPayController;
 use App\Http\Controllers\Console\SettingsController;
 use App\Http\Controllers\Console\SettingsOperationsController;
+use App\Http\Controllers\Console\TeacherFinancialVisibilityController;
 use App\Http\Controllers\Console\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Modules\Reporting\Presentation\Http\Controllers\ExportOperationalReportPdfController;
@@ -34,3 +35,5 @@ Route::post('/quran/{student}', [QuranController::class, 'store'])->whereUlid('s
 require __DIR__.'/console-quran.php';
 
 require __DIR__.'/console-sessions.php';
+
+Route::put('/teachers/{profile}/financial-visibility', TeacherFinancialVisibilityController::class)->whereUlid('profile')->middleware('can:staff.contract.update')->name('teachers.financial-visibility');

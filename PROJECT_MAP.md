@@ -419,3 +419,7 @@ docker compose exec -T app vendor/bin/phpstan analyse --memory-limit=1G
 - الإعدادات تحفظ مراجعات مؤرخة UTC تحت organization_settings.session_pay_rates. Staff يقرأها عبر OrganizationSettingQueries ويعرض عقد SessionPayCatalog للمدد والأسعار.
 - TeacherRateResolver يستقبل مدة الحصة؛ أسعار العقد الخاصة أسبق، ثم سعر المؤسسة المطابق للنوع والمدة بتاريخ الحصة مع عقد per_session/hybrid ساري. Payroll يحفظ السعر ومعرّف المراجعة والمدة في القيد؛ لا تتغير القيود السابقة.
 - فصول الأطفال: group / 35 دقيقة / 3125 قرشًا. مجالس الكبار: individual / 25 دقيقة / 2500 قرش، أو 40 دقيقة / 3350 قرش. هذه أجور المعلمين بالجنيه المصري وليست رسوم الطلاب.
+
+### عرض مالية المعلم — 2026-09-09
+
+يملك Staff إعداد financials_visible (ظاهر افتراضيًا). يُعدله المسؤول من ملف المعلم عبر staff.contract.update وStaffProfilePolicy وبسبب مدقق. Gate يمنع قراءة المال للحساب المخفي مع بقاء الإدارة والدفتر كما هما. بوابتا المعلم تعرضان عدادات الحصص من عقد Sessions بصورة مستقلة عن Payroll، وبحدود الشهر المحلي المحولة إلى UTC. لا معلّقات ضمن هذا التغيير.

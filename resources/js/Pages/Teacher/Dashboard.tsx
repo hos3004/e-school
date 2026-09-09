@@ -1,3 +1,4 @@
+import TeacherSessionCounts, {type SessionCounts} from "@/Components/TeacherSessionCounts";
 import { Head, router } from "@inertiajs/react";
 
 import Button from "@/Components/Button";
@@ -25,6 +26,7 @@ import {
 } from "./Components/TeacherUi";
 
 interface TeacherDashboardProps extends LoadablePageProps {
+  sessionCounts?:SessionCounts|null;
   todaysSessions?: Session[];
   pendingAttendance?: Session[];
   lateReports?: Session[];
@@ -210,6 +212,7 @@ export default function TeacherDashboard({
   loading = false,
   error = null,
   statusColors = {},
+  sessionCounts,
 }: TeacherDashboardProps) {
   const t = useI18n();
   const retry = () => {
@@ -277,6 +280,7 @@ export default function TeacherDashboard({
                 value={lateReports.length}
               />
             </section>
+            {sessionCounts && <TeacherSessionCounts counts={sessionCounts} />}
             <div className="space-y-10">
               <SessionSection
                 actionLabelKey="teacher.dashboard.actions.open_session"

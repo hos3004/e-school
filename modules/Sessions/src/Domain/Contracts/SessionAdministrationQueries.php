@@ -82,5 +82,5 @@ interface SessionAdministrationQueries
      * @param list<string> $staffProfileIds
      * @return array<string, array{upcoming: int, completed: int, cancelled: int}>
      */
-    public function countsForTeachers(string $organizationId, array $staffProfileIds, CarbonImmutable $monthStart): array;
+    public function countsForTeachers(string $organizationId, array $staffProfileIds, CarbonImmutable $monthStart, ?CarbonImmutable $monthEnd = null): array;
 }

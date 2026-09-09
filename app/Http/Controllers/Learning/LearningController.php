@@ -9,6 +9,7 @@ use App\Http\Controllers\Console\Support\ConsoleContext;
 use App\Http\Controllers\Console\Support\PersonProfileData;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Portal\Support\PortalData;
+use App\Services\TeacherSessionCounts;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -82,6 +83,7 @@ final class LearningController extends Controller
             ? (app(TeacherEarningsQueries::class)->periodsFor($organizationId, $id, 1)[0] ?? null) : null;
 
         return Inertia::render('Learning/Dashboard', [...$this->common($request, 'teacher'),
+            'sessionCounts' => app(TeacherSessionCounts::class)->forTeacher($organizationId, $id, $this->timezone($request)),
             'nextSession' => collect($upcoming)->first(fn (array $session): bool => in_array($session['status'], ['scheduled', 'confirmed', 'in_progress'], true)),
             'reports' => [], 'allAssignments' => [],
             'libraryPreview' => app(LearningLibraryData::class)->preview($request, 'teacher'),

@@ -1,3 +1,4 @@
+import FinancialVisibility, {type FinancialVisibilityData} from "./FinancialVisibility";
 import { Head, usePage } from "@inertiajs/react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import ProfileView, {
@@ -7,6 +8,7 @@ import ProfileView, {
 import { useI18n } from "@/lib/i18n";
 import type { AppPageProps } from "@/types";
 interface Props {
+  financialVisibility?:FinancialVisibilityData|null;
   kind: "students" | "teachers";
   person: {
     id: string;
@@ -47,6 +49,7 @@ export default function PeopleShow({
   editUrl,
   displayTimezone,
   availabilityUrl,
+  financialVisibility,
 }: Props) {
   const t = useI18n();
   const { console: context } = usePage<
@@ -61,6 +64,7 @@ export default function PeopleShow({
       hidePageHeading
     >
       <Head title={person.full_name || person.code} />
+      {financialVisibility && <FinancialVisibility key={person.id+String(financialVisibility.visible)} setting={financialVisibility} />}
       <ProfileView
         kind={kind === "students" ? "student" : "teacher"}
         audience="admin"

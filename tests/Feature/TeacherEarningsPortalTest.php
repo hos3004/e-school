@@ -23,6 +23,12 @@ final class TeacherEarningsPortalTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutVite();
+    }
+
     public function test_the_statement_is_built_from_the_ledger(): void
     {
         Gate::define('payroll.view', static fn (): bool => true);
@@ -115,6 +121,29 @@ final class TeacherEarningsPortalTest extends TestCase
      *
      * @return array<string, mixed>
      */
+    public function test_hidden_teacher_cannot_read_money_by_either_portal_or_api_but_keeps_lesson_counts(): void
+    {
+        $this->withoutVite();
+        config(['console.enabled' => true, 'features.payroll' => true]);
+        Gate::define('session.view', static fn (): bool => true);
+        Gate::define('payroll.view', static fn (): bool => true);
+        Gate::define('staff.contract.view', static fn (): bool => true);
+        Gate::define('admin.panel.access', static fn (): bool => false);
+        $context = $this->ledgerContext();
+        DB::table('staff_profiles')->where('id', $context['staff_profile_id'])->update(['financials_visible' => false]);
+        $this->actingAs($context['user']);
+        foreach (['/teacher/earnings', '/learn/teacher/earnings', '/api/payroll/entries', '/api/payroll/periods', '/api/payroll/periods/'.$context['period_id']] as $url) {
+            $this->getJson($url)->assertForbidden();
+        }
+        $this->assertFalse($context['user']->can('staff.contract.view'));
+        $this->actingAs($context['user'], 'web')->get('/learn/teacher')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('earnings', null)->where('capabilities', fn ($value) => $value['payroll.view'] === false)
+            ->where('features.payroll', false)->has('sessionCounts.upcoming')->has('sessionCounts.completed'));
+        $this->assertDatabaseCount('payroll_entries', 2);
+        DB::table('staff_profiles')->where('id', $context['staff_profile_id'])->update(['financials_visible' => true]);
+        $this->get('/teacher/earnings')->assertOk()->assertInertia(fn (Assert $page) => $page->where('periods.0.netMinorUnits', 5500));
+    }
+
     private function ledgerContext(): array
     {
         $organizationId = (string) Str::ulid();

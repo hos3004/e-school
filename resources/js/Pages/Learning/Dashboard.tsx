@@ -1,3 +1,4 @@
+import TeacherSessionCounts, {type SessionCounts} from "@/Components/TeacherSessionCounts";
 import { Link, usePage } from "@inertiajs/react";
 import { useEffect, useState } from "react";
 import LearningLayout, { type LearningKind } from "@/Layouts/LearningLayout";
@@ -45,6 +46,7 @@ interface Props {
     timezone: string;
     approvalStatus: string;
   }[];
+  sessionCounts?:SessionCounts;
   earnings?: {
     year: number;
     month: number;
@@ -83,6 +85,7 @@ export default function Dashboard({
   reports = [],
   availability = [],
   earnings,
+  sessionCounts,
   libraryPreview,
   teachingAssignments = [],
 }: Props) {
@@ -690,6 +693,7 @@ export default function Dashboard({
           </div>
         </section>
       )}
+      {kind === "teacher" && sessionCounts && <TeacherSessionCounts counts={sessionCounts} />}
       <section id="progress" className="lp-section">
         {sectionHead(
           teacher
@@ -732,7 +736,7 @@ export default function Dashboard({
                 <Icon name="arrow" size={16} />
               </ServiceLink>
             </div>
-            <div>
+            {payrollEnabled && capabilities["payroll.view"] && <div>
               <Icon name="wallet" size={21} />
               <h3>{t("learning.earnings")}</h3>
               {payrollEnabled && capabilities["payroll.view"] ? (
@@ -766,7 +770,7 @@ export default function Dashboard({
               ) : (
                 <p>{t("learning.workspace.earnings_unavailable")}</p>
               )}
-            </div>
+            </div>}
           </div>
         ) : (
           <div className="lp-progress-grid">

@@ -44,3 +44,5 @@
 يسجل كل انتقال مرة واحدة بفاعل system وسبب السياسة، ولا يرسل إشعارات اعتماد.
 يحترم تواريخ سريان النوافذ القائمة؛ تغيير الحالة لا يمدد أي فترة.
 الأمر قابل لإعادة التشغيل ويُرفض إذا كانت سياسة المراجعة مفعلة.
+
+Financial visibility: Staff owns staff_profiles.financials_visible, default true. TeacherFinancialVisibilityGate restricts teacher financial read abilities when hidden; administrators retain their existing access. Setting changes are organization-scoped and audited. Payroll data is not changed.

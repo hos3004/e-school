@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Infrastructure\Providers;
 
+use Illuminate\Support\Facades\Gate;
 use Modules\Staff\Application\Policies\StaffProfilePolicy;
 use Modules\Staff\Application\Policies\TeacherAvailabilityPolicy;
 use Modules\Staff\Application\Queries\StaffAdministrationQueryService;
@@ -18,6 +19,7 @@ use Modules\Staff\Domain\Contracts\TeacherQualificationQueries;
 use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Domain\Models\TeacherAvailability;
+use Modules\Staff\Infrastructure\Authorization\TeacherFinancialVisibilityGate;
 use Modules\Staff\Infrastructure\Persistence\DbSessionPayCatalog;
 use Modules\Staff\Infrastructure\Persistence\DbTeacherRateResolver;
 use Modules\Staff\Presentation\Console\ActivatePendingAvailabilityCommand;
@@ -28,6 +30,7 @@ final class StaffServiceProvider extends BaseModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+        Gate::before([app(TeacherFinancialVisibilityGate::class), 'check']);
 
         if ($this->app->runningInConsole()) {
             $this->commands([ActivatePendingAvailabilityCommand::class]);

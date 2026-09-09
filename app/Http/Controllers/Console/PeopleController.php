@@ -171,6 +171,10 @@ final class PeopleController extends Controller
         return Inertia::render('Console/People/Show', [
             'kind' => $kind,
             'person' => [...$this->person($record, $organizationId), 'avatar_url' => app(PersonProfileData::class)->identity($organizationId, (string) $record->user_id)['avatarUrl'] ?? null],
+            'financialVisibility' => $record instanceof StaffProfile ? [
+                'visible' => $record->financials_visible,
+                'updateUrl' => !$record->trashed() && $request->user()?->can('staff.contract.update') ? route('console.teachers.financial-visibility', ['profile' => $record->id]) : null,
+            ] : null,
             'hub' => $hub,
             'availabilityUrl' => $kind === 'teachers' && $request->user()?->can('staff.view') && $request->user()->can('staff.view.any') ? route('console.availability.index', ['teacher' => $record->id]) : null,
             'profileWorkspace' => app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),

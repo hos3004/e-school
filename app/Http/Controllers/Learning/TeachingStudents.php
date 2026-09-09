@@ -56,7 +56,7 @@ final readonly class TeachingStudents
             $assignments[$assignment->studentProfileId][$assignment->id] = [
                 'id' => $assignment->id,
                 'name' => ($course->name[$locale] ?? $course->name['ar'] ?? $course->code).($assignment->awaitingSchedule ? ' — '.__('learning.awaiting_schedule') : ''),
-                'kind' => $assignment->sessionType,
+                'kind' => $assignment->sessionType === 'group' ? 'group' : 'individual',
             ];
         }
         $profiles = $this->students->byIds($organizationId, array_keys($assignments));

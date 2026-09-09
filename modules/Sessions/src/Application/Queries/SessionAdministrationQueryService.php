@@ -230,7 +230,7 @@ final readonly class SessionAdministrationQueryService implements SessionAdminis
             ->all();
     }
 
-    public function countsForTeachers(string $organizationId, array $staffProfileIds, CarbonImmutable $monthStart): array
+    public function countsForTeachers(string $organizationId, array $staffProfileIds, CarbonImmutable $monthStart, ?CarbonImmutable $monthEnd = null): array
     {
         $staffProfileIds = array_values(array_unique(array_filter(
             $staffProfileIds,
@@ -242,7 +242,7 @@ final readonly class SessionAdministrationQueryService implements SessionAdminis
         }
 
         $now = CarbonImmutable::now('UTC');
-        $monthEnd = $monthStart->addMonth();
+        $monthEnd ??= $monthStart->addMonth();
 
         /** @var array<string, array{upcoming: int, completed: int, cancelled: int}> $counts */
         $counts = array_fill_keys($staffProfileIds, ['upcoming' => 0, 'completed' => 0, 'cancelled' => 0]);

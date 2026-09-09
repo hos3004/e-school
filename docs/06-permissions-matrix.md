@@ -319,3 +319,5 @@ if ($user->hasRole('teacher')) { ... }
 - الحساب ذو الملف غير المكتمل يُمنع من صفحات الموقع وواجهات API؛ استكمال الملف والخروج وتغيير اللغة متاحة فقط حتى يؤكد البيانات.
 
 Pending teaching assignments: administrative read uses schedule.view; changes use schedule.manage scoped to organization. Teacher learning roster exposes only assigned students via the Scheduling public DTO query. Links are soft-deleted and audited; no lesson time is fabricated.
+
+Teacher financial visibility: console teacher profile PUT /manage/teachers/{profile}/financial-visibility requires admin.panel.access, staff.contract.update and organization-scoped StaffProfilePolicy::update, with reason and audit. Hidden teacher accounts are denied payroll.view, payroll.export and staff.contract.view; admin.panel.access holders retain their authorized administrative financial access. No new role or permission is introduced.
