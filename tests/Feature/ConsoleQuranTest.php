@@ -25,6 +25,7 @@ use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Database\Seeders\GeographySeeder;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Organization\Domain\Models\Organization;
+use Modules\Scheduling\Domain\Models\PendingTeachingAssignment;
 use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\SessionParticipant;
@@ -53,6 +54,22 @@ final class ConsoleQuranTest extends TestCase
     private StaffProfile $teacher;
 
     private StudentProfile $student;
+
+    public function test_pending_teacher_is_visible_and_filterable_without_a_fabricated_schedule(): void
+    {
+        $link = PendingTeachingAssignment::query()->create([
+            'organization_id' => $this->organization->id, 'student_profile_id' => $this->student->id,
+            'staff_profile_id' => $this->teacher->id, 'course_id' => $this->course->id,
+            'created_by' => $this->actor->id, 'session_type' => 'individual',
+            'duration_minutes' => 25, 'reason' => 'Awaiting approved time',
+        ]);
+        $this->get('/manage/quran?teacher='.$this->teacher->id)->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->has('students.data', 1)
+                ->where('students.data.0.schedule', null)
+                ->where('students.data.0.pending_teacher_ids', [$this->teacher->id]));
+        $this->assertDatabaseCount('schedules', 0);
+        $link->delete();
+    }
 
     protected function setUp(): void
     {

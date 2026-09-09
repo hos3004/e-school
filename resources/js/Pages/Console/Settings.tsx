@@ -1,6 +1,7 @@
 import { useForm, usePage } from "@inertiajs/react";
 import { useState, type FormEvent } from "react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
+import SessionPaySettings, { type SessionPayData } from "./SessionPaySettings";
 import { useI18n } from "@/lib/i18n";
 import { formatNumber } from "@/lib/console-format";
 import type { AppPageProps } from "@/types";
@@ -30,12 +31,14 @@ export default function Settings({
   timezones,
   canUpdate,
   policies,
+  sessionPay,
   ...editors
 }: {
   school: School;
   timezones: string[];
   canUpdate: boolean;
   policies: Policy[];
+  sessionPay: SessionPayData | null;
 } & SettingsEditorsProps) {
   const t = useI18n();
   const { locale = "ar" } = usePage<AppPageProps>().props;
@@ -283,6 +286,12 @@ export default function Settings({
                   {t("console.settings.read_policy")}
                 </span>
               </div>
+              {section.key === "dues" && sessionPay && (
+                <SessionPaySettings
+                  key={sessionPay.version}
+                  data={sessionPay}
+                />
+              )}
               {section.key === "accounts" && editors.accounts && (
                 <AccountSettings
                   key={editors.accounts.version}

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'awaiting_schedule' => 'Awaiting lesson time',
     'brand' => 'Tele Academy',
     'skip' => 'Skip to content',
     'student_portal' => 'Student portal',

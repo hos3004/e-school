@@ -10,6 +10,7 @@ use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\ValueObjects\SchedulingGroupData;
+use Modules\Staff\Domain\Contracts\SessionPayCatalog;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 use Modules\Staff\Domain\Contracts\TeacherQualificationQueries;
 use Shared\Support\BusinessRuleViolation;
@@ -54,9 +55,7 @@ final readonly class ScheduleDefinitionValidator
         }
 
         $duration = (int) ($data['duration_minutes'] ?? 0);
-        $allowedDurations = $studentId !== null
-            ? (array) config('scheduling.individual_session_durations', [])
-            : (array) config('scheduling.session_durations', []);
+        $allowedDurations = app(SessionPayCatalog::class)->durations($organizationId, $studentId !== null ? 'individual' : 'group');
         if (!in_array($duration, $allowedDurations, true)) {
             throw BusinessRuleViolation::make('scheduling.duration_invalid', 'scheduling::errors.duration_invalid');
         }

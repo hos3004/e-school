@@ -6,6 +6,7 @@ namespace Modules\Staff\Infrastructure\Persistence;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Staff\Domain\Contracts\SessionPayCatalog;
 use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Modules\Staff\Domain\Enums\RateScope;
 use Modules\Staff\Domain\Models\TeacherContract;
@@ -20,6 +21,7 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
         ?string $programId = null,
         ?string $courseId = null,
         ?string $sessionType = null,
+        ?int $durationMinutes = null,
     ): ?array {
         $contract = TeacherContract::query()
             ->forProfile($staffProfileId)
@@ -90,6 +92,18 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
             }
         }
 
+        if ($durationMinutes !== null && $contract->basis->requiresRates()) {
+            foreach (app(SessionPayCatalog::class)->rates($contract->organization_id, $sessionDate) as $preset) {
+                if ($preset['session_type'] === $sessionType && $preset['duration_minutes'] === $durationMinutes) {
+                    return [
+                        'money' => Money::of($preset['amount'], $preset['currency']),
+                        'scope' => RateScope::SessionType, 'rate_id' => $preset['id'],
+                        'contract_id' => $contract->id, 'contract_basis' => $contract->basis->value,
+                    ];
+                }
+            }
+        }
+
         return null;
     }
 
@@ -99,6 +113,7 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
         ?string $programId = null,
         ?string $courseId = null,
         ?string $sessionType = null,
+        ?int $durationMinutes = null,
     ): ?array {
         $rate = $this->resolve(
             $staffProfileId,
@@ -106,6 +121,7 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
             $programId,
             $courseId,
             $sessionType,
+            $durationMinutes,
         );
 
         if ($rate !== null) {

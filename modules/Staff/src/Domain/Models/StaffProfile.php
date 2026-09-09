@@ -21,6 +21,7 @@ use Shared\Concerns\HasUlid;
  * @property EmploymentType $employment_type
  * @property StaffGender|null $gender
  * @property string|null $country_id
+ * @property string|null $city
  * @property string|null $region_id
  * @property CarbonImmutable|null $date_of_birth
  * @property string|null $phone
@@ -45,6 +46,8 @@ final class StaffProfile extends Model
         'gender',
         'country_id',
         'region_id',
+        'city',
+        'region_name',
         'date_of_birth',
         'phone',
         'hired_at',

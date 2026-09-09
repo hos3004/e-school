@@ -61,6 +61,7 @@ final class StudentProfile extends Model
         'country_id',
         'region_id',
         'city',
+        'region_name',
         'preferred_language',
         'joined_at',
         'notes',

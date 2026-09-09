@@ -14,6 +14,7 @@ declare(strict_types=1);
  * أي جدول جديد يجب أن يُسجَّل هنا أولاً، وإلا ستفشل اختبارات المعمارية.
  */
 return [
+    'pending_teaching_assignments' => 'Scheduling',
     // Organization
     'organizations' => 'Organization',
     'organization_settings' => 'Organization',

@@ -60,6 +60,7 @@ final class Fixtures
             'organization_id' => self::organizationId(),
             'name' => 'Test User '.$suffix,
             'email' => 'user.'.$suffix.'@test.local',
+            'profile_completed_at' => now(),
             'password' => bcrypt('password'),
             'created_at' => now(),
             'updated_at' => now(),

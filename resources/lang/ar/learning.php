@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'awaiting_schedule' => 'في انتظار تحديد الموعد',
     'requests' => [
         'title' => 'طلبات الحصص', 'intro' => 'راجع الموعد المطلوب، واقبل الطلب أو اقترح موعدًا يناسبكما.',
         'postpone' => 'تأجيل الحصة', 'apologize' => 'اعتذار عن الحضور', 'new' => 'طلب جديد',

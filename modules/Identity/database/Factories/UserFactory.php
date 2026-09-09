@@ -32,6 +32,7 @@ final class UserFactory extends Factory
             'locale' => 'ar',
             'timezone' => 'Africa/Cairo',
             'status' => UserStatus::Active,
+            'profile_completed_at' => now(),
         ];
     }
 

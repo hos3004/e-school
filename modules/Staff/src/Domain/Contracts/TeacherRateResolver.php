@@ -31,6 +31,7 @@ interface TeacherRateResolver
         ?string $programId = null,
         ?string $courseId = null,
         ?string $sessionType = null,
+        ?int $durationMinutes = null,
     ): ?array;
 
     /**
@@ -45,5 +46,6 @@ interface TeacherRateResolver
         ?string $programId = null,
         ?string $courseId = null,
         ?string $sessionType = null,
+        ?int $durationMinutes = null,
     ): ?array;
 }

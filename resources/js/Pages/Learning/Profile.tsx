@@ -1,4 +1,4 @@
-import { useForm } from "@inertiajs/react";
+import { Link, useForm } from "@inertiajs/react";
 import { useState, type FormEvent } from "react";
 import LearningLayout, { type LearningKind } from "@/Layouts/LearningLayout";
 import ProfileView, {
@@ -100,6 +100,11 @@ export default function Profile({
   }
   return (
     <LearningLayout kind={kind} title={profile.name}>
+      {own && (
+        <Link href="/profile/complete" className="console-button mb-4">
+          {t("profile_completion.title")}
+        </Link>
+      )}
       <ProfileView
         kind={own ? kind : "student"}
         audience={own ? "self" : "teacher"}

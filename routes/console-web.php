@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Console\DirectoryController;
 use App\Http\Controllers\Console\QuranController;
 use App\Http\Controllers\Console\ReportsController;
+use App\Http\Controllers\Console\SessionPayController;
 use App\Http\Controllers\Console\SettingsController;
 use App\Http\Controllers\Console\SettingsOperationsController;
 use App\Http\Controllers\Console\WorkspaceController;
@@ -19,6 +20,8 @@ Route::get('/reports/pdf', ExportOperationalReportPdfController::class)->middlew
 
 Route::get('/settings', [SettingsController::class, 'index'])->middleware('can:organizations.view')->name('settings');
 Route::put('/settings', [SettingsController::class, 'update'])->middleware('can:organizations.update')->name('settings.update');
+
+Route::post('/settings/session-pay', [SessionPayController::class, 'store'])->middleware('can:organizations.manage_settings')->name('settings.session-pay');
 
 Route::post('/settings/{operation}', SettingsOperationsController::class)
     ->whereIn('operation', ['accounts', 'notifications', 'calendar-create', 'calendar-activate', 'calendar-close', 'holiday-create', 'holiday-remove'])

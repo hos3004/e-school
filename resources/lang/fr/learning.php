@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'awaiting_schedule' => 'Horaire à définir',
     'brand' => 'Télé Académie',
     'skip' => 'Aller au contenu',
     'student_portal' => 'Espace élève',

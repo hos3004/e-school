@@ -141,6 +141,7 @@ final readonly class RecordSessionPayrollEntry
                     'course_id' => $facts->courseId,
                     'group_id' => $facts->groupId,
                     'rate_id' => $rate['rate_id'],
+                    'duration_minutes' => (int) round($facts->scheduledStart->diffInMinutes($facts->scheduledEnd)),
                     'contract_basis' => $rate['contract_basis'],
                     'substituted' => $facts->hasSubstitute(),
                 ],
@@ -240,6 +241,7 @@ final readonly class RecordSessionPayrollEntry
             'programId' => $programId,
             'courseId' => $facts->courseId,
             'sessionType' => $facts->sessionType,
+            'durationMinutes' => (int) round($facts->scheduledStart->diffInMinutes($facts->scheduledEnd)),
         ];
 
         return $forDeduction

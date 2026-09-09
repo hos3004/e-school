@@ -23,6 +23,7 @@ export interface Student {
   name: string;
   student_timezone: string;
   teacher_name: string | null;
+  pending_teacher_ids?: string[];
   schedule: Schedule | null;
   held: boolean;
   can_schedule: boolean;

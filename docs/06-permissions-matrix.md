@@ -310,3 +310,12 @@ if ($user->hasRole('teacher')) { ... }
 | إزالة نافذة إتاحة | staff.view + TeacherAvailabilityPolicy::delete؛ إداري المؤسسة يحتاج staff.contract.update، وصاحب النافذة يحتاج staff.availability.create عند تعطيل المراجعة؛ لا تتغير الحصص المحجوزة |
 
 لا تنفذ واجهة التقويم تعديلًا مباشرًا على حصة أو حضور أو دفتر مستحقات. إجراء UpdateScheduleAction يحافظ على الماضي والمهلة المحمية، ويعيد توليد المستقبل داخل معاملة وتدقيق. معرفة معرّف مورد أو إرساله من المتصفح لا تمنح الوصول إلى مؤسسة أخرى.
+
+
+### استكمال الملف وأجر الحصة — 2026-09-09
+
+- مسارات /profile/complete: صاحب الحساب فقط عبر UserPolicy::update، وبوجود ملف طالب أو معلم داخل مؤسسته. لا يقبل معرّف مستخدم من الطلب.
+- قراءة وتعديل جدول مدد وأجور الحصص في الإعدادات: organizations.manage_settings وOrganizationPolicy::manageSettings، مع سبب مكتوب وفحص نسخة متزامنة وسجل تدقيق.
+- الحساب ذو الملف غير المكتمل يُمنع من صفحات الموقع وواجهات API؛ استكمال الملف والخروج وتغيير اللغة متاحة فقط حتى يؤكد البيانات.
+
+Pending teaching assignments: administrative read uses schedule.view; changes use schedule.manage scoped to organization. Teacher learning roster exposes only assigned students via the Scheduling public DTO query. Links are soft-deleted and audited; no lesson time is fabricated.

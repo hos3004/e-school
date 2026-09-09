@@ -23,6 +23,7 @@ final class ConsoleSettingsData
         $activeCalendarIds = $canCalendar ? AcademicCalendar::query()->forOrganization($organizationId)->active()->orderBy('id')->pluck('id')->all() : [];
 
         return [
+            'sessionPay' => $canAccounts ? SessionPayController::data($organizationId) : null,
             'accounts' => $canAccounts ? $this->accounts($organizationId) : null,
             'calendars' => $canCalendar ? AcademicCalendar::query()->forOrganization($organizationId)
                 ->orderByDesc('starts_on')->get()->map(fn (AcademicCalendar $calendar): array => [

@@ -141,6 +141,7 @@ trait CreatesSessionParticipant
             'name' => $name,
             'email' => $prefix.'-'.strtolower($userId).'@test.local',
             'password' => 'x',
+            'profile_completed_at' => now(),
             'created_at' => now()->utc(),
             'updated_at' => now()->utc(),
         ]);

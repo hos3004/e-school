@@ -56,6 +56,30 @@ final class SessionPayrollAccrualTest extends TestCase
         $this->assertSame(5_000, $snapshot['amount_minor_units']);
     }
 
+    public function test_school_duration_rate_is_snapshotted_and_replaying_after_a_price_change_is_idempotent(): void
+    {
+        $context = $this->payrollContext(ratePiastres: 5000);
+        DB::table('teacher_rates')->where('teacher_contract_id', $context['contract_id'])->delete();
+        $start = CarbonImmutable::parse(DB::table('sessions')->where('id', $context['session_id'])->value('scheduled_start'));
+        DB::table('sessions')->where('id', $context['session_id'])->update(['session_type' => 'individual', 'scheduled_end' => $start->addMinutes(40)]);
+        $rateId = (string) Str::ulid();
+        $history = [['effective_from' => $start->subDay()->toIso8601String(), 'rates' => [['id' => $rateId, 'name' => 'Adult long', 'session_type' => 'individual', 'duration_minutes' => 40, 'amount' => 3350, 'currency' => 'EGP']]]];
+        $settingId = (string) Str::ulid();
+        DB::table('organization_settings')->insert(['id' => $settingId, 'organization_id' => $context['organization_id'], 'key' => config('session_pay.setting_key'), 'value' => json_encode($history), 'created_at' => now(), 'updated_at' => now()]);
+        $event = new SessionCompleted(sessionId: $context['session_id'], organizationId: $context['organization_id'], courseId: $context['course_id'], staffProfileId: $context['staff_profile_id'], attendedMinutes: 40);
+        Event::dispatch($event);
+        $entry = DB::table('payroll_entries')->where('session_id', $context['session_id'])->sole();
+        self::assertSame(3350, (int) $entry->amount);
+        self::assertSame(3350, json_decode($entry->rate_snapshot, true)['amount_minor_units']);
+        self::assertSame(40, json_decode($entry->description, true)['duration_minutes']);
+        self::assertSame($rateId, json_decode($entry->description, true)['rate_id']);
+        $history[] = ['effective_from' => $start->addDay()->toIso8601String(), 'rates' => [['id' => (string) Str::ulid(), 'name' => 'Adult long', 'session_type' => 'individual', 'duration_minutes' => 40, 'amount' => 5100, 'currency' => 'EGP']]];
+        DB::table('organization_settings')->where('id', $settingId)->update(['value' => json_encode($history)]);
+        Event::dispatch($event);
+        self::assertSame(1, DB::table('payroll_entries')->where('session_id', $context['session_id'])->count());
+        self::assertSame(3350, (int) DB::table('payroll_entries')->where('id', $entry->id)->value('amount'));
+    }
+
     public function test_raising_the_rate_afterwards_never_touches_an_existing_entry(): void
     {
         $context = $this->payrollContext(ratePiastres: 5_000);

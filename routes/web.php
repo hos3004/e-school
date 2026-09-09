@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\PublicStudentRegistrationController;
+use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MarketingPageController;
 use App\Http\Controllers\Portal\ClassroomJoinController;
@@ -44,6 +45,12 @@ use App\Http\Controllers\UpdateLocaleController;
 use App\Http\Middleware\EnsureConsoleEnabled;
 use App\Http\Middleware\RedirectPrimaryLearningPortal;
 use Illuminate\Support\Facades\Route;
+
+Route::middleware(['auth', 'auth.session'])->prefix('profile/complete')->name('profile.complete.')->group(function (): void {
+    Route::get('/', [CompleteProfileController::class, 'show'])->name('show');
+    Route::get('/regions', [CompleteProfileController::class, 'regions'])->name('regions');
+    Route::post('/', [CompleteProfileController::class, 'store'])->name('store');
+});
 
 Route::get('/', HomeController::class)->name('home');
 

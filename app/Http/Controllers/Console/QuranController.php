@@ -24,6 +24,7 @@ use Modules\Academics\Domain\ValueObjects\AcademicCatalogItemData;
 use Modules\Identity\Domain\Contracts\UserQueryService;
 use Modules\Scheduling\Application\Services\ConsoleQuranScheduleService;
 use Modules\Scheduling\Application\Services\TeacherAvailabilityPlanner;
+use Modules\Scheduling\Domain\Models\PendingTeachingAssignment;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Staff\Domain\Contracts\TeacherDirectoryQueries;
 use Modules\Students\Application\Services\ConsoleQuranRegistrationService;
@@ -92,6 +93,8 @@ final class QuranController extends Controller
         $profiles = $this->students->byIds($organizationId, $ids);
         $accounts = $this->users->summariesByIds(array_values(array_map(static fn ($profile): string => $profile->userId, $profiles)));
         $qualifiedTeachers = $this->placement->teacherOptions($organizationId);
+        $pendingTeachers = $course === null ? collect() : PendingTeachingAssignment::query()
+            ->where('organization_id', $organizationId)->where('course_id', $course->id)->get()->groupBy('student_profile_id');
         $teacherNames = $qualifiedTeachers;
         $teacherIds = array_values(array_unique([...array_keys($qualifiedTeachers), ...array_column($active, 'staff_profile_id'), ...array_column($activity['sessions'], 'teacher_id')]));
         foreach ($this->teacherDirectory->directoryFor($organizationId, $teacherIds) as $teacher) {
@@ -116,7 +119,8 @@ final class QuranController extends Controller
             $rows[] = [
                 'id' => $profile->id, 'code' => $profile->studentCode, 'name' => $account->name,
                 'student_timezone' => $account->timezone, 'schedule' => $schedule,
-                'teacher_name' => $schedule === null ? null : ($teacherNames[(string) $schedule['staff_profile_id']] ?? __('console_quran.teacher_unavailable')),
+                'pending_teacher_ids' => $pendingTeachers->get($profile->id, collect())->pluck('staff_profile_id')->all(),
+                'teacher_name' => $schedule === null ? ($pendingTeachers->has($profile->id) ? $pendingTeachers[$profile->id]->map(fn ($link) => $teacherNames[$link->staff_profile_id] ?? __('console_quran.teacher_unavailable'))->implode(' / ').' — '.__('learning.awaiting_schedule') : null) : ($teacherNames[(string) $schedule['staff_profile_id']] ?? __('console_quran.teacher_unavailable')),
                 'held' => $held, 'can_schedule' => $account->isActive() && (in_array($profile->id, $eligibleIds, true) || $selectedApplication !== null),
                 'application_id' => $selectedApplication['id'] ?? null, 'enrollments' => $studentEnrollments, 'insight' => $insight,
                 'needs_followup' => $held || ($insight['absences'] ?? 0) > 0,
@@ -131,12 +135,12 @@ final class QuranController extends Controller
         $filtered = array_values(array_filter($rows, static fn (array $row): bool => ($filters['status'] === 'all' || ($filters['status'] === 'issues' ? $row['needs_followup'] : (($filters['status'] === 'assigned') === ($row['schedule'] !== null))))
             && ($filters['status'] !== 'pending' || $row['can_schedule'])
             && ($filters['search'] === '' || mb_stripos($row['name'].' '.$row['code'], (string) $filters['search']) !== false)
-            && ($filters['teacher'] === null || ($row['schedule']['staff_profile_id'] ?? null) === $filters['teacher'])));
+            && ($filters['teacher'] === null || (($row['schedule']['staff_profile_id'] ?? null) === $filters['teacher'] || ($row['schedule'] === null && in_array($filters['teacher'], $row['pending_teacher_ids'], true))))));
         $availability = ($can['place'] || $request->user()?->can('schedule.view')) ? $this->workspace->availability($organizationId, array_keys($teacherNames)) : [];
         $teacherRows = [];
         foreach ($teacherNames as $id => $name) {
             $teacherRows[] = ['id' => $id, 'name' => $name, 'qualified' => array_key_exists($id, $qualifiedTeachers),
-                'student_ids' => array_values(array_column(array_filter($rows, static fn (array $row): bool => ($row['schedule']['staff_profile_id'] ?? null) === $id), 'id')),
+                'student_ids' => array_values(array_column(array_filter($rows, static fn (array $row): bool => (($row['schedule']['staff_profile_id'] ?? null) === $id || ($row['schedule'] === null && in_array($id, $row['pending_teacher_ids'], true)))), 'id')),
                 'availability' => $availability[$id] ?? [],
                 'sessions' => count(array_filter($activity['sessions'], static fn (array $item): bool => $item['teacher_id'] === $id && $item['status'] !== SessionStatus::Superseded->value)),
             ];

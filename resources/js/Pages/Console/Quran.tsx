@@ -58,7 +58,7 @@ export default function Quran(props: QuranProps) {
   const draft = (student: Student): Placement =>
     drafts[student.id] ??
     student.schedule ?? {
-      staff_profile_id: "",
+      staff_profile_id: student.pending_teacher_ids?.length === 1 ? (student.pending_teacher_ids[0] ?? "") : "",
       weekly_slots: [],
       duration_minutes: defaults.duration_minutes,
       interval_weeks: defaults.interval_weeks,

@@ -298,6 +298,7 @@ final class TeacherAttendanceSheetTest extends TestCase
         $suffix = Str::lower(Str::random(6));
 
         DB::table('users')->insert([
+            'profile_completed_at' => now(),
             'id' => $id,
             'organization_id' => $organizationId,
             'name' => $prefix,
