@@ -710,6 +710,38 @@
   font-size: 11px;
   color: var(--learning-muted);
 }
+.learning-student-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.learning-student-link details {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.learning-student-link summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--learning-muted);
+}
+.learning-student-link input {
+  width: 100%;
+  margin-top: 6px;
+  min-width: 0;
+  font-size: 11px;
+  padding: 6px 8px;
+  border: 1px solid var(--learning-line);
+  border-radius: 6px;
+  background: #f5f8f6;
+  color: var(--learning-muted);
+}
+.learning-button.small {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 12px !important;
+}
 .learning-assessment {
   background: #f5f8f6;
   border: 1px solid var(--learning-line);

@@ -24,6 +24,7 @@ interface Props extends SessionRequestProps {
   initialReport?: { summary?: string; notes?: string } | null;
   canSubmitReport?: boolean;
   canViewStudents?: boolean;
+  studentJoinLinks?: Record<string, string>;
   reportScoreMin: number;
   reportScoreMax: number;
 }
@@ -38,6 +39,7 @@ export default function Session({
   initialReport,
   canSubmitReport = false,
   canViewStudents = false,
+  studentJoinLinks = {},
   reportScoreMin,
   reportScoreMax,
   ...requestProps
@@ -82,6 +84,20 @@ export default function Session({
     { length: Math.max(0, reportScoreMax - reportScoreMin + 1) },
     (_, index) => index + reportScoreMin,
   );
+  const [copiedStudentId, setCopiedStudentId] = useState<string | null>(null);
+  const [copyFailedStudentId, setCopyFailedStudentId] = useState<string | null>(
+    null,
+  );
+  async function copyStudentLink(studentId: string, link: string) {
+    setCopiedStudentId(null);
+    setCopyFailedStudentId(null);
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedStudentId(studentId);
+    } catch {
+      setCopyFailedStudentId(studentId);
+    }
+  }
   function saveAttendance(event: FormEvent) {
     event.preventDefault();
     if (attendanceUpdateUrl) {
@@ -184,6 +200,11 @@ export default function Session({
                 onSubmit={saveAttendance}
               >
                 <Errors errors={attendanceForm.errors} />
+                {Object.keys(studentJoinLinks).length > 0 && (
+                  <p className="learning-help">
+                    {t("learning.student_link_help")}
+                  </p>
+                )}
                 {attendance.map((row) => (
                   <div className="learning-attendance-row" key={row.id}>
                     <div>
@@ -210,6 +231,42 @@ export default function Session({
                           ? t("learning.recorded")
                           : t("learning.not_recorded")}
                       </small>
+                      {studentJoinLinks[row.studentId] && (
+                        <div className="learning-student-link">
+                          <button
+                            type="button"
+                            className="learning-button secondary small"
+                            onClick={() =>
+                              copyStudentLink(
+                                row.studentId,
+                                studentJoinLinks[row.studentId] ?? "",
+                              )
+                            }
+                          >
+                            {t("learning.copy_student_link")}
+                          </button>
+                          <details>
+                            <summary>{t("learning.show_student_link")}</summary>
+                            <input
+                              readOnly
+                              dir="ltr"
+                              aria-label={`${t("learning.copy_student_link")} ${row.studentName}`}
+                              value={studentJoinLinks[row.studentId] ?? ""}
+                              onFocus={(event) => event.target.select()}
+                            />
+                          </details>
+                          {copiedStudentId === row.studentId && (
+                            <small role="status">
+                              {t("learning.copy_student_link_done")}
+                            </small>
+                          )}
+                          {copyFailedStudentId === row.studentId && (
+                            <small role="status">
+                              {t("learning.copy_student_link_failed")}
+                            </small>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <label>
                       <span className="learning-sr-only">

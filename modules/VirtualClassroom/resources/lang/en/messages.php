@@ -33,6 +33,7 @@ return [
     'webhook_hook_required' => 'The --hook option is required to remove a subscription.',
     'default_participant_name' => 'Participant',
     'default_classroom_title' => 'Live session',
+    'student_link_audit_reason' => 'Student entered through the manual link sent by the teacher.',
     'recordings_synced' => ':count ready recordings synchronized.',
     'provision_reason' => 'Provision the live classroom before the session starts.',
     'portal_provision_reason' => 'The portal verified classroom readiness when join was requested.',

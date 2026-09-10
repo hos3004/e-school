@@ -9,13 +9,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Portal\StudentSessionController;
 use App\Http\Controllers\Portal\Support\PortalData;
 use App\Http\Controllers\Portal\TeacherSessionController;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\AcademicReports\Domain\Models\SessionReportStudent;
 use Modules\Attendance\Domain\Contracts\AttendanceAdministrationQueries;
 use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
+use Modules\Sessions\Domain\ValueObjects\SessionParticipantAdministrationData;
 
 /** Reuse the existing session presentation contract, including recording grants. */
 final class LearningSessionController extends Controller
@@ -65,6 +68,7 @@ final class LearningSessionController extends Controller
             }
             $props['attendance'] = array_map(static fn (array $row): array => [...$row,
                 'confirmedAt' => $confirmed[$row['studentId']] ?? null], $props['attendance'] ?? []);
+            $props['studentJoinLinks'] = $this->studentJoinLinks($request, $participants);
         }
         if (isset($props['session'])) {
             $props['session']['joinUrl'] = $request->user()?->can('session.join')
@@ -86,5 +90,39 @@ final class LearningSessionController extends Controller
         $props['reportScoreMax'] = SessionReportStudent::MAX_SCORE;
 
         return Inertia::render('Learning/Session', $props);
+    }
+
+    /**
+     * روابط الدخول اليدوية التي ينسخها المعلم للطالب المتعذّر دخوله لحسابه.
+     *
+     * الرابط موقّع لكل مشارك على حدة حتى يبقى الحضور منسوبًا لصاحبه، وينتهي
+     * مع نهاية نافذة الدخول فلا يصلح لحصة أخرى ولا لما بعد انتهاء هذه الحصة.
+     *
+     * @param list<SessionParticipantAdministrationData> $participants
+     * @return array<string, string> معرّف ملف الطالب => الرابط
+     */
+    private function studentJoinLinks(Request $request, array $participants): array
+    {
+        if ((bool) config('virtual-classroom.student_link.enabled') !== true
+            || $request->user()?->can('session.join') !== true) {
+            return [];
+        }
+
+        $afterMinutes = max(0, (int) config('virtual-classroom.join_window.after_minutes'));
+        $links = [];
+
+        foreach ($participants as $participant) {
+            if (!$participant->invitationActive) {
+                continue;
+            }
+
+            $links[$participant->studentProfileId] = URL::temporarySignedRoute(
+                'classroom.student-link',
+                CarbonImmutable::parse($participant->scheduledEnd, 'UTC')->addMinutes($afterMinutes),
+                ['session' => $participant->sessionId, 'participant' => $participant->id],
+            );
+        }
+
+        return $links;
     }
 }

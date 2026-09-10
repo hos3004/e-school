@@ -7,6 +7,7 @@ use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MarketingPageController;
 use App\Http\Controllers\Portal\ClassroomJoinController;
+use App\Http\Controllers\Portal\ClassroomStudentLinkController;
 use App\Http\Controllers\Portal\GuardianAttendanceController;
 use App\Http\Controllers\Portal\GuardianChildController;
 use App\Http\Controllers\Portal\GuardianDashboardController;
@@ -78,6 +79,19 @@ Route::post('/register/student/{formSlug}', [PublicStudentRegistrationController
     ->where('formSlug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->middleware('throttle:'.(int) config('admission.self_registration.rate_limit_per_minute').',1')
     ->name('register.student.form.store');
+/*
+ * رابط دخول الطالب اليدوي.
+ *
+ * خارج مجموعة auth عمدًا: سببه الوحيد هو الطالب الذي تعذّر دخوله لحسابه.
+ * التوقيع يربط الرابط بحصة ومشارك بعينهما وينتهي بانتهاء نافذة الحصة،
+ * والمتحكّم يعيد فرض الحالة والنافذة والتجميد قبل أي توجيه للمزوّد.
+ */
+Route::get('/classroom/student-link/{session}/{participant}', ClassroomStudentLinkController::class)
+    ->whereUlid('session')
+    ->whereUlid('participant')
+    ->middleware(['signed', 'throttle:'.(int) config('virtual-classroom.student_link.rate_limit_per_minute').',1'])
+    ->name('classroom.student-link');
+
 Route::get('/register/submitted', [PublicStudentRegistrationController::class, 'showSubmitted'])->name('register.submitted');
 Route::get('/register/status/{id}', [PublicStudentRegistrationController::class, 'showStatus'])->name('register.status');
 

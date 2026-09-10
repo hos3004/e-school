@@ -28,6 +28,7 @@ return [
     'webhook_hook_required' => 'L’option --hook est requise.',
     'default_participant_name' => 'Participant',
     'default_classroom_title' => 'Séance en direct',
+    'student_link_audit_reason' => 'L’élève est entré via le lien manuel envoyé par l’enseignant.',
     'recordings_synced' => ':count enregistrements synchronisés.',
     'provision_reason' => 'Créer la classe virtuelle avant le début de la séance.',
     'portal_provision_reason' => 'Le portail a vérifié la disponibilité de la classe lors de la demande d’accès.',
