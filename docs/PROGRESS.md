@@ -216,3 +216,8 @@
 ## 2026-09-09 — تثبيت هوية بيئة المشروع
 
 أكّد المستخدم أن جميع تعديلات المشروع واختباراته دائمًا على SSH SCHOOL-WEB. ثُبّت القرار في AGENTS.md وPROJECT_MAP.md، مع إلغاء أولوية تعليمات WSL القديمة. بيئة النشر /opt/eschool ونسخ العمل المعزولة /opt/eschool-worktrees/. قاعدة الموقع تحمل بيانات حقيقية منذ انتقال 2026-09-09.
+
+
+### 2026-09-10 — Schedule-change production deployment
+
+Published `f10ac34` to SCHOOL-WEB with verified database/code backup, both migrations, built assets and 18 missing notification templates. Full isolated regression: 1428 passed / 11801 assertions. Live HTTP/service/data-count checks pass. Static-analysis and browser limitations are recorded in `docs/uat/2026-09-10-schedule-change-deployment.md`.
