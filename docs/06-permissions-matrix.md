@@ -92,6 +92,8 @@
 |----------|:-----:|:--------:|:-------:|:---------:|:-----:|:-------:|:-------:|:--------:|:-------:|
 | `schedule.view` | ● | ● | — | ● | ○ | ◐ | ◐own | ◐children | ○ |
 | `schedule.manage` | ● | ● | — | ● | — | — | — | — | — |
+| `schedule.change.request` | ● | ● | — | ● | — | ◐assigned | — | — | — |
+| `schedule.change.respond` | — | — | — | — | — | — | **◐own** | — | — |
 | `session.view` | ● | ● | ○ | ● | ○ | ◐ | ◐own | ◐children | ○ |
 | `session.create` | ● | ● | — | ● | — | ◐assigned | — | — | — |
 | `session.cancel` | ● | ● | — | ● | — | ◐assigned | — | — | — |
@@ -301,6 +303,9 @@ if ($user->hasRole('teacher')) { ... }
 | جداول المجموعة داخل التقويم | schedule.view + SchedulePolicy::viewAny؛ القوالب الجماعية للمؤسسة فقط |
 | GET /manage/schedules/create وPOST /manage/schedules | schedule.manage + SchedulePolicy::create؛ تحقق وجهة المجموعة والكورس والمعلم والإسناد في CreateScheduleAction |
 | GET /manage/schedules/{schedule}/edit وPATCH /manage/schedules/{schedule} | schedule.manage + SchedulePolicy::update؛ جدول جماعي من المؤسسة، قفل قبل التعديل، ومنع تبديل المجموعة أو الكورس أثناء تحريره |
+| POST /learn/teacher/schedules/{schedule}/change-requests | `schedule.change.request` + ScheduleChangeRequestPolicy::create؛ RequestScheduleChange يتحقق أن القالب نشط ومسند لنفس المعلم، ويصنع صف قبول لكل طالب نشط في الكورس. لا يتغير الجدول عند الطلب. |
+| POST /learn/student/schedule-changes/{change}/respond | `schedule.change.respond` + ScheduleChangeRequestPolicy::respond؛ الرد مقصور على صف القبول المعلّق لهذا الطالب. رفض واحد ينهي الطلب، واكتمال القبول يطبّق الموعد عبر UpdateScheduleAction. |
+| POST /learn/teacher/schedule-changes/{change}/withdraw | `schedule.change.request` أو `schedule.manage` + ScheduleChangeRequestPolicy::withdraw؛ ومطابقة staff_profile_id لصاحب الطلب. |
 | GET /manage/schedules/availability | schedule.manage؛ مجموعة وكورس ومعلم صالحون من المؤسسة، واستثناء جدول موجود يتطلب SchedulePolicy::update وتطابق الوجهة |
 | PATCH /manage/quran/{student}/schedules/{schedule} | student.view.any + schedule.manage + SchedulePolicy::update؛ تطابق الطالب والكورس الفردي والمؤسسة وحساب الطالب النشط |
 | تسكين طلب قرآن مقبول جديد | student.view.any + schedule.manage + enrollment.create + RegistrationApplicationPolicy::scheduleIndividual؛ قفل الطلب المختار، تحقق الأهلية والحالة، معاملة واحدة للقيد والجدول وحالة الطلب |

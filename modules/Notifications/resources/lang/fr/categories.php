@@ -11,4 +11,5 @@ return [
     'classroom_invitation' => 'Invitation à la classe virtuelle', 'session_report' => 'Rapport de séance',
     'discipline_notice' => 'Avis disciplinaire', 'enrollment_frozen' => 'Inscription suspendue',
     'grade_published' => 'Note publiée',
+    'schedule_change_request' => 'Demande de changement d’horaire permanent',
 ];

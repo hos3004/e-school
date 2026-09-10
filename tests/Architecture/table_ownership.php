@@ -86,6 +86,8 @@ return [
     'schedules' => 'Scheduling',
     'schedule_weekly_slots' => 'Scheduling',
     'postponement_requests' => 'Scheduling',
+    'schedule_change_requests' => 'Scheduling',
+    'schedule_change_approvals' => 'Scheduling',
 
     // Sessions
     'sessions' => 'Sessions',

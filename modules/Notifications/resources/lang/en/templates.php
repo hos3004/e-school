@@ -146,4 +146,19 @@ return [
         'body' => 'Your grade has been recorded: {{score}} out of {{max_score}}. View the feedback in your account.',
         'parameters' => ['score', 'max_score'],
     ],
+    'schedule.change.requested' => [
+        'subject' => 'Permanent lesson time change requested',
+        'body' => 'Teacher {{teacher_name}} asked to move {{course_name}} sessions from {{current_schedule}} to {{proposed_schedule}}. The new time applies only once every student accepts; the response window closes on {{expires_at}}.',
+        'parameters' => ['teacher_name', 'course_name', 'current_schedule', 'proposed_schedule', 'expires_at'],
+    ],
+    'schedule.change.applied' => [
+        'subject' => 'New permanent lesson time approved',
+        'body' => 'Every student accepted the new time for {{course_name}} sessions: {{proposed_schedule}}. It applies to sessions from {{effective_from}}.',
+        'parameters' => ['course_name', 'proposed_schedule', 'effective_from'],
+    ],
+    'schedule.change.rejected' => [
+        'subject' => 'Permanent lesson time change not approved',
+        'body' => 'The request to move {{course_name}} sessions to {{proposed_schedule}} ended without approval; the current time stays in place.',
+        'parameters' => ['course_name', 'proposed_schedule'],
+    ],
 ];

@@ -146,4 +146,19 @@ return [
         'body' => 'تم رصد درجتك: {{score}} من {{max_score}}. اطّلع على الملاحظات من خلال حسابك.',
         'parameters' => ['score', 'max_score'],
     ],
+    'schedule.change.requested' => [
+        'subject' => 'طلب تغيير الموعد الدائم للحصص',
+        'body' => 'طلب المعلم {{teacher_name}} تغيير موعد حصص {{course_name}} من {{current_schedule}} إلى {{proposed_schedule}}. لا يسري الموعد الجديد قبل قبول كل الطلاب، وتنتهي مهلة الرد في {{expires_at}}.',
+        'parameters' => ['teacher_name', 'course_name', 'current_schedule', 'proposed_schedule', 'expires_at'],
+    ],
+    'schedule.change.applied' => [
+        'subject' => 'اعتُمد الموعد الدائم الجديد للحصص',
+        'body' => 'قبل كل الطلاب الموعد الجديد لحصص {{course_name}}: {{proposed_schedule}}. يسري على الحصص اعتبارًا من {{effective_from}}.',
+        'parameters' => ['course_name', 'proposed_schedule', 'effective_from'],
+    ],
+    'schedule.change.rejected' => [
+        'subject' => 'لم يُعتمد تغيير الموعد الدائم للحصص',
+        'body' => 'انتهى طلب تغيير موعد حصص {{course_name}} إلى {{proposed_schedule}} دون اعتماد، والموعد الحالي مستمر كما هو.',
+        'parameters' => ['course_name', 'proposed_schedule'],
+    ],
 ];

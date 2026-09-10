@@ -11,6 +11,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Payroll\Domain\Contracts\TeacherEarningsQueries;
 use Modules\Payroll\Domain\ValueObjects\TeacherPeriodEarnings;
+use Modules\Scheduling\Application\Queries\ScheduleChangeQueries;
 
 final readonly class LearningServicesController
 {
@@ -28,13 +29,27 @@ final readonly class LearningServicesController
         return [$org, $id, (string) $this->context->forRequest($request)['timezone']];
     }
 
-    public function schedule(Request $request, string $kind): Response
+    public function schedule(Request $request, string $kind, ScheduleChangeQueries $scheduleChanges): Response
     {
         [$org, $id, $timezone] = $this->actor($request, $kind);
         abort_unless($request->user()?->can('schedule.view'), 403);
         $sessions = $kind === 'teacher' ? $this->data->teacherScheduleSessions($id, 'ar', $org) : $this->data->upcomingStudentSessions($id, 'ar', $org);
+        $canRequestScheduleChange = $kind === 'teacher' && (bool) $request->user()->can('schedule.change.request');
+        $permanentSchedules = $canRequestScheduleChange
+            ? $scheduleChanges->teacherSchedules($org, $id, 'ar')
+            : [];
+        $scheduleChangeRequests = $kind === 'student' && $request->user()->can('schedule.change.respond')
+            ? $scheduleChanges->studentPendingRequests($org, $id, 'ar')
+            : [];
 
-        return Inertia::render('Learning/Schedule', compact('kind', 'timezone', 'sessions'));
+        return Inertia::render('Learning/Schedule', compact(
+            'kind',
+            'timezone',
+            'sessions',
+            'permanentSchedules',
+            'scheduleChangeRequests',
+            'canRequestScheduleChange',
+        ));
     }
 
     public function notifications(Request $request, string $kind): Response

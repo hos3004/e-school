@@ -10,6 +10,7 @@ use Modules\Scheduling\Application\Listeners\SyncStudentAssignedToGroupSessions;
 use Modules\Scheduling\Application\Listeners\SyncStudentLeftGroupSessions;
 use Modules\Scheduling\Application\Policies\PendingTeachingAssignmentPolicy;
 use Modules\Scheduling\Application\Policies\PostponementRequestPolicy;
+use Modules\Scheduling\Application\Policies\ScheduleChangeRequestPolicy;
 use Modules\Scheduling\Application\Policies\SchedulePolicy;
 use Modules\Scheduling\Application\Queries\IndividualTeachingAssignmentQueries;
 use Modules\Scheduling\Application\Queries\SchedulingAdministrationQueryService;
@@ -17,6 +18,7 @@ use Modules\Scheduling\Domain\Contracts\IndividualTeachingAssignments;
 use Modules\Scheduling\Domain\Models\PendingTeachingAssignment;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
 use Modules\Scheduling\Domain\Models\Schedule;
+use Modules\Scheduling\Domain\Models\ScheduleChangeRequest;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class SchedulingServiceProvider extends BaseModuleServiceProvider
@@ -33,6 +35,7 @@ final class SchedulingServiceProvider extends BaseModuleServiceProvider
             Schedule::class => SchedulePolicy::class,
             PendingTeachingAssignment::class => PendingTeachingAssignmentPolicy::class,
             PostponementRequest::class => PostponementRequestPolicy::class,
+            ScheduleChangeRequest::class => ScheduleChangeRequestPolicy::class,
         ];
     }
 

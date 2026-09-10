@@ -3889,3 +3889,22 @@
     grid-template-columns: 1fr;
   }
 }
+
+.learning-portal .lp-slot-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.learning-portal .lp-slot-row .lp-field {
+  flex: 1 1 160px;
+  margin: 0;
+}
+.learning-portal .lp-approval-list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  font-size: 13px;
+  color: #61777d;
+  line-height: 1.9;
+}

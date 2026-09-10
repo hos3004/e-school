@@ -37,6 +37,7 @@ final class AccessControlSeeder extends Seeder
         'Scheduling' => [
             'schedule.view', 'schedule.manage',
             'session.postpone.request', 'session.postpone.approve',
+            'schedule.change.request', 'schedule.change.respond',
         ],
         'Sessions' => [
             'session.view', 'session.create', 'session.cancel',
@@ -213,6 +214,7 @@ final class AccessControlSeeder extends Seeder
             'program.manage', 'course.manage', 'group.view', 'group.manage',
             'content.view', 'content.manage',
             'schedule.view', 'schedule.manage',
+            'schedule.change.request',
             'session.view', 'session.create', 'session.cancel',
             'session.postpone.request', 'session.postpone.approve',
             'session.assign_substitute', 'session.join', 'session.finalize',
@@ -252,6 +254,7 @@ final class AccessControlSeeder extends Seeder
             'enrollment.view', 'enrollment.create', 'enrollment.pause',
             'group.view', 'group.manage', 'content.view',
             'schedule.view', 'schedule.manage',
+            'schedule.change.request',
             'session.view', 'session.create', 'session.cancel',
             'session.postpone.request', 'session.postpone.approve',
             'session.assign_substitute',
@@ -279,7 +282,7 @@ final class AccessControlSeeder extends Seeder
             'staff.view', 'staff.contract.view',
             'staff.availability.create',
             'enrollment.view', 'group.view', 'content.view', 'content.manage',
-            'schedule.view',
+            'schedule.view', 'schedule.change.request',
             'session.view', 'session.create', 'session.cancel',
             'session.postpone.request', 'session.postpone.approve',
             'session.join', 'session.finalize',
@@ -295,7 +298,7 @@ final class AccessControlSeeder extends Seeder
 
         'student' => [
             'student.view', 'enrollment.view', 'group.view', 'content.view',
-            'schedule.view', 'session.view', 'session.join',
+            'schedule.view', 'schedule.change.respond', 'session.view', 'session.join',
             'session.postpone.request',
             'attendance.view', 'recording.view',
             'assignment.submit', 'assessment.take', 'grade.view',

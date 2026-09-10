@@ -15,4 +15,8 @@ return [
     'postponement_alternative_proposed' => 'The alternative time was sent.',
     'student_approved_postponement' => 'The student approved the alternative time proposed by the teacher.',
     'postponement_rejected' => 'The postponement request was rejected.',
+    'schedule_change_requested' => 'The permanent time change request was sent to the course students; it applies only once they all accept.',
+    'schedule_change_accepted' => 'Your acceptance of the new time was recorded.',
+    'schedule_change_declined' => 'Your decline was recorded; the current time stays in place.',
+    'schedule_change_withdrawn' => 'The permanent time change request was withdrawn.',
 ];

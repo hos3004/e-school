@@ -3,15 +3,27 @@ import { useState } from "react";
 import LearningLayout, { type LearningKind } from "@/Layouts/LearningLayout";
 import { useI18n } from "@/lib/i18n";
 import type { Session } from "@/types";
+import {
+  StudentScheduleChangeRequests,
+  TeacherScheduleChange,
+  type StudentChangeRequest,
+  type TeacherSchedule,
+} from "./ScheduleChange";
 import { SessionRows } from "./shared";
 export default function Schedule({
   kind,
   timezone,
   sessions,
+  permanentSchedules = [],
+  scheduleChangeRequests = [],
+  canRequestScheduleChange = false,
 }: {
   kind: LearningKind;
   timezone: string;
   sessions: Session[];
+  permanentSchedules?: TeacherSchedule[];
+  scheduleChangeRequests?: StudentChangeRequest[];
+  canRequestScheduleChange?: boolean;
 }) {
   const t = useI18n();
   const [query, setQuery] = useState("");
@@ -36,6 +48,12 @@ export default function Schedule({
           {t("learning.back_portal")}
         </Link>
       </div>
+      {kind === "student" && (
+        <StudentScheduleChangeRequests requests={scheduleChangeRequests} />
+      )}
+      {kind === "teacher" && canRequestScheduleChange && (
+        <TeacherScheduleChange schedules={permanentSchedules} />
+      )}
       <label className="lp-field lp-compact-filter console-filter-single">
         <span>{t("learning.services.search_lessons")}</span>
         <input

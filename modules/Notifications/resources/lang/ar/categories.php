@@ -26,6 +26,7 @@ return [
     'enrollment_frozen' => 'تجميد القيد',
     'grade_published' => 'نشر التقييم',
     'postponement_request' => 'طلب تأجيل حصة',
+    'schedule_change_request' => 'طلب تغيير الموعد الدائم',
     'attendance_recorded' => 'رصد الحضور',
     'assignment_due' => 'اقتراب موعد تسليم واجب',
     'monthly_report' => 'التقرير الشهري',

@@ -137,6 +137,8 @@ return [
         'report.view' => 'View reports',
         'schedule.manage' => 'Manage schedules',
         'schedule.view' => 'View schedules',
+        'schedule.change.request' => 'Request a permanent lesson time change',
+        'schedule.change.respond' => 'Respond to a permanent lesson time change',
         'session.assign_substitute' => 'Assign substitute teacher',
         'session.cancel' => 'Cancel session',
         'session.create' => 'Create session',

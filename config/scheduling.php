@@ -272,4 +272,19 @@ return [
         'max_sessions' => 40,
         'max_history' => 30,
     ],
+
+    /*
+     * تغيير الموعد الدائم بطلب المعلم.
+     *
+     * قرار العميل: المعلم يقترح موعدًا أسبوعيًا جديدًا لقالب الجدول، ولا يسري
+     * إلا بقبول **كل** طلاب الكورس؛ ويُخطر المشرف والإدارة عند الطلب وعند
+     * النتيجة. التغيير لا يمس الحصص داخل نافذة recurrence.edit_lock_hours.
+     */
+    'permanent_change' => [
+        'requires_all_students_approval' => true,
+        'notify_admin_on_request' => true,
+
+        // مهلة رد الطلاب قبل انقضاء الطلب (بالساعات).
+        'student_response_sla_hours' => (int) env('SCHEDULE_CHANGE_STUDENT_SLA_HOURS', 72),
+    ],
 ];

@@ -86,6 +86,7 @@ return [
         ],
         'session_changed' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => true],
         'postponement_request' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => true],
+        'schedule_change_request' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => true],
         'registration_update' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'assignment_update' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'teacher_workflow' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
@@ -199,6 +200,24 @@ return [
             'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
             'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
             'source_events' => ['Modules\\Scheduling\\Domain\\Events\\PostponementRejected'],
+        ],
+        'schedule.change.requested' => [
+            'category' => 'schedule_change_request',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\ScheduleChangeRequested'],
+        ],
+        'schedule.change.applied' => [
+            'category' => 'session_changed',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\ScheduleChangeApplied'],
+        ],
+        'schedule.change.rejected' => [
+            'category' => 'schedule_change_request',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\ScheduleChangeRejected'],
         ],
         'teacher.apology.approved' => [
             'category' => 'teacher_workflow',
@@ -379,9 +398,10 @@ return [
             'makeup_end',
             'expires_at',
             'due_at',
+            'effective_from',
         ],
         'datetime_list_parameters' => ['schedule_times'],
-        'localized_parameters' => ['course_name', 'target_name'],
+        'localized_parameters' => ['course_name', 'target_name', 'current_schedule', 'proposed_schedule'],
     ],
 
     /*

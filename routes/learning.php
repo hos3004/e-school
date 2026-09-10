@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Learning\LearningAvailabilityController;
 use App\Http\Controllers\Learning\LearningController;
 use App\Http\Controllers\Learning\LearningEntryController;
+use App\Http\Controllers\Learning\LearningScheduleChangeController;
 use App\Http\Controllers\Learning\LearningServicesController;
 use App\Http\Controllers\Learning\LearningSessionController;
 use App\Http\Controllers\Learning\LearningSessionRequestsController;
@@ -28,6 +29,9 @@ Route::prefix('learn')->name('learning.')->group(function (): void {
     Route::post('teacher/postponements/{postponement}/approve', [TeacherPostponementResponseController::class, 'approve'])->whereUlid('postponement')->middleware('can:session.postpone.approve')->name('teacher.postponements.approve');
     Route::post('teacher/postponements/{postponement}/propose', [LearningSessionRequestsController::class, 'propose'])->whereUlid('postponement')->middleware('can:session.postpone.approve')->name('teacher.postponements.propose');
     Route::post('teacher/postponements/{postponement}/reject', [LearningSessionRequestsController::class, 'reject'])->whereUlid('postponement')->middleware('can:session.postpone.approve')->name('teacher.postponements.reject');
+    Route::post('teacher/schedules/{schedule}/change-requests', [LearningScheduleChangeController::class, 'store'])->whereUlid('schedule')->middleware('can:schedule.change.request')->name('teacher.schedule-changes.store');
+    Route::post('teacher/schedule-changes/{change}/withdraw', [LearningScheduleChangeController::class, 'withdraw'])->whereUlid('change')->middleware('can:schedule.change.request')->name('teacher.schedule-changes.withdraw');
+    Route::post('student/schedule-changes/{change}/respond', [LearningScheduleChangeController::class, 'respond'])->whereUlid('change')->middleware('can:schedule.change.respond')->name('student.schedule-changes.respond');
     Route::get('teacher/availability', [LearningAvailabilityController::class, 'index'])->middleware('can:staff.view')->name('teacher.availability');
     Route::post('teacher/availability', [LearningAvailabilityController::class, 'store'])->middleware('can:staff.availability.create')->name('teacher.availability.store');
     Route::delete('teacher/availability/{availability}', [LearningAvailabilityController::class, 'destroy'])->whereUlid('availability')->middleware('can:staff.view')->name('teacher.availability.destroy');

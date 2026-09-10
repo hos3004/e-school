@@ -26,6 +26,7 @@ return [
     'enrollment_frozen' => 'Enrollment frozen',
     'grade_published' => 'Grade published',
     'postponement_request' => 'Postponement request',
+    'schedule_change_request' => 'Permanent time change request',
     'attendance_recorded' => 'Attendance recorded',
     'assignment_due' => 'Assignment due soon',
     'monthly_report' => 'Monthly report',

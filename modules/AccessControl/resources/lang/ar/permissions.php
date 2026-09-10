@@ -165,6 +165,8 @@ return [
 
         'schedule.manage' => 'إدارة الجداول',
         'schedule.view' => 'عرض الجداول',
+        'schedule.change.request' => 'طلب تغيير الموعد الدائم للحصص',
+        'schedule.change.respond' => 'الرد على طلب تغيير الموعد الدائم',
 
         'session.assign_substitute' => 'إسناد معلم بديل',
         'session.cancel' => 'إلغاء حصة',

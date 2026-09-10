@@ -15,4 +15,8 @@ return [
     'postponement_alternative_proposed' => 'تم إرسال الموعد البديل.',
     'student_approved_postponement' => 'وافق الطالب على الموعد البديل الذي اقترحه المعلم.',
     'postponement_rejected' => 'تم رفض طلب التأجيل.',
+    'schedule_change_requested' => 'أُرسل طلب تغيير الموعد الدائم إلى طلاب الكورس، ولن يسري قبل قبولهم جميعًا.',
+    'schedule_change_accepted' => 'سُجّل قبولك للموعد الجديد.',
+    'schedule_change_declined' => 'سُجّل رفضك، والموعد الحالي مستمر كما هو.',
+    'schedule_change_withdrawn' => 'تم سحب طلب تغيير الموعد الدائم.',
 ];
