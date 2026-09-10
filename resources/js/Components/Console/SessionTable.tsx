@@ -34,6 +34,22 @@ export type ReportRow = {
     attended_minutes: number;
   }[];
 };
+
+type SessionReport = {
+  session: {
+    actual_start: string | null;
+    actual_end: string | null;
+    finalized_at: string | null;
+  };
+  recordings: {
+    id: string;
+    status: string;
+    status_label: string;
+    duration_minutes: number | null;
+    expires_at: string | null;
+    preview_url: string | null;
+  }[];
+};
 export default function SessionTable({
   rows,
   timezone,
@@ -258,6 +274,8 @@ function SessionDetail({
 }) {
   const t = useI18n();
   const dialog = useRef<HTMLDialogElement>(null);
+  const [report, setReport] = useState<SessionReport | null>(null);
+  const [reportFailed, setReportFailed] = useState(false);
   const { console: context } = usePage<
     AppPageProps & { console?: { navigation: { key: string }[] } }
   >().props;
@@ -276,6 +294,24 @@ function SessionDetail({
         previous.focus();
     };
   }, []);
+  useEffect(() => {
+    let active = true;
+    setReport(null);
+    setReportFailed(false);
+    fetch("/manage/sessions/" + row.id + "/report", {
+      headers: { Accept: "application/json" },
+    })
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((data: SessionReport) => {
+        if (active) setReport(data);
+      })
+      .catch(() => {
+        if (active) setReportFailed(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [row.id]);
   return (
     <dialog
       ref={dialog}
@@ -369,6 +405,22 @@ function SessionDetail({
               </small>
             </dd>
           </div>
+          {report?.session.actual_start && (
+            <div>
+              <dt>{t("console_dashboard.actual_time")}</dt>
+              <dd>
+                <bdi>
+                  {formatTime(report.session.actual_start, timezone)}
+                  {report.session.actual_end
+                    ? " – " + formatTime(report.session.actual_end, timezone)
+                    : ""}
+                </bdi>
+                <small>
+                  <bdi>{formatDate(report.session.actual_start, timezone)}</bdi>
+                </small>
+              </dd>
+            </div>
+          )}
           <div>
             <dt>{t("console_dashboard.planned_minutes")}</dt>
             <dd>
@@ -428,6 +480,51 @@ function SessionDetail({
         ) : (
           <p className="console-empty">
             {t("console_dashboard.empty_attendance")}
+          </p>
+        )}
+      </section>
+      <section className="console-session-section">
+        <h3>{t("console_dashboard.recording")}</h3>
+        {report === null ? (
+          <p className="console-empty">
+            {reportFailed
+              ? t("console_dashboard.recording_empty")
+              : t("console_dashboard.loading")}
+          </p>
+        ) : report.recordings.length ? (
+          <ul
+            className="console-stack"
+            style={{ listStyle: "none", padding: 0 }}
+          >
+            {report.recordings.map((recording) => (
+              <li key={recording.id}>
+                <span className="console-status">
+                  {recording.status_label}
+                </span>
+                {recording.duration_minutes !== null && (
+                  <small>
+                    {formatNumber(recording.duration_minutes)}{" "}
+                    {t("console.minutes")}
+                  </small>
+                )}{" "}
+                {recording.preview_url ? (
+                  <a
+                    className="console-link"
+                    href={recording.preview_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t("console_dashboard.recording_preview")}
+                  </a>
+                ) : (
+                  <small>{t("console_dashboard.recording_unavailable")}</small>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="console-empty">
+            {t("console_dashboard.recording_empty")}
           </p>
         )}
       </section>
