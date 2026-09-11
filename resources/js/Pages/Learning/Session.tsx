@@ -51,6 +51,21 @@ export default function Session({
     const timer = window.setInterval(() => setNow(Date.now()), 30000);
     return () => window.clearInterval(timer);
   }, []);
+  // العائد من الفصل يصل ومعه focus=report، فننقله إلى النموذج جاهزًا للكتابة
+  // بدل أن يهبط أعلى الصفحة ويبحث عنه — والتقرير هو أول ما يُطلب منه بعد الحصة.
+  useEffect(() => {
+    if (kind !== "teacher") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("focus") !== "report") return;
+    const section = document.getElementById("report");
+    if (!section) return;
+    section.scrollIntoView({ block: "start" });
+    section
+      .querySelector<HTMLSelectElement | HTMLTextAreaElement>(
+        "select:not(:disabled), textarea:not(:disabled)",
+      )
+      ?.focus({ preventScroll: true });
+  }, [kind]);
   const userId = usePage<AppPageProps>().props.auth.user?.id ?? "";
   const draft = restoreSessionDraft(
     userId,

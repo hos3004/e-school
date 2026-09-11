@@ -109,9 +109,12 @@ final class ClassroomJoinController
      * السابقة معًا، فنشتق الوجهة من اسم المسار الداخل بدل تثبيت بوابة واحدة.
      * تحويل البوابة الأساسية بعدها — إن كان مفعّلًا — يبقى شأن وسيطه هو.
      *
-     * بلا مرساة عمدًا: BigBlueButton يُلحق '?reason=...' نصيًا في آخر الرابط،
-     * فتصير '#report' هي '#report?reason=...' ولا تطابق أي عنصر. تحقّقنا من
-     * هذا على الخادم الفعلي. الوسيط الملحق نفسه لا تقرأه أي من صفحتَي العودة.
+     * وسيط استعلام لا مرساة: BigBlueButton يُلحق سبب الخروج بالرابط نصيًا،
+     * بـ'&' حين يوجد استعلام سلفًا و'?' حين لا يوجد — تحقّقنا من الحالتين على
+     * الخادم الفعلي. فمرساة '#report' كانت تصير '#report?reason=...' ولا تطابق
+     * أي عنصر، بينما 'focus=report' يصل سليمًا فتنقل الصفحة المعلم إلى النموذج.
+     *
+     * المسارات السابقة تعود إلى صفحتها بلا الوسيط لأن صفحتها لا تقرأه.
      */
     private function returnUrl(Request $request, string $session, bool $isTeacher): string
     {
@@ -123,6 +126,6 @@ final class ClassroomJoinController
 
         return $legacy
             ? route('portal.teacher.sessions.show', ['id' => $session])
-            : route('learning.teacher.sessions.show', ['session' => $session]);
+            : route('learning.teacher.sessions.show', ['session' => $session, 'focus' => 'report']);
     }
 }

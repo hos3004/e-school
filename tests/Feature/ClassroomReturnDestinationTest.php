@@ -57,7 +57,7 @@ final class ClassroomReturnDestinationTest extends TestCase
 
         $response->assertRedirect();
         $this->assertSame(
-            url('/learn/teacher/sessions/'.$session),
+            url('/learn/teacher/sessions/'.$session).'?focus=report',
             $this->returnDestination((string) $response->headers->get('Location')),
         );
     }
