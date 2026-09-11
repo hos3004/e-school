@@ -54,6 +54,7 @@ final class ClassroomJoinController
             role: JoinRole::Moderator,
             isFrozen: false,
             isTeacher: true,
+            returnUrl: $this->returnUrl($request, $session, isTeacher: true),
         ));
     }
 
@@ -96,6 +97,32 @@ final class ClassroomJoinController
             role: JoinRole::Viewer,
             isFrozen: $row->frozen_at !== null,
             isTeacher: false,
+            returnUrl: $this->returnUrl($request, $session, isTeacher: false),
         ));
+    }
+
+    /**
+     * وجهة العودة بعد مغادرة الفصل أو انتهاء الحصة.
+     *
+     * المعلم يعود إلى صفحة الحصة — وفيها نموذج التقرير — بدل صفحة المزوّد،
+     * والطالب يعود إلى واجهته. هذا المتحكّم يخدم بوابة /learn والمسارات
+     * السابقة معًا، فنشتق الوجهة من اسم المسار الداخل بدل تثبيت بوابة واحدة.
+     * تحويل البوابة الأساسية بعدها — إن كان مفعّلًا — يبقى شأن وسيطه هو.
+     *
+     * بلا مرساة عمدًا: BigBlueButton يُلحق '?reason=...' نصيًا في آخر الرابط،
+     * فتصير '#report' هي '#report?reason=...' ولا تطابق أي عنصر. تحقّقنا من
+     * هذا على الخادم الفعلي. الوسيط الملحق نفسه لا تقرأه أي من صفحتَي العودة.
+     */
+    private function returnUrl(Request $request, string $session, bool $isTeacher): string
+    {
+        $legacy = str_starts_with((string) $request->route()?->getName(), 'portal.');
+
+        if (!$isTeacher) {
+            return route($legacy ? 'portal.student.dashboard' : 'learning.student.dashboard');
+        }
+
+        return $legacy
+            ? route('portal.teacher.sessions.show', ['id' => $session])
+            : route('learning.teacher.sessions.show', ['session' => $session]);
     }
 }

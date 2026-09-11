@@ -48,6 +48,9 @@ interface VirtualClassroomProvider
      *
      * الرابط شخصي: يحمل هوية المشارك ودوره (moderator / viewer)،
      * ولا يجوز مشاركته أو تخزينه أو إرساله في إشعار.
+     *
+     * على كل تنفيذ أن يحترم JoinRequest::$returnUrl عند وجوده فيعيد المشارك
+     * إليه بعد خروجه أو انتهاء الحصة، لأن وجهة العودة تختلف بين المعلم والطالب.
      */
     public function generateJoinUrl(JoinRequest $request): string;
 

@@ -24,6 +24,7 @@ final readonly class GenerateJoinUrlAction
         string $displayName,
         JoinRole $role,
         bool $isFrozen = false,
+        ?string $returnUrl = null,
     ): string {
         if ($isFrozen) {
             throw BusinessRuleViolation::make(
@@ -58,6 +59,7 @@ final readonly class GenerateJoinUrlAction
             role: $role,
             rolePassword: $password,
             externalUserId: $userId,
+            returnUrl: $returnUrl,
         );
 
         return $this->provider->generateJoinUrl($request);

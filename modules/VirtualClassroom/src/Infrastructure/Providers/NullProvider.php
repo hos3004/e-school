@@ -70,10 +70,11 @@ final class NullProvider implements VirtualClassroomProvider
             $request->externalUserId ?? '',
         ]));
 
-        return 'https://virtual-classroom.test/join?'.http_build_query([
+        return 'https://virtual-classroom.test/join?'.http_build_query(array_filter([
             'meeting' => $request->externalId,
             'token' => $token,
-        ]);
+            'logoutURL' => $request->returnUrl,
+        ], static fn (?string $value): bool => $value !== null && $value !== ''));
     }
 
     public function isRunning(string $externalId): bool

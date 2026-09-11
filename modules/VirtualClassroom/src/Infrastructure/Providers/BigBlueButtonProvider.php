@@ -90,6 +90,12 @@ final class BigBlueButtonProvider implements SupportsWebhookRegistration, Virtua
             $params['userID'] = $request->externalUserId;
         }
 
+        // logoutURL على مستوى join وليس create: الوجهة تختلف بين المعلم والطالب
+        // في نفس الحصة، وقيمة create واحدة للجميع فلا تصلح للتفريق بينهما.
+        if ($request->returnUrl !== null && $request->returnUrl !== '') {
+            $params['logoutURL'] = $request->returnUrl;
+        }
+
         return $this->buildUrl('join', $params);
     }
 

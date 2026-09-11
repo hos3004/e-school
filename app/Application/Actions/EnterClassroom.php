@@ -36,6 +36,7 @@ final readonly class EnterClassroom
         JoinRole $role,
         bool $isFrozen,
         bool $isTeacher,
+        ?string $returnUrl = null,
     ): string {
         $status = SessionStatus::tryFrom((string) $row->status);
 
@@ -78,6 +79,7 @@ final readonly class EnterClassroom
             displayName: $displayName !== '' ? $displayName : __('virtualclassroom::messages.default_participant_name'),
             role: $role,
             isFrozen: $isFrozen,
+            returnUrl: $returnUrl,
         );
     }
 

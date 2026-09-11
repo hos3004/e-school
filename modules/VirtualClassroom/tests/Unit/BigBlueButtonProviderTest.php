@@ -100,6 +100,50 @@ it('generates a personal signed join URL without a network request', function ()
     Http::assertNothingSent();
 });
 
+it('signs the return destination into the join URL so each role leaves to its own page', function (): void {
+    Http::fake();
+    $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
+    $returnUrl = 'https://eschool.test/learn/teacher/sessions/01J0';
+    $url = $provider->generateJoinUrl(new JoinRequest(
+        externalId: 'meeting-1',
+        displayName: 'Teacher Name',
+        role: JoinRole::Moderator,
+        rolePassword: 'moderator-secret',
+        externalUserId: 'teacher-1',
+        returnUrl: $returnUrl,
+    ));
+
+    $query = (string) parse_url($url, PHP_URL_QUERY);
+    $checksum = substr($query, (int) strrpos($query, 'checksum=') + 9);
+    $unsignedQuery = substr($query, 0, (int) strrpos($query, '&checksum='));
+    parse_str($query, $parsed);
+
+    // التوقيع محسوب على النص المرسل فعلًا؛ لو لم تدخل logoutURL في الـchecksum
+    // لرفض المزوّد الرابط كله بدل أن يتجاهل الوجهة فقط.
+    expect($parsed['logoutURL'])->toBe($returnUrl)
+        ->and(hash_equals(sha1('join'.$unsignedQuery.'api-secret'), $checksum))->toBeTrue();
+
+    Http::assertNothingSent();
+});
+
+it('omits the return destination when the caller has none', function (): void {
+    Http::fake();
+    $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
+    $url = $provider->generateJoinUrl(new JoinRequest(
+        externalId: 'meeting-1',
+        displayName: 'Student Name',
+        role: JoinRole::Viewer,
+        rolePassword: 'viewer-secret',
+        externalUserId: 'student-1',
+    ));
+
+    parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+    expect($query)->not->toHaveKey('logoutURL');
+
+    Http::assertNothingSent();
+});
+
 it('converts meeting details and recordings to domain value objects', function (): void {
     Http::fake(function (ClientRequest $request) {
         return match (true) {
