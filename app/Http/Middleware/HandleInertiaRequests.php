@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Http\Controllers\Console\Support\ConsoleContext;
+use App\Support\PageTranslations;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Lang;
 use Inertia\Middleware;
 use Modules\AccessControl\Domain\Contracts\AccessControlQuerier;
 use Shared\Support\Locales;
@@ -19,7 +18,7 @@ final class HandleInertiaRequests extends Middleware
     ) {}
 
     /**
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     public function share(Request $request): array
     {
@@ -63,49 +62,7 @@ final class HandleInertiaRequests extends Middleware
             'direction' => in_array($locale, (array) config('app.rtl_locales', ['ar']), true)
                 ? 'rtl'
                 : 'ltr',
-            'translations' => $this->translations($locale),
+            new PageTranslations,
         ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function translations(string $locale): array
-    {
-        $lines = Lang::get('portal', [], $locale);
-
-        if (!is_array($lines)) {
-            $lines = Lang::get('portal', [], (string) config('app.fallback_locale', 'en'));
-        }
-
-        if (!is_array($lines)) {
-            return [];
-        }
-
-        $translations = Arr::dot($lines);
-        $marketing = Lang::get('marketing', [], $locale);
-
-        if (!is_array($marketing)) {
-            $marketing = Lang::get('marketing', [], (string) config('app.fallback_locale', 'en'));
-        }
-
-        if (is_array($marketing)) {
-            $translations = [
-                ...$translations,
-                ...Arr::dot(['marketing' => $marketing]),
-            ];
-        }
-
-        foreach (['teacher_visibility', 'profile_completion', 'session_pay', 'console', 'console_dashboard', 'console_sessions', 'console_group', 'console_directory', 'console_profiles', 'console_people', 'console_courses', 'console_quran', 'console_settings', 'console_registration', 'console_followup', 'console_dues', 'learning', 'learning_library', 'public_registration'] as $namespace) {
-            $dictionary = Lang::get($namespace, [], $locale);
-            if (is_array($dictionary)) {
-                $translations = [...$translations, ...Arr::dot([$namespace => $dictionary])];
-            }
-        }
-
-        return array_map(
-            static fn (mixed $value): string => (string) $value,
-            $translations,
-        );
     }
 }

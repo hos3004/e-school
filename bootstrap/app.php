@@ -6,6 +6,7 @@ use App\Http\Middleware\ApplySessionPayDurations;
 use App\Http\Middleware\EnsureConsoleEnabled;
 use App\Http\Middleware\EnsureProfileCompleted;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\MeasureRequestPerformance;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // controls use the API routes. Sanctum must restore that session for
         // configured first-party domains before auth:sanctum is evaluated.
         $middleware->statefulApi();
+        $middleware->append(MeasureRequestPerformance::class);
 
         $middleware->web(append: [
             SetLocale::class,

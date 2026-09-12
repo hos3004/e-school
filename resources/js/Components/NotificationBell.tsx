@@ -1,7 +1,9 @@
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useI18n } from "@/lib/i18n";
+import { isExpiredSession, startNotificationPolling } from "@/lib/notificationPolling";
+import type { AppPageProps } from "@/types";
 
 interface NotificationItem {
   id: string;
@@ -13,10 +15,6 @@ interface NotificationItem {
 
 interface NotificationListResponse {
   data?: NotificationItem[];
-}
-
-interface UnreadCountResponse {
-  data?: { unread_count?: number };
 }
 
 interface Props {
@@ -31,6 +29,9 @@ export default function NotificationBell({
   notificationsUrl = "/notifications",
 }: Props) {
   const t = useI18n();
+  const { auth } = usePage<AppPageProps>().props;
+  const userId = auth.user?.id;
+  const stopPolling = useRef<() => void>(() => {});
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -40,19 +41,11 @@ export default function NotificationBell({
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const loadCount = useCallback(async () => {
-    try {
-      const response = await fetch("/api/notifications/unread-count", {
-        credentials: "same-origin",
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) return;
-
-      const payload = (await response.json()) as UnreadCountResponse;
-      setUnreadCount(Math.max(0, Number(payload.data?.unread_count ?? 0)));
-    } catch {
-      // Polling is a fallback; a temporary network failure must not disrupt navigation.
-    }
+  const expireSession = useCallback(() => {
+    stopPolling.current();
+    setUnreadCount(0);
+    setItems([]);
+    setHasError(true);
   }, []);
 
   const loadNotifications = useCallback(async () => {
@@ -64,6 +57,7 @@ export default function NotificationBell({
         credentials: "same-origin",
         headers: { Accept: "application/json" },
       });
+      if (isExpiredSession(response.status)) expireSession();
       if (!response.ok) throw new Error("notification-list-failed");
 
       const payload = (await response.json()) as NotificationListResponse;
@@ -73,14 +67,14 @@ export default function NotificationBell({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [expireSession]);
 
   useEffect(() => {
-    void loadCount();
-    const interval = window.setInterval(() => void loadCount(), 30_000);
-
-    return () => window.clearInterval(interval);
-  }, [loadCount]);
+    if (!userId) return;
+    const stop = startNotificationPolling(setUnreadCount, expireSession);
+    stopPolling.current = stop;
+    return stop;
+  }, [userId, expireSession]);
 
   useEffect(() => {
     const closeOnOutsideClick = (event: MouseEvent) => {
@@ -148,6 +142,7 @@ export default function NotificationBell({
         "X-CSRF-TOKEN": csrfToken(),
       },
     });
+    if (isExpiredSession(response.status)) expireSession();
     if (!response.ok) return;
 
     const readAt = new Date().toISOString();

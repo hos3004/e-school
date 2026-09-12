@@ -275,3 +275,23 @@ idempotent فلا يُسجَّل شيء عند إرسال بلا تغيير.
 
 الجولة المعزولة الكاملة: 1456 اختبارًا و11943 تأكيدًا ناجحة. تُحقق من أن اختبار منع
 التصعيد الذاتي يفشل فعلًا عند إزالة حارسه.
+
+
+## 2026-09-12 — Platform performance (SCHOOL-WEB)
+
+- Candidate branch: codex/platform-performance-20260912, baseline 154080b.
+- Added hashed-asset gzip/immutable caching, component-scoped lazy translations,
+  correct first-party Sanctum origins, visibility/session-aware notification polling,
+  safe request/query timing, and PHP-FPM slow traces with log rotation.
+- Validation: frontend build/lint/types and PHP lint passed; 99 component/import
+  translation audit passed; 61 focused PHP tests / 786 assertions; 6 polling browser
+  tests and 8 real-login browser tests across desktop/mobile passed.
+- Full PHP run: 1468 passed, 2 failed due to tests starting before the Vite manifest
+  existed. Both affected suites and architecture were rerun after build:
+  95 passed / 2733 assertions. No unresolved functional test failures.
+- PHPStan has 875 pre-existing errors in both baseline and candidate; zero added
+  errors by file/message/identifier comparison. This release does not claim that
+  the repository-wide zero-error/CI gate is green.
+- Production pre-release measurement: login HTML 531,814 bytes; login JS/CSS
+  dependency set 583,526 bytes without gzip or Cache-Control.
+- Deployment, runtime controls and rollback: docs/platform-performance-20260912.md.
