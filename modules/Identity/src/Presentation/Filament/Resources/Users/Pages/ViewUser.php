@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -18,6 +19,7 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Modules\AccessControl\Domain\Contracts\AccessControlQuerier;
+use Modules\AccessControl\Domain\Contracts\DirectPermissionGateway;
 use Modules\AccessControl\Domain\ValueObjects\RoleData;
 use Modules\Identity\Application\Actions\ChangeUserStatus;
 use Modules\Identity\Domain\Contracts\AvatarQueries;
@@ -76,7 +78,99 @@ final class ViewUser extends ViewRecord
                     $this->userRecord()->refresh();
                     Notification::make()->title(__('identity::admin.status_changed'))->success()->send();
                 }),
+            Action::make('optional_access')
+                ->label(__('identity::admin.optional_access_manage'))
+                ->icon('heroicon-o-key')
+                ->color('primary')
+                // لا يعدّل أحد صلاحياته الاختيارية بنفسه، وإلا صارت البوابة تصعيدًا ذاتيًا.
+                ->visible(fn (): bool => self::optionalPermissions() !== []
+                    && $this->userRecord()->getKey() !== auth()->id()
+                    && (auth()->user()?->can('accesscontrol.permissions.grant_direct') ?? false))
+                ->fillForm(fn (): array => $this->optionalAccessForm())
+                ->schema(fn (): array => [
+                    ...array_map(
+                        static fn (string $permission): Toggle => Toggle::make(self::toggleKey($permission))
+                            ->label(self::permissionLabel($permission)),
+                        self::optionalPermissions(),
+                    ),
+                    Textarea::make('reason')
+                        ->label(__('identity::labels.reason'))
+                        ->helperText(__('identity::admin.optional_access_help'))
+                        ->maxLength(2000)
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    $gateway = app(DirectPermissionGateway::class);
+                    $user = $this->userRecord();
+                    $modelType = app(UserQueryService::class)->modelType();
+                    $modelId = (string) $user->getKey();
+                    $organizationId = (string) $user->organization_id;
+                    $actorId = (string) auth()->id();
+                    $reason = (string) ($data['reason'] ?? '');
+                    $changed = 0;
+
+                    try {
+                        foreach (self::optionalPermissions() as $permission) {
+                            $changed += (int) ((bool) ($data[self::toggleKey($permission)] ?? false)
+                                ? $gateway->grantIfMissing($permission, $modelType, $modelId, $organizationId, $actorId, $reason)
+                                : $gateway->revokeIfPresent($permission, $modelType, $modelId, $organizationId, $actorId, $reason));
+                        }
+                    } catch (BusinessRuleViolation $violation) {
+                        Notification::make()->title($violation->getMessage())->danger()->send();
+
+                        return;
+                    }
+
+                    Notification::make()
+                        ->title(__($changed === 0
+                            ? 'identity::admin.optional_access_unchanged'
+                            : 'identity::admin.optional_access_saved'))
+                        ->success()
+                        ->send();
+                }),
         ];
+    }
+
+    /**
+     * الصلاحيات الاختيارية المعلنة — قائمة سياسة في الإعدادات لا في الكود.
+     *
+     * @return list<string>
+     */
+    private static function optionalPermissions(): array
+    {
+        return array_values(array_filter(
+            (array) config('accesscontrol.optional_direct_permissions', []),
+            static fn (mixed $name): bool => is_string($name) && $name !== '',
+        ));
+    }
+
+    /** مفتاح حقل النموذج: النقطة تعني التفرّع في Filament فتُستبدل. */
+    private static function toggleKey(string $permission): string
+    {
+        return 'grant_'.str_replace('.', '_', $permission);
+    }
+
+    private static function permissionLabel(string $permission): string
+    {
+        $key = 'identity::admin.optional_access_labels.'.str_replace('.', '_', $permission);
+
+        return trans()->has($key) ? __($key) : $permission;
+    }
+
+    /** @return array<string, bool> */
+    private function optionalAccessForm(): array
+    {
+        $querier = app(AccessControlQuerier::class);
+        $modelType = app(UserQueryService::class)->modelType();
+        $modelId = (string) $this->userRecord()->getKey();
+        $state = [];
+
+        foreach (self::optionalPermissions() as $permission) {
+            $state[self::toggleKey($permission)] = $querier
+                ->modelHasDirectPermission($modelType, $modelId, $permission);
+        }
+
+        return $state;
     }
 
     public function infolist(Schema $schema): Schema
@@ -130,6 +224,28 @@ final class ViewUser extends ViewRecord
                                 ->schema([
                                     TextEntry::make('name')->label(__('identity::admin.role')),
                                     TextEntry::make('scope')->label(__('identity::admin.role_scope'))->badge(),
+                                ])
+                                ->columns(2),
+                            RepeatableEntry::make('optional_access_hub')
+                                ->label(__('identity::admin.optional_access'))
+                                ->placeholder(__('identity::admin.empty'))
+                                ->getStateUsing(function (): array {
+                                    // الحالة تُقرأ مرة واحدة، لا استعلام لكل صف في حلقة العرض.
+                                    $state = $this->optionalAccessForm();
+
+                                    return array_map(
+                                        static fn (string $permission): array => [
+                                            'permission' => self::permissionLabel($permission),
+                                            'state' => ($state[self::toggleKey($permission)] ?? false)
+                                                ? __('identity::admin.optional_access_granted')
+                                                : __('identity::admin.optional_access_withheld'),
+                                        ],
+                                        self::optionalPermissions(),
+                                    );
+                                })
+                                ->schema([
+                                    TextEntry::make('permission')->label(__('identity::admin.optional_access_permission')),
+                                    TextEntry::make('state')->label(__('identity::admin.optional_access_state'))->badge(),
                                 ])
                                 ->columns(2),
                         ]),
