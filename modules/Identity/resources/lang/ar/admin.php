@@ -29,6 +29,7 @@ return [
         'teacher' => 'معلم',
         'student' => 'طالب',
         'guardian' => 'ولي أمر',
+        'supervisor' => 'مشرف الجودة والمتابعة',
         'auditor' => 'مراجع',
     ],
 ];

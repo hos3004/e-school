@@ -55,6 +55,7 @@ return [
         'finance_supervisor' => 'مشرف الشؤون المالية',
         'communications_officer' => 'مسؤول التواصل',
         'registrar' => 'مسؤول التسجيل',
+        'supervisor' => 'مشرف الجودة والمتابعة',
         'auditor' => 'المدقّق',
         'teacher' => 'معلم',
         'student' => 'طالب',
@@ -104,6 +105,7 @@ return [
 
         'content.manage' => 'إدارة المحتوى التعليمي',
         'content.view' => 'عرض المحتوى التعليمي',
+        'contact.pii.view' => 'عرض بيانات التواصل الشخصية',
         'course.manage' => 'إدارة المواد',
 
         'enrollment.create' => 'إنشاء قيد دراسي',

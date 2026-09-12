@@ -239,3 +239,20 @@
 ### 2026-09-10 — Schedule-change production deployment
 
 Published `f10ac34` to SCHOOL-WEB with verified database/code backup, both migrations, built assets and 18 missing notification templates. Full isolated regression: 1428 passed / 11801 assertions. Live HTTP/service/data-count checks pass. Static-analysis and browser limitations are recorded in `docs/uat/2026-09-10-schedule-change-deployment.md`.
+
+
+### 2026-09-12 — دور المشرف `supervisor` وصلاحية `contact.pii.view`
+
+أُضيف دور `supervisor` لإدارة الجودة والمتابعة: قراءة وتصدير تقارير بلا أي صلاحية فعل،
+وبلا `session.join` فلا يدخل الاجتماعات الافتراضية وإن رأى بيانات الحصة ومن حضرها.
+ثلاث صلاحيات تُمنح للحساب لا للدور حسب حاجة كل مشرف: `payroll.view` للمالي،
+`contact.pii.view` لبيانات التواصل، `recording.view` للتسجيلات.
+
+`contact.pii.view` صلاحية جديدة تحكم `phone` و`email` فقط، والحجب على الخادم في
+`PeopleController` فلا تصل الحقول للعميل أصلًا. مُنحت لكل دور كان يراها قبل الإضافة
+(`platform_admin`، `academic_supervisor`، `finance_supervisor`، `registrar`،
+`communications_officer`، `auditor`) فلم يتغير سلوك أي حساب قائم.
+
+الجولة المعزولة الكاملة: 1450 اختبارًا و11905 تأكيدات ناجحة. Pint نظيف، وPHPStan على
+الملفات المعدّلة بلا أخطاء (الأساس العام 875 خطأً قائمًا قبل التغيير وبعده بلا زيادة).
+التفاصيل في `docs/06-permissions-matrix.md` القسم 7.

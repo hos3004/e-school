@@ -29,6 +29,7 @@ return [
         'teacher' => 'Teacher',
         'student' => 'Student',
         'guardian' => 'Guardian',
+        'supervisor' => 'Quality & follow-up supervisor',
         'auditor' => 'Auditor',
     ],
 ];

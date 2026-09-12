@@ -75,10 +75,11 @@ final class PeopleController extends Controller
         $accounts = $this->accounts->findMany($organizationId, $userIds);
         $summaries = $this->users->summariesByIds($userIds);
         $canEdit = $request->user()?->can($this->editPermission($kind)) ?? false;
+        $canSeeContact = $request->user()?->can('contact.pii.view') ?? false;
 
         return Inertia::render('Console/People/Index', [
             'kind' => $kind,
-            'people' => $page->through(function ($profile) use ($accounts, $summaries, $kind, $canEdit): array {
+            'people' => $page->through(function ($profile) use ($accounts, $summaries, $kind, $canEdit, $canSeeContact): array {
                 $account = $accounts[(string) $profile->user_id] ?? null;
                 $summary = $summaries[(string) $profile->user_id] ?? null;
 
@@ -87,7 +88,7 @@ final class PeopleController extends Controller
                     'code' => $this->code($profile),
                     'name' => $account === null ? $this->code($profile) : $account->name,
                     'username' => $account?->username,
-                    'phone' => $account?->phone,
+                    'phone' => $canSeeContact ? $account?->phone : null,
                     'status' => $profile->trashed() ? __('console_people.archived')
                         : ($account === null ? __('console_people.account_unavailable') : __('identity::status.'.$account->status)),
                     'timezone' => $summary?->timezone,
@@ -167,10 +168,16 @@ final class PeopleController extends Controller
         if (!$request->user()?->can('guardian.view')) {
             unset($hub['guardians']);
         }
+        $person = $this->person($record, $organizationId);
+        if (!$request->user()?->can('contact.pii.view')) {
+            $hub = $this->withoutContactDetails($hub);
+            $person['email'] = null;
+            $person['phone'] = null;
+        }
 
         return Inertia::render('Console/People/Show', [
             'kind' => $kind,
-            'person' => [...$this->person($record, $organizationId), 'avatar_url' => app(PersonProfileData::class)->identity($organizationId, (string) $record->user_id)['avatarUrl'] ?? null],
+            'person' => [...$person, 'avatar_url' => app(PersonProfileData::class)->identity($organizationId, (string) $record->user_id)['avatarUrl'] ?? null],
             'financialVisibility' => $record instanceof StaffProfile ? [
                 'visible' => $record->financials_visible,
                 'updateUrl' => !$record->trashed() && $request->user()?->can('staff.contract.update') ? route('console.teachers.financial-visibility', ['profile' => $record->id]) : null,
@@ -302,6 +309,37 @@ final class PeopleController extends Controller
             'optionsUrl' => route('console.'.$kind.'.options'),
             'usernameUrl' => route('console.'.$kind.'.usernames'),
         ];
+    }
+
+    /**
+     * يحجب بيانات التواصل على الخادم، فلا تصل للعميل أصلًا بدل إخفائها في الواجهة.
+     *
+     * @param array<string, mixed> $hub
+     * @return array<string, mixed>
+     */
+    private function withoutContactDetails(array $hub): array
+    {
+        foreach (['account' => ['email', 'phone'], 'guardians' => ['phone']] as $section => $fields) {
+            if (!is_array($hub[$section] ?? null)) {
+                continue;
+            }
+
+            $hub[$section] = array_map(static function (mixed $row) use ($fields): mixed {
+                if (!is_array($row)) {
+                    return $row;
+                }
+
+                foreach ($fields as $field) {
+                    if (array_key_exists($field, $row)) {
+                        $row[$field] = null;
+                    }
+                }
+
+                return $row;
+            }, $hub[$section]);
+        }
+
+        return $hub;
     }
 
     /** @return array<string, mixed> */

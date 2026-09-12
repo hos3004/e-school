@@ -281,6 +281,40 @@ final class ConsolePeopleTest extends TestCase
             ->where('backUrl', route('console.students.index', ['search' => 'Name', 'archived' => '0', 'page' => '2'])));
     }
 
+    public function test_contact_details_are_withheld_from_the_server_without_the_contact_permission(): void
+    {
+        [$organization, $actor] = $this->context();
+        $student = User::factory()->inOrganization((string) $organization->id)->create([
+            'name' => 'Contact Student', 'email' => 'contact.student@example.test', 'phone' => '+201001234567',
+        ]);
+        $profile = StudentProfile::factory()->create([
+            'organization_id' => $organization->id, 'user_id' => $student->id,
+        ]);
+
+        // بلا الصلاحية: الحقول لا تغادر الخادم أصلًا، لا تُخفى في الواجهة.
+        Gate::define('contact.pii.view', static fn (): bool => false);
+
+        $this->actingAs($actor)->get('/manage/students')->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('people.data.0.phone', null));
+        $this->get('/manage/students/'.$profile->id)->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('person.phone', null)
+                ->where('person.email', null)
+                ->where('hub.account.0.phone', null)
+                ->where('hub.account.0.email', null));
+
+        // مع الصلاحية: تعود كاملة للأدوار التي تحتاجها.
+        Gate::define('contact.pii.view', static fn (): bool => true);
+
+        $this->get('/manage/students')->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('people.data.0.phone', '+201001234567'));
+        $this->get('/manage/students/'.$profile->id)->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('person.phone', '+201001234567')
+                ->where('person.email', 'contact.student@example.test')
+                ->where('hub.account.0.phone', '+201001234567'));
+    }
+
     /** @return array{Organization, User, Program, Course, string, string} */
     private function context(): array
     {

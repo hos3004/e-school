@@ -179,6 +179,7 @@ final class AccessControlSeeder extends Seeder
             'identity.users.view_any', 'identity.users.view',
             'identity.users.create', 'identity.users.update',
             'identity.users.delete', 'identity.users.change_status',
+            'contact.pii.view',
             'user.impersonate',
         ],
         'AccessControl' => [
@@ -203,7 +204,7 @@ final class AccessControlSeeder extends Seeder
         'academic_supervisor' => [
             'admin.panel.access',
             'identity.users.view_any', 'identity.users.view', 'identity.users.update',
-            'identity.users.change_status',
+            'identity.users.change_status', 'contact.pii.view',
             'accesscontrol.roles.view_any', 'accesscontrol.roles.view',
             'accesscontrol.permissions.view_any', 'accesscontrol.permissions.view',
             'student.view', 'student.view.any', 'student.update', 'guardian.view',
@@ -234,7 +235,7 @@ final class AccessControlSeeder extends Seeder
         ],
 
         'finance_supervisor' => [
-            'admin.panel.access',
+            'admin.panel.access', 'contact.pii.view',
             'student.view', 'student.view.any', 'staff.view', 'staff.view.any', 'staff.contract.view',
             'enrollment.view', 'group.view', 'session.view',
             'attendance.view', 'grade.view',
@@ -247,7 +248,7 @@ final class AccessControlSeeder extends Seeder
         'registrar' => [
             'admin.panel.access',
             'identity.users.view_any', 'identity.users.view', 'identity.users.create',
-            'identity.users.update', 'identity.users.change_status',
+            'identity.users.update', 'identity.users.change_status', 'contact.pii.view',
             'student.view', 'student.view.any', 'student.create', 'student.update',
             'staff.view.any',
             'guardian.view', 'guardian.link',
@@ -265,7 +266,7 @@ final class AccessControlSeeder extends Seeder
         ],
 
         'communications_officer' => [
-            'admin.panel.access',
+            'admin.panel.access', 'contact.pii.view',
             'identity.users.view_any', 'identity.users.view',
             'student.view', 'student.view.any', 'guardian.view', 'group.view', 'session.view',
             'attendance.view', 'enrollment.view',
@@ -316,7 +317,7 @@ final class AccessControlSeeder extends Seeder
 
         // مراجع: قراءة شاملة بلا أي تعديل
         'auditor' => [
-            'admin.panel.access',
+            'admin.panel.access', 'contact.pii.view',
             'identity.users.view_any', 'identity.users.view',
             'accesscontrol.roles.view_any', 'accesscontrol.roles.view',
             'accesscontrol.permissions.view_any', 'accesscontrol.permissions.view',
@@ -328,6 +329,28 @@ final class AccessControlSeeder extends Seeder
             'grade.view', 'session_report.view',
             'payroll.view', 'report.view', 'report.export',
             'audit.view',
+        ],
+
+        /*
+         * مشرف الجودة والمتابعة: يرى ويصدّر، ولا يتخذ أي إجراء.
+         *
+         * الحزمة هنا هي الحد الأدنى المشترك. ثلاث صلاحيات تُمنح للحساب وحده
+         * عند إنشائه حسب حاجته، ولذلك هي خارج الحزمة عمدًا:
+         *   payroll.view      → الجانب المالي ومستحقات المعلمين
+         *   contact.pii.view  → بيانات التواصل الشخصية (هاتف وبريد)
+         *   recording.view    → تسجيلات الحصص
+         *
+         * session.join غير مذكورة: المشرف لا يدخل الاجتماعات الافتراضية إطلاقًا.
+         */
+        'supervisor' => [
+            'admin.panel.access',
+            'student.view', 'student.view.any', 'guardian.view',
+            'staff.view', 'staff.view.any',
+            'enrollment.view', 'group.view', 'content.view',
+            'schedule.view', 'session.view', 'attendance.view',
+            'grade.view', 'session_report.view',
+            'discipline.view_any',
+            'report.view', 'report.export',
         ],
     ];
 

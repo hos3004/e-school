@@ -38,6 +38,7 @@ it('seeds the base permission matrix and system roles idempotently', function ()
         'teacher',
         'student',
         'guardian',
+        'supervisor',
         'auditor',
     ];
 
@@ -64,6 +65,7 @@ it('seeds the base permission matrix and system roles idempotently', function ()
         'finance_supervisor',
         'registrar',
         'communications_officer',
+        'supervisor',
         'auditor',
     ];
     $staffViewAnyRoles = [
@@ -71,6 +73,7 @@ it('seeds the base permission matrix and system roles idempotently', function ()
         'academic_supervisor',
         'finance_supervisor',
         'registrar',
+        'supervisor',
         'auditor',
     ];
 
@@ -158,4 +161,62 @@ it('seeds the base permission matrix and system roles idempotently', function ()
     }
 
     app()->setLocale($originalLocale);
+});
+
+it('keeps the supervisor role read-only and leaves finance, contact and recordings as per-account grants', function (): void {
+    (new AccessControlSeeder)->run();
+
+    $supervisor = Role::query()
+        ->whereNull('organization_id')
+        ->where('name', 'supervisor')
+        ->where('is_system', true)
+        ->firstOrFail();
+    $granted = $supervisor->permissions()->pluck('name')->all();
+
+    // حزمة القراءة المعلنة. أي اسم خارجها يسقط الاختبار، فلا تتسرب صلاحية فعل للدور.
+    $allowed = [
+        'admin.panel.access',
+        'student.view', 'student.view.any', 'guardian.view',
+        'staff.view', 'staff.view.any',
+        'enrollment.view', 'group.view', 'content.view',
+        'schedule.view', 'session.view', 'attendance.view',
+        'grade.view', 'session_report.view',
+        'discipline.view_any',
+        'report.view', 'report.export',
+    ];
+
+    sort($granted);
+    sort($allowed);
+
+    expect($granted)->toBe($allowed);
+
+    // الثلاث الاختيارية تُمنح للحساب وحده عند إنشائه، لا عبر الدور.
+    foreach (['payroll.view', 'contact.pii.view', 'recording.view', 'staff.contract.view'] as $optional) {
+        expect($granted)->not->toContain($optional);
+    }
+
+    // المشرف لا يدخل الاجتماعات الافتراضية إطلاقًا.
+    expect($granted)->not->toContain('session.join');
+});
+
+it('grants contact.pii.view to every role that already reads contact details', function (): void {
+    (new AccessControlSeeder)->run();
+
+    foreach (['academic_supervisor', 'finance_supervisor', 'registrar', 'communications_officer', 'auditor'] as $roleName) {
+        $role = Role::query()
+            ->whereNull('organization_id')
+            ->where('name', $roleName)
+            ->firstOrFail();
+
+        expect($role->permissions()->where('name', 'contact.pii.view')->exists())
+            ->toBeTrue();
+    }
+
+    $platformAdmin = Role::query()
+        ->whereNull('organization_id')
+        ->where('name', 'platform_admin')
+        ->firstOrFail();
+
+    expect($platformAdmin->permissions()->where('name', 'contact.pii.view')->exists())
+        ->toBeTrue();
 });

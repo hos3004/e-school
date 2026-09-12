@@ -20,6 +20,7 @@
 | `teacher` | معلم | 16 |
 | `student` | طالب | ~200 |
 | `guardian` | ولي أمر | ~100 |
+| `supervisor` | مشرف الجودة والمتابعة — يرى ويصدّر التقارير، بلا أي إجراء | حسب الحاجة |
 | `auditor` | مراجع — قراءة فقط شاملة، بلا أي تعديل | حسب الحاجة |
 
 **التركيب مسموح:** شخص قد يحمل `teacher` و `guardian` معًا. الصلاحيات تُجمع.
@@ -326,3 +327,47 @@ if ($user->hasRole('teacher')) { ... }
 Pending teaching assignments: administrative read uses schedule.view; changes use schedule.manage scoped to organization. Teacher learning roster exposes only assigned students via the Scheduling public DTO query. Links are soft-deleted and audited; no lesson time is fabricated.
 
 Teacher financial visibility: console teacher profile PUT /manage/teachers/{profile}/financial-visibility requires admin.panel.access, staff.contract.update and organization-scoped StaffProfilePolicy::update, with reason and audit. Hidden teacher accounts are denied payroll.view, payroll.export and staff.contract.view; admin.panel.access holders retain their authorized administrative financial access. No new role or permission is introduced.
+
+---
+
+## 7. دور المشرف `supervisor` — قراءة وتصدير بلا إجراء — 2026-09-12
+
+دور لإدارة الجودة والمتابعة. يرى حالة المنصة ويصدّر التقارير، ولا يملك أي صلاحية
+فعل: لا إنشاء ولا تعديل ولا اعتماد ولا حذف، ولا `session.join` فلا يدخل الاجتماعات
+الافتراضية إطلاقًا وإن رأى بيانات الحصة ومن حضرها وتقاريرها.
+
+**الحزمة القاعدية للدور:**
+
+`admin.panel.access` · `student.view` · `student.view.any` · `guardian.view` ·
+`staff.view` · `staff.view.any` · `enrollment.view` · `group.view` · `content.view` ·
+`schedule.view` · `session.view` · `attendance.view` · `grade.view` ·
+`session_report.view` · `discipline.view_any` · `report.view` · `report.export`
+
+**ثلاث صلاحيات اختيارية تُمنح للحساب نفسه لا للدور**، حسب حاجة كل مشرف، عبر منح
+صلاحية مباشرة (`accesscontrol.permissions.grant_direct`) وقت إنشاء الحساب أو بعده:
+
+| الصلاحية | ما تفتحه |
+|---|---|
+| `payroll.view` | الجانب المالي وصفحة مستحقات المعلمين `/manage/teacher-dues` |
+| `contact.pii.view` | بيانات التواصل الشخصية: هاتف وبريد الطالب والمعلم وولي الأمر |
+| `recording.view` | تسجيلات الحصص |
+
+هذا التركيب مقصود: الدور يبقى حزمة صلاحيات ثابتة، والتخصيص لكل حساب يتم بالمنح
+المباشر، فلا يحتاج مشرف جديد بصلاحيات مختلفة دورًا جديدًا ولا نشرًا برمجيًا.
+
+### `contact.pii.view` — صلاحية جديدة
+
+تحكم ظهور **بيانات التواصل الشخصية** فقط: `phone` و `email`. لا تحكم الجنسية ولا
+الدولة ولا تاريخ الانضمام، فتلك أبعاد تقارير مطلوبة لإدارة الجودة.
+
+الحجب يتم **على الخادم** في `PeopleController`: الحقول لا تُرسل إلى العميل أصلًا
+بدل إخفائها في الواجهة، فلا تظهر في حمولة Inertia ولا في أدوات المطور. يشمل ذلك
+قائمة الأشخاص وصفحة الملف وبطاقة الحساب وبيانات أولياء الأمور داخلها.
+
+مُنحت للأدوار التي كانت ترى هذه البيانات قبل إضافتها — `platform_admin` و
+`academic_supervisor` و `finance_supervisor` و `registrar` و
+`communications_officer` و `auditor` — فلا يتغير سلوك أي حساب قائم. ولم تُمنح
+لدور `supervisor`، لأنها اختيارية فيه بالتصميم.
+
+مسارات التعديل (`edit` / `update`) لا تُحجب: من يملك صلاحية التعديل يحتاج القيمة
+الحقيقية، وهو يملك `contact.pii.view` أصلًا في كل الأدوار أعلاه.
