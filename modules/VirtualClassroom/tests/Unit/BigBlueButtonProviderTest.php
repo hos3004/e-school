@@ -6,6 +6,7 @@ use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Modules\VirtualClassroom\Domain\Contracts\SupportsWebhookRegistration;
 use Modules\VirtualClassroom\Domain\Enums\ClassroomEventType;
 use Modules\VirtualClassroom\Domain\Enums\JoinRole;
@@ -279,6 +280,76 @@ it('verifies the official webhook checksum before parsing the event', function (
 
     expect(fn () => $provider->parseWebhook($invalid))
         ->toThrow(ClassroomProviderException::class);
+});
+
+/** @param array<string, string> $parameters */
+function signedBbbWebhookRequest(array $parameters): Request
+{
+    $body = http_build_query($parameters);
+    $checksum = sha1('https://eschool.test/webhooks/bbb'.$body.'webhook-secret');
+
+    return Request::create(
+        'https://eschool.test/webhooks/bbb?checksum='.$checksum,
+        'POST',
+        $parameters,
+        content: $body,
+    );
+}
+
+it('parses the array-wrapped body that bbb-webhooks 3 actually sends', function (): void {
+    $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
+    // نفس بنية حدث user-joined الملتقط من سيرفر BBB الفعلي (callback-emitter.js).
+    $event = json_encode([
+        'data' => [
+            'type' => 'event',
+            'id' => 'user-joined',
+            'attributes' => [
+                'meeting' => [
+                    'internal-meeting-id' => 'internal-1',
+                    'external-meeting-id' => 'SES-01m23265xqjjag7dt063xsqx06-R2',
+                ],
+                'user' => [
+                    'internal-user-id' => 'w_xi4cehstrc36',
+                    'external-user-id' => '01m22tv64waqermche4wcw9eq1',
+                    'name' => 'معلمة تجريبية',
+                    'role' => 'MODERATOR',
+                    'presenter' => false,
+                    'guest' => false,
+                ],
+            ],
+            'event' => ['ts' => 1789239033577],
+        ],
+    ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+
+    $parsed = $provider->parseWebhook(signedBbbWebhookRequest([
+        'domain' => 'bbb.telecourse.org',
+        'event' => '['.$event.']',
+        'timestamp' => '1789239033580',
+    ]));
+
+    expect($parsed?->type)->toBe(ClassroomEventType::ParticipantJoined)
+        ->and($parsed?->externalId)->toBe('SES-01m23265xqjjag7dt063xsqx06-R2')
+        ->and($parsed?->externalUserId)->toBe('01m22tv64waqermche4wcw9eq1')
+        ->and($parsed?->occurredAt->getTimestamp())->toBe(1789239033)
+        ->and(data_get($parsed?->payload, 'data.attributes.user.role'))->toBe('MODERATOR');
+});
+
+it('logs a delivery it cannot read instead of dropping it silently', function (): void {
+    $log = Log::spy();
+    $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
+
+    $parsed = $provider->parseWebhook(signedBbbWebhookRequest([
+        'domain' => 'bbb.telecourse.org',
+        'event' => '[{"unexpected":true}]',
+        'timestamp' => '1789239033580',
+    ]));
+
+    expect($parsed)->toBeNull();
+    $log->shouldHaveReceived('warning')
+        ->with('virtualclassroom.webhook_unparseable', Mockery::on(
+            static fn (array $context): bool => $context['reason'] === 'missing_event_name',
+        ))
+        ->once();
 });
 
 it('registers, lists, and removes provider webhooks through the BBB API', function (): void {

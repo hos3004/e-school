@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VirtualClassroom\Presentation\Http\Controllers;
 
+use BackedEnum;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
@@ -21,7 +22,18 @@ final class ClassroomWebhookController extends Controller
     public function __invoke(Request $request): Response
     {
         try {
-            $this->action->execute($request);
+            $event = $this->action->execute($request);
+            $type = $event?->event_type;
+
+            /*
+             * أثر لكل تسليم: بدونه لا يُفرَّق بين «المزوّد لم يرسل» و«أرسل
+             * وتجاهلناه»، وهو ما أخفى توقف تسجيل الحضور.
+             */
+            Log::info('virtualclassroom.webhook_received', [
+                'recorded' => $event !== null,
+                'event_type' => $type instanceof BackedEnum ? $type->value : $type,
+                'duplicate' => $event !== null && !$event->wasRecentlyCreated,
+            ]);
         } catch (ClassroomProviderException $exception) {
             if ($exception->reason !== 'invalid_webhook_signature') {
                 throw $exception;

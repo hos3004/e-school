@@ -214,13 +214,37 @@ final class BigBlueButtonProvider implements SupportsWebhookRegistration, Virtua
 
         $payload = json_decode($encodedEvent, true);
 
+        /*
+         * bbb-webhooks 3 يلفّ كل حدث في مصفوفة: event=[{...}] (انظر
+         * callback-emitter.js). قراءة الجذر مباشرة أسقطت كل التسليمات بصمت
+         * بردّ 204، فلم يُسجَّل أي دخول ولم يُثبت حضور أي معلم.
+         */
+        if (is_array($payload) && array_is_list($payload)) {
+            if (count($payload) > 1) {
+                Log::warning('virtualclassroom.webhook_batch_truncated', [
+                    'count' => count($payload),
+                ]);
+            }
+
+            $payload = $payload[0] ?? null;
+        }
+
         if (!is_array($payload)) {
+            Log::warning('virtualclassroom.webhook_unparseable', [
+                'reason' => 'invalid_event_json',
+            ]);
+
             return null;
         }
 
         $eventName = data_get($payload, 'data.id') ?? data_get($payload, 'header.event.name');
 
         if (!is_string($eventName)) {
+            Log::warning('virtualclassroom.webhook_unparseable', [
+                'reason' => 'missing_event_name',
+                'keys' => array_slice(array_map('strval', array_keys($payload)), 0, 10),
+            ]);
+
             return null;
         }
 
