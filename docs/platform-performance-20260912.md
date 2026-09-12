@@ -101,3 +101,21 @@ Rollback consists of reverting the release commit and restoring the saved
 manifest, environment and FPM configuration, then rebuilding Laravel caches
 and reloading the same services. Retain old asset hashes. No database rollback
 is needed for this release.
+
+## Published measurements
+
+Verified through https://telecourse.org after deployment at 2026-09-12 16:32 UTC:
+
+| Payload | Before | After | Reduction |
+| --- | ---: | ---: | ---: |
+| Login HTML, uncompressed | 531,814 B | 64,506 B | 87.87% |
+| Login JS/CSS and imported dependencies, transferred | 583,526 B | 168,354 B | 71.15% |
+
+These percentages describe bytes, not a guaranteed reduction in page-load time.
+Small files below 1024 bytes intentionally remain uncompressed but are cached.
+Authenticated browser scenarios used isolated synthetic accounts; production
+verification used public/guest requests and runtime configuration checks.
+
+Backup: /opt/eschool-backups/platform-performance-20260912-1632.
+Runtime production compose and secrets were preserved; only the explicit
+Sanctum host list and the FPM include were updated.

@@ -295,3 +295,15 @@ idempotent فلا يُسجَّل شيء عند إرسال بلا تغيير.
 - Production pre-release measurement: login HTML 531,814 bytes; login JS/CSS
   dependency set 583,526 bytes without gzip or Cache-Control.
 - Deployment, runtime controls and rollback: docs/platform-performance-20260912.md.
+
+- Published on SCHOOL-WEB at 2026-09-12 16:32 UTC (code e42de90).
+  Backup: /opt/eschool-backups/platform-performance-20260912-1632
+  (restricted code/config/assets archive and PostgreSQL dump).
+- Live HTTPS verification: login HTML 531,814 -> 64,506 bytes (-87.87%);
+  login JS/CSS dependencies 583,526 -> 168,354 bytes (-71.15%).
+  All hashed assets carry immutable caching; compressed responses vary by encoding.
+  Health/login succeed; private routes redirect guests to login; unauthenticated
+  notification count returns 401; missing assets return uncached 404.
+- Production FPM and Nginx validated and reloaded; Horizon gracefully restarted.
+  Request threshold 1000ms, query threshold 500ms, max 10 query logs per request;
+  FPM trace threshold 3 seconds. No PostgreSQL restart or data migration.
