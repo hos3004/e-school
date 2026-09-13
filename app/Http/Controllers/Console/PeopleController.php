@@ -22,6 +22,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
+use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
+use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Identity\Domain\Contracts\UserAccountOperations;
 use Modules\Identity\Domain\Contracts\UserQueryService;
@@ -185,6 +187,7 @@ final class PeopleController extends Controller
                 'updateUrl' => !$record->trashed() && $request->user()?->can('staff.contract.update') ? route('console.teachers.financial-visibility', ['profile' => $record->id]) : null,
             ] : null,
             'lifecycle' => $this->lifecycle($request, $record, $hub),
+            'placement' => $record instanceof StudentProfile ? $this->placement($request, $record) : null,
             'hub' => $hub,
             'availabilityUrl' => $kind === 'teachers' && $request->user()?->can('staff.view') && $request->user()->can('staff.view.any') ? route('console.availability.index', ['teacher' => $record->id]) : null,
             'profileWorkspace' => app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),
@@ -293,6 +296,43 @@ final class PeopleController extends Controller
         return response()->json(['suggestions' => $this->profiles->usernameSuggestions(
             $this->organizationId($request), $data['name'],
         )]);
+    }
+
+    /**
+     * خيارات التسكين المتاحة لهذا المستخدم على هذا الطالب.
+     *
+     * تُحجب كاملة بلا صلاحية أو على ملف موقوف، فلا يصل الرابط للعميل أصلًا.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function placement(Request $request, StudentProfile $record): ?array
+    {
+        $user = $request->user();
+
+        if ($record->trashed() || $user === null || !$user->can('enrollment.create') || !$user->can('group.manage')) {
+            return null;
+        }
+
+        $memberships = app(GroupAdministrationQueries::class)
+            ->membershipsForStudent((string) $record->organization_id, (string) $record->id);
+
+        return [
+            'optionsUrl' => route('console.students.placement-options', ['profile' => $record->id]),
+            'addUrl' => route('console.students.placements', ['profile' => $record->id]),
+            'transferUrl' => route('console.students.transfer', ['profile' => $record->id]),
+            'memberships' => array_values(array_map(
+                fn ($membership): array => [
+                    'id' => $membership->membershipId,
+                    'group' => $this->localized($membership->groupName) ?: $membership->groupCode,
+                    'status' => __('groups::status.membership.'.$membership->membershipStatus),
+                ],
+                array_filter(
+                    $memberships,
+                    static fn ($membership): bool => $membership->leftAt === null
+                        && (MembershipStatus::tryFrom($membership->membershipStatus)?->occupiesSeat() ?? false),
+                ),
+            )),
+        ];
     }
 
     /**

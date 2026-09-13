@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Console\EnrollmentFreezeController;
 use App\Http\Controllers\Console\PeopleController;
 use App\Http\Controllers\Console\StudentLifecycleController;
+use App\Http\Controllers\Console\StudentPlacementController;
 use App\Http\Controllers\Console\TeacherLifecycleController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,3 +45,16 @@ Route::put('teachers/{profile}/terminate', [TeacherLifecycleController::class, '
     ->middleware('can:staff.contract.update')->whereUlid('profile')->name('teachers.terminate');
 Route::put('enrollments/{enrollment}/freeze', EnrollmentFreezeController::class)
     ->middleware('can:enrollment.freeze')->whereUlid('enrollment')->name('enrollments.freeze');
+
+/*
+ * إضافة الطالب لدورة أخرى ونقله بين المجموعات والمعلمين. الكورس هو نقطة
+ * الاختيار ومنه يُستنبط البرنامج، والمجموعة تُتحقق على الخادم لا بالشكل.
+ */
+Route::middleware(['can:enrollment.create', 'can:group.manage'])->group(function (): void {
+    Route::get('students/{profile}/placement-options', [StudentPlacementController::class, 'options'])
+        ->whereUlid('profile')->name('students.placement-options');
+    Route::post('students/{profile}/placements', [StudentPlacementController::class, 'store'])
+        ->whereUlid('profile')->name('students.placements');
+    Route::post('students/{profile}/transfer', [StudentPlacementController::class, 'transferStudent'])
+        ->whereUlid('profile')->name('students.transfer');
+});
