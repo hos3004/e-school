@@ -18,12 +18,14 @@ type Profile = {
 export default function CompleteProfile({
   profile,
   required,
+  mustChangePassword,
   countries,
   regions: initialRegions,
   timezones,
 }: {
   profile: Profile;
   required: boolean;
+  mustChangePassword: boolean;
   countries: Option[];
   regions: Option[];
   timezones: string[];
@@ -42,6 +44,8 @@ export default function CompleteProfile({
     city: profile.city ?? "",
     date_of_birth: profile.date_of_birth ?? "",
     gender: profile.gender ?? "",
+    password: "",
+    password_confirmation: "",
     confirmed: false,
   });
   const [regions, setRegions] = useState(initialRegions);
@@ -221,6 +225,45 @@ export default function CompleteProfile({
               )}
             </div>
           )}
+          <fieldset className="mt-6 rounded-xl border border-slate-200 p-4">
+            <legend className="px-2 font-medium">
+              {t(
+                mustChangePassword
+                  ? "profile_completion.password_required_title"
+                  : "profile_completion.password_optional_title",
+              )}
+            </legend>
+            <p className="mb-4 leading-7 text-slate-600">
+              {t(
+                mustChangePassword
+                  ? "profile_completion.password_required_help"
+                  : "profile_completion.password_optional_help",
+              )}
+            </p>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {(["password", "password_confirmation"] as const).map((key) => (
+                <div key={key}>
+                  <label className="mb-2 block font-medium" htmlFor={key}>
+                    {t("profile_completion." + key)}
+                  </label>
+                  <input
+                    id={key}
+                    type="password"
+                    dir="ltr"
+                    autoComplete="new-password"
+                    className="w-full rounded-lg border border-slate-300 p-3"
+                    required={mustChangePassword}
+                    value={form.data[key]}
+                    onChange={(e) => form.setData(key, e.target.value)}
+                    aria-invalid={!!form.errors[key]}
+                  />
+                  {form.errors[key] && (
+                    <small className="text-red-700">{form.errors[key]}</small>
+                  )}
+                </div>
+              ))}
+            </div>
+          </fieldset>
           <label className="my-6 flex items-start gap-3 leading-7">
             <input
               className="mt-2"

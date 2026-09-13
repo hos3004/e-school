@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Database\Seeders\GeographySeeder;
@@ -84,6 +85,44 @@ final class ProfileCompletionTest extends TestCase
         $this->post('/profile/complete', [...$payload, 'region_name' => 'الجيزة'])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('staff_profiles', ['user_id' => $user->id, 'region_id' => null, 'region_name' => 'الجيزة']);
         $this->actingAs($user->fresh())->get('/profile/complete')->assertOk()->assertInertia(fn (Assert $page) => $page->where('profile.region_name', 'الجيزة')->where('required', false));
+    }
+
+    public function test_admin_created_account_must_replace_the_password_before_it_can_use_the_site(): void
+    {
+        $user = $this->account('student');
+        $user->forceFill(['must_change_password' => true, 'password' => Hash::make('AdminGiven!2026')])->save();
+
+        $this->actingAs($user->fresh())->get('/profile/complete')->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('mustChangePassword', true));
+        $this->post('/profile/complete', $this->payload())->assertSessionHasErrors('password');
+        $this->post('/profile/complete', [...$this->payload(), 'password' => 'AdminGiven!2026', 'password_confirmation' => 'AdminGiven!2026'])
+            ->assertSessionHasErrors('password');
+        self::assertNull($user->fresh()->profile_completed_at);
+
+        $this->post('/profile/complete', [...$this->payload(), 'password' => 'OwnerChosen!2026', 'password_confirmation' => 'OwnerChosen!2026'])
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $saved = $user->fresh();
+        self::assertFalse($saved->must_change_password);
+        self::assertTrue(Hash::check('OwnerChosen!2026', $saved->password));
+        // الجلسة تستمر بعد تغيير كلمة المرور؛ لا يُطرد صاحب الحساب إلى صفحة الدخول.
+        $this->get('/student/profile')->assertOk();
+    }
+
+    public function test_completed_profile_is_still_forced_to_the_page_while_the_admin_password_stands(): void
+    {
+        $user = $this->account('teacher');
+        $user->forceFill(['profile_completed_at' => now(), 'must_change_password' => true])->save();
+        $this->actingAs($user->fresh())->get('/teacher/profile')->assertRedirect('/profile/complete');
+        $this->get('/profile/complete')->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('required', false)->where('mustChangePassword', true));
+    }
+
+    public function test_password_is_optional_for_accounts_that_already_own_their_password(): void
+    {
+        $user = $this->account('student');
+        $user->forceFill(['password' => Hash::make('SelfChosen!2026')])->save();
+        $this->actingAs($user->fresh())->post('/profile/complete', $this->payload())->assertSessionHasNoErrors();
+        self::assertTrue(Hash::check('SelfChosen!2026', $user->fresh()->password));
     }
 
     private function account(string $kind): User

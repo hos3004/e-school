@@ -38,6 +38,7 @@ use Shared\Concerns\RecordsDomainEvents;
  * @property string|null $avatar_path
  * @property UserStatus $status
  * @property CarbonImmutable|null $profile_completed_at
+ * @property bool $must_change_password
  * @property CarbonImmutable|null $last_login_at
  * @property string|null $last_login_ip
  * @property CarbonImmutable|null $created_at
@@ -68,6 +69,7 @@ final class User extends Authenticatable implements FilamentUser
         'email_verified_at' => null,
         'last_login_at' => null,
         'profile_completed_at' => null,
+        'must_change_password' => false,
         'status' => UserStatus::Active->value,
     ];
 
@@ -118,6 +120,7 @@ final class User extends Authenticatable implements FilamentUser
             'status' => UserStatus::class,
             'last_login_at' => 'immutable_datetime',
             'profile_completed_at' => 'immutable_datetime',
+            'must_change_password' => 'boolean',
             'password' => 'hashed',
         ];
     }

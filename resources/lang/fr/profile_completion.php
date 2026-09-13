@@ -29,4 +29,11 @@ return [
     'saved' => 'Votre profil a été enregistré.',
     'logout' => 'Déconnexion',
     'audit' => 'Le titulaire du compte a vérifié et confirmé ses informations personnelles.',
+    'password' => 'Nouveau mot de passe',
+    'password_confirmation' => 'Confirmer le nouveau mot de passe',
+    'password_required_title' => 'Définir un nouveau mot de passe',
+    'password_required_help' => 'Votre mot de passe actuel a été créé par l\'administration et une autre personne le connaît. Choisissez-en un nouveau que vous seul connaissez.',
+    'password_optional_title' => 'Changer le mot de passe (facultatif)',
+    'password_optional_help' => 'Laissez les deux champs vides pour conserver votre mot de passe actuel.',
+    'password_unchanged' => 'Choisissez un mot de passe différent de l\'actuel.',
 ];

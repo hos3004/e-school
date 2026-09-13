@@ -181,6 +181,11 @@ final class PeopleController extends Controller
             $this->duplicateError($error);
         }
 
+        // كلمة المرور هنا يعرفها الإداري؛ صاحب الحساب يغيّرها إجباريًا في أول دخول.
+        if (($data['account_mode'] ?? null) === 'new') {
+            User::query()->whereKey($profile->user_id)->update(['must_change_password' => true]);
+        }
+
         $blocked = $kind === 'students' && $profile instanceof StudentProfile
             ? $this->placeNewStudent($request, $profile, $data) : null;
 

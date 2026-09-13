@@ -59,6 +59,7 @@ final readonly class UserAccountProvisioningService implements UserAccountProvis
             'phone_country' => $data->phoneCountry,
             'locale' => $data->locale,
             'timezone' => $data->timezone,
+            'contact_optional' => $data->contactOptional,
         ]);
 
         return self::toDto($user);

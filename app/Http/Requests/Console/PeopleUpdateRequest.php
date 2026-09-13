@@ -25,8 +25,9 @@ final class PeopleUpdateRequest extends FormRequest
             'timezone' => ['sometimes', 'required', 'timezone:all'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', Rule::in(['male', 'female'])],
-            'country_id' => ['required', 'ulid'],
-            'region_id' => ['required', 'ulid'],
+            // قد يكون الشخص لم يكمل بياناته بعد؛ لا يُمنع الإداري من حفظ باقي التعديلات.
+            'country_id' => ['nullable', 'ulid', 'required_with:region_id'],
+            'region_id' => ['nullable', 'ulid', 'required_with:country_id'],
         ];
 
         return $this->route('kind') === 'students' ? [...$rules,

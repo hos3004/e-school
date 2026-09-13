@@ -331,6 +331,69 @@ final class ConsolePeopleTest extends TestCase
     }
 
     /** @return array<string, mixed> */
+    public function test_student_is_created_from_name_username_and_password_only(): void
+    {
+        [$organization, $actor, $program, $course] = $this->context();
+        $this->actingAs($actor)->post('/manage/students', [
+            'account_mode' => 'new', 'full_name' => 'Quick Student', 'username' => 'quick.student',
+            'password' => 'G8!Student-Quick#2026', 'password_confirmation' => 'G8!Student-Quick#2026',
+            'locale' => 'ar', 'timezone' => 'Africa/Cairo',
+            'preferred_program_id' => $program->id, 'preferred_course_id' => $course->id,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $user = User::query()->where('username', 'quick.student')->firstOrFail();
+        self::assertNull($user->email);
+        self::assertNull($user->phone);
+        self::assertTrue($user->must_change_password);
+        self::assertNull($user->profile_completed_at);
+        $student = StudentProfile::query()->where('user_id', $user->id)->firstOrFail();
+        self::assertSame((string) $organization->id, (string) $student->organization_id);
+        self::assertNull($student->date_of_birth);
+        self::assertNull($student->gender);
+        self::assertNull($student->country_id);
+        $application = RegistrationApplication::query()->where('student_profile_id', $student->id)->firstOrFail();
+        self::assertSame(RegistrationStatus::WaitingAssignment, $application->status);
+        self::assertNull($application->country_id);
+    }
+
+    public function test_teacher_is_created_without_personal_details_but_keeps_its_contract(): void
+    {
+        [, $actor, , $course] = $this->context();
+        $payload = [
+            'account_mode' => 'new', 'full_name' => 'Quick Teacher', 'username' => 'quick.teacher',
+            'password' => 'G8!Teacher-Quick#2026', 'password_confirmation' => 'G8!Teacher-Quick#2026',
+            'locale' => 'ar', 'timezone' => 'Africa/Cairo', 'staff_code' => 'T992',
+            'employment_type' => 'contractor', 'hired_at' => '2026-09-01',
+            'contract_basis' => 'per_session', 'contract_effective_from' => '2026-09-01',
+            'currency' => 'EGP', 'default_rate_major' => '150.50', 'course_ids' => [$course->id],
+        ];
+        $this->actingAs($actor)->post('/manage/teachers', $payload)->assertSessionHasNoErrors()->assertRedirect();
+        $user = User::query()->where('username', 'quick.teacher')->firstOrFail();
+        self::assertNull($user->email);
+        self::assertTrue($user->must_change_password);
+        $teacher = StaffProfile::query()->where('user_id', $user->id)->firstOrFail();
+        self::assertNull($teacher->gender);
+        self::assertNull($teacher->country_id);
+        self::assertNotNull(TeacherContract::query()->where('staff_profile_id', $teacher->id)->first());
+
+        // العقد يبقى شرطًا لأن المستحقات تُبنى عليه.
+        $this->post('/manage/teachers', [...$payload, 'username' => 'quick.teacher2', 'staff_code' => 'T993',
+            'contract_basis' => ''])->assertSessionHasErrors('contract_basis');
+        $this->post('/manage/teachers', [...$payload, 'username' => 'quick.teacher3', 'staff_code' => 'T994',
+            'default_rate_major' => ''])->assertSessionHasErrors('default_rate_major');
+    }
+
+    public function test_a_region_without_its_country_is_still_rejected(): void
+    {
+        [, $actor, $program, $course, , $region] = $this->context();
+        $this->actingAs($actor)->post('/manage/students', [
+            'account_mode' => 'new', 'full_name' => 'Half Located', 'username' => 'half.located',
+            'password' => 'G8!Student-Half#2026', 'password_confirmation' => 'G8!Student-Half#2026',
+            'locale' => 'ar', 'timezone' => 'Africa/Cairo', 'region_id' => $region,
+            'preferred_program_id' => $program->id, 'preferred_course_id' => $course->id,
+        ])->assertSessionHasErrors('country_id');
+    }
+
     private function studentData(string $program, string $course, string $country, string $region): array
     {
         return [

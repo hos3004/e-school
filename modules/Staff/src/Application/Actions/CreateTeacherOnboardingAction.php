@@ -53,9 +53,12 @@ final readonly class CreateTeacherOnboardingAction
         $mode = StaffAccountMode::from((string) $validated['account_mode']);
         $courseIds = self::stringList($validated['course_ids'] ?? []);
 
-        if (!$this->geography->regionExistsIn(
-            (string) $validated['region_id'],
-            (string) $validated['country_id'],
+        $countryId = self::nullableString($validated['country_id'] ?? null);
+        $regionId = self::nullableString($validated['region_id'] ?? null);
+
+        if ($countryId !== null && $regionId !== null && !$this->geography->regionExistsIn(
+            $regionId,
+            $countryId,
         )) {
             throw BusinessRuleViolation::make(
                 'staff.region_country_mismatch',
@@ -70,7 +73,7 @@ final readonly class CreateTeacherOnboardingAction
             );
         }
 
-        return $this->transaction->run(function () use ($validated, $mode, $courseIds, $organizationId, $actorId): StaffProfile {
+        return $this->transaction->run(function () use ($validated, $mode, $courseIds, $organizationId, $actorId, $countryId, $regionId): StaffProfile {
             if ($mode === StaffAccountMode::ExistingAccount) {
                 $account = $this->directory->find($organizationId, (string) $validated['existing_user_id']);
 
@@ -97,6 +100,7 @@ final readonly class CreateTeacherOnboardingAction
                     password: (string) $validated['password'],
                     locale: (string) $validated['locale'],
                     timezone: (string) $validated['timezone'],
+                    contactOptional: true,
                 ));
             }
 
@@ -112,9 +116,9 @@ final readonly class CreateTeacherOnboardingAction
                 userId: $account->id,
                 staffCode: (string) $validated['staff_code'],
                 employmentType: EmploymentType::from((string) $validated['employment_type']),
-                gender: StaffGender::from((string) $validated['gender']),
-                countryId: (string) $validated['country_id'],
-                regionId: (string) $validated['region_id'],
+                gender: StaffGender::tryFrom((string) ($validated['gender'] ?? '')),
+                countryId: $countryId,
+                regionId: $regionId,
                 dateOfBirth: self::nullableString($validated['date_of_birth'] ?? null),
                 phone: $account->phone,
                 hiredAt: (string) $validated['hired_at'],
@@ -225,9 +229,9 @@ final readonly class CreateTeacherOnboardingAction
             'timezone' => ['required', 'timezone:all'],
             'staff_code' => ['required', 'string', 'max:32', Rule::unique('staff_profiles', 'staff_code')],
             'employment_type' => ['required', Rule::enum(EmploymentType::class)],
-            'gender' => ['required', Rule::enum(StaffGender::class)],
-            'country_id' => ['required', 'ulid'],
-            'region_id' => ['required', 'ulid'],
+            'gender' => ['nullable', Rule::enum(StaffGender::class)],
+            'country_id' => ['nullable', 'ulid', 'required_with:region_id'],
+            'region_id' => ['nullable', 'ulid', 'required_with:country_id'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'hired_at' => ['required', 'date'],
             'bio' => ['nullable', 'string', 'max:5000'],
@@ -259,11 +263,6 @@ final readonly class CreateTeacherOnboardingAction
             'qualification_notes' => ['nullable', 'string', 'max:2000'],
             'onboarding_reason' => ['required', 'string', 'max:2000'],
         ];
-
-        if ($mode === StaffAccountMode::NewAccount) {
-            $rules['email'][] = 'required_without:phone';
-            $rules['phone'][] = 'required_without:email';
-        }
 
         return Validator::make($data, $rules)->validate();
     }

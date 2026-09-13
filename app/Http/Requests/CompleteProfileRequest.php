@@ -7,7 +7,9 @@ namespace App\Http\Requests;
 use App\Services\AccountProfile;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
@@ -46,14 +48,30 @@ final class CompleteProfileRequest extends FormRequest
             'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
             'gender' => ['required', Rule::in(['male', 'female'])],
             'timezone' => ['required', 'timezone:all'],
+            // كلمة المرور التي وضعها الإداري يعرفها غيرُ صاحبها، فتغييرها إلزامي
+            // على الحسابات المُنشأة إداريًا واختياري لمن وضع كلمته بنفسه.
+            'password' => [$this->mustChangePassword() ? 'required' : 'nullable', 'confirmed', Password::defaults()],
             'confirmed' => ['accepted'],
         ];
+    }
+
+    public function mustChangePassword(): bool
+    {
+        $user = $this->user();
+
+        return $user instanceof User && $user->must_change_password;
     }
 
     /** @return list<Closure> */
     public function after(): array
     {
         return [function (Validator $validator): void {
+            $user = $this->user();
+            if ($this->filled('password') && $user instanceof User
+                && Hash::check((string) $this->input('password'), (string) $user->password)) {
+                $validator->errors()->add('password', __('profile_completion.password_unchanged'));
+            }
+        }, function (Validator $validator): void {
             $geo = app(GeographyQueries::class);
             $country = collect($geo->countries())->firstWhere('id', $this->input('country_id'));
             if ($country === null || $country->iso2 === 'ZZ') {
@@ -74,7 +92,7 @@ final class CompleteProfileRequest extends FormRequest
     /** @return array<string, string> */
     public function attributes(): array
     {
-        $fields = ['name', 'email', 'phone', 'country_id', 'region_id', 'region_name', 'city', 'date_of_birth', 'gender', 'timezone', 'confirmed'];
+        $fields = ['name', 'email', 'phone', 'country_id', 'region_id', 'region_name', 'city', 'date_of_birth', 'gender', 'timezone', 'password', 'confirmed'];
 
         return array_combine($fields, array_map(fn (string $field): string => __('profile_completion.'.$field), $fields));
     }

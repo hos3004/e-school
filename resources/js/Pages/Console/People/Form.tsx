@@ -811,13 +811,14 @@ export default function PeopleForm(props: Props) {
                   { value: "male", label: t("console_people.male") },
                   { value: "female", label: t("console_people.female") },
                 ],
-                !creating,
+                true,
               )}
-              {input("date_of_birth", "date", !isStudent || !creating)}
+              {input("date_of_birth", "date", true)}
               <Field
                 name="country_id"
                 label={t("console_people.fields.country_id")}
                 error={errors.country_id}
+                optional
                 hint={t("console_people.country_hint")}
               >
                 <CountryInput
@@ -825,7 +826,6 @@ export default function PeopleForm(props: Props) {
                   className={fieldClass}
                   options={countries}
                   value={data.country_id}
-                  required
                   aria-invalid={Boolean(errors.country_id)}
                   aria-describedby={
                     errors.country_id ? "country_id-error" : "country_id-hint"
@@ -845,7 +845,7 @@ export default function PeopleForm(props: Props) {
                   }}
                 />
               </Field>
-              {select("region_id", regions)}
+              {select("region_id", regions, true)}
               {optionsLoading && (
                 <p role="status" className="text-xs text-slate-500">
                   {t("console_people.loading")}

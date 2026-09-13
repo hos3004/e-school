@@ -19,9 +19,13 @@ final readonly class SubmitRegistrationApplicationAction
         private Dispatcher $events,
     ) {}
 
-    public function execute(RegistrationApplication $application): RegistrationApplication
+    /**
+     * @param list<string>|null $requiredFields الحقول الإلزامية لهذا المسار؛ القيمة
+     *                                          الافتراضية هي سياسة التسجيل الذاتي.
+     */
+    public function execute(RegistrationApplication $application, ?array $requiredFields = null): RegistrationApplication
     {
-        $application = $this->transaction->run(function () use ($application): RegistrationApplication {
+        $application = $this->transaction->run(function () use ($application, $requiredFields): RegistrationApplication {
             /** @var RegistrationApplication $locked */
             $locked = RegistrationApplication::query()
                 ->lockForUpdate()
@@ -35,7 +39,7 @@ final readonly class SubmitRegistrationApplicationAction
                 );
             }
 
-            $this->assertRequiredFieldsPresent($locked);
+            $this->assertRequiredFieldsPresent($locked, $requiredFields);
             $duplicateId = $this->findDuplicateApplicationId($locked);
 
             if ($duplicateId !== null && config('admission.self_registration.duplicate_detection.block_or_flag') === 'block') {
@@ -63,10 +67,11 @@ final readonly class SubmitRegistrationApplicationAction
         return $application;
     }
 
-    private function assertRequiredFieldsPresent(RegistrationApplication $application): void
+    /** @param list<string>|null $requiredFields */
+    private function assertRequiredFieldsPresent(RegistrationApplication $application, ?array $requiredFields = null): void
     {
         /** @var list<string> $requiredFields */
-        $requiredFields = array_values((array) config('admission.self_registration.required_fields', []));
+        $requiredFields = array_values($requiredFields ?? (array) config('admission.self_registration.required_fields', []));
 
         foreach ($requiredFields as $field) {
             if ($field === 'contact') {

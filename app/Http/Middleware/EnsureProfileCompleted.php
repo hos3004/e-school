@@ -15,7 +15,7 @@ final class EnsureProfileCompleted
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if (!$user instanceof User || $user->profile_completed_at !== null
+        if (!$user instanceof User || ($user->profile_completed_at !== null && !$user->must_change_password)
             || $request->routeIs('profile.complete.*', 'logout', 'locale.update')
             || !app(AccountProfile::class)->exists($user)) {
             return $next($request);

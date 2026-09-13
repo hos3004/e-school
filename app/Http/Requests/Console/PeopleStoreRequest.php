@@ -35,17 +35,15 @@ final class PeopleStoreRequest extends FormRequest
             'password' => [$required, Password::defaults(), 'confirmed'],
             'locale' => ['required', Rule::in(Locales::supported())],
             'timezone' => ['required', 'timezone:all'],
-            'date_of_birth' => [$student ? 'required' : 'nullable', 'date', 'before:today'],
-            'gender' => ['required', Rule::in(['male', 'female'])],
-            'country_id' => ['required', 'ulid'],
-            'region_id' => ['required', 'ulid'],
+            // الإنشاء الإداري السريع: الاسم واسم المستخدم وكلمة المرور تكفي،
+            // وما يخص الشخص نفسه يُكمله صاحب الحساب عند أول دخول.
+            'date_of_birth' => ['nullable', 'date', 'before:today'],
+            'gender' => ['nullable', Rule::in(['male', 'female'])],
+            'country_id' => ['nullable', 'ulid', 'required_with:region_id'],
+            'region_id' => ['nullable', 'ulid', 'required_with:country_id'],
         ];
         // The action validates confirmation too; keep it in the validated payload without ever flashing it.
         $rules['password_confirmation'] = [$required, 'string', 'same:password'];
-        if ($new) {
-            $rules['email'][] = 'required_without:phone';
-            $rules['phone'][] = 'required_without:email';
-        }
 
         // حقول المعلم اختيارية، ولا تُقبل أصلًا ممن لا يملك إدارة الجداول.
         $teaching = $this->user()?->can('schedule.manage') ? 'nullable' : 'prohibited';

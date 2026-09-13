@@ -29,4 +29,11 @@ return [
     'saved' => 'Your profile has been saved.',
     'logout' => 'Sign out',
     'audit' => 'Account owner reviewed and confirmed personal profile details.',
+    'password' => 'New password',
+    'password_confirmation' => 'Confirm new password',
+    'password_required_title' => 'Set a new password',
+    'password_required_help' => 'Your current password was created by the administration and is known to someone else. Choose a new password only you know to finish.',
+    'password_optional_title' => 'Change password (optional)',
+    'password_optional_help' => 'Leave both fields empty to keep your current password.',
+    'password_unchanged' => 'Choose a password different from the current one.',
 ];

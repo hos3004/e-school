@@ -52,9 +52,12 @@ final readonly class CreateStudentOnboardingAction
         $validated = $this->validated($data);
         $mode = StudentAccountMode::from((string) $validated['account_mode']);
 
-        if (!$this->geography->regionExistsIn(
-            (string) $validated['region_id'],
-            (string) $validated['country_id'],
+        $countryId = self::nullableString($validated['country_id'] ?? null);
+        $regionId = self::nullableString($validated['region_id'] ?? null);
+
+        if ($countryId !== null && $regionId !== null && !$this->geography->regionExistsIn(
+            $regionId,
+            $countryId,
         )) {
             throw BusinessRuleViolation::make(
                 'registration.region_not_in_country',
@@ -73,7 +76,7 @@ final readonly class CreateStudentOnboardingAction
             );
         }
 
-        return $this->transaction->run(function () use ($validated, $mode, $organizationId, $actorId): StudentProfile {
+        return $this->transaction->run(function () use ($validated, $mode, $organizationId, $actorId, $countryId, $regionId): StudentProfile {
             if ($mode === StudentAccountMode::ExistingAccount) {
                 $account = $this->directory->find($organizationId, (string) $validated['existing_user_id']);
 
@@ -100,6 +103,7 @@ final readonly class CreateStudentOnboardingAction
                     password: (string) $validated['password'],
                     locale: (string) $validated['locale'],
                     timezone: (string) $validated['timezone'],
+                    contactOptional: true,
                 ));
             }
 
@@ -112,10 +116,10 @@ final readonly class CreateStudentOnboardingAction
 
             $application = $this->createApplication->execute([
                 'full_name' => $account->name,
-                'date_of_birth' => (string) $validated['date_of_birth'],
-                'gender' => (string) $validated['gender'],
-                'country_id' => (string) $validated['country_id'],
-                'region_id' => (string) $validated['region_id'],
+                'date_of_birth' => self::nullableString($validated['date_of_birth'] ?? null),
+                'gender' => self::nullableString($validated['gender'] ?? null),
+                'country_id' => $countryId,
+                'region_id' => $regionId,
                 'email' => $account->email,
                 'phone' => $account->phone,
                 'preferred_program_id' => (string) $validated['preferred_program_id'],
@@ -123,7 +127,9 @@ final readonly class CreateStudentOnboardingAction
                 'notes' => self::nullableString($validated['notes'] ?? null),
             ], $organizationId, $account->id);
 
-            $application = $this->submitApplication->execute($application);
+            /** @var list<string> $requiredFields */
+            $requiredFields = array_values((array) config('admission.admin_creation.required_fields', []));
+            $application = $this->submitApplication->execute($application, $requiredFields);
             $application = $this->acceptApplication->execute(
                 $application,
                 $actorId,
@@ -190,10 +196,10 @@ final readonly class CreateStudentOnboardingAction
             'password' => [$mode === StudentAccountMode::NewAccount ? 'required' : 'nullable', Password::defaults(), 'confirmed'],
             'locale' => ['required', Rule::in(Locales::supported())],
             'timezone' => ['required', 'timezone:all'],
-            'date_of_birth' => ['required', 'date', 'before:today'],
-            'gender' => ['required', Rule::enum(StudentGender::class)],
-            'country_id' => ['required', 'ulid'],
-            'region_id' => ['required', 'ulid'],
+            'date_of_birth' => ['nullable', 'date', 'before:today'],
+            'gender' => ['nullable', Rule::enum(StudentGender::class)],
+            'country_id' => ['nullable', 'ulid', 'required_with:region_id'],
+            'region_id' => ['nullable', 'ulid', 'required_with:country_id'],
             'preferred_program_id' => ['required', 'ulid'],
             'preferred_course_id' => ['required', 'ulid'],
             'acceptance_reason' => ['required', 'string', 'max:2000'],
@@ -202,11 +208,6 @@ final readonly class CreateStudentOnboardingAction
             'city' => ['nullable', 'string', 'max:120'],
             'preferred_language' => ['nullable', Rule::in(Locales::supported())],
         ];
-
-        if ($mode === StudentAccountMode::NewAccount) {
-            $rules['email'][] = 'required_without:phone';
-            $rules['phone'][] = 'required_without:email';
-        }
 
         return Validator::make($data, $rules)->validate();
     }
