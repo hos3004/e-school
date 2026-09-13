@@ -15,5 +15,9 @@ final readonly class AcademicCatalogItemData
         public array $name,
         public ?string $programId = null,
         public ?string $sessionMode = null,
+        public ?string $levelId = null,
+        public ?int $defaultDurationMinutes = null,
+        public ?int $sessionsPerWeek = null,
+        public ?int $totalSessions = null,
     ) {}
 }

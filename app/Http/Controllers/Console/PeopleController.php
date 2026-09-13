@@ -9,6 +9,7 @@ use App\Application\Queries\ProfileAdministrationQueryService;
 use App\Http\Controllers\Console\Support\ConsoleContext;
 use App\Http\Controllers\Console\Support\GroupPlacementOptions;
 use App\Http\Controllers\Console\Support\PersonProfileData;
+use App\Http\Controllers\Console\Support\TeacherPortfolioData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Console\PeopleStoreRequest;
 use App\Http\Requests\Console\PeopleUpdateRequest;
@@ -355,6 +356,9 @@ final class PeopleController extends Controller
             'lifecycle' => $this->lifecycle($request, $record, $hub),
             'placement' => $record instanceof StudentProfile ? $this->placement($request, $record) : null,
             'programs' => $record instanceof StudentProfile ? $this->programs($request, $record) : null,
+            'teaching' => $record instanceof StaffProfile
+                ? app(TeacherPortfolioData::class)->forTeacher($request, $organizationId, (string) $record->id)
+                : null,
             'hub' => $hub,
             'availabilityUrl' => $kind === 'teachers' && $request->user()?->can('staff.view') && $request->user()->can('staff.view.any') ? route('console.availability.index', ['teacher' => $record->id]) : null,
             'profileWorkspace' => app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),

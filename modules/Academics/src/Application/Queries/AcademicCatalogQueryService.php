@@ -121,6 +121,12 @@ final readonly class AcademicCatalogQueryService implements AcademicCatalogQueri
             name: is_array($course->name) ? $course->name : [],
             programId: $course->level === null ? null : (string) $course->level->program_id,
             sessionMode: $course->session_mode?->value,
+            levelId: (string) $course->level_id,
+            defaultDurationMinutes: $course->default_duration_minutes === null
+                ? null
+                : (int) $course->default_duration_minutes,
+            sessionsPerWeek: $course->sessions_per_week === null ? null : (int) $course->sessions_per_week,
+            totalSessions: $course->total_sessions === null ? null : (int) $course->total_sessions,
         );
     }
 

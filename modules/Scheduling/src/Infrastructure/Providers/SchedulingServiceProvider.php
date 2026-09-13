@@ -14,7 +14,9 @@ use Modules\Scheduling\Application\Policies\ScheduleChangeRequestPolicy;
 use Modules\Scheduling\Application\Policies\SchedulePolicy;
 use Modules\Scheduling\Application\Queries\IndividualTeachingAssignmentQueries;
 use Modules\Scheduling\Application\Queries\SchedulingAdministrationQueryService;
+use Modules\Scheduling\Application\Queries\TeacherTeachingLoadQueryService;
 use Modules\Scheduling\Domain\Contracts\IndividualTeachingAssignments;
+use Modules\Scheduling\Domain\Contracts\TeacherTeachingLoadQueries;
 use Modules\Scheduling\Domain\Models\PendingTeachingAssignment;
 use Modules\Scheduling\Domain\Models\PostponementRequest;
 use Modules\Scheduling\Domain\Models\Schedule;
@@ -45,6 +47,7 @@ final class SchedulingServiceProvider extends BaseModuleServiceProvider
         return [
             SchedulingAdministrationQueryService::class => SchedulingAdministrationQueryService::class,
             IndividualTeachingAssignments::class => IndividualTeachingAssignmentQueries::class,
+            TeacherTeachingLoadQueries::class => TeacherTeachingLoadQueryService::class,
         ];
     }
 
