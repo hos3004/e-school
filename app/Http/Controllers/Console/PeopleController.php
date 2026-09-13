@@ -30,6 +30,7 @@ use Modules\Identity\Domain\Contracts\UserQueryService;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Organization\Domain\Models\Organization;
+use Modules\Scheduling\Application\Services\ConsoleIndividualTeacherService;
 use Modules\Staff\Application\Actions\CreateTeacherOnboardingAction;
 use Modules\Staff\Application\Actions\UpdateStaffProfileAction;
 use Modules\Staff\Domain\Enums\ContractBasis;
@@ -188,6 +189,7 @@ final class PeopleController extends Controller
             ] : null,
             'lifecycle' => $this->lifecycle($request, $record, $hub),
             'placement' => $record instanceof StudentProfile ? $this->placement($request, $record) : null,
+            'teacherChange' => $record instanceof StudentProfile ? $this->teacherChange($request, $record) : null,
             'hub' => $hub,
             'availabilityUrl' => $kind === 'teachers' && $request->user()?->can('staff.view') && $request->user()->can('staff.view.any') ? route('console.availability.index', ['teacher' => $record->id]) : null,
             'profileWorkspace' => app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),
@@ -296,6 +298,27 @@ final class PeopleController extends Controller
         return response()->json(['suggestions' => $this->profiles->usernameSuggestions(
             $this->organizationId($request), $data['name'],
         )]);
+    }
+
+    /**
+     * جداول الطالب الفردية القابلة لتغيير معلمها.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function teacherChange(Request $request, StudentProfile $record): ?array
+    {
+        if ($record->trashed() || !($request->user()?->can('schedule.manage') ?? false)) {
+            return null;
+        }
+
+        $schedules = app(ConsoleIndividualTeacherService::class)
+            ->forStudent((string) $record->organization_id, (string) $record->id);
+
+        return $schedules === [] ? null : [
+            'optionsUrl' => route('console.students.teacher-options', ['profile' => $record->id]),
+            'updateUrl' => route('console.students.teacher', ['profile' => $record->id]),
+            'schedules' => $schedules,
+        ];
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Http\Controllers\Console\EnrollmentFreezeController;
 use App\Http\Controllers\Console\PeopleController;
 use App\Http\Controllers\Console\StudentLifecycleController;
 use App\Http\Controllers\Console\StudentPlacementController;
+use App\Http\Controllers\Console\StudentTeacherController;
 use App\Http\Controllers\Console\TeacherLifecycleController;
 use Illuminate\Support\Facades\Route;
 
@@ -57,4 +58,15 @@ Route::middleware(['can:enrollment.create', 'can:group.manage'])->group(function
         ->whereUlid('profile')->name('students.placements');
     Route::post('students/{profile}/transfer', [StudentPlacementController::class, 'transferStudent'])
         ->whereUlid('profile')->name('students.transfer');
+});
+
+/*
+ * تغيير معلم الكورس الفردي: يمر على تعديل الجدول المعتمد فتُعاد الحصص
+ * المستقبلية بالمعلم الجديد، ولا يُستخدم مسار المعلم البديل للحصة الواحدة.
+ */
+Route::middleware('can:schedule.manage')->group(function (): void {
+    Route::get('students/{profile}/teacher-options', [StudentTeacherController::class, 'options'])
+        ->whereUlid('profile')->name('students.teacher-options');
+    Route::put('students/{profile}/teacher', [StudentTeacherController::class, 'update'])
+        ->whereUlid('profile')->name('students.teacher');
 });
