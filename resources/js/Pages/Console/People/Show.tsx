@@ -3,6 +3,9 @@ import LifecycleActions, { type LifecycleData } from "./LifecycleActions";
 import PlacementActions, { type PlacementData } from "./PlacementActions";
 import StudentPrograms, { type StudentProgramsData } from "./StudentPrograms";
 import TeacherPrograms, { type TeacherPortfolioData } from "./TeacherPrograms";
+import TeacherQualifications, {
+  type TeacherQualificationsData,
+} from "./TeacherQualifications";
 import { Head, usePage } from "@inertiajs/react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import ProfileView, {
@@ -47,6 +50,7 @@ interface Props {
   placement?: PlacementData | null;
   programs?: StudentProgramsData | null;
   teaching?: TeacherPortfolioData | null;
+  qualifications?: TeacherQualificationsData | null;
 }
 export default function PeopleShow({
   kind,
@@ -62,6 +66,7 @@ export default function PeopleShow({
   placement,
   programs,
   teaching,
+  qualifications,
 }: Props) {
   const t = useI18n();
   const { console: context } = usePage<
@@ -127,6 +132,9 @@ export default function PeopleShow({
       />
       {programs && <StudentPrograms programs={programs} />}
       {teaching && <TeacherPrograms teaching={teaching} />}
+      {qualifications && (
+        <TeacherQualifications qualifications={qualifications} />
+      )}
       {placement && <PlacementActions placement={placement} />}
       <LifecycleActions lifecycle={lifecycle} />
     </ConsoleLayout>

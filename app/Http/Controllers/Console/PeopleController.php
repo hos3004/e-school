@@ -359,6 +359,8 @@ final class PeopleController extends Controller
             'teaching' => $record instanceof StaffProfile
                 ? app(TeacherPortfolioData::class)->forTeacher($request, $organizationId, (string) $record->id)
                 : null,
+            'qualifications' => $record instanceof StaffProfile
+                ? $this->qualifications($request, $record, $hub) : null,
             'hub' => $hub,
             'availabilityUrl' => $kind === 'teachers' && $request->user()?->can('staff.view') && $request->user()->can('staff.view.any') ? route('console.availability.index', ['teacher' => $record->id]) : null,
             'profileWorkspace' => app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),
@@ -565,6 +567,56 @@ final class PeopleController extends Controller
             'removeUrl' => $canSchedule ? route('console.students.teacher.remove', ['profile' => $record->id]) : null,
             'durations' => array_values((array) config('scheduling.individual_session_durations')),
             'timezone' => (string) app(ConsoleContext::class)->forRequest($request)['timezone'],
+        ];
+    }
+
+    /**
+     * كورسات المعلم المعتمدة وما يمكن اعتماده له.
+     *
+     * التأهيل هو ما يُظهر المعلم في قوائم إسناد الكورسات والمجموعات، لذلك
+     * يُدار من صفحة ملفه لا من نموذج الإنشاء وحده. تُحجب كاملة بلا صلاحية
+     * أو على ملف مؤرشَف، فلا يصل الرابط للعميل أصلًا.
+     *
+     * @param array<string, mixed> $hub
+     * @return array<string, mixed>|null
+     */
+    private function qualifications(Request $request, StaffProfile $record, array $hub): ?array
+    {
+        $user = $request->user();
+
+        if ($record->trashed() || $user === null || !$user->can('staff.contract.update')) {
+            return null;
+        }
+
+        $current = [];
+        $held = [];
+
+        foreach (is_array($hub['qualifications'] ?? null) ? $hub['qualifications'] : [] as $row) {
+            if (!is_array($row) || !is_string($row['id'] ?? null)) {
+                continue;
+            }
+
+            $held[] = $row['id'];
+            $current[] = [
+                'id' => $row['id'],
+                'course' => (string) ($row['course'] ?? $row['id']),
+                'program' => (string) ($row['program'] ?? ''),
+            ];
+        }
+
+        $available = [];
+
+        foreach ($this->profiles->allCourseOptions((string) $record->organization_id) as $courseId => $label) {
+            if (!in_array((string) $courseId, $held, true)) {
+                $available[] = ['value' => (string) $courseId, 'label' => (string) $label];
+            }
+        }
+
+        return [
+            'current' => $current,
+            'availableCourses' => $available,
+            'assignUrl' => route('console.teachers.qualifications.store', ['profile' => $record->id]),
+            'revokeUrl' => route('console.teachers.qualifications.destroy', ['profile' => $record->id]),
         ];
     }
 

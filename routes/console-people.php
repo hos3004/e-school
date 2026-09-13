@@ -9,6 +9,7 @@ use App\Http\Controllers\Console\StudentPlacementController;
 use App\Http\Controllers\Console\StudentProgramController;
 use App\Http\Controllers\Console\StudentTeacherController;
 use App\Http\Controllers\Console\TeacherLifecycleController;
+use App\Http\Controllers\Console\TeacherQualificationController;
 use Illuminate\Support\Facades\Route;
 
 // Included inside the authenticated, enabled /manage group owned by the console shell.
@@ -74,6 +75,17 @@ Route::middleware('can:schedule.manage')->group(function (): void {
         ->whereUlid('profile')->name('students.teacher');
     Route::delete('students/{profile}/teacher', [StudentTeacherController::class, 'destroy'])
         ->whereUlid('profile')->name('students.teacher.remove');
+});
+
+/*
+ * اعتماد كورسات المعلم وسحبها من صفحة ملفه. التأهيل هو ما يُظهر المعلم
+ * في قوائم الإسناد، وكان يُدخَل عند إنشاء الملف وحده فلا يلحق كورسًا يُضاف بعده.
+ */
+Route::middleware('can:staff.contract.update')->group(function (): void {
+    Route::post('teachers/{profile}/qualifications', [TeacherQualificationController::class, 'store'])
+        ->whereUlid('profile')->name('teachers.qualifications.store');
+    Route::delete('teachers/{profile}/qualifications', [TeacherQualificationController::class, 'destroy'])
+        ->whereUlid('profile')->name('teachers.qualifications.destroy');
 });
 
 /* قيد الطالب في برنامج إضافي — لا يحتاج مجموعة؛ المعلم يُسنَد بعده. */
