@@ -10,6 +10,7 @@ use App\Http\Controllers\Console\Support\PersonProfileData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Console\PeopleStoreRequest;
 use App\Http\Requests\Console\PeopleUpdateRequest;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
+use Modules\Enrollments\Domain\Contracts\EnrollmentPlacementGateway;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\Enums\MembershipStatus;
@@ -115,6 +117,7 @@ final class PeopleController extends Controller
     {
         $organizationId = $this->organizationId($request);
         $timezone = (string) (Organization::query()->whereKey($organizationId)->value('default_timezone') ?: config('app.timezone'));
+        $consoleTimezone = (string) app(ConsoleContext::class)->forRequest($request)['timezone'];
 
         return Inertia::render('Console/People/Form', [
             'kind' => $kind,
@@ -131,6 +134,16 @@ final class PeopleController extends Controller
                 'currency' => config('staff.currency.default'),
             ],
             ...$this->formProps($organizationId, $kind),
+            /*
+             * اختيار المعلم داخل التسجيل اختياري: المعلم وحده يحفظ رابطًا معلقًا،
+             * وإضافة الموعد تنشئ الجدول. التوقيت هنا توقيت اللوحة الذي تُدخل به
+             * المواعيد، لا توقيت الطالب.
+             */
+            'teaching' => $kind === 'students' && ($request->user()?->can('schedule.manage') ?? false) ? [
+                'durations' => array_values((array) config('scheduling.individual_session_durations')),
+                'timezone' => $consoleTimezone,
+                'startsOn' => now($consoleTimezone)->toDateString(),
+            ] : null,
             'submitUrl' => route('console.'.$kind.'.store'),
             'backUrl' => route('console.'.$kind.'.index'),
         ]);
@@ -156,8 +169,85 @@ final class PeopleController extends Controller
             $this->duplicateError($error);
         }
 
-        return to_route('console.'.$kind.'.show', ['profile' => $profile->id])
+        $blocked = $kind === 'students' && $profile instanceof StudentProfile
+            ? $this->placeNewStudent($request, $profile, $data) : null;
+
+        $redirect = to_route('console.'.$kind.'.show', ['profile' => $profile->id])
             ->with('success', __('console_people.created'));
+
+        return $blocked === null ? $redirect : $redirect->with('error', $blocked);
+    }
+
+    /**
+     * إكمال تسجيل الطالب: قيده في البرنامج المختار، ثم معلمه إن اختير.
+     *
+     * الحساب والملف محفوظان قبل هذه الخطوة، فلا يُلغى التسجيل بفشلها؛ يُعاد
+     * الطالب إلى صفحته مع سبب التوقف ليُكمل القيد أو الإسناد من قسم البرامج.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function placeNewStudent(Request $request, StudentProfile $profile, array $data): ?string
+    {
+        $user = $request->user();
+        $organizationId = (string) $profile->organization_id;
+        $actorId = (string) $user?->getAuthIdentifier();
+        $studentId = (string) $profile->getKey();
+        $courseId = (string) $data['preferred_course_id'];
+        $teacherId = (string) ($data['teaching_staff_profile_id'] ?? '');
+
+        try {
+            if ($user?->can('enrollment.create')) {
+                app(EnrollmentPlacementGateway::class)->activate(
+                    organizationId: $organizationId,
+                    studentProfileId: $studentId,
+                    programId: (string) $data['preferred_program_id'],
+                    reason: __('console_people.audit.student_enrolled'),
+                    actorId: $actorId,
+                );
+            } elseif ($teacherId !== '') {
+                return __('console_people.teaching.enrollment_forbidden');
+            }
+
+            if ($teacherId === '') {
+                return null;
+            }
+
+            $teaching = app(ConsoleIndividualTeacherService::class);
+            $startTime = (string) ($data['teaching_start_time'] ?? '');
+            $duration = (int) $data['teaching_duration_minutes'];
+
+            if ($startTime === '') {
+                $teaching->linkTeacher(
+                    organizationId: $organizationId,
+                    studentProfileId: $studentId,
+                    courseId: $courseId,
+                    staffProfileId: $teacherId,
+                    durationMinutes: $duration,
+                    actorId: $actorId,
+                    reason: __('console_people.audit.student_teacher_linked'),
+                );
+
+                return null;
+            }
+
+            $teaching->assignTeacher(
+                organizationId: $organizationId,
+                studentProfileId: $studentId,
+                courseId: $courseId,
+                staffProfileId: $teacherId,
+                weeklySlots: [['weekday' => (int) $data['teaching_weekday'], 'start_time' => $startTime]],
+                durationMinutes: $duration,
+                intervalWeeks: 1,
+                timezone: (string) app(ConsoleContext::class)->forRequest($request)['timezone'],
+                startsOn: (string) $data['teaching_starts_on'],
+                actorId: $actorId,
+                reason: __('console_people.audit.student_teacher_assigned'),
+            );
+        } catch (BusinessRuleViolation|AuthorizationException $error) {
+            return __('console_people.teaching.create_blocked', ['reason' => $error->getMessage()]);
+        }
+
+        return null;
     }
 
     public function show(Request $request, string $profile, string $kind): Response
@@ -276,7 +366,7 @@ final class PeopleController extends Controller
             || $request->user()?->can($this->editPermission($kind)), 403);
         $input = $request->validate([
             'country_id' => ['nullable', 'ulid'], 'program_id' => ['nullable', 'ulid'],
-            'search' => ['nullable', 'string', 'max:120'],
+            'course_id' => ['nullable', 'ulid'], 'search' => ['nullable', 'string', 'max:120'],
         ]);
         $organizationId = $this->organizationId($request);
         $country = (string) ($input['country_id'] ?? '');
@@ -289,6 +379,9 @@ final class PeopleController extends Controller
             'courses' => $this->choices($this->profiles->courseOptions($organizationId, $input['program_id'] ?? null)),
             'accounts' => array_key_exists('search', $input) && $request->user()->can($this->createPermission($kind))
                 ? $this->choices($this->profiles->accountOptions($organizationId, (string) $input['search'], $excludedIds)) : [],
+            // المعلمون المؤهلون لهذا الكورس؛ يُحجبون بلا صلاحية إدارة الجداول.
+            'teachers' => $kind === 'students' && ($input['course_id'] ?? null) !== null && $request->user()->can('schedule.manage')
+                ? app(ConsoleIndividualTeacherService::class)->teacherOptions($organizationId, (string) $input['course_id']) : [],
         ]);
     }
 

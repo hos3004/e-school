@@ -7,9 +7,11 @@ namespace Modules\Scheduling\Application\Services;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Scheduling\Application\Actions\CreateScheduleAction;
 use Modules\Scheduling\Application\Actions\DeactivateScheduleAction;
 use Modules\Scheduling\Application\Actions\UpdateScheduleAction;
+use Modules\Scheduling\Domain\Models\PendingTeachingAssignment;
 use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Scheduling\Domain\ValueObjects\WeeklyRecurrence;
 use Modules\Staff\Domain\Contracts\StaffQueries;
@@ -39,6 +41,7 @@ final readonly class ConsoleIndividualTeacherService
         private AcademicCatalogQueries $academics,
         private StaffQueries $staff,
         private TeacherQualificationQueries $qualifications,
+        private AuditRecorder $audit,
     ) {}
 
     /**
@@ -157,6 +160,108 @@ final readonly class ConsoleIndividualTeacherService
         ], $actorId, $reason);
 
         return (string) $schedule->getKey();
+    }
+
+    /**
+     * ربط الطالب بمعلمه قبل حسم الموعد: رابط تدريس معلق بلا جدول.
+     *
+     * يظهر الطالب في قوائم المعلم موسومًا بانتظار الجدول، ولا يولّد حصصًا ولا
+     * استحقاقًا ماليًا، ويتنحّى تلقائيًا عند إنشاء جدول لنفس الطالب والكورس.
+     */
+    public function linkTeacher(
+        string $organizationId,
+        string $studentProfileId,
+        string $courseId,
+        string $staffProfileId,
+        int $durationMinutes,
+        string $actorId,
+        string $reason,
+    ): string {
+        Gate::authorize('create', PendingTeachingAssignment::class);
+
+        // نفس حراس الجدول: الرابط المعلق يصير جدولًا لاحقًا، فلا يُقبل ما لا يُجدول.
+        $course = $this->academics->coursesByIds($organizationId, [$courseId])[$courseId] ?? null;
+
+        if ($course === null) {
+            throw BusinessRuleViolation::make(
+                'scheduling.course_not_found',
+                'scheduling::errors.course_not_found',
+            );
+        }
+
+        if ($course->sessionMode === 'group') {
+            throw BusinessRuleViolation::make(
+                'scheduling.course_mode_mismatch',
+                'scheduling::errors.course_mode_mismatch',
+            );
+        }
+
+        if (!$this->staff->isActiveTeacherForOrganization($organizationId, $staffProfileId)
+            || !$this->qualifications->isQualified($staffProfileId, $courseId)) {
+            throw BusinessRuleViolation::make(
+                'scheduling.teacher_not_eligible',
+                'scheduling::errors.teacher_not_eligible',
+            );
+        }
+
+        if ($this->query($organizationId, $studentProfileId)->where('course_id', $courseId)->exists()) {
+            throw BusinessRuleViolation::make(
+                'scheduling.course_already_scheduled',
+                'scheduling::errors.course_already_scheduled',
+            );
+        }
+
+        return $this->transaction->run(function () use (
+            $organizationId, $studentProfileId, $courseId, $staffProfileId, $durationMinutes, $actorId, $reason,
+        ): string {
+            // القيد الفريد يشمل الصفوف المحذوفة منطقيًا، فالبحث معها ثم الاستعادة.
+            $existing = PendingTeachingAssignment::query()
+                ->withTrashed()
+                ->where('organization_id', $organizationId)
+                ->where('student_profile_id', $studentProfileId)
+                ->where('staff_profile_id', $staffProfileId)
+                ->where('course_id', $courseId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing !== null) {
+                if ($existing->trashed()) {
+                    $existing->restore();
+                }
+
+                return (string) $existing->getKey();
+            }
+
+            $link = PendingTeachingAssignment::query()->create([
+                'organization_id' => $organizationId,
+                'student_profile_id' => $studentProfileId,
+                'staff_profile_id' => $staffProfileId,
+                'course_id' => $courseId,
+                'session_type' => 'individual',
+                'duration_minutes' => $durationMinutes,
+                'reason' => $reason,
+                'created_by' => $actorId,
+            ]);
+
+            $this->audit->record(
+                organizationId: $organizationId,
+                actorId: $actorId,
+                actorType: 'user',
+                action: 'scheduling.teaching_link_created',
+                auditableType: 'pending_teaching_assignment',
+                auditableId: (string) $link->getKey(),
+                oldValues: null,
+                newValues: [
+                    'student_profile_id' => $studentProfileId,
+                    'staff_profile_id' => $staffProfileId,
+                    'course_id' => $courseId,
+                    'duration_minutes' => $durationMinutes,
+                ],
+                reason: $reason,
+            );
+
+            return (string) $link->getKey();
+        });
     }
 
     /** إزالة الطالب من معلمه: إيقاف الجدول وإلغاء حصصه القادمة. */

@@ -46,6 +46,9 @@ final class PeopleStoreRequest extends FormRequest
             $rules['phone'][] = 'required_without:email';
         }
 
+        // حقول المعلم اختيارية، ولا تُقبل أصلًا ممن لا يملك إدارة الجداول.
+        $teaching = $this->user()?->can('schedule.manage') ? 'nullable' : 'prohibited';
+
         return $student ? [...$rules,
             'preferred_program_id' => ['required', 'ulid'],
             'preferred_course_id' => ['required', 'ulid'],
@@ -53,6 +56,11 @@ final class PeopleStoreRequest extends FormRequest
             'city' => ['nullable', 'string', 'max:120'],
             'preferred_language' => ['nullable', Rule::in(Locales::supported())],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'teaching_staff_profile_id' => [$teaching, 'string', 'size:26', 'required_with:teaching_weekday,teaching_start_time,teaching_starts_on'],
+            'teaching_duration_minutes' => [$teaching, 'integer', Rule::in((array) config('scheduling.individual_session_durations')), 'required_with:teaching_staff_profile_id'],
+            'teaching_weekday' => [$teaching, 'integer', 'between:0,6', 'required_with:teaching_start_time'],
+            'teaching_start_time' => [$teaching, 'date_format:H:i', 'required_with:teaching_weekday'],
+            'teaching_starts_on' => [$teaching, 'date_format:Y-m-d', 'required_with:teaching_start_time'],
         ] : [...$rules,
             'staff_code' => ['required', 'string', 'max:32'],
             'employment_type' => ['required', Rule::enum(EmploymentType::class)],
@@ -72,6 +80,18 @@ final class PeopleStoreRequest extends FormRequest
             'course_ids' => ['nullable', 'array'],
             'course_ids.*' => ['ulid', 'distinct'],
             'qualification_notes' => ['nullable', 'string', 'max:2000'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'teaching_staff_profile_id' => __('console_people.fields.teaching_staff_profile_id'),
+            'teaching_duration_minutes' => __('console_people.fields.teaching_duration_minutes'),
+            'teaching_weekday' => __('console_people.fields.teaching_weekday'),
+            'teaching_start_time' => __('console_people.fields.teaching_start_time'),
+            'teaching_starts_on' => __('console_people.fields.teaching_starts_on'),
         ];
     }
 }
