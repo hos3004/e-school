@@ -42,7 +42,7 @@ final class ClassroomReturnDestinationTest extends TestCase
         app()->forgetInstance(VirtualClassroomProvider::class);
         Gate::define('session.join', static fn (): bool => true);
         Http::fake([
-            '*isMeetingRunning*' => Http::response(
+            '*getMeetingInfo*' => Http::response(
                 '<response><returncode>SUCCESS</returncode><running>true</running></response>',
             ),
         ]);

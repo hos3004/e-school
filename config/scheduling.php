@@ -133,6 +133,17 @@ return [
     'auto_finalize_after_minutes' => 30,
 
     /*
+     * إنهاء الحصة الجارية تلقائيًا (in_progress → awaiting_review) بعد موعد
+     * نهايتها بهذه الدقائق، فتظهر للمعلم في كشوف الحضور المعلّقة. لا تقل عن
+     * virtual-classroom.join_window.after_minutes حتى لا تُغلق حصة ما زال
+     * دخولها مسموحًا.
+     */
+    'auto_end' => [
+        'after_minutes' => (int) env('SESSION_AUTO_END_AFTER_MINUTES', 15),
+        'batch_size' => 200,
+    ],
+
+    /*
      * التذكيرات قبل الحصة (بالدقائق قبل البداية).
      */
     'reminders' => [

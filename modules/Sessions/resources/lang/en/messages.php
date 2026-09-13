@@ -19,4 +19,7 @@ return [
     'reminders_dispatched_manually' => 'The session reminder task ran successfully.',
     'substitute_search_updated' => 'The automatic substitute candidate search was refreshed.',
     'substitute_search_summary' => 'Automatic substitute search refreshed :count pending apologies.',
+    'started_by_teacher_join' => 'The session started automatically when the teacher entered the live classroom.',
+    'ended_after_schedule' => 'The session ended automatically after its scheduled end and awaits review.',
+    'auto_end_summary' => ':count sessions past their scheduled end were ended.',
 ];

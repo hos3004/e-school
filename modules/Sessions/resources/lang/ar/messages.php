@@ -19,4 +19,7 @@ return [
     'reminders_dispatched_manually' => 'تم تشغيل مهمة تذكيرات الحصص بنجاح.',
     'substitute_search_updated' => 'تم تحديث البحث التلقائي عن مرشحي المعلم البديل.',
     'substitute_search_summary' => 'تم تحديث البحث التلقائي لعدد :count من الاعتذارات المعلقة.',
+    'started_by_teacher_join' => 'بدأت الحصة تلقائيًا بدخول المعلم إلى الفصل المباشر.',
+    'ended_after_schedule' => 'انتهت الحصة تلقائيًا بعد موعد نهايتها وأصبحت بانتظار المراجعة.',
+    'auto_end_summary' => 'تم إنهاء :count حصة تجاوزت موعد نهايتها.',
 ];

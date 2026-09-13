@@ -18,4 +18,7 @@ return [
     'reminders_dispatched_manually' => 'La tâche de rappel des séances a été exécutée.',
     'substitute_search_updated' => 'La recherche automatique de remplaçants a été actualisée.',
     'substitute_search_summary' => 'La recherche automatique a actualisé :count indisponibilités en attente.',
+    'started_by_teacher_join' => 'La séance a démarré automatiquement à l’entrée de l’enseignant dans la classe virtuelle.',
+    'ended_after_schedule' => 'La séance s’est terminée automatiquement après l’heure prévue et attend la revue.',
+    'auto_end_summary' => ':count séances ayant dépassé leur fin prévue ont été terminées.',
 ];

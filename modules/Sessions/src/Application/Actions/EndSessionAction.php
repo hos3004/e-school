@@ -20,7 +20,7 @@ final readonly class EndSessionAction
         private TransitionSessionStatusAction $transition,
     ) {}
 
-    public function execute(Session $session, string $actorId, string $reason): Session
+    public function execute(Session $session, string $actorId, string $reason, string $actorType = 'user'): Session
     {
         $now = CarbonImmutable::now('UTC');
 
@@ -31,6 +31,7 @@ final readonly class EndSessionAction
             $reason,
             'sessions.session_ended',
             ['actual_end' => $now->toIso8601String()],
+            actorType: $actorType,
         );
 
         $this->events->dispatch(new SessionEndedForReview(

@@ -107,6 +107,21 @@ final class BigBlueButtonProvider implements SupportsWebhookRegistration, Virtua
         return filter_var($this->xmlValue($response, 'running'), FILTER_VALIDATE_BOOL);
     }
 
+    public function isAvailable(string $externalId): bool
+    {
+        $response = $this->call('getMeetingInfo', ['meetingID' => $externalId]);
+
+        if ($this->isNotFound($response)) {
+            return false;
+        }
+
+        $this->assertSuccess($response, 'getMeetingInfo');
+        $endTime = $this->xmlValue($response, 'endTime');
+
+        return !filter_var($this->xmlValue($response, 'hasBeenForciblyEnded'), FILTER_VALIDATE_BOOL)
+            && ($endTime === null || $endTime === '0');
+    }
+
     public function participants(string $externalId): array
     {
         $response = $this->call('getMeetingInfo', ['meetingID' => $externalId]);

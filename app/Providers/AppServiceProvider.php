@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Infrastructure\Identity\OrganizationUsernamePrefixAdapter;
 use App\Listeners\ApplyAutomaticDisciplineFreeze;
 use App\Listeners\FinalizeClassroomAttendance;
+use App\Listeners\StartSessionOnTeacherJoin;
 use App\Listeners\SyncClassroomRecordings;
 use App\Listeners\TrackClassroomParticipantAttendance;
 use App\Support\QueryPerformance;
@@ -40,6 +41,7 @@ final class AppServiceProvider extends ServiceProvider
         Event::listen(ClassroomEnded::class, SyncClassroomRecordings::class);
 
         Event::listen(ClassroomParticipantJoined::class, TrackClassroomParticipantAttendance::class);
+        Event::listen(ClassroomParticipantJoined::class, StartSessionOnTeacherJoin::class);
         Event::listen(ClassroomParticipantLeft::class, TrackClassroomParticipantAttendance::class);
         Event::listen(ClassroomEnded::class, FinalizeClassroomAttendance::class);
         Event::listen(DisciplineActionApplied::class, ApplyAutomaticDisciplineFreeze::class);

@@ -21,7 +21,9 @@ enum ClassroomStatus: string
             self::Provisioned => [self::Running, self::Ended, self::Failed],
             self::Running => [self::Ended, self::Failed],
             self::Failed => [self::Pending, self::Provisioned],
-            self::Ended => [],
+            // غرفة أنهاها المزوّد (خروج الجميع دقيقة) والحصة ما زالت مفتوحة
+            // للدخول: تُعلَّم فاشلة ثم يُعاد تجهيزها، وإلا مُنع الجميع من العودة.
+            self::Ended => [self::Failed],
         };
     }
 

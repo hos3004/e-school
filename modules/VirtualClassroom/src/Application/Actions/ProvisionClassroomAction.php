@@ -62,7 +62,7 @@ final readonly class ProvisionClassroomAction
         if ($classroom->isProvisioned()) {
             if (!$ensureRemoteIsRunning
                 || $classroom->external_id === null
-                || $this->provider->isRunning($classroom->external_id)) {
+                || $this->provider->isAvailable($classroom->external_id)) {
                 return $classroom;
             }
 
@@ -243,7 +243,11 @@ final readonly class ProvisionClassroomAction
             $locked = Classroom::query()->lockForUpdate()->findOrFail((string) $classroom->getKey());
 
             if ($locked->external_id !== $classroom->external_id
-                || !in_array($locked->status, [ClassroomStatus::Provisioned, ClassroomStatus::Running], true)) {
+                || !in_array($locked->status, [
+                    ClassroomStatus::Provisioned,
+                    ClassroomStatus::Running,
+                    ClassroomStatus::Ended,
+                ], true)) {
                 return $locked;
             }
 

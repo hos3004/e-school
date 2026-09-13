@@ -60,6 +60,15 @@ interface VirtualClassroomProvider
     public function isRunning(string $externalId): bool;
 
     /**
+     * هل الغرفة موجودة عند المزوّد وتقبل الدخول، ولو لم يدخلها أحد بعد؟
+     *
+     * يختلف عن isRunning: BBB لا يعدّ الغرفة «جارية» قبل أول دخول فعلي، فبناء
+     * قرار إعادة التجهيز على isRunning يفرّق مشاركين ضغطوا «دخول» معًا على غرف
+     * مختلفة. هذا السؤال وحده يحدد إن كانت الغرفة انتهت أو اختفت.
+     */
+    public function isAvailable(string $externalId): bool;
+
+    /**
      * لقطة بالمشاركين الحاليين — تُستخدم لحساب الحضور آليًا.
      *
      * @return list<ParticipantSnapshot>

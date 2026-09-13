@@ -24,6 +24,7 @@ final readonly class TransitionSessionStatusAction
     /**
      * @param array<string, mixed> $attributes
      * @param array<string, mixed> $metadata
+     * @param string $actorType «system» للانتقالات الآلية؛ changed_by يبقى مستخدمًا حقيقيًا.
      */
     public function execute(
         Session $session,
@@ -33,6 +34,7 @@ final readonly class TransitionSessionStatusAction
         string $auditAction,
         array $attributes = [],
         array $metadata = [],
+        string $actorType = 'user',
     ): Session {
         $reason = trim($reason);
         if ($reason === '') {
@@ -50,6 +52,7 @@ final readonly class TransitionSessionStatusAction
             $auditAction,
             $attributes,
             $metadata,
+            $actorType,
         ): Session {
             /** @var Session $locked */
             $locked = Session::query()
@@ -75,7 +78,7 @@ final readonly class TransitionSessionStatusAction
             $this->audit->record(
                 organizationId: (string) $locked->organization_id,
                 actorId: $actorId,
-                actorType: 'user',
+                actorType: $actorType,
                 action: $auditAction,
                 auditableType: 'sessions',
                 auditableId: (string) $locked->getKey(),

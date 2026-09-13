@@ -161,7 +161,7 @@ it('reprovisions a remote classroom that ended before a portal join', function (
             attendeeSecret: 'attendee-'.$spec->externalMeetingId,
             createdAt: CarbonImmutable::now('UTC'),
         ));
-    $provider->shouldReceive('isRunning')
+    $provider->shouldReceive('isAvailable')
         ->once()
         ->with('SES-'.$sessionId)
         ->andReturnFalse();

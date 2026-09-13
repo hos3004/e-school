@@ -23,6 +23,9 @@ final class NullProvider implements VirtualClassroomProvider
     /** @var array<string, array{running: bool, recording: bool, participants: array<string, ParticipantSnapshot>}> */
     private array $classrooms = [];
 
+    /** @var array<string, true> الغرف التي أُنهيت عند المزوّد */
+    private array $ended = [];
+
     public function name(): string
     {
         return 'null';
@@ -35,6 +38,7 @@ final class NullProvider implements VirtualClassroomProvider
             'recording' => $spec->recordable,
             'participants' => [],
         ];
+        unset($this->ended[$spec->externalMeetingId]);
 
         return new RemoteClassroom(
             externalId: $spec->externalMeetingId,
@@ -82,6 +86,11 @@ final class NullProvider implements VirtualClassroomProvider
         return $this->classrooms[$externalId]['running'] ?? false;
     }
 
+    public function isAvailable(string $externalId): bool
+    {
+        return isset($this->classrooms[$externalId]) && !isset($this->ended[$externalId]);
+    }
+
     public function participants(string $externalId): array
     {
         return array_values($this->classrooms[$externalId]['participants'] ?? []);
@@ -92,6 +101,7 @@ final class NullProvider implements VirtualClassroomProvider
         if (isset($this->classrooms[$externalId])) {
             $this->classrooms[$externalId]['running'] = false;
             $this->classrooms[$externalId]['participants'] = [];
+            $this->ended[$externalId] = true;
         }
     }
 
