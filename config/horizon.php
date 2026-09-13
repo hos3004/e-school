@@ -20,6 +20,10 @@ return [
 
     'allow_notifications' => true,
 
+    // عملية Horizon الرئيسية تتجاوز حد 64MB الافتراضي في هذا التطبيق فتدخل
+    // حلقة إعادة تشغيل ويتوقف الطابور. العمّال أنفسهم عند 128MB.
+    'memory_limit' => (int) env('HORIZON_MEMORY_LIMIT', 128),
+
     'trim' => [
         'recent' => (int) env('HORIZON_TRIM_RECENT', 60),
         'pending' => (int) env('HORIZON_TRIM_PENDING', 60),
