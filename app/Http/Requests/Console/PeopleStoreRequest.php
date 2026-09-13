@@ -7,6 +7,7 @@ namespace App\Http\Requests\Console;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Validator;
 use Modules\Staff\Domain\Enums\ContractBasis;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Shared\Support\Locales;
@@ -48,6 +49,10 @@ final class PeopleStoreRequest extends FormRequest
 
         // حقول المعلم اختيارية، ولا تُقبل أصلًا ممن لا يملك إدارة الجداول.
         $teaching = $this->user()?->can('schedule.manage') ? 'nullable' : 'prohibited';
+        // والتسكين في مجموعة يحتاج صلاحيتي القيد وإدارة المجموعات معًا.
+        $actor = $this->user();
+        $placing = $actor !== null && $actor->can('enrollment.create') && $actor->can('group.manage')
+            ? 'nullable' : 'prohibited';
 
         return $student ? [...$rules,
             'preferred_program_id' => ['required', 'ulid'],
@@ -61,6 +66,18 @@ final class PeopleStoreRequest extends FormRequest
             'teaching_weekday' => [$teaching, 'integer', 'between:0,6', 'required_with:teaching_start_time'],
             'teaching_start_time' => [$teaching, 'date_format:H:i', 'required_with:teaching_weekday'],
             'teaching_starts_on' => [$teaching, 'date_format:Y-m-d', 'required_with:teaching_start_time'],
+            'placement_mode' => [$placing, Rule::in(['existing', 'new'])],
+            'placement_group_id' => [$placing, 'ulid', 'required_if:placement_mode,existing'],
+            'placement_group_code' => [
+                $placing, 'string', 'max:32', 'regex:/^[A-Za-z0-9-]+$/',
+                Rule::unique('groups', 'code'), 'required_if:placement_mode,new',
+            ],
+            'placement_group_name' => [$placing, 'string', 'max:120', 'required_if:placement_mode,new'],
+            'placement_group_capacity' => [
+                $placing, 'integer',
+                'min:'.config('groups.capacity.minimum'), 'max:'.config('groups.capacity.maximum'),
+            ],
+            'placement_group_starts_on' => [$placing, 'date_format:Y-m-d'],
         ] : [...$rules,
             'staff_code' => ['required', 'string', 'max:32'],
             'employment_type' => ['required', Rule::enum(EmploymentType::class)],
@@ -83,6 +100,20 @@ final class PeopleStoreRequest extends FormRequest
         ];
     }
 
+    /**
+     * المعلم الفردي والمجموعة تسكينان متنافيان لكورس واحد؛ لا يُقبلان معًا.
+     *
+     * @return list<callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            if ($this->filled('teaching_staff_profile_id') && $this->filled('placement_mode')) {
+                $validator->errors()->add('placement_mode', __('console_people.placement.teacher_or_group'));
+            }
+        }];
+    }
+
     /** @return array<string, string> */
     public function attributes(): array
     {
@@ -92,6 +123,11 @@ final class PeopleStoreRequest extends FormRequest
             'teaching_weekday' => __('console_people.fields.teaching_weekday'),
             'teaching_start_time' => __('console_people.fields.teaching_start_time'),
             'teaching_starts_on' => __('console_people.fields.teaching_starts_on'),
+            'placement_group_id' => __('console_people.fields.placement_group_id'),
+            'placement_group_code' => __('console_people.fields.placement_group_code'),
+            'placement_group_name' => __('console_people.fields.placement_group_name'),
+            'placement_group_capacity' => __('console_people.fields.placement_group_capacity'),
+            'placement_group_starts_on' => __('console_people.fields.placement_group_starts_on'),
         ];
     }
 }

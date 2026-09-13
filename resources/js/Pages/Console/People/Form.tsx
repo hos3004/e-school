@@ -56,6 +56,12 @@ type Data = {
   teaching_weekday: string;
   teaching_start_time: string;
   teaching_starts_on: string;
+  placement_mode: string;
+  placement_group_id: string;
+  placement_group_code: string;
+  placement_group_name: string;
+  placement_group_capacity: string;
+  placement_group_starts_on: string;
 };
 type Props = {
   kind: PersonKind;
@@ -79,12 +85,24 @@ type Props = {
     timezone: string;
     startsOn: string;
   } | null;
+  placement?: {
+    capacityMin: number;
+    capacityMax: number;
+    startsOn: string;
+  } | null;
+};
+type GroupChoice = Choice & {
+  seats: number | null;
+  draft: boolean;
+  teachers: string;
 };
 type Options = {
   regions: Choice[];
   courses: Choice[];
   accounts: Choice[];
   teachers: Choice[];
+  courseMode: string | null;
+  groups: GroupChoice[];
 };
 export default function PeopleForm(props: Props) {
   const {
@@ -148,6 +166,12 @@ export default function PeopleForm(props: Props) {
     teaching_weekday: "",
     teaching_start_time: "",
     teaching_starts_on: props.teaching?.startsOn ?? "",
+    placement_mode: "",
+    placement_group_id: "",
+    placement_group_code: "",
+    placement_group_name: "",
+    placement_group_capacity: "",
+    placement_group_starts_on: props.placement?.startsOn ?? "",
     ...Object.fromEntries(
       Object.entries(person).map(([key, value]) => [key, value ?? ""]),
     ),
@@ -168,6 +192,8 @@ export default function PeopleForm(props: Props) {
   const [courses, setCourses] = useState<Choice[]>(props.courses);
   const [teachers, setTeachers] = useState<Choice[]>([]);
   const [teachersLoading, setTeachersLoading] = useState(false);
+  const [groups, setGroups] = useState<GroupChoice[]>([]);
+  const [courseMode, setCourseMode] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Choice[]>([]);
   const [accountSearch, setAccountSearch] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -222,14 +248,24 @@ export default function PeopleForm(props: Props) {
   ]);
 
   /*
-   * معلمو الكورس المختار. الطلب يُلغى عند تبديل الكورس، والقائمة تُفرَّغ فورًا
-   * حتى لا يبقى اختيار معلم لا يُدرّس الكورس الجديد.
+   * معلمو الكورس المختار ومجموعاته المفتوحة، ونمط جلساته الذي يحدد أيهما يظهر.
+   * الطلب يُلغى عند تبديل الكورس والقوائم تُفرَّغ فورًا، حتى لا يبقى اختيار
+   * معلم أو مجموعة لا يخص الكورس الجديد.
    */
-  const teachingEnabled = Boolean(creating && isStudent && props.teaching);
+  const placingEnabled = Boolean(
+    creating && isStudent && (props.teaching || props.placement),
+  );
   useEffect(() => {
-    if (!teachingEnabled) return;
-    setData("teaching_staff_profile_id", "");
+    if (!placingEnabled) return;
+    setData((values) => ({
+      ...values,
+      teaching_staff_profile_id: "",
+      placement_mode: "",
+      placement_group_id: "",
+    }));
     setTeachers([]);
+    setGroups([]);
+    setCourseMode(null);
     if (!data.preferred_course_id) return;
     const controller = new AbortController();
     setTeachersLoading(true);
@@ -243,7 +279,11 @@ export default function PeopleForm(props: Props) {
         if (!response.ok) throw new Error();
         return (await response.json()) as Options;
       })
-      .then((result) => setTeachers(result.teachers ?? []))
+      .then((result) => {
+        setTeachers(result.teachers ?? []);
+        setGroups(result.groups ?? []);
+        setCourseMode(result.courseMode ?? null);
+      })
       .catch((error) => {
         if (error.name !== "AbortError")
           setLookupError(t("console_people.lookup_error"));
@@ -252,7 +292,7 @@ export default function PeopleForm(props: Props) {
         if (!controller.signal.aborted) setTeachersLoading(false);
       });
     return () => controller.abort();
-  }, [data.preferred_course_id, optionsUrl, teachingEnabled, t, setData]);
+  }, [data.preferred_course_id, optionsUrl, placingEnabled, t, setData]);
 
   async function suggestUsername(force = false) {
     if (
@@ -900,118 +940,255 @@ export default function PeopleForm(props: Props) {
                   )}
                 </Section>
               ) : null)}
-            {creating && isStudent && props.teaching && (
+            {creating && isStudent && (props.teaching || props.placement) && (
               <Section
                 id="teaching"
                 number="04"
                 title={t("console_people.teaching_section")}
                 description={t("console_people.teaching_intro")}
               >
-                <Field
-                  name="teaching_staff_profile_id"
-                  label={t("console_people.fields.teaching_staff_profile_id")}
-                  optional
-                  error={fieldErrors.teaching_staff_profile_id}
-                  hint={t("console_people.teaching_slot_hint")}
-                >
-                  <select
-                    id="teaching_staff_profile_id"
-                    value={data.teaching_staff_profile_id}
-                    className={fieldClass}
-                    disabled={!data.preferred_course_id || teachersLoading}
-                    onChange={(event) =>
-                      setData("teaching_staff_profile_id", event.target.value)
-                    }
-                    aria-invalid={Boolean(fieldErrors.teaching_staff_profile_id)}
-                    aria-describedby={
-                      fieldErrors.teaching_staff_profile_id
-                        ? "teaching_staff_profile_id-error"
-                        : "teaching_staff_profile_id-hint"
-                    }
-                  >
-                    <option value="">
-                      {teachersLoading
-                        ? t("console_people.loading")
-                        : t("console_people.choose")}
-                    </option>
-                    {teachers.map((teacher) => (
-                      <option key={teacher.value} value={teacher.value}>
-                        {teacher.label}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                {data.preferred_course_id &&
-                  !teachersLoading &&
-                  teachers.length === 0 && (
-                    <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
-                      {t("console_people.teaching_no_teachers")}
-                    </p>
-                  )}
-                {data.teaching_staff_profile_id !== "" && (
+                {props.placement && courseMode !== "individual" && (
                   <>
+                    <p className="span2 text-sm text-slate-500">
+                      {t("console_people.placement_group_intro")}
+                    </p>
                     <Field
-                      name="teaching_duration_minutes"
-                      label={t(
-                        "console_people.fields.teaching_duration_minutes",
-                      )}
-                      error={fieldErrors.teaching_duration_minutes}
+                      name="placement_mode"
+                      label={t("console_people.placement_mode_label")}
+                      optional
+                      error={fieldErrors.placement_mode}
                     >
                       <select
-                        id="teaching_duration_minutes"
-                        value={data.teaching_duration_minutes}
+                        id="placement_mode"
+                        value={data.placement_mode}
                         className={fieldClass}
+                        disabled={!data.preferred_course_id}
+                        onChange={(event) =>
+                          setData((values) => ({
+                            ...values,
+                            placement_mode: event.target.value,
+                            placement_group_id: "",
+                          }))
+                        }
+                        aria-invalid={Boolean(fieldErrors.placement_mode)}
+                      >
+                        <option value="">
+                          {t("console_people.placement_mode_none")}
+                        </option>
+                        <option value="existing">
+                          {t("console_people.placement_mode_existing")}
+                        </option>
+                        <option value="new">
+                          {t("console_people.placement_mode_new")}
+                        </option>
+                      </select>
+                    </Field>
+                    {data.placement_mode === "existing" &&
+                      (groups.length === 0 ? (
+                        <p className="span2 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+                          {t("console_people.placement_no_groups")}
+                        </p>
+                      ) : (
+                        <Field
+                          name="placement_group_id"
+                          label={t("console_people.fields.placement_group_id")}
+                          error={fieldErrors.placement_group_id}
+                        >
+                          <select
+                            id="placement_group_id"
+                            value={data.placement_group_id}
+                            className={fieldClass}
+                            onChange={(event) =>
+                              setData("placement_group_id", event.target.value)
+                            }
+                            aria-invalid={Boolean(
+                              fieldErrors.placement_group_id,
+                            )}
+                          >
+                            <option value="">
+                              {t("console_people.choose")}
+                            </option>
+                            {groups.map((group) => (
+                              <option key={group.value} value={group.value}>
+                                {group.label}
+                                {group.draft
+                                  ? " — " + t("console_people.placement.draft")
+                                  : ""}
+                                {group.seats === null
+                                  ? ""
+                                  : " — " +
+                                    group.seats +
+                                    " " +
+                                    t("console_people.placement.seats")}
+                                {group.teachers ? " — " + group.teachers : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                      ))}
+                    {data.placement_mode === "new" && props.placement && (
+                      <>
+                        <p className="span2 text-sm text-slate-500">
+                          {t("console_people.placement_new_hint")}
+                        </p>
+                        {input(
+                          "placement_group_code",
+                          "text",
+                          false,
+                          t("console_people.placement_code_hint"),
+                        )}
+                        {input("placement_group_name")}
+                        <Field
+                          name="placement_group_capacity"
+                          label={t(
+                            "console_people.fields.placement_group_capacity",
+                          )}
+                          optional
+                          error={fieldErrors.placement_group_capacity}
+                        >
+                          <input
+                            id="placement_group_capacity"
+                            type="number"
+                            min={props.placement.capacityMin}
+                            max={props.placement.capacityMax}
+                            step="1"
+                            value={data.placement_group_capacity}
+                            className={fieldClass}
+                            onChange={(event) =>
+                              setData(
+                                "placement_group_capacity",
+                                event.target.value,
+                              )
+                            }
+                            aria-invalid={Boolean(
+                              fieldErrors.placement_group_capacity,
+                            )}
+                          />
+                        </Field>
+                        {input("placement_group_starts_on", "date", true)}
+                      </>
+                    )}
+                  </>
+                )}
+                {props.teaching && courseMode !== "group" && (
+                  <>
+                    <Field
+                      name="teaching_staff_profile_id"
+                      label={t(
+                        "console_people.fields.teaching_staff_profile_id",
+                      )}
+                      optional
+                      error={fieldErrors.teaching_staff_profile_id}
+                      hint={t("console_people.teaching_slot_hint")}
+                    >
+                      <select
+                        id="teaching_staff_profile_id"
+                        value={data.teaching_staff_profile_id}
+                        className={fieldClass}
+                        disabled={!data.preferred_course_id || teachersLoading}
                         onChange={(event) =>
                           setData(
-                            "teaching_duration_minutes",
+                            "teaching_staff_profile_id",
                             event.target.value,
                           )
                         }
                         aria-invalid={Boolean(
-                          fieldErrors.teaching_duration_minutes,
+                          fieldErrors.teaching_staff_profile_id,
                         )}
-                      >
-                        {props.teaching.durations.map((duration) => (
-                          <option key={duration} value={String(duration)}>
-                            {duration}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field
-                      name="teaching_weekday"
-                      label={t("console_people.fields.teaching_weekday")}
-                      optional
-                      error={fieldErrors.teaching_weekday}
-                      hint={t("console_people.teaching_timezone_hint").replace(
-                        ":timezone",
-                        props.teaching.timezone,
-                      )}
-                    >
-                      <select
-                        id="teaching_weekday"
-                        value={data.teaching_weekday}
-                        className={fieldClass}
-                        onChange={(event) =>
-                          setData("teaching_weekday", event.target.value)
-                        }
-                        aria-invalid={Boolean(fieldErrors.teaching_weekday)}
                         aria-describedby={
-                          fieldErrors.teaching_weekday
-                            ? "teaching_weekday-error"
-                            : "teaching_weekday-hint"
+                          fieldErrors.teaching_staff_profile_id
+                            ? "teaching_staff_profile_id-error"
+                            : "teaching_staff_profile_id-hint"
                         }
                       >
-                        <option value="">{t("console_people.choose")}</option>
-                        {[0, 1, 2, 3, 4, 5, 6].map((weekday) => (
-                          <option key={weekday} value={String(weekday)}>
-                            {t("console_people.teaching.weekday_" + weekday)}
+                        <option value="">
+                          {teachersLoading
+                            ? t("console_people.loading")
+                            : t("console_people.choose")}
+                        </option>
+                        {teachers.map((teacher) => (
+                          <option key={teacher.value} value={teacher.value}>
+                            {teacher.label}
                           </option>
                         ))}
                       </select>
                     </Field>
-                    {input("teaching_start_time", "time", true)}
-                    {input("teaching_starts_on", "date", true)}
+                    {data.preferred_course_id &&
+                      !teachersLoading &&
+                      teachers.length === 0 && (
+                        <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+                          {t("console_people.teaching_no_teachers")}
+                        </p>
+                      )}
+                    {data.teaching_staff_profile_id !== "" && (
+                      <>
+                        <Field
+                          name="teaching_duration_minutes"
+                          label={t(
+                            "console_people.fields.teaching_duration_minutes",
+                          )}
+                          error={fieldErrors.teaching_duration_minutes}
+                        >
+                          <select
+                            id="teaching_duration_minutes"
+                            value={data.teaching_duration_minutes}
+                            className={fieldClass}
+                            onChange={(event) =>
+                              setData(
+                                "teaching_duration_minutes",
+                                event.target.value,
+                              )
+                            }
+                            aria-invalid={Boolean(
+                              fieldErrors.teaching_duration_minutes,
+                            )}
+                          >
+                            {props.teaching.durations.map((duration) => (
+                              <option key={duration} value={String(duration)}>
+                                {duration}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field
+                          name="teaching_weekday"
+                          label={t("console_people.fields.teaching_weekday")}
+                          optional
+                          error={fieldErrors.teaching_weekday}
+                          hint={t(
+                            "console_people.teaching_timezone_hint",
+                          ).replace(":timezone", props.teaching.timezone)}
+                        >
+                          <select
+                            id="teaching_weekday"
+                            value={data.teaching_weekday}
+                            className={fieldClass}
+                            onChange={(event) =>
+                              setData("teaching_weekday", event.target.value)
+                            }
+                            aria-invalid={Boolean(fieldErrors.teaching_weekday)}
+                            aria-describedby={
+                              fieldErrors.teaching_weekday
+                                ? "teaching_weekday-error"
+                                : "teaching_weekday-hint"
+                            }
+                          >
+                            <option value="">
+                              {t("console_people.choose")}
+                            </option>
+                            {[0, 1, 2, 3, 4, 5, 6].map((weekday) => (
+                              <option key={weekday} value={String(weekday)}>
+                                {t(
+                                  "console_people.teaching.weekday_" + weekday,
+                                )}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        {input("teaching_start_time", "time", true)}
+                        {input("teaching_starts_on", "date", true)}
+                      </>
+                    )}
                   </>
                 )}
               </Section>
@@ -1153,7 +1330,7 @@ export default function PeopleForm(props: Props) {
                               course.value === data.preferred_course_id,
                           )?.label,
                         ],
-                        ...(props.teaching
+                        ...(props.teaching && courseMode !== "group"
                           ? [
                               [
                                 t(
@@ -1219,11 +1396,13 @@ export default function PeopleForm(props: Props) {
                     04 · {t("console_people.qualifications_section")}
                   </a>
                 )}
-                {creating && isStudent && props.teaching && (
-                  <a href="#teaching" className="text-teal-800">
-                    04 · {t("console_people.teaching_section")}
-                  </a>
-                )}
+                {creating &&
+                  isStudent &&
+                  (props.teaching || props.placement) && (
+                    <a href="#teaching" className="text-teal-800">
+                      04 · {t("console_people.teaching_section")}
+                    </a>
+                  )}
               </nav>
               <p className="summary-note">
                 {t(

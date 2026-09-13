@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Console;
 
 use App\Application\Actions\AssignStudentToGroupAction;
 use App\Application\Actions\TransferStudentAction;
+use App\Http\Controllers\Console\Support\GroupPlacementOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Console\StudentPlacementRequest;
 use App\Http\Requests\Console\StudentTransferRequest;
@@ -18,7 +19,6 @@ use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Groups\Domain\ValueObjects\StudentGroupMembershipData;
-use Modules\Staff\Domain\Contracts\StaffQueries;
 use Modules\Students\Domain\Models\StudentProfile;
 
 /**
@@ -33,7 +33,7 @@ final class StudentPlacementController extends Controller
     public function __construct(
         private readonly AcademicCatalogQueries $catalog,
         private readonly GroupAdministrationQueries $groups,
-        private readonly StaffQueries $staff,
+        private readonly GroupPlacementOptions $groupOptions,
         private readonly AssignStudentToGroupAction $assign,
         private readonly TransferStudentAction $transfer,
     ) {}
@@ -47,7 +47,7 @@ final class StudentPlacementController extends Controller
 
         return response()->json([
             'courses' => $this->courseOptions($organizationId),
-            'groups' => $courseId === '' ? [] : $this->groupOptions($organizationId, $courseId),
+            'groups' => $courseId === '' ? [] : $this->groupOptions->forCourse($organizationId, $courseId),
         ]);
     }
 
@@ -106,43 +106,14 @@ final class StudentPlacementController extends Controller
             foreach ($this->catalog->courses($organizationId, $program->id) as $course) {
                 $options[] = [
                     'value' => $course->id,
-                    'label' => $this->label($course->name, $course->code).' — '.$this->label($program->name, $program->code),
+                    'label' => GroupPlacementOptions::label($course->name, $course->code)
+                        .' — '.GroupPlacementOptions::label($program->name, $program->code),
                     'program_id' => $program->id,
                 ];
             }
         }
 
         return $options;
-    }
-
-    /** @return list<array{value: string, label: string, seats: int|null, draft: bool, teachers: string}> */
-    private function groupOptions(string $organizationId, string $courseId): array
-    {
-        $course = $this->catalog->coursesByIds($organizationId, [$courseId])[$courseId] ?? null;
-
-        if ($course === null || $course->programId === null) {
-            return [];
-        }
-
-        $open = $this->groups->openForPlacement($organizationId, $course->programId, $courseId);
-        $teacherIds = [];
-        foreach ($open as $group) {
-            foreach ($group->teacherProfileIds as $teacherId) {
-                $teacherIds[] = $teacherId;
-            }
-        }
-        $names = $this->staff->namesForProfiles($organizationId, array_values(array_unique($teacherIds)));
-
-        return array_map(fn ($group): array => [
-            'value' => $group->id,
-            'label' => $this->label($group->name, $group->code),
-            'seats' => $group->capacity === null ? null : $group->remainingSeats,
-            'draft' => $group->isDraft(),
-            'teachers' => implode('، ', array_values(array_filter(array_map(
-                static fn (string $id): ?string => $names[$id] ?? null,
-                $group->teacherProfileIds,
-            )))),
-        ], $open);
     }
 
     /** @return array{id: string, program_id: string} */
@@ -207,13 +178,5 @@ final class StudentPlacementController extends Controller
     private function actorId(Request $request): string
     {
         return (string) $request->user()?->getAuthIdentifier();
-    }
-
-    /** @param array<string, mixed> $names */
-    private function label(array $names, string $fallback): string
-    {
-        $value = $names[app()->getLocale()] ?? $names['ar'] ?? $names['en'] ?? null;
-
-        return is_string($value) && $value !== '' ? $value : $fallback;
     }
 }

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Console;
 
+use App\Application\Actions\AssignStudentToGroupAction;
 use App\Application\Queries\ProfileAdministrationQueryService;
 use App\Http\Controllers\Console\Support\ConsoleContext;
+use App\Http\Controllers\Console\Support\GroupPlacementOptions;
 use App\Http\Controllers\Console\Support\PersonProfileData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Console\PeopleStoreRequest;
@@ -25,6 +27,7 @@ use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
 use Modules\Enrollments\Domain\Contracts\EnrollmentPlacementGateway;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
+use Modules\Groups\Application\Services\ConsoleSetupService;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
@@ -144,6 +147,15 @@ final class PeopleController extends Controller
                 'timezone' => $consoleTimezone,
                 'startsOn' => now($consoleTimezone)->toDateString(),
             ] : null,
+            /*
+             * تسكين كورس جماعي: مجموعة قائمة مفتوحة، أو مجموعة جديدة تُنشأ قيد
+             * التخطيط داخل البرنامج المختار فيصير انتساب الطالب معلّقًا حتى تفعيلها.
+             */
+            'placement' => $kind === 'students' && $this->canPlaceInGroup($request) ? [
+                'capacityMin' => (int) config('groups.capacity.minimum'),
+                'capacityMax' => (int) config('groups.capacity.maximum'),
+                'startsOn' => now($consoleTimezone)->toDateString(),
+            ] : null,
             'submitUrl' => route('console.'.$kind.'.store'),
             'backUrl' => route('console.'.$kind.'.index'),
         ]);
@@ -208,6 +220,30 @@ final class PeopleController extends Controller
                 return __('console_people.teaching.enrollment_forbidden');
             }
 
+            $placementMode = (string) ($data['placement_mode'] ?? '');
+
+            if ($placementMode !== '') {
+                /*
+                 * إنشاء المجموعة والتسكين فيها صفقة واحدة: لو رُفض التسكين لا
+                 * تبقى مجموعة يتيمة يحجز كودها المحاولة التالية.
+                 */
+                DB::transaction(function () use ($request, $data, $organizationId, $actorId, $studentId, $courseId, $placementMode): void {
+                    app(AssignStudentToGroupAction::class)->execute(
+                        actorOrganizationId: $organizationId,
+                        studentProfileId: $studentId,
+                        programId: (string) $data['preferred_program_id'],
+                        groupId: $placementMode === 'new'
+                            ? $this->createGroupForProgram($request, $data, $organizationId, $actorId)
+                            : (string) $data['placement_group_id'],
+                        courseId: $courseId,
+                        actorId: $actorId,
+                        reason: __('console_people.audit.student_placed'),
+                    );
+                });
+
+                return null;
+            }
+
             if ($teacherId === '') {
                 return null;
             }
@@ -248,6 +284,39 @@ final class PeopleController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * مجموعة جديدة قيد التخطيط داخل برنامج التسجيل، تمر على خدمة المجموعات
+     * نفسها التي تستعملها صفحة المجموعات: نفس الحراس والتدقيق وحالة البداية.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function createGroupForProgram(Request $request, array $data, string $organizationId, string $actorId): string
+    {
+        return app(ConsoleSetupService::class)->save($organizationId, null, [
+            'code' => trim((string) $data['placement_group_code']),
+            'name' => ['ar' => (string) $data['placement_group_name']],
+            'capacity' => isset($data['placement_group_capacity']) ? (int) $data['placement_group_capacity'] : null,
+            'timezone' => (string) app(ConsoleContext::class)->forRequest($request)['timezone'],
+            'starts_on' => $data['placement_group_starts_on'] ?? null,
+            'ends_on' => null,
+            'program_ids' => [(string) $data['preferred_program_id']],
+        ], $actorId, __('console_people.audit.student_group_created'));
+    }
+
+    private function canPlaceInGroup(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user !== null && $user->can('enrollment.create') && $user->can('group.manage');
+    }
+
+    private function courseMode(string $organizationId, string $courseId): ?string
+    {
+        $course = app(AcademicCatalogQueries::class)->coursesByIds($organizationId, [$courseId])[$courseId] ?? null;
+
+        return $course === null ? null : (string) $course->sessionMode;
     }
 
     public function show(Request $request, string $profile, string $kind): Response
@@ -382,6 +451,10 @@ final class PeopleController extends Controller
             // المعلمون المؤهلون لهذا الكورس؛ يُحجبون بلا صلاحية إدارة الجداول.
             'teachers' => $kind === 'students' && ($input['course_id'] ?? null) !== null && $request->user()->can('schedule.manage')
                 ? app(ConsoleIndividualTeacherService::class)->teacherOptions($organizationId, (string) $input['course_id']) : [],
+            'courseMode' => $kind === 'students' && ($input['course_id'] ?? null) !== null
+                ? $this->courseMode($organizationId, (string) $input['course_id']) : null,
+            'groups' => $kind === 'students' && ($input['course_id'] ?? null) !== null && $this->canPlaceInGroup($request)
+                ? app(GroupPlacementOptions::class)->forCourse($organizationId, (string) $input['course_id']) : [],
         ]);
     }
 
