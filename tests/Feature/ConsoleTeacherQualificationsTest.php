@@ -12,6 +12,7 @@ use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupTeacher;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
+use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Shared\Testing\Fixtures;
@@ -152,6 +153,42 @@ final class ConsoleTeacherQualificationsTest extends TestCase
                 'reason' => 'محاولة سحب اعتماد بينما الإسناد قائم',
             ])->assertSessionHasErrors('business_rule');
 
+        $this->assertSame(1, DB::table('teacher_courses')->count());
+        $this->assertNull(DB::table('teacher_courses')->value('revoked_at'));
+    }
+
+    /**
+     * المدرسة تعمل بالجداول الفردية بلا مجموعات، فحارس المجموعات وحده
+     * لا يحمي أحدًا هنا: سحب الاعتماد كان يمر ويُخرج المعلم من قوائم كورسٍ
+     * هو يدرّسه فعلًا بلا تحذير.
+     */
+    public function test_revoking_is_refused_while_an_active_individual_schedule_exists(): void
+    {
+        Fixtures::qualifyTeacher($this->staffProfileId, $this->courseId);
+        Schedule::query()->create([
+            'organization_id' => $this->organizationId,
+            'student_profile_id' => Fixtures::studentProfileId(),
+            'course_id' => $this->courseId,
+            'staff_profile_id' => $this->staffProfileId,
+            'session_type' => 'individual',
+            'rrule' => 'FREQ=WEEKLY;BYDAY=MO',
+            'start_time' => '10:00',
+            'duration_minutes' => 30,
+            'timezone' => 'UTC',
+            'starts_on' => now()->subMonth()->toDateString(),
+            'materialized_until' => now()->addMonth()->toDateString(),
+            'is_active' => true,
+            'created_by' => Fixtures::userId(),
+        ]);
+
+        $this->assertDatabaseCount('group_teachers', 0);
+
+        $this->actingAs($this->admin(), 'web')
+            ->delete('/manage/teachers/'.$this->staffProfileId.'/qualifications', [
+                'course_id' => $this->courseId,
+                'reason' => 'سحب الاعتماد والطالب ما زال على جدولها',
+            ])->assertSessionHasErrors('business_rule');
+
         $this->assertNull(DB::table('teacher_courses')->value('revoked_at'));
     }
 
@@ -171,6 +208,7 @@ final class ConsoleTeacherQualificationsTest extends TestCase
             'course_id' => $this->courseId, 'reason' => 'بلا صلاحية',
         ])->assertForbidden();
 
+        $this->assertSame(1, DB::table('teacher_courses')->count());
         $this->assertNull(DB::table('teacher_courses')->value('revoked_at'));
     }
 

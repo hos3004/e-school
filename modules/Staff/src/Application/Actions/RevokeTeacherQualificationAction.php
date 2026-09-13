@@ -7,6 +7,7 @@ namespace Modules\Staff\Application\Actions;
 use Carbon\CarbonImmutable;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
+use Modules\Scheduling\Domain\Contracts\IndividualTeachingAssignments;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Domain\Models\TeacherCourse;
 use Shared\Support\BusinessRuleViolation;
@@ -15,13 +16,16 @@ use Shared\Support\Transaction;
 /**
  * إلغاء اعتماد معلم على كورس — تعليق موثق لا حذف.
  *
- * لا يُلغى اعتماد يكسر إسنادًا نشطًا بصمت: أي إسناد مفتوح على نفس
- * الكورس يمنع الإلغاء حتى يُنهى عبر مسار المجموعات الرسمي.
+ * لا يُلغى اعتماد يكسر إسنادًا نشطًا بصمت، سواء كان إسناد مجموعة مفتوحًا
+ * أو جدولًا فرديًا ساريًا على نفس الكورس — والمدرسة تعمل اليوم بالجداول
+ * الفردية بلا مجموعات، فحارس المجموعات وحده كان يمر على كل الحالات القائمة.
+ * يُنهى الإسناد من مساره الرسمي أولًا ثم يُسحب الاعتماد.
  */
 final readonly class RevokeTeacherQualificationAction
 {
     public function __construct(
         private GroupAdministrationQueries $groups,
+        private IndividualTeachingAssignments $individual,
         private AuditRecorder $audit,
         private Transaction $transaction,
     ) {}
@@ -97,6 +101,21 @@ final readonly class RevokeTeacherQualificationAction
                     'staff.qualification_active_assignment',
                     'staff::errors.qualification_active_assignment',
                     ['group_id' => $assignment->groupId, 'course_id' => $courseId],
+                );
+            }
+        }
+
+        $individual = $this->individual->activeForTeacher(
+            (string) $profile->organization_id,
+            (string) $profile->getKey(),
+        );
+
+        foreach ($individual as $assignment) {
+            if ($assignment->courseId === $courseId) {
+                throw BusinessRuleViolation::make(
+                    'staff.qualification_active_assignment',
+                    'staff::errors.qualification_active_assignment',
+                    ['schedule_id' => $assignment->id, 'course_id' => $courseId],
                 );
             }
         }
