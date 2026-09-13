@@ -6,6 +6,7 @@ use App\Http\Controllers\Console\EnrollmentFreezeController;
 use App\Http\Controllers\Console\PeopleController;
 use App\Http\Controllers\Console\StudentLifecycleController;
 use App\Http\Controllers\Console\StudentPlacementController;
+use App\Http\Controllers\Console\StudentProgramController;
 use App\Http\Controllers\Console\StudentTeacherController;
 use App\Http\Controllers\Console\TeacherLifecycleController;
 use Illuminate\Support\Facades\Route;
@@ -67,6 +68,14 @@ Route::middleware(['can:enrollment.create', 'can:group.manage'])->group(function
 Route::middleware('can:schedule.manage')->group(function (): void {
     Route::get('students/{profile}/teacher-options', [StudentTeacherController::class, 'options'])
         ->whereUlid('profile')->name('students.teacher-options');
+    Route::post('students/{profile}/teacher', [StudentTeacherController::class, 'store'])
+        ->whereUlid('profile')->name('students.teacher.assign');
     Route::put('students/{profile}/teacher', [StudentTeacherController::class, 'update'])
         ->whereUlid('profile')->name('students.teacher');
+    Route::delete('students/{profile}/teacher', [StudentTeacherController::class, 'destroy'])
+        ->whereUlid('profile')->name('students.teacher.remove');
 });
+
+/* قيد الطالب في برنامج إضافي — لا يحتاج مجموعة؛ المعلم يُسنَد بعده. */
+Route::post('students/{profile}/programs', [StudentProgramController::class, 'store'])
+    ->middleware('can:enrollment.create')->whereUlid('profile')->name('students.programs');

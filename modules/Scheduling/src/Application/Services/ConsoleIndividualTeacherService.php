@@ -7,6 +7,8 @@ namespace Modules\Scheduling\Application\Services;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
+use Modules\Scheduling\Application\Actions\CreateScheduleAction;
+use Modules\Scheduling\Application\Actions\DeactivateScheduleAction;
 use Modules\Scheduling\Application\Actions\UpdateScheduleAction;
 use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Scheduling\Domain\ValueObjects\WeeklyRecurrence;
@@ -16,22 +18,23 @@ use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
 /**
- * تغيير معلم الكورس الفردي لطالب من صفحة ملفه.
+ * معلمو الكورسات الفردية لطالب واحد، من صفحة ملفه.
  *
- * لا يعدّل حصصًا مباشرة: يمرّ عبر UpdateScheduleAction فتُلغى الحصص المستقبلية
- * خارج نافذة القفل وتُعاد بالمعلم الجديد. لذلك يخرج الطالب من جدول المعلم
- * السابق ويظهر عند الجديد بالشكل المعتمد، وتبقى الحصص الماضية وحضورها
- * ومستحقاتها كما هي.
+ * المدرسة تشتغل بالجداول الفردية: علاقة الطالب بمعلمه هي جدوله، لا انتساب
+ * لمجموعة. لذلك «إسناد معلم» ينشئ جدولًا، و«تغيير المعلم» يعدّله، و«إزالة من
+ * المعلم» يوقفه — وكلها تمر على أفعال الجدولة المعتمدة فتُعاد الحصص المستقبلية
+ * أو تُلغى، وتبقى الحصص الماضية وحضورها ومستحقاتها كما هي.
  *
- * تغيير المعلم على حصة واحدة شيء آخر تمامًا — ذاك «معلم بديل» له سجله
- * وأثره على الأجر، ولا يُستخدم هنا.
+ * تغيير معلم حصة واحدة شيء آخر — ذاك «معلم بديل» له سجله وأثره على الأجر.
  *
  * Scheduling يملك نماذجه: الكونسول يستقبل مصفوفات بدائية فقط.
  */
 final readonly class ConsoleIndividualTeacherService
 {
     public function __construct(
+        private CreateScheduleAction $create,
         private UpdateScheduleAction $update,
+        private DeactivateScheduleAction $deactivate,
         private Transaction $transaction,
         private AcademicCatalogQueries $academics,
         private StaffQueries $staff,
@@ -57,6 +60,11 @@ final readonly class ConsoleIndividualTeacherService
 
         return $schedules->map(function (Schedule $schedule) use ($courses, $names): array {
             $course = $courses[(string) $schedule->course_id] ?? null;
+            $rule = WeeklyRecurrence::fromRRule($schedule->rrule);
+            $slots = $schedule->weeklySlots()->get()
+                ->map(static fn ($slot): string => __('console_people.teaching.weekday_'.(int) $slot->weekday)
+                    .' '.substr((string) $slot->start_time, 0, 5))
+                ->values()->all();
 
             return [
                 'id' => (string) $schedule->getKey(),
@@ -66,8 +74,24 @@ final readonly class ConsoleIndividualTeacherService
                     : ($course->name[app()->getLocale()] ?? $course->name['ar'] ?? $course->code),
                 'teacher_id' => (string) $schedule->staff_profile_id,
                 'teacher' => $names[(string) $schedule->staff_profile_id] ?? (string) $schedule->staff_profile_id,
+                'slots' => $slots === []
+                    ? [__('console_people.teaching.weekday_'.($rule->weekdays[0] ?? 0)).' '.substr($schedule->start_time, 0, 5)]
+                    : $slots,
+                'duration_minutes' => (int) $schedule->duration_minutes,
             ];
         })->values()->all();
+    }
+
+    /**
+     * معرّفات الكورسات التي للطالب فيها جدول سارٍ.
+     *
+     * @return list<string>
+     */
+    public function scheduledCourseIds(string $organizationId, string $studentProfileId): array
+    {
+        return array_values(array_unique(
+            $this->query($organizationId, $studentProfileId)->pluck('course_id')->map(strval(...))->all(),
+        ));
     }
 
     /**
@@ -87,6 +111,68 @@ final readonly class ConsoleIndividualTeacherService
             static fn (string $id): array => ['value' => $id, 'label' => $names[$id] ?? $id],
             array_values(array_filter($qualified, static fn (string $id): bool => isset($names[$id]))),
         ));
+    }
+
+    /**
+     * إسناد معلم لكورس فردي: جدول جديد تُولَّد منه الحصص القادمة.
+     *
+     * @param list<array{weekday: int, start_time: string}> $weeklySlots
+     */
+    public function assignTeacher(
+        string $organizationId,
+        string $studentProfileId,
+        string $courseId,
+        string $staffProfileId,
+        array $weeklySlots,
+        int $durationMinutes,
+        int $intervalWeeks,
+        string $timezone,
+        string $startsOn,
+        string $actorId,
+        string $reason,
+    ): string {
+        Gate::authorize('create', Schedule::class);
+
+        if ($this->query($organizationId, $studentProfileId)->where('course_id', $courseId)->exists()) {
+            throw BusinessRuleViolation::make(
+                'scheduling.course_already_scheduled',
+                'scheduling::errors.course_already_scheduled',
+            );
+        }
+
+        $schedule = $this->create->execute($organizationId, [
+            'target_type' => 'student',
+            'student_profile_id' => $studentProfileId,
+            'group_id' => null,
+            'course_id' => $courseId,
+            'staff_profile_id' => $staffProfileId,
+            'weekly_slots' => $weeklySlots,
+            'weekdays' => array_column($weeklySlots, 'weekday'),
+            'interval_weeks' => max(1, $intervalWeeks),
+            'start_time' => $weeklySlots[0]['start_time'] ?? null,
+            'duration_minutes' => $durationMinutes,
+            'timezone' => $timezone,
+            'starts_on' => $startsOn,
+            'ends_on' => null,
+        ], $actorId, $reason);
+
+        return (string) $schedule->getKey();
+    }
+
+    /** إزالة الطالب من معلمه: إيقاف الجدول وإلغاء حصصه القادمة. */
+    public function removeTeacher(
+        string $organizationId,
+        string $studentProfileId,
+        string $scheduleId,
+        string $actorId,
+        string $reason,
+    ): void {
+        $this->transaction->run(function () use ($organizationId, $studentProfileId, $scheduleId, $actorId, $reason): void {
+            /** @var Schedule $schedule */
+            $schedule = $this->query($organizationId, $studentProfileId)->lockForUpdate()->findOrFail($scheduleId);
+            Gate::authorize('deactivate', $schedule);
+            $this->deactivate->execute($schedule, $actorId, $reason);
+        });
     }
 
     /**

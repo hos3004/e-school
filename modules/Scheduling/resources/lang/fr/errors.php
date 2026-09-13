@@ -23,6 +23,7 @@ return [
     'target_invalid' => 'Sélectionnez exactement un groupe ou un étudiant.',
     'course_not_found' => 'Le cours est introuvable dans cet établissement.',
     'teacher_unchanged' => 'L\'enseignant choisi est déjà celui de cet emploi du temps.',
+    'course_already_scheduled' => 'L\'élève a déjà un emploi du temps actif pour ce cours ; changez ou retirez son enseignant d\'abord.',
     'teacher_not_eligible' => 'L’enseignant est inactif ou non qualifié pour ce cours.',
     'teacher_not_assigned' => 'L’enseignant n’est pas affecté à ce cours du groupe sur toute la période.',
     'ends_before_start' => 'La date de fin ne peut pas précéder la date de début.',

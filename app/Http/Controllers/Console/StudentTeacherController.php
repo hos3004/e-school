@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Console\AssignIndividualTeacherRequest;
 use App\Http\Requests\Console\ChangeIndividualTeacherRequest;
+use App\Http\Requests\Console\RemoveIndividualTeacherRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,10 +16,10 @@ use Modules\Scheduling\Application\Services\ConsoleIndividualTeacherService;
 use Modules\Students\Domain\Models\StudentProfile;
 
 /**
- * تغيير معلم الكورس الفردي من صفحة الطالب.
+ * معلمو الكورسات الفردية للطالب: إسناد وتغيير وإزالة، من صفحة ملفه.
  *
- * التغيير يمر على مسار تعديل الجدول المعتمد، فتُعاد الحصص المستقبلية بالمعلم
- * الجديد ويخرج الطالب من جدول المعلم السابق، بلا مساس بالماضي ومستحقاته.
+ * كلها تمر على أفعال الجدولة المعتمدة، فتُولَّد الحصص القادمة للمعلم الجديد
+ * أو تُلغى عند الإزالة، بلا مساس بالحصص الماضية ومستحقاتها.
  */
 final class StudentTeacherController extends Controller
 {
@@ -38,6 +40,27 @@ final class StudentTeacherController extends Controller
         ]);
     }
 
+    public function store(AssignIndividualTeacherRequest $request, string $profile): RedirectResponse
+    {
+        $student = $this->student($request, $profile);
+
+        $this->schedules->assignTeacher(
+            organizationId: (string) $student->organization_id,
+            studentProfileId: (string) $student->getKey(),
+            courseId: (string) $request->validated('course_id'),
+            staffProfileId: (string) $request->validated('staff_profile_id'),
+            weeklySlots: $request->weeklySlots(),
+            durationMinutes: (int) $request->validated('duration_minutes'),
+            intervalWeeks: (int) ($request->validated('interval_weeks') ?? 1),
+            timezone: (string) $request->validated('timezone'),
+            startsOn: (string) $request->validated('starts_on'),
+            actorId: (string) $request->user()?->getAuthIdentifier(),
+            reason: $request->reason(),
+        );
+
+        return back()->with('success', __('console_people.teaching.assigned'));
+    }
+
     public function update(ChangeIndividualTeacherRequest $request, string $profile): RedirectResponse
     {
         $student = $this->student($request, $profile);
@@ -51,7 +74,22 @@ final class StudentTeacherController extends Controller
             reason: $request->reason(),
         );
 
-        return back()->with('success', __('console_people.teacher_change.saved'));
+        return back()->with('success', __('console_people.teaching.changed'));
+    }
+
+    public function destroy(RemoveIndividualTeacherRequest $request, string $profile): RedirectResponse
+    {
+        $student = $this->student($request, $profile);
+
+        $this->schedules->removeTeacher(
+            organizationId: (string) $student->organization_id,
+            studentProfileId: (string) $student->getKey(),
+            scheduleId: (string) $request->validated('schedule_id'),
+            actorId: (string) $request->user()?->getAuthIdentifier(),
+            reason: $request->reason(),
+        );
+
+        return back()->with('success', __('console_people.teaching.removed'));
     }
 
     private function student(Request $request, string $profile): StudentProfile

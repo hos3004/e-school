@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
@@ -189,7 +190,7 @@ final class PeopleController extends Controller
             ] : null,
             'lifecycle' => $this->lifecycle($request, $record, $hub),
             'placement' => $record instanceof StudentProfile ? $this->placement($request, $record) : null,
-            'teacherChange' => $record instanceof StudentProfile ? $this->teacherChange($request, $record) : null,
+            'programs' => $record instanceof StudentProfile ? $this->programs($request, $record) : null,
             'hub' => $hub,
             'availabilityUrl' => $kind === 'teachers' && $request->user()?->can('staff.view') && $request->user()->can('staff.view.any') ? route('console.availability.index', ['teacher' => $record->id]) : null,
             'profileWorkspace' => app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),
@@ -301,23 +302,94 @@ final class PeopleController extends Controller
     }
 
     /**
-     * جداول الطالب الفردية القابلة لتغيير معلمها.
+     * برامج الطالب ومعلموه: القيود الحالية وإيقافها، والقيد في برنامج آخر،
+     * وجداوله الفردية مع إسناد المعلم وتغييره وإزالته.
+     *
+     * المدرسة تشتغل بالكورسات الفردية: علاقة الطالب بمعلمه جدولٌ لا انتساب
+     * لمجموعة، فالقسم يعمل بلا أي مجموعة قائمة.
      *
      * @return array<string, mixed>|null
      */
-    private function teacherChange(Request $request, StudentProfile $record): ?array
+    private function programs(Request $request, StudentProfile $record): ?array
     {
-        if ($record->trashed() || !($request->user()?->can('schedule.manage') ?? false)) {
+        $user = $request->user();
+
+        if ($record->trashed() || $user === null) {
             return null;
         }
 
-        $schedules = app(ConsoleIndividualTeacherService::class)
-            ->forStudent((string) $record->organization_id, (string) $record->id);
+        $organizationId = (string) $record->organization_id;
+        $studentId = (string) $record->id;
+        $canEnroll = $user->can('enrollment.create');
+        $canSchedule = $user->can('schedule.manage');
+        $catalog = app(AcademicCatalogQueries::class);
+        $teaching = app(ConsoleIndividualTeacherService::class);
+        $enrollments = app(EnrollmentAdministrationQueries::class)->forStudent($organizationId, $studentId);
+        $programs = $catalog->programsByIds(
+            $organizationId,
+            array_values(array_unique(array_map(static fn ($item): string => $item->programId, $enrollments))),
+        );
+        $held = [];
+        $rows = [];
 
-        return $schedules === [] ? null : [
-            'optionsUrl' => route('console.students.teacher-options', ['profile' => $record->id]),
-            'updateUrl' => route('console.students.teacher', ['profile' => $record->id]),
-            'schedules' => $schedules,
+        foreach ($enrollments as $item) {
+            $status = EnrollmentStatus::tryFrom($item->status);
+
+            if ($status === null || $status->isTerminal()) {
+                continue;
+            }
+
+            $held[] = $item->programId;
+            $rows[] = [
+                'id' => $item->id,
+                'program' => isset($programs[$item->programId])
+                    ? $this->localized($programs[$item->programId]->name)
+                    : $item->programId,
+                'status' => __('enrollments::status.'.$item->status),
+                'freezeUrl' => $user->can('enrollment.freeze') && $status->canTransitionTo(EnrollmentStatus::Frozen)
+                    ? route('console.enrollments.freeze', ['enrollment' => $item->id]) : null,
+            ];
+        }
+
+        $scheduled = $canSchedule ? $teaching->scheduledCourseIds($organizationId, $studentId) : [];
+        $assignable = [];
+
+        if ($canSchedule) {
+            foreach ($held as $programId) {
+                foreach ($catalog->courses($organizationId, $programId) as $course) {
+                    if ($course->sessionMode !== 'individual' || in_array($course->id, $scheduled, true)) {
+                        continue;
+                    }
+
+                    $assignable[] = [
+                        'value' => $course->id,
+                        'label' => $this->localized($course->name).' — '.(isset($programs[$programId])
+                            ? $this->localized($programs[$programId]->name) : $programId),
+                    ];
+                }
+            }
+        }
+
+        $available = $canEnroll ? array_values(array_filter(array_map(
+            fn ($program): ?array => in_array($program->id, $held, true) ? null : [
+                'value' => $program->id, 'label' => $this->localized($program->name),
+            ],
+            $catalog->programs($organizationId),
+        ))) : [];
+
+        return [
+            'enrollments' => $rows,
+            'availablePrograms' => $available,
+            'enrollUrl' => $canEnroll ? route('console.students.programs', ['profile' => $record->id]) : null,
+            'schedules' => $canSchedule ? $teaching->forStudent($organizationId, $studentId) : [],
+            'assignableCourses' => $assignable,
+            'teacherOptionsUrl' => $canSchedule
+                ? route('console.students.teacher-options', ['profile' => $record->id]) : null,
+            'assignUrl' => $canSchedule ? route('console.students.teacher.assign', ['profile' => $record->id]) : null,
+            'changeUrl' => $canSchedule ? route('console.students.teacher', ['profile' => $record->id]) : null,
+            'removeUrl' => $canSchedule ? route('console.students.teacher.remove', ['profile' => $record->id]) : null,
+            'durations' => array_values((array) config('scheduling.individual_session_durations')),
+            'timezone' => (string) app(ConsoleContext::class)->forRequest($request)['timezone'],
         ];
     }
 
@@ -336,8 +408,13 @@ final class PeopleController extends Controller
             return null;
         }
 
-        $memberships = app(GroupAdministrationQueries::class)
-            ->membershipsForStudent((string) $record->organization_id, (string) $record->id);
+        $groups = app(GroupAdministrationQueries::class);
+        $memberships = $groups->membershipsForStudent((string) $record->organization_id, (string) $record->id);
+
+        // بلا مجموعة قائمة ولا انتساب، القسم نموذج فارغ لا يقبل حفظًا — فلا يُعرض.
+        if ($memberships === [] && $groups->activeGroupsForScheduling((string) $record->organization_id) === []) {
+            return null;
+        }
 
         return [
             'optionsUrl' => route('console.students.placement-options', ['profile' => $record->id]),

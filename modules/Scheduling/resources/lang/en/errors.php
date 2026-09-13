@@ -28,6 +28,7 @@ return [
     'target_invalid' => 'Select exactly one group or student.',
     'course_not_found' => 'The course was not found in this organization.',
     'teacher_unchanged' => 'The selected teacher already teaches this schedule.',
+    'course_already_scheduled' => 'The student already has an active schedule for this course; change or remove its teacher first.',
     'teacher_not_eligible' => 'The teacher is inactive or not qualified for this course.',
     'teacher_not_assigned' => 'The teacher is not assigned to this group course for the schedule period.',
     'ends_before_start' => 'The schedule end date cannot precede its start date.',
