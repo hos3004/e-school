@@ -1,4 +1,5 @@
 import FinancialVisibility, {type FinancialVisibilityData} from "./FinancialVisibility";
+import LifecycleActions, { type LifecycleData } from "./LifecycleActions";
 import { Head, usePage } from "@inertiajs/react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import ProfileView, {
@@ -39,6 +40,7 @@ interface Props {
   editUrl: string | null;
   displayTimezone: string;
   availabilityUrl: string | null;
+  lifecycle: LifecycleData;
 }
 export default function PeopleShow({
   kind,
@@ -50,6 +52,7 @@ export default function PeopleShow({
   displayTimezone,
   availabilityUrl,
   financialVisibility,
+  lifecycle,
 }: Props) {
   const t = useI18n();
   const { console: context } = usePage<
@@ -113,6 +116,7 @@ export default function PeopleShow({
             : null
         }
       />
+      <LifecycleActions lifecycle={lifecycle} />
     </ConsoleLayout>
   );
 }

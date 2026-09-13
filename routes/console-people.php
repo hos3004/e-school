@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Console\EnrollmentFreezeController;
 use App\Http\Controllers\Console\PeopleController;
+use App\Http\Controllers\Console\StudentLifecycleController;
+use App\Http\Controllers\Console\TeacherLifecycleController;
 use Illuminate\Support\Facades\Route;
 
 // Included inside the authenticated, enabled /manage group owned by the console shell.
@@ -28,3 +31,16 @@ foreach (['students', 'teachers'] as $kind) {
     Route::get($kind.'/{profile}', [PeopleController::class, 'show'])->defaults('kind', $kind)
         ->middleware('can:'.$view)->whereUlid('profile')->name($kind.'.show');
 }
+
+/*
+ * إجراءات دورة حياة الحساب من صفحة الملف. لا حذف نهائي: الإيقاف تعليق
+ * تبقى معه البيانات والسجل، والتجميد يخص برنامج الطالب المحدد وحده.
+ */
+Route::put('students/{profile}/archive', [StudentLifecycleController::class, 'archive'])
+    ->middleware('can:student.update')->whereUlid('profile')->name('students.archive');
+Route::put('students/{profile}/restore', [StudentLifecycleController::class, 'restore'])
+    ->middleware('can:student.update')->whereUlid('profile')->name('students.restore');
+Route::put('teachers/{profile}/terminate', [TeacherLifecycleController::class, 'terminate'])
+    ->middleware('can:staff.contract.update')->whereUlid('profile')->name('teachers.terminate');
+Route::put('enrollments/{enrollment}/freeze', EnrollmentFreezeController::class)
+    ->middleware('can:enrollment.freeze')->whereUlid('enrollment')->name('enrollments.freeze');

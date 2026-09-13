@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
+use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Identity\Domain\Contracts\UserAccountOperations;
 use Modules\Identity\Domain\Contracts\UserQueryService;
@@ -182,6 +184,7 @@ final class PeopleController extends Controller
                 'visible' => $record->financials_visible,
                 'updateUrl' => !$record->trashed() && $request->user()?->can('staff.contract.update') ? route('console.teachers.financial-visibility', ['profile' => $record->id]) : null,
             ] : null,
+            'lifecycle' => $this->lifecycle($request, $record, $hub),
             'hub' => $hub,
             'availabilityUrl' => $kind === 'teachers' && $request->user()?->can('staff.view') && $request->user()->can('staff.view.any') ? route('console.availability.index', ['teacher' => $record->id]) : null,
             'profileWorkspace' => app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),
@@ -290,6 +293,52 @@ final class PeopleController extends Controller
         return response()->json(['suggestions' => $this->profiles->usernameSuggestions(
             $this->organizationId($request), $data['name'],
         )]);
+    }
+
+    /**
+     * إجراءات دورة حياة الحساب المتاحة فعليًا لهذا المستخدم على هذا السجل.
+     *
+     * الرابط يُحجب على الخادم عند غياب الصلاحية، فلا يعتمد المنع على إخفاء زر.
+     *
+     * @param array<string, mixed> $hub
+     * @return array<string, mixed>
+     */
+    private function lifecycle(Request $request, StudentProfile|StaffProfile $record, array $hub): array
+    {
+        if ($record instanceof StaffProfile) {
+            return [
+                'archiveUrl' => null, 'restoreUrl' => null, 'enrollments' => [],
+                'terminateUrl' => $record->isActive() && Gate::allows('terminate', $record)
+                    ? route('console.teachers.terminate', ['profile' => $record->id]) : null,
+            ];
+        }
+
+        $labels = [];
+        foreach (is_array($hub['enrollments'] ?? null) ? $hub['enrollments'] : [] as $row) {
+            if (is_array($row) && is_string($row['id'] ?? null)) {
+                $labels[$row['id']] = (string) ($row['program'] ?? '');
+            }
+        }
+        $freezable = !$record->trashed() && ($request->user()?->can('enrollment.freeze') ?? false)
+            ? app(EnrollmentAdministrationQueries::class)->forStudent((string) $record->organization_id, (string) $record->id)
+            : [];
+
+        return [
+            'terminateUrl' => null,
+            'archiveUrl' => !$record->trashed() && Gate::allows('delete', $record)
+                ? route('console.students.archive', ['profile' => $record->id]) : null,
+            'restoreUrl' => $record->trashed() && Gate::allows('restore', $record)
+                ? route('console.students.restore', ['profile' => $record->id]) : null,
+            'enrollments' => array_values(array_filter(array_map(static function ($item) use ($labels): ?array {
+                $status = EnrollmentStatus::tryFrom($item->status);
+
+                return $status === null || !$status->canTransitionTo(EnrollmentStatus::Frozen) ? null : [
+                    'id' => $item->id,
+                    'program' => (string) ($labels[$item->id] ?? $item->programId),
+                    'freezeUrl' => route('console.enrollments.freeze', ['enrollment' => $item->id]),
+                ];
+            }, $freezable))),
+        ];
     }
 
     /** @return array<string, mixed> */
