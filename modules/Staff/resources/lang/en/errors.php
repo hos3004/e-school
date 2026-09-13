@@ -14,6 +14,7 @@ return [
     'availability_approved_not_removable' => 'Approved availability is already used for scheduling and can only be withdrawn by a supervisor.',
     'availability_decision_invalid' => 'The selected availability decision is invalid.',
     'availability_invalid_approval_transition' => 'A new decision cannot be made from the current availability state.',
+    'availability_reason_required' => 'Changing teacher availability requires a written reason.',
     'availability_time_invalid' => 'The availability start time must come before its end time.',
     'availability_timezone_invalid' => 'The selected time zone is not recognised.',
     'availability_weekday_invalid' => 'The weekday must fall between Sunday and Saturday.',

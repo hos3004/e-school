@@ -13,6 +13,7 @@ return [
     'availability_approved_not_removable' => 'La disponibilité approuvée est utilisée par la planification ; seul un superviseur peut la retirer.',
     'availability_decision_invalid' => 'La décision de disponibilité sélectionnée est invalide.',
     'availability_invalid_approval_transition' => 'Aucune nouvelle décision ne peut être prise depuis l’état actuel.',
+    'availability_reason_required' => 'La modification des disponibilités des enseignants exige un motif écrit.',
     'availability_time_invalid' => 'L’heure de début doit précéder l’heure de fin.',
     'availability_timezone_invalid' => 'Le fuseau horaire sélectionné n’est pas reconnu.',
     'availability_weekday_invalid' => 'Le jour doit être compris entre le dimanche et le samedi.',

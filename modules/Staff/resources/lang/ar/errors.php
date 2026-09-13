@@ -14,6 +14,7 @@ return [
     'availability_approved_not_removable' => 'الإتاحة المعتمدة داخلة في الجدولة، ولا تُحذف إلا بقرار الإشراف.',
     'availability_decision_invalid' => 'قرار الإتاحة المحدد غير صالح.',
     'availability_invalid_approval_transition' => 'لا يمكن اتخاذ قرار جديد على الإتاحة من حالتها الحالية.',
+    'availability_reason_required' => 'تغيير إتاحة المعلمين يتطلب سببًا مكتوبًا.',
     'availability_time_invalid' => 'وقت بداية الإتاحة يجب أن يسبق وقت نهايتها.',
     'availability_timezone_invalid' => 'المنطقة الزمنية المختارة غير معروفة.',
     'availability_weekday_invalid' => 'يوم الأسبوع يجب أن يكون بين الأحد والسبت.',

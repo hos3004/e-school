@@ -23,6 +23,7 @@ use Modules\Staff\Infrastructure\Authorization\TeacherFinancialVisibilityGate;
 use Modules\Staff\Infrastructure\Persistence\DbSessionPayCatalog;
 use Modules\Staff\Infrastructure\Persistence\DbTeacherRateResolver;
 use Modules\Staff\Presentation\Console\ActivatePendingAvailabilityCommand;
+use Modules\Staff\Presentation\Console\SetAllTeachersFullAvailabilityCommand;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class StaffServiceProvider extends BaseModuleServiceProvider
@@ -33,7 +34,10 @@ final class StaffServiceProvider extends BaseModuleServiceProvider
         Gate::before([app(TeacherFinancialVisibilityGate::class), 'check']);
 
         if ($this->app->runningInConsole()) {
-            $this->commands([ActivatePendingAvailabilityCommand::class]);
+            $this->commands([
+                ActivatePendingAvailabilityCommand::class,
+                SetAllTeachersFullAvailabilityCommand::class,
+            ]);
         }
     }
 
