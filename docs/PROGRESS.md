@@ -1,5 +1,12 @@
 # سجل تقدّم البناء — e-school Platform
 
+## 2026-09-15 — تحرير نصوص رسائل واتساب من الإعدادات
+
+- قسم الإشعارات في `/manage/settings` صار يعرض كل قوالب واتساب بلغة المدرسة: عنوان ونص قابلان للتحرير، وأزرار تُدرج المتغيرات المتاحة، ومعاينة حيّة للرسالة كما تصل.
+- الحفظ ينشئ نسخة خاصة بالمؤسسة عبر مسارات `notification-templates` القائمة؛ القالب العام لا يُمس. «استعادة النص الأصلي» تحذف نسخة المؤسسة فيعود `TemplateRenderer` إلى القالب العام.
+- الخادم يرفض أي متغير لا يعرفه القالب العام لنفس الحدث، لأن الحدث لا يوفّر غيره والمتغير الزائد يُسقط الإرسال عند أول حدث حقيقي.
+- بلا صلاحية جديدة وبلا هجرات: البوابة `settings.manage` و`NotificationTemplatePolicy` كما هما، والتدقيق عبر تسجيل المتحكّم القائم.
+
 ## 2026-09-15 — Green API WhatsApp integration (SCHOOL-WEB)
 
 - Candidate branch codex/green-api-integration-20260915 in an isolated server worktree. Platform admin can enter the Green API shard URL, instance ID and token in /manage/settings; activation verifies the instance and stores the token encrypted with a redacted audit record.

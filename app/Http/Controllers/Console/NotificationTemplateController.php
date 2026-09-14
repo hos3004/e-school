@@ -34,6 +34,7 @@ final class NotificationTemplateController extends Controller
         $data = $request->validated();
         $body = (string) $data['body'];
         $this->assertNotDuplicated($organizationId, $data, null);
+        $this->assertKnownVariables($data);
 
         $template = NotificationTemplate::query()->create([
             'organization_id' => $organizationId,
@@ -60,6 +61,7 @@ final class NotificationTemplateController extends Controller
         $data = $request->validated();
         $body = (string) $data['body'];
         $this->assertNotDuplicated((string) $record->organization_id, $data, (string) $record->getKey());
+        $this->assertKnownVariables($data);
         $before = [
             'subject' => $record->subject,
             'body' => $record->body,
@@ -168,6 +170,41 @@ final class NotificationTemplateController extends Controller
             ],
             reason: (string) __('console_messaging.template_audit_reason'),
         );
+    }
+
+    /**
+     * نسخة المؤسسة لا تستخدم متغيرًا لا يعرفه القالب العام لنفس الحدث.
+     *
+     * الحدث يوفّر متغيرات قالبه الأصلي فقط؛ متغير زائد يجعل TemplateRenderer
+     * يرفض الإرسال، فتسقط الرسالة عند أول حدث حقيقي بدل أن تُرفض هنا عند الحفظ.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function assertKnownVariables(array $data): void
+    {
+        $original = NotificationTemplate::query()
+            ->whereNull('organization_id')
+            ->where('event_key', (string) $data['event_key'])
+            ->where('channel', (string) $data['channel'])
+            ->where('locale', (string) $data['locale'])
+            ->first();
+
+        if ($original === null) {
+            return;
+        }
+
+        $unknown = array_values(array_diff(
+            $this->parametersIn((string) $data['body'], $this->nullableText($data['subject'] ?? null)),
+            $original->parameters ?? [],
+        ));
+
+        if ($unknown !== []) {
+            throw ValidationException::withMessages([
+                'body' => (string) __('console_settings.whatsapp_templates.unknown_variables', [
+                    'variables' => implode('، ', $unknown),
+                ]),
+            ]);
+        }
     }
 
     private function nullableText(mixed $value): ?string

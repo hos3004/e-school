@@ -10,6 +10,7 @@ import {
   GreenApiSettings,
   CalendarSettings,
   NotificationSettings,
+  WhatsappTemplateSettings,
   type SettingsEditorsProps,
 } from "./SettingsEditors";
 
@@ -116,7 +117,11 @@ export default function Settings({
             ]
           : []),
         ...(section.key === "notifications"
-          ? editors.notificationCategories.map((category) => category.label)
+          ? [
+              ...editors.notificationCategories.map((category) => category.label),
+              t("console_settings.whatsapp_templates.title"),
+              ...editors.whatsappTemplates.map((template) => template.label),
+            ]
           : []),
       ]),
     )
@@ -311,6 +316,12 @@ export default function Settings({
                   <NotificationSettings
                     categories={editors.notificationCategories}
                     channels={editors.notificationChannels}
+                  />
+                )}
+              {section.key === "notifications" &&
+                editors.settingsPermissions.notifications && (
+                  <WhatsappTemplateSettings
+                    templates={editors.whatsappTemplates}
                   />
                 )}
               {section.key === "integrations" && editors.greenApi && (

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Console;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Lang;
 use Modules\Integrations\Domain\Contracts\GreenApiConnections;
 use Modules\Notifications\Application\Services\NotificationCategorySettingsResolver;
 use Modules\Notifications\Domain\Enums\Channel;
+use Modules\Notifications\Domain\Models\NotificationTemplate;
 use Modules\Organization\Domain\Contracts\OrganizationSettingQueries;
 use Modules\Organization\Domain\Models\AcademicCalendar;
 use Modules\Organization\Domain\Models\Holiday;
@@ -42,6 +44,7 @@ final class ConsoleSettingsData
                     'version' => self::fingerprint($holiday->getAttributes()), 'can_remove' => $actor->can('delete', $holiday),
                 ])->all() : [],
             'notificationCategories' => $canNotifications ? $this->notificationCategories($organizationId) : [],
+            'whatsappTemplates' => $canNotifications ? $this->whatsappTemplates($organizationId) : [],
             'greenApi' => $canGreenApi ? app(GreenApiConnections::class)->view($organizationId) : null,
             'notificationChannels' => $canNotifications ? array_map(static fn (Channel $channel): array => [
                 'value' => $channel->value, 'label' => $channel->label(),
@@ -57,6 +60,40 @@ final class ConsoleSettingsData
                 'create_holiday' => $canHoliday && $actor->can('create', Holiday::class),
             ],
         ];
+    }
+
+    /**
+     * قوالب واتساب القابلة للتحرير بلغة المدرسة: الأصل العام ونسخة المؤسسة إن وُجدت.
+     *
+     * المتغيرات المعروضة هي متغيرات القالب الأصلي، لأن الحدث لا يوفّر غيرها.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function whatsappTemplates(string $organizationId): array
+    {
+        $locale = (string) config('notifications.localization.fallback_locale', 'ar');
+        $scope = static fn () => NotificationTemplate::query()
+            ->where('channel', Channel::Whatsapp->value)
+            ->where('locale', $locale);
+        $custom = $scope()->forOrganization($organizationId)->get()->keyBy('event_key');
+
+        return $scope()->whereNull('organization_id')->active()->orderBy('event_key')->get()
+            ->map(static function (NotificationTemplate $template) use ($custom): array {
+                $labelKey = 'notifications::events.'.$template->event_key;
+                /** @var NotificationTemplate|null $own */
+                $own = $custom->get($template->event_key);
+
+                return [
+                    'event_key' => $template->event_key,
+                    'locale' => $template->locale,
+                    'label' => Lang::has($labelKey) ? (string) __($labelKey) : (string) $template->subject,
+                    'parameters' => array_values($template->parameters ?? []),
+                    'original' => ['subject' => $template->subject, 'body' => $template->body],
+                    'custom' => $own === null ? null : [
+                        'id' => (string) $own->id, 'subject' => $own->subject, 'body' => $own->body,
+                    ],
+                ];
+            })->values()->all();
     }
 
     /** @return array<string, mixed> */

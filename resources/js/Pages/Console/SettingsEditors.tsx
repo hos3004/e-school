@@ -1,5 +1,5 @@
 import { router, useForm } from "@inertiajs/react";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useI18n } from "@/lib/i18n";
 
 type Accounts = {
@@ -45,12 +45,22 @@ type GreenApiSettingsData = {
   state: string;
   version: string;
 };
+type TemplateText = { subject: string | null; body: string };
+type WhatsappTemplate = {
+  event_key: string;
+  locale: string;
+  label: string;
+  parameters: string[];
+  original: TemplateText;
+  custom: (TemplateText & { id: string }) | null;
+};
 export type SettingsEditorsProps = {
   accounts: Accounts | null;
   calendars: Calendar[];
   holidays: Holiday[];
   notificationCategories: Category[];
   notificationChannels: Channel[];
+  whatsappTemplates: WhatsappTemplate[];
   greenApi: GreenApiSettingsData | null;
   settingsPermissions: {
     accounts: boolean;
@@ -693,5 +703,333 @@ export function GreenApiSettings({ data }: { data: GreenApiSettingsData }) {
         )}
       </div>
     </form>
+  );
+}
+
+const TEMPLATE_VARIABLE = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g;
+
+function variablesIn(text: string): string[] {
+  return Array.from(text.matchAll(TEMPLATE_VARIABLE)).flatMap((match) =>
+    match[1] ? [match[1]] : [],
+  );
+}
+
+function WhatsappPreview({ subject, body }: { subject: string; body: string }) {
+  const title = subject.trim();
+  return (
+    <div className="console-wa-preview">
+      <div className="console-wa-bubble" dir="auto">
+        {title && title !== body.trim() && <strong>{title}</strong>}
+        <p>
+          {body
+            .trim()
+            .split(TEMPLATE_VARIABLE)
+            .map((part, index) =>
+              index % 2 === 1 ? (
+                <span key={index} className="console-wa-token" dir="ltr">
+                  {part}
+                </span>
+              ) : (
+                part
+              ),
+            )}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function WhatsappTemplateEditor({
+  template,
+  open,
+  onToggle,
+}: {
+  template: WhatsappTemplate;
+  open: boolean;
+  onToggle: (open: boolean) => void;
+}) {
+  const t = useI18n();
+  const bodyField = useRef<HTMLTextAreaElement>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const current = template.custom ?? template.original;
+  const form = useForm({
+    event_key: template.event_key,
+    channel: "whatsapp",
+    locale: template.locale,
+    subject: current.subject ?? "",
+    body: current.body,
+    is_active: true,
+  });
+  const id = template.event_key.replace(/\./g, "-");
+  const unknown = [
+    ...new Set(variablesIn(form.data.subject + " " + form.data.body)),
+  ].filter((name) => !template.parameters.includes(name));
+
+  function insert(name: string) {
+    const field = bodyField.current;
+    const token = "{{" + name + "}}";
+    const start = field?.selectionStart ?? form.data.body.length;
+    const end = field?.selectionEnd ?? start;
+    form.setData(
+      "body",
+      form.data.body.slice(0, start) + token + form.data.body.slice(end),
+    );
+    requestAnimationFrame(() => {
+      field?.focus();
+      field?.setSelectionRange(start + token.length, start + token.length);
+    });
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (template.custom) {
+      form.put("/manage/notification-templates/" + template.custom.id, {
+        preserveScroll: true,
+      });
+    } else {
+      form.post("/manage/notification-templates", { preserveScroll: true });
+    }
+  }
+
+  function restore() {
+    if (!template.custom) {
+      return;
+    }
+    setRestoring(true);
+    router.delete("/manage/notification-templates/" + template.custom.id, {
+      preserveScroll: true,
+      onFinish: () => setRestoring(false),
+    });
+  }
+
+  return (
+    <details
+      className="console-wa-template"
+      open={open}
+      onToggle={(event) => onToggle(event.currentTarget.open)}
+    >
+      <summary>
+        <span>
+          <strong>{template.label}</strong>
+          <small dir="ltr">{template.event_key}</small>
+        </span>
+        <span
+          className={"console-status" + (template.custom ? " warning" : "")}
+        >
+          {t(
+            "console_settings.whatsapp_templates." +
+              (template.custom ? "customized" : "original"),
+          )}
+        </span>
+      </summary>
+      <form onSubmit={submit} className="console-wa-body">
+        <div className="console-wa-fields">
+          <div className="field">
+            <label htmlFor={"wa-subject-" + id}>
+              {t("console_settings.whatsapp_templates.subject")}
+            </label>
+            <input
+              id={"wa-subject-" + id}
+              className="console-control"
+              maxLength={255}
+              value={form.data.subject}
+              onChange={(event) => form.setData("subject", event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor={"wa-body-" + id}>
+              {t("console_settings.whatsapp_templates.body")}
+            </label>
+            <textarea
+              id={"wa-body-" + id}
+              ref={bodyField}
+              className="console-control"
+              rows={5}
+              required
+              maxLength={4000}
+              value={form.data.body}
+              onChange={(event) => form.setData("body", event.target.value)}
+            />
+          </div>
+          {template.parameters.length > 0 && (
+            <div className="field">
+              <span>{t("console_settings.whatsapp_templates.variables")}</span>
+              <div className="console-wa-vars">
+                {template.parameters.map((name) => (
+                  <button
+                    type="button"
+                    key={name}
+                    className="console-wa-token"
+                    dir="ltr"
+                    onClick={() => insert(name)}
+                  >
+                    {"{{" + name + "}}"}
+                  </button>
+                ))}
+              </div>
+              <small>
+                {t("console_settings.whatsapp_templates.variables_help")}
+              </small>
+            </div>
+          )}
+          {unknown.length > 0 && (
+            <p className="console-feedback is-error" role="alert">
+              {t("console_settings.whatsapp_templates.unknown_variables_client")}{" "}
+              <bdi dir="ltr">{unknown.join(", ")}</bdi>
+            </p>
+          )}
+        </div>
+        <div className="console-wa-side">
+          <span>{t("console_settings.whatsapp_templates.preview")}</span>
+          <WhatsappPreview subject={form.data.subject} body={form.data.body} />
+        </div>
+        <Feedback errors={form.errors} />
+        <div className="savebar">
+          <button
+            className="console-button primary"
+            disabled={
+              form.processing ||
+              restoring ||
+              !form.isDirty ||
+              unknown.length > 0 ||
+              !form.data.body.trim()
+            }
+          >
+            {t(
+              form.processing
+                ? "console.saving"
+                : "console_settings.whatsapp_templates.save",
+            )}
+          </button>
+          {form.isDirty && (
+            <button
+              type="button"
+              className="console-button"
+              disabled={form.processing}
+              onClick={() => {
+                form.reset();
+                form.clearErrors();
+              }}
+            >
+              {t("console_settings.whatsapp_templates.discard")}
+            </button>
+          )}
+          {template.custom &&
+            (confirming ? (
+              <>
+                <span className="console-wa-confirm" role="status">
+                  {t("console_settings.whatsapp_templates.restore_confirm")}
+                </span>
+                <button
+                  type="button"
+                  className="console-button primary"
+                  disabled={restoring}
+                  onClick={restore}
+                >
+                  {t("console_settings.whatsapp_templates.restore_yes")}
+                </button>
+                <button
+                  type="button"
+                  className="console-button"
+                  disabled={restoring}
+                  onClick={() => setConfirming(false)}
+                >
+                  {t("console_settings.cancel")}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="console-button"
+                disabled={form.processing}
+                onClick={() => setConfirming(true)}
+              >
+                {t("console_settings.whatsapp_templates.restore")}
+              </button>
+            ))}
+        </div>
+      </form>
+    </details>
+  );
+}
+
+export function WhatsappTemplateSettings({
+  templates,
+}: {
+  templates: WhatsappTemplate[];
+}) {
+  const t = useI18n();
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  const visible = templates.filter(
+    (template) =>
+      !needle ||
+      [template.label, template.event_key, (template.custom ?? template.original).body]
+        .join(" ")
+        .toLowerCase()
+        .includes(needle),
+  );
+  const customized = templates.filter((template) => template.custom).length;
+
+  return (
+    <div className="console-settings-editor" id="settings-whatsapp-templates">
+      <div className="form-section">
+        <h3>{t("console_settings.whatsapp_templates.title")}</h3>
+        <p>{t("console_settings.whatsapp_templates.description")}</p>
+        <div className="console-wa-toolbar">
+          <div className="field">
+            <label htmlFor="wa-template-search">
+              {t("console_settings.whatsapp_templates.search")}
+            </label>
+            <input
+              id="wa-template-search"
+              className="console-control"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </div>
+          <small role="status">
+            {t("console_settings.whatsapp_templates.count")
+              .replace(":total", String(templates.length))
+              .replace(":customized", String(customized))}
+          </small>
+        </div>
+      </div>
+      {templates.length === 0 ? (
+        <p className="console-empty">
+          {t("console_settings.whatsapp_templates.empty")}
+        </p>
+      ) : visible.length === 0 ? (
+        <p className="console-empty">{t("console.no_results")}</p>
+      ) : (
+        <div>
+          {visible.map((template) => (
+            <WhatsappTemplateEditor
+              key={
+                template.event_key +
+                ":" +
+                (template.custom
+                  ? template.custom.id +
+                    (template.custom.subject ?? "") +
+                    template.custom.body
+                  : "original")
+              }
+              template={template}
+              open={openKeys.includes(template.event_key)}
+              onToggle={(open) =>
+                setOpenKeys((keys) =>
+                  open
+                    ? [...new Set([...keys, template.event_key])]
+                    : keys.filter((key) => key !== template.event_key),
+                )
+              }
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
