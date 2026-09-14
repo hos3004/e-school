@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Console\Support\ConsoleContext;
+use App\Http\Controllers\Console\Support\MessagingChannelOptions;
 use App\Http\Controllers\Controller;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -54,16 +55,15 @@ final class NotificationsPageController extends Controller
      */
     private function messaging(): array
     {
-        $enabled = $this->channelNames();
+        $options = app(MessagingChannelOptions::class);
+        $channels = $options->all();
 
         return [
             'sendUrl' => route('console.messages.audience'),
             'targetsUrl' => route('console.messages.targets'),
             'templatesUrl' => route('console.messages.templates'),
-            'channels' => $enabled,
-            'defaultChannel' => in_array('whatsapp', $enabled, true)
-                ? 'whatsapp'
-                : (string) ($enabled[0] ?? 'in_app'),
+            'channels' => $channels,
+            'defaultChannel' => $options->defaultFor($channels),
             'fixedTarget' => null,
         ];
     }

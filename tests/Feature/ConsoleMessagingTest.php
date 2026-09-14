@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Enrollments\Domain\Models\Enrollment;
@@ -313,6 +314,55 @@ final class ConsoleMessagingTest extends TestCase
             $local->utc()->format('Y-m-d H:i'),
             $row->scheduled_for->utc()->format('Y-m-d H:i'),
         );
+    }
+
+    public function test_an_unavailable_channel_is_shown_with_its_reason_not_hidden(): void
+    {
+        $fixture = $this->fixture();
+        // القناة معروفة للمنصة لكنها مطفأة في الإعداد — وهي الحالة التي أربكت
+        // الإدارة: كان الخيار يختفي بلا تفسير بدل أن يظهر معطّلًا ومعه السبب.
+        config([
+            'notifications.channels.whatsapp' => ['enabled' => false],
+        ]);
+
+        $this->get('/manage/students/'.$fixture['student']->id)
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('messaging.channels', fn (mixed $channels): bool => collect($channels)
+                    ->contains(fn (mixed $channel): bool => $channel['value'] === 'whatsapp'
+                        && $channel['enabled'] === false
+                        && $channel['reason'] === 'channel_disabled'))
+                ->etc());
+    }
+
+    public function test_whatsapp_is_offered_once_enabled_but_not_to_a_student_without_a_phone(): void
+    {
+        $fixture = $this->fixture();
+        config([
+            'notifications.channels.whatsapp' => ['enabled' => true],
+        ]);
+        $fixture['studentUser']->forceFill(['phone' => null])->save();
+
+        $this->get('/manage/students/'.$fixture['student']->id)
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('messaging.channels', fn (mixed $channels): bool => collect($channels)
+                    ->contains(fn (mixed $channel): bool => $channel['value'] === 'whatsapp'
+                        && $channel['enabled'] === false
+                        && $channel['reason'] === 'no_phone'))
+                ->etc());
+
+        // وبرقم مسجّل تصير القناة متاحة وتصبح الافتراضية.
+        $fixture['studentUser']->forceFill(['phone' => '+905301833478'])->save();
+
+        $this->get('/manage/students/'.$fixture['student']->id)
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('messaging.defaultChannel', 'whatsapp')
+                ->where('messaging.channels', fn (mixed $channels): bool => collect($channels)
+                    ->contains(fn (mixed $channel): bool => $channel['value'] === 'whatsapp'
+                        && $channel['enabled'] === true))
+                ->etc());
     }
 
     private function passwordLineFrom(string $body): string

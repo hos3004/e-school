@@ -4,11 +4,17 @@ import ConsoleIcon from "@/Components/Console/ConsoleIcon";
 import { useI18n } from "@/lib/i18n";
 import { ulid } from "@/lib/ulid";
 
+export type MessagingChannel = {
+  value: string;
+  enabled: boolean;
+  reason: string | null;
+};
+
 export type AudienceMessagingData = {
   sendUrl: string;
   targetsUrl: string;
   templatesUrl: string;
-  channels: string[];
+  channels: MessagingChannel[];
   defaultChannel: string;
   /** الهدف المثبّت حين يُفتح الزر من صفحة فصل بعينها. */
   fixedTarget?: { type: "group" | "course" | "schedule"; id: string; label: string } | null;
@@ -243,8 +249,16 @@ export default function AudienceMessaging({
                 onChange={(event) => form.setData("channel", event.target.value)}
               >
                 {messaging.channels.map((channel) => (
-                  <option key={channel} value={channel}>
-                    {t("console_messaging.channels." + channel)}
+                  <option
+                    key={channel.value}
+                    value={channel.value}
+                    disabled={!channel.enabled}
+                  >
+                    {t("console_messaging.channels." + channel.value)}
+                    {channel.enabled
+                      ? ""
+                      : " — " +
+                        t("console_messaging.channel_reasons." + channel.reason)}
                   </option>
                 ))}
               </select>

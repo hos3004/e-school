@@ -10,6 +10,7 @@ use Modules\Integrations\Domain\Contracts\ChannelGateway;
 use Modules\Integrations\Domain\ValueObjects\GatewayMessage;
 use Modules\Integrations\Domain\ValueObjects\GatewayResult;
 use Modules\Notifications\Application\Services\TemplateRenderer;
+use Modules\Notifications\Application\Services\UndeliverableEmailDomains;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Infrastructure\Mail\NotificationMail;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
@@ -23,35 +24,8 @@ final readonly class MailChannelGateway implements ChannelGateway
     public function __construct(
         private Mailer $mailer,
         private TemplateRenderer $templates,
+        private UndeliverableEmailDomains $undeliverable,
     ) {}
-
-    /**
-     * نطاقات محجوزة لا تُسلَّم إليها رسالة أبدًا (RFC 2606 و RFC 6761).
-     *
-     * القائمة إعداد لا كود، فقد تضيف المدرسة نطاقًا داخليًا آخر.
-     */
-    private function isUndeliverableDomain(string $email): bool
-    {
-        $domain = mb_strtolower(substr((string) strrchr($email, '@'), 1));
-
-        if ($domain === '') {
-            return true;
-        }
-
-        foreach ((array) config('notifications.channels.email.undeliverable_domains', []) as $reserved) {
-            if (!is_string($reserved) || $reserved === '') {
-                continue;
-            }
-
-            $reserved = mb_strtolower(trim($reserved, '.'));
-
-            if ($domain === $reserved || str_ends_with($domain, '.'.$reserved)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     public function send(GatewayMessage $message): GatewayResult
     {
@@ -82,7 +56,7 @@ final readonly class MailChannelGateway implements ChannelGateway
          * عمال الطابور أربع ثوانٍ لكل واحدة وتُجوّع بقية القنوات. النطاقات
          * محجوزة بنص RFC 2606/6761 فلا تُسلَّم أبدًا؛ الرفض هنا نهائي لا مؤقت.
          */
-        if ($this->isUndeliverableDomain($email)) {
+        if ($this->undeliverable->isUndeliverable($email)) {
             return GatewayResult::rejected(
                 (string) __('notifications::errors.email_domain_undeliverable'),
                 false,

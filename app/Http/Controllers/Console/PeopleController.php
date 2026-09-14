@@ -8,6 +8,7 @@ use App\Application\Actions\AssignStudentToGroupAction;
 use App\Application\Queries\ProfileAdministrationQueryService;
 use App\Http\Controllers\Console\Support\ConsoleContext;
 use App\Http\Controllers\Console\Support\GroupPlacementOptions;
+use App\Http\Controllers\Console\Support\MessagingChannelOptions;
 use App\Http\Controllers\Console\Support\PersonProfileData;
 use App\Http\Controllers\Console\Support\TeacherPortfolioData;
 use App\Http\Controllers\Controller;
@@ -340,22 +341,17 @@ final class PeopleController extends Controller
             return null;
         }
 
-        $enabled = array_keys(array_filter(
-            (array) config('notifications.channels', []),
-            static fn (mixed $settings, string $name): bool => is_array($settings)
-                && (bool) ($settings['enabled'] ?? false),
-            ARRAY_FILTER_USE_BOTH,
-        ));
+        $recipient = User::query()->find((string) $record->user_id);
+        $options = app(MessagingChannelOptions::class);
+        $channels = $options->all($recipient instanceof User ? $recipient : null);
 
         return [
             'sendUrl' => route('console.messages.person', [
                 'kind' => $kind,
                 'profile' => (string) $record->getKey(),
             ]),
-            'channels' => $enabled,
-            'defaultChannel' => in_array('whatsapp', $enabled, true)
-                ? 'whatsapp'
-                : (string) ($enabled[0] ?? 'in_app'),
+            'channels' => $channels,
+            'defaultChannel' => $options->defaultFor($channels),
         ];
     }
 

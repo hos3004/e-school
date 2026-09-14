@@ -27,6 +27,12 @@ return [
         'all' => 'Everyone on the class',
     ],
 
+    'channel_reasons' => [
+        'channel_disabled' => 'channel not enabled in the platform configuration',
+        'no_phone' => 'no phone number on this account',
+        'no_email' => 'no real email address on this account',
+    ],
+
     'targets' => [
         'group' => 'Group',
         'course' => 'Course',

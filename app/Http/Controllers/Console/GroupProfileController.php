@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Console\Support\ConsoleContext;
+use App\Http\Controllers\Console\Support\MessagingChannelOptions;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -85,21 +86,15 @@ final class GroupProfileController extends Controller
             return null;
         }
 
-        $enabled = array_keys(array_filter(
-            (array) config('notifications.channels', []),
-            static fn (mixed $settings, string $name): bool => is_array($settings)
-                && (bool) ($settings['enabled'] ?? false),
-            ARRAY_FILTER_USE_BOTH,
-        ));
+        $options = app(MessagingChannelOptions::class);
+        $channels = $options->all();
 
         return [
             'sendUrl' => route('console.messages.audience'),
             'targetsUrl' => route('console.messages.targets'),
             'templatesUrl' => route('console.messages.templates'),
-            'channels' => $enabled,
-            'defaultChannel' => in_array('whatsapp', $enabled, true)
-                ? 'whatsapp'
-                : (string) ($enabled[0] ?? 'in_app'),
+            'channels' => $channels,
+            'defaultChannel' => $options->defaultFor($channels),
             'fixedTarget' => ['type' => 'group', 'id' => $groupId, 'label' => $label],
         ];
     }
