@@ -8,6 +8,8 @@ use Modules\Integrations\Application\Listeners\FlagConnectionOnError;
 use Modules\Integrations\Application\Policies\IntegrationConnectionPolicy;
 use Modules\Integrations\Application\Policies\IntegrationProviderPolicy;
 use Modules\Integrations\Application\Policies\IntegrationWebhookDeliveryPolicy;
+use Modules\Integrations\Application\Services\GreenApiConnectionManager;
+use Modules\Integrations\Domain\Contracts\GreenApiConnections;
 use Modules\Integrations\Domain\Events\WebhookDeadLettered;
 use Modules\Integrations\Domain\Models\IntegrationConnection;
 use Modules\Integrations\Domain\Models\IntegrationProvider;
@@ -54,6 +56,7 @@ final class IntegrationsServiceProvider extends BaseModuleServiceProvider
     {
         return [
             Transaction::class => DatabaseTransaction::class,
+            GreenApiConnections::class => GreenApiConnectionManager::class,
         ];
     }
 }

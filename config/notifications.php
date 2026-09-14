@@ -78,6 +78,7 @@ return [
                 'instance_id' => env('GREEN_API_INSTANCE_ID'),
                 'token' => env('GREEN_API_TOKEN'),
                 'timeout_seconds' => (int) env('GREEN_API_TIMEOUT_SECONDS', 15),
+                'max_message_length' => (int) env('GREEN_API_MAX_MESSAGE_LENGTH', 20000),
                 'retry_delays_milliseconds' => [200, 500],
             ],
 

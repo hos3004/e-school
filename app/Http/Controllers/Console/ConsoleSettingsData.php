@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Console;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Modules\Integrations\Domain\Contracts\GreenApiConnections;
 use Modules\Notifications\Application\Services\NotificationCategorySettingsResolver;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Organization\Domain\Contracts\OrganizationSettingQueries;
@@ -18,6 +19,7 @@ final class ConsoleSettingsData
     {
         $canAccounts = $actor->can('organizations.manage_settings');
         $canNotifications = $actor->can('settings.manage');
+        $canGreenApi = $canNotifications && $actor->can('integrations.connection.update');
         $canCalendar = $actor->can('academic_calendars.view_any');
         $canHoliday = $actor->can('holidays.view_any');
         $activeCalendarIds = $canCalendar ? AcademicCalendar::query()->forOrganization($organizationId)->active()->orderBy('id')->pluck('id')->all() : [];
@@ -40,12 +42,16 @@ final class ConsoleSettingsData
                     'version' => self::fingerprint($holiday->getAttributes()), 'can_remove' => $actor->can('delete', $holiday),
                 ])->all() : [],
             'notificationCategories' => $canNotifications ? $this->notificationCategories($organizationId) : [],
+            'greenApi' => $canGreenApi ? app(GreenApiConnections::class)->view($organizationId) : null,
             'notificationChannels' => $canNotifications ? array_map(static fn (Channel $channel): array => [
                 'value' => $channel->value, 'label' => $channel->label(),
-                'enabled' => (bool) config('notifications.channels.'.$channel->value.'.enabled', false),
+                'enabled' => $channel === Channel::Whatsapp
+                    ? app(GreenApiConnections::class)->isChannelEnabled($organizationId)
+                    : (bool) config('notifications.channels.'.$channel->value.'.enabled', false),
             ], Channel::cases()) : [],
             'settingsPermissions' => [
                 'accounts' => $canAccounts, 'notifications' => $canNotifications,
+                'green_api' => $canGreenApi,
                 'calendars' => $canCalendar, 'holidays' => $canHoliday,
                 'create_calendar' => $canCalendar && $actor->can('create', AcademicCalendar::class),
                 'create_holiday' => $canHoliday && $actor->can('create', Holiday::class),

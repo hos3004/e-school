@@ -56,6 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReport(BusinessRuleViolation::class);
+        $exceptions->dontFlash(['token']);
 
         /*
          * صفحة 404 العامة تخدم الزائر. لوحة Filament ومسارات JSON لها

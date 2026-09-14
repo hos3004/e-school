@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Console\Support;
 
 use Modules\Identity\Domain\Models\User;
+use Modules\Integrations\Domain\Contracts\GreenApiConnections;
 use Modules\Notifications\Application\Services\UndeliverableEmailDomains;
 
 /**
@@ -21,6 +22,7 @@ final readonly class MessagingChannelOptions
 {
     public function __construct(
         private UndeliverableEmailDomains $undeliverable,
+        private GreenApiConnections $greenApiConnections,
     ) {}
 
     /**
@@ -35,7 +37,13 @@ final readonly class MessagingChannelOptions
                 continue;
             }
 
-            $options[] = $this->option($name, (bool) ($settings['enabled'] ?? false), $recipient);
+            $enabled = (bool) ($settings['enabled'] ?? false);
+            if ($name === 'whatsapp') {
+                $organizationId = (string) ($recipient?->getAttribute('organization_id') ?? data_get(auth()->user(), 'organization_id', ''));
+                $enabled = $this->greenApiConnections->isChannelEnabled($organizationId);
+            }
+
+            $options[] = $this->option($name, $enabled, $recipient);
         }
 
         return $options;

@@ -7,6 +7,7 @@ import { formatNumber } from "@/lib/console-format";
 import type { AppPageProps } from "@/types";
 import {
   AccountSettings,
+  GreenApiSettings,
   CalendarSettings,
   NotificationSettings,
   type SettingsEditorsProps,
@@ -105,6 +106,13 @@ export default function Settings({
           ? [
               t("console_settings.username_prefix"),
               t("console_settings.prefix_help"),
+            ]
+          : []),
+        ...(section.key === "integrations" && editors.greenApi
+          ? [
+              t("console_settings.green_api.title"),
+              t("console_settings.green_api.api_url"),
+              t("console_settings.green_api.instance_id"),
             ]
           : []),
         ...(section.key === "notifications"
@@ -305,6 +313,12 @@ export default function Settings({
                     channels={editors.notificationChannels}
                   />
                 )}
+              {section.key === "integrations" && editors.greenApi && (
+                <GreenApiSettings
+                  key={editors.greenApi.version}
+                  data={editors.greenApi}
+                />
+              )}
               <div className="console-panel-body">
                 <dl>
                   {section.fields.map((field) => (

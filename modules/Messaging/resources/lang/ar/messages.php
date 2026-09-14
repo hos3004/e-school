@@ -8,6 +8,7 @@ declare(strict_types=1);
 */
 
 return [
+    'whatsapp_media_received' => 'رسالة وسائط واردة',
     'sent' => 'تم إرسال الرسالة بنجاح.',
     'edited' => 'تم تعديل الرسالة.',
     'flagged' => 'تم وسم الرسالة كمخالفة.',

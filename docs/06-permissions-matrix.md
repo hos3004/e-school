@@ -175,6 +175,7 @@
 | `report.export` | ● | ● | ◐finance | ◐ops | — | — | — | — | ● |
 | `audit.view` | ● | ○ | ○ | — | — | — | — | — | **●** |
 | `settings.manage` | ● | — | — | — | — | — | — | — | — |
+| `integrations.connection.update` (Green API settings) | ● | — | — | — | — | — | — | — | — |
 | `user.impersonate` | ● | — | — | — | — | — | — | — | — |
 | `system.alerts` | ● | ● | — | — | — | — | — | — | — |
 

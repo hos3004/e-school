@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonTimeZone;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
+use Modules\Integrations\Domain\Contracts\GreenApiConnections;
 use Modules\Notifications\Domain\Contracts\NotificationDispatcher;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
@@ -34,6 +35,7 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
         private Dispatcher $events,
         private TemplateRenderer $templates,
         private NotificationCategorySettingsResolver $categorySettings,
+        private GreenApiConnections $greenApiConnections,
     ) {}
 
     public function dispatch(
@@ -85,7 +87,7 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
             $critical = $this->categorySettings->isCritical($organizationId, $category);
             $respectsQuietHours = $this->categorySettings->respectsQuietHours($organizationId, $category);
 
-            foreach ($this->channelsFor($category, $categoryChannels, $critical, $recipientId) as $channelValue) {
+            foreach ($this->channelsFor($category, $categoryChannels, $critical, $recipientId, $organizationId) as $channelValue) {
                 $channel = Channel::from($channelValue);
 
                 if ($this->writeRow(
@@ -239,6 +241,7 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
         array $categoryChannels,
         bool $critical,
         string $recipientId,
+        string $organizationId,
     ): array {
         /** @var array<string, mixed> $channelConfig */
         $channelConfig = (array) config('notifications.channels', []);
@@ -257,6 +260,11 @@ final readonly class OutboxDispatcher implements NotificationDispatcher
                     $enabledNames[] = $name;
                 }
             }
+        }
+
+        $enabledNames = array_values(array_diff($enabledNames, [Channel::Whatsapp->value]));
+        if ($this->greenApiConnections->isChannelEnabled($organizationId)) {
+            $enabledNames[] = Channel::Whatsapp->value;
         }
 
         $resolved = array_values(array_intersect($categoryChannels, $enabledNames));

@@ -8,6 +8,7 @@ declare(strict_types=1);
 */
 
 return [
+    'whatsapp_media_received' => 'Incoming media message',
     'sent' => 'The message has been sent successfully.',
     'edited' => 'The message has been edited.',
     'flagged' => 'The message has been flagged.',

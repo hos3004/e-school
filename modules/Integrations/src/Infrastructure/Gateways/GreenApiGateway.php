@@ -11,6 +11,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use InvalidArgumentException;
 use Modules\Integrations\Domain\Contracts\ChannelGateway;
+use Modules\Integrations\Domain\Contracts\GreenApiConnections;
 use Modules\Integrations\Domain\ValueObjects\GatewayMessage;
 use Modules\Integrations\Domain\ValueObjects\GatewayResult;
 use Throwable;
@@ -31,16 +32,15 @@ final readonly class GreenApiGateway implements ChannelGateway
     /**
      * حد واتساب لرسالة نصية واحدة. الأطول يُقصّ بدل أن يرفضه المزوّد كاملًا.
      */
-    private const MAX_MESSAGE_LENGTH = 4096;
-
     public function __construct(
         private Factory $http,
         private PhoneNumberNormalizer $phoneNumbers,
+        private GreenApiConnections $connections,
     ) {}
 
     public function send(GatewayMessage $message): GatewayResult
     {
-        $configuration = $this->configuration();
+        $configuration = $this->configuration($message->organizationId);
 
         if ($configuration === null) {
             return $this->permanentFailure('whatsapp_configuration_invalid');
@@ -105,48 +105,30 @@ final readonly class GreenApiGateway implements ChannelGateway
      *     retry_delays_milliseconds: list<int>
      * }|null
      */
-    private function configuration(): ?array
+    private function configuration(string $organizationId): ?array
     {
-        $channel = config('notifications.channels.whatsapp');
-
-        if (!is_array($channel) || ($channel['enabled'] ?? false) !== true) {
+        $stored = $this->connections->credentials($organizationId);
+        if ($stored === null) {
             return null;
         }
 
-        $configuration = $channel['green_api'] ?? null;
-
-        if (!is_array($configuration)) {
+        $settings = (array) config('notifications.channels.whatsapp.green_api', []);
+        $timeout = $settings['timeout_seconds'] ?? null;
+        $delays = $settings['retry_delays_milliseconds'] ?? null;
+        if (!is_int($timeout) || $timeout < 1 || !is_array($delays) || !array_is_list($delays)) {
             return null;
         }
 
-        $apiUrl = $configuration['api_url'] ?? null;
-        $instanceId = $configuration['instance_id'] ?? null;
-        $token = $configuration['token'] ?? null;
-        $timeoutSeconds = $configuration['timeout_seconds'] ?? null;
-        $retryDelays = $configuration['retry_delays_milliseconds'] ?? null;
-
-        if (
-            !is_string($apiUrl) || preg_match('#^https://[A-Za-z0-9.-]+(?::\d+)?$#', rtrim($apiUrl, '/')) !== 1
-            || !is_string($instanceId) || preg_match('/^\d+$/', $instanceId) !== 1
-            || !is_string($token) || preg_match('/^[A-Za-z0-9]+$/', $token) !== 1
-            || !is_int($timeoutSeconds) || $timeoutSeconds < 1
-            || !is_array($retryDelays) || !array_is_list($retryDelays)
-        ) {
-            return null;
-        }
-
-        foreach ($retryDelays as $delay) {
+        foreach ($delays as $delay) {
             if (!is_int($delay) || $delay < 0) {
                 return null;
             }
         }
 
         return [
-            'api_url' => rtrim($apiUrl, '/'),
-            'instance_id' => $instanceId,
-            'token' => $token,
-            'timeout_seconds' => $timeoutSeconds,
-            'retry_delays_milliseconds' => $retryDelays,
+            ...$stored,
+            'timeout_seconds' => $timeout,
+            'retry_delays_milliseconds' => $delays,
         ];
     }
 
@@ -195,8 +177,8 @@ final readonly class GreenApiGateway implements ChannelGateway
             : $body;
         $text = trim($text);
 
-        return mb_strlen($text) > self::MAX_MESSAGE_LENGTH
-            ? mb_substr($text, 0, self::MAX_MESSAGE_LENGTH)
+        return mb_strlen($text) > (int) config('notifications.channels.whatsapp.green_api.max_message_length', 20000)
+            ? mb_substr($text, 0, (int) config('notifications.channels.whatsapp.green_api.max_message_length', 20000))
             : $text;
     }
 

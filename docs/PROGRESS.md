@@ -1,5 +1,14 @@
 # سجل تقدّم البناء — e-school Platform
 
+## 2026-09-15 — Green API WhatsApp integration (SCHOOL-WEB)
+
+- Candidate branch codex/green-api-integration-20260915 in an isolated server worktree. Platform admin can enter the Green API shard URL, instance ID and token in /manage/settings; activation verifies the instance and stores the token encrypted with a redacted audit record.
+- Sending uses each organization's saved connection. A separate action registers authenticated Green API webhooks for inbound messages, delivery statuses and instance state. Inbound replays are idempotent; delivery status is attached to the notification outbox by provider message ID.
+- Tests use an isolated PostgreSQL database and fake provider responses. Live provider verification and test delivery require the administrator to save their token in the UI after deployment. No token was entered into chat or repository.
+- Official API references: https://green-api.com/en/docs/api/account/GetStateInstance/ ; https://green-api.com/en/docs/api/account/SetSettings/ ; https://green-api.com/en/docs/api/sending/SendMessage/ ; https://green-api.com/en/docs/api/receiving/technology-webhook-endpoint/ .
+
+
+
 ## 2026-09-11 — العودة من الفصل المباشر إلى مكان كل دور
 
 - بعد انتهاء الحصة أو الخروج من BigBlueButton يعود الطالب إلى واجهته، وينتقل المعلم إلى صفحة حصته عند نموذج التقرير وأول حقوله يحمل التركيز.

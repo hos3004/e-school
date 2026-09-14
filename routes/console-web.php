@@ -14,6 +14,8 @@ use App\Http\Controllers\Console\SettingsOperationsController;
 use App\Http\Controllers\Console\TeacherFinancialVisibilityController;
 use App\Http\Controllers\Console\WorkspaceController;
 use Illuminate\Support\Facades\Route;
+use Modules\Integrations\Presentation\Http\Controllers\RegisterGreenApiWebhookController;
+use Modules\Integrations\Presentation\Http\Controllers\SaveGreenApiSettingsController;
 use Modules\Reporting\Presentation\Http\Controllers\ExportOperationalReportPdfController;
 
 Route::get('/', WorkspaceController::class)->name('home');
@@ -47,6 +49,12 @@ Route::get('/reports/pdf', ExportOperationalReportPdfController::class)->middlew
 
 Route::get('/settings', [SettingsController::class, 'index'])->middleware('can:organizations.view')->name('settings');
 Route::put('/settings', [SettingsController::class, 'update'])->middleware('can:organizations.update')->name('settings.update');
+
+Route::post('/settings/green-api/webhook', RegisterGreenApiWebhookController::class)
+    ->middleware(['can:settings.manage', 'can:integrations.connection.update'])->name('settings.green-api.webhook');
+
+Route::post('/settings/green-api', SaveGreenApiSettingsController::class)
+    ->middleware(['can:settings.manage', 'can:integrations.connection.update'])->name('settings.green-api');
 
 Route::post('/settings/session-pay', [SessionPayController::class, 'store'])->middleware('can:organizations.manage_settings')->name('settings.session-pay');
 

@@ -36,15 +36,26 @@ type Category = {
   version: string;
 };
 type Channel = { value: string; label: string; enabled: boolean };
+type GreenApiSettingsData = {
+  api_url: string;
+  instance_id: string;
+  configured: boolean;
+  enabled: boolean;
+  webhook_registered: boolean;
+  state: string;
+  version: string;
+};
 export type SettingsEditorsProps = {
   accounts: Accounts | null;
   calendars: Calendar[];
   holidays: Holiday[];
   notificationCategories: Category[];
   notificationChannels: Channel[];
+  greenApi: GreenApiSettingsData | null;
   settingsPermissions: {
     accounts: boolean;
     notifications: boolean;
+    green_api: boolean;
     calendars: boolean;
     holidays: boolean;
     create_calendar: boolean;
@@ -587,5 +598,100 @@ export function NotificationSettings({
         />
       ))}
     </div>
+  );
+}
+
+export function GreenApiSettings({ data }: { data: GreenApiSettingsData }) {
+  const t = useI18n();
+  const form = useForm({
+    api_url: data.api_url,
+    instance_id: data.instance_id,
+    token: "",
+    enabled: data.enabled,
+    reason: "",
+    version: data.version,
+  });
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    form.post("/manage/settings/green-api", {
+      preserveScroll: true,
+      onSuccess: () => form.reset("token", "reason"),
+    });
+  }
+
+  return (
+    <form onSubmit={submit} className="console-settings-editor">
+      <div className="form-section">
+        <h3>{t("console_settings.green_api.title")}</h3>
+        <p>{t("console_settings.green_api.description")}</p>
+        <div className="field-grid">
+          <div className="field span2">
+            <label htmlFor="green-api-url">{t("console_settings.green_api.api_url")}</label>
+            <input id="green-api-url" className="console-control" dir="ltr"
+              autoComplete="off" required value={form.data.api_url}
+              onChange={(event) => form.setData("api_url", event.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="green-api-instance">{t("console_settings.green_api.instance_id")}</label>
+            <input id="green-api-instance" className="console-control" dir="ltr"
+              autoComplete="off" required inputMode="numeric" value={form.data.instance_id}
+              onChange={(event) => form.setData("instance_id", event.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="green-api-token">{t("console_settings.green_api.token")}</label>
+            <input id="green-api-token" className="console-control" dir="ltr"
+              type="password" autoComplete="new-password" value={form.data.token}
+              onChange={(event) => form.setData("token", event.target.value)} />
+            <small>{t(data.configured
+              ? "console_settings.green_api.token_keep"
+              : "console_settings.green_api.token_new")}</small>
+          </div>
+          <label className="console-settings-check span2">
+            <input type="checkbox" checked={form.data.enabled}
+              onChange={(event) => form.setData("enabled", event.target.checked)} />
+            <span>{t("console_settings.green_api.enabled")}</span>
+          </label>
+          <div className="field span2">
+            <label htmlFor="green-api-reason">{t("console_settings.green_api.reason")}</label>
+            <input id="green-api-reason" className="console-control" required
+              minLength={5} maxLength={500} value={form.data.reason}
+              onChange={(event) => form.setData("reason", event.target.value)} />
+          </div>
+        </div>
+        <p className="console-settings-note">{t("console_settings.green_api.webhook_notice")}</p>
+        <p className="console-settings-note" role="status">
+          {t("console_settings.green_api.status")}:{" "}
+          {data.enabled
+            ? data.state === "authorized"
+              ? t("console_settings.green_api.authorized")
+              : t("console_settings.green_api.state_attention") + " (" + data.state + ")"
+            : t("console_settings.green_api.disabled")}
+          {" · "}
+          {data.webhook_registered
+            ? t("console_settings.green_api.webhook_ready")
+            : t("console_settings.green_api.webhook_pending")}
+        </p>
+      </div>
+      <Feedback errors={form.errors} />
+      <div className="savebar">
+        <button className="console-button primary" disabled={form.processing || !form.isDirty}>
+          {t(form.processing ? "console.saving" : "console_settings.green_api.save")}
+        </button>
+        {data.enabled && (
+          <button type="button" className="console-button" disabled={form.processing}
+            onClick={() => {
+              if (!form.data.reason.trim()) {
+                form.setError("reason", t("console_settings.green_api.reason_required"));
+                return;
+              }
+              router.post("/manage/settings/green-api/webhook",
+                { reason: form.data.reason }, { preserveScroll: true });
+            }}>
+            {t("console_settings.green_api.register_webhook")}
+          </button>
+        )}
+      </div>
+    </form>
   );
 }

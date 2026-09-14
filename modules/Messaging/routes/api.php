@@ -7,6 +7,7 @@ use Modules\Messaging\Presentation\Http\Controllers\FlagMessageController;
 use Modules\Messaging\Presentation\Http\Controllers\HandleWhatsappInboundController;
 use Modules\Messaging\Presentation\Http\Controllers\ListConversationMessagesController;
 use Modules\Messaging\Presentation\Http\Controllers\ListConversationsController;
+use Modules\Messaging\Presentation\Http\Controllers\ReceiveGreenApiWebhookController;
 use Modules\Messaging\Presentation\Http\Controllers\SearchMessageRecipientsController;
 use Modules\Messaging\Presentation\Http\Controllers\ShowConversationController;
 use Modules\Messaging\Presentation\Http\Controllers\StartDirectConversationController;
@@ -15,12 +16,11 @@ use Modules\Messaging\Presentation\Http\Controllers\StoreMessageController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreWallCommentController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreWallPostController;
 use Modules\Messaging\Presentation\Http\Controllers\UpdateMessageController;
-use Modules\Messaging\Presentation\Http\Controllers\WhatsappWebhookController;
 
 /*
 | Webhook الواتساب من مزوّد خارجي — بلا مصادقة جلسة، التحقق عبر المدخلات.
 */
-Route::post('webhooks/whatsapp', WhatsappWebhookController::class)->name('whatsapp.webhook');
+Route::post('webhooks/green-api', ReceiveGreenApiWebhookController::class)->name('whatsapp.green-api.webhook');
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('conversations', ListConversationsController::class)->name('conversations.index');
