@@ -34,6 +34,14 @@ return [
             'driver' => env('MAIL_MAILER', 'smtp'),
             'gateway' => MailChannelGateway::class,
             'rate_limit_per_minute' => 120,
+
+            /*
+             * نطاقات محجوزة لا تُسلَّم إليها رسالة أبدًا (RFC 2606 و RFC 6761).
+             * الحسابات المستوردة بلا بريد حقيقي تحمل عناوين على هذه النطاقات،
+             * وخادم البريد يردّ عليها 450 المؤقت فتُعاد المحاولة بلا نهاية.
+             * وجودها هنا يجعل الرفض نهائيًا قبل فتح أي اتصال.
+             */
+            'undeliverable_domains' => ['invalid', 'test', 'example', 'localhost', 'local'],
         ],
         'push' => [
             // خارج قنوات المرحلة الأولى حتى يُسجّل Gateway حقيقي لـ FCM.

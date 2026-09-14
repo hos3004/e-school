@@ -42,4 +42,9 @@ return [
     'manual_send_failed' => 'The notification could not be queued.',
     'manual_already_processed' => 'This send request was already processed; no duplicate messages were created.',
     'manual_queued' => ':queued notifications were queued for :recipients recipients.',
+    'undeliverable_none' => 'No queued messages are addressed to undeliverable domains.',
+    'undeliverable_dry_run' => ':count message(s) addressed to undeliverable domains would be cancelled.',
+    'undeliverable_cancelled' => ':count message(s) addressed to undeliverable domains were cancelled.',
+    'undeliverable_domains_unset' => 'No undeliverable domains are configured; nothing to check.',
+    'undeliverable_cancel_reason' => 'The recipient address is on a reserved domain that can never receive mail; cancelling stops the endless retry.',
 ];

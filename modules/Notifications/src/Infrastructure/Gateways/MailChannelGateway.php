@@ -25,6 +25,34 @@ final readonly class MailChannelGateway implements ChannelGateway
         private TemplateRenderer $templates,
     ) {}
 
+    /**
+     * نطاقات محجوزة لا تُسلَّم إليها رسالة أبدًا (RFC 2606 و RFC 6761).
+     *
+     * القائمة إعداد لا كود، فقد تضيف المدرسة نطاقًا داخليًا آخر.
+     */
+    private function isUndeliverableDomain(string $email): bool
+    {
+        $domain = mb_strtolower(substr((string) strrchr($email, '@'), 1));
+
+        if ($domain === '') {
+            return true;
+        }
+
+        foreach ((array) config('notifications.channels.email.undeliverable_domains', []) as $reserved) {
+            if (!is_string($reserved) || $reserved === '') {
+                continue;
+            }
+
+            $reserved = mb_strtolower(trim($reserved, '.'));
+
+            if ($domain === $reserved || str_ends_with($domain, '.'.$reserved)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function send(GatewayMessage $message): GatewayResult
     {
         if ($message->channel !== Channel::Email->value) {
@@ -43,6 +71,22 @@ final readonly class MailChannelGateway implements ChannelGateway
             return GatewayResult::rejected(
                 (string) __('notifications::errors.email_recipient_invalid'),
                 false,
+            );
+        }
+
+        /*
+         * العنوان البديل (‎@…​.invalid وأخواته) صحيح الشكل ولا وجود لنطاقه.
+         *
+         * بلا هذا الحارس يُفتح حوار SMTP فيردّ الخادم 450 «Domain not found»،
+         * وهو رمز مؤقت فتُعاد المحاولة إلى الأبد: عشرات آلاف المحاولات تحجز
+         * عمال الطابور أربع ثوانٍ لكل واحدة وتُجوّع بقية القنوات. النطاقات
+         * محجوزة بنص RFC 2606/6761 فلا تُسلَّم أبدًا؛ الرفض هنا نهائي لا مؤقت.
+         */
+        if ($this->isUndeliverableDomain($email)) {
+            return GatewayResult::rejected(
+                (string) __('notifications::errors.email_domain_undeliverable'),
+                false,
+                ['status' => 'failed', 'failure_reason' => 'email_domain_undeliverable'],
             );
         }
 

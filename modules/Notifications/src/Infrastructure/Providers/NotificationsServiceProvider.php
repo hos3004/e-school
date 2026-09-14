@@ -7,6 +7,7 @@ namespace Modules\Notifications\Infrastructure\Providers;
 use Illuminate\Auth\Events\Login;
 use Modules\Integrations\Domain\Contracts\ChannelGateway;
 use Modules\Notifications\Application\Actions\SavePopupCampaignAction;
+use Modules\Notifications\Application\Console\CancelUndeliverableNotifications;
 use Modules\Notifications\Application\Console\DispatchDueNotifications;
 use Modules\Notifications\Application\Console\RetryFailedNotifications;
 use Modules\Notifications\Application\Listeners\MarkPopupLoginMarker;
@@ -113,6 +114,7 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
         parent::boot();
 
         $this->commands([
+            CancelUndeliverableNotifications::class,
             DispatchDueNotifications::class,
             RetryFailedNotifications::class,
         ]);

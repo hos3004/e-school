@@ -22,4 +22,9 @@ return [
     'manual_send_failed' => 'La notification n’a pas pu être mise en file.',
     'manual_already_processed' => 'Cette demande a déjà été traitée ; aucun doublon n’a été créé.',
     'manual_queued' => ':queued notifications ont été mises en file pour :recipients destinataires.',
+    'undeliverable_none' => 'Aucun message en attente vers un domaine non distribuable.',
+    'undeliverable_dry_run' => ':count message(s) vers des domaines non distribuables seraient annulés.',
+    'undeliverable_cancelled' => ':count message(s) vers des domaines non distribuables ont été annulés.',
+    'undeliverable_domains_unset' => 'Aucun domaine non distribuable configuré ; rien à vérifier.',
+    'undeliverable_cancel_reason' => 'L adresse du destinataire est sur un domaine reserve qui ne peut jamais recevoir de courrier.',
 ];

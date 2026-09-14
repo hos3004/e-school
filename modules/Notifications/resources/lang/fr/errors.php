@@ -28,4 +28,5 @@ return [
     'manual_fields_required' => 'L’objet, le message et le motif sont obligatoires.',
     'manual_request_invalid' => 'L’identifiant de la demande est invalide. Rouvrez le formulaire.',
     'manual_schedule_past' => 'L’heure d’envoi choisie est déjà passée dans votre fuseau. Choisissez une heure future.',
+    'email_domain_undeliverable' => 'Le domaine du destinataire est reserve et ne peut jamais recevoir de courrier.',
 ];

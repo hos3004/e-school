@@ -51,4 +51,5 @@ return [
     'manual_fields_required' => 'Subject, message, and send reason are required.',
     'manual_request_invalid' => 'The send request ID is invalid. Reopen the form and try again.',
     'manual_schedule_past' => 'The chosen send time is already past in your timezone. Pick a future time.',
+    'email_domain_undeliverable' => 'The recipient email domain is reserved and can never receive mail; no send was attempted.',
 ];
