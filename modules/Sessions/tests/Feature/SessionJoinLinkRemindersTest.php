@@ -187,6 +187,39 @@ it('keeps the early reminder and the join link as two independent stages', funct
         ->and(SessionReminderDispatch::query()->where('session_id', $fixture['session']->id)->count())->toBe(3);
 });
 
+it('still sends join links for a session that already started', function (): void {
+    joinLinkOnlyInApp();
+    $fixture = joinLinkFixture([
+        'scheduled_start' => CarbonImmutable::now('UTC')->addMinutes(10),
+        'scheduled_end' => CarbonImmutable::now('UTC')->addMinutes(70),
+        // المعلم يستطيع فتح الفصل قبل الموعد، فتصير الحصة جارية قبل أن يحين
+        // وقت رابط الطالب. رُصدت هذه الحالة على الإنتاج لا في التخطيط.
+        'status' => SessionStatus::InProgress,
+    ]);
+    $this->seed(NotificationTemplateSeeder::class);
+
+    $this->artisan('sessions:dispatch-reminders')->assertSuccessful();
+
+    expect(NotificationOutbox::query()->where('event_name', 'session.join_link.teacher')->count())->toBe(1)
+        ->and(NotificationOutbox::query()->where('event_name', 'session.join_link.student')->count())->toBe(1)
+        // التنبيه المبكر لا يخص حصة بدأت، فلا يُرسل لها.
+        ->and(NotificationOutbox::query()->where('event_name', 'session.approaching')->count())->toBe(0);
+});
+
+it('never sends join links for a cancelled session', function (): void {
+    joinLinkOnlyInApp();
+    joinLinkFixture([
+        'scheduled_start' => CarbonImmutable::now('UTC')->addMinutes(10),
+        'scheduled_end' => CarbonImmutable::now('UTC')->addMinutes(70),
+        'status' => SessionStatus::CancelledBySchool,
+    ]);
+    $this->seed(NotificationTemplateSeeder::class);
+
+    $this->artisan('sessions:dispatch-reminders')->assertSuccessful();
+
+    expect(NotificationOutbox::query()->where('event_name', 'like', 'session.join_link%')->count())->toBe(0);
+});
+
 it('does not repeat a stage when the scheduler runs again', function (): void {
     joinLinkOnlyInApp();
     joinLinkFixture();

@@ -92,6 +92,32 @@ final class DispatchSessionReminders extends Command
     }
 
     /**
+     * الحالات التي تستحق هذه المرحلة.
+     *
+     * رابط الدخول يُرسل قبل الموعد بدقائق، والحصة تكون عندها كثيرًا في
+     * `in_progress` لأن المعلم يستطيع فتح الفصل أبكر. حصرُها في «مجدولة أو
+     * مؤكدة» كان يُسقط الرابط عن الحصص التي بدأت فعلًا — وهي أحوج ما تكون
+     * إليه. المعيار هو نفسه الذي يفرضه EnterClassroom عند الدخول:
+     * allowsJoining()، فلا يصل رابط يرفضه الفصل ولا يسقط رابط يقبله.
+     *
+     * التنبيه المبكر يبقى على حاله: قبل ساعتين لا تكون الحصة قد بدأت.
+     *
+     * @param array{key: string, type: string, audience: string, before_minutes: int} $stage
+     * @return list<SessionStatus>
+     */
+    private function statusesFor(array $stage): array
+    {
+        if ($stage['type'] !== 'join_link') {
+            return [SessionStatus::Scheduled, SessionStatus::Confirmed];
+        }
+
+        return array_values(array_filter(
+            SessionStatus::cases(),
+            static fn (SessionStatus $status): bool => $status->allowsJoining(),
+        ));
+    }
+
+    /**
      * @param array{key: string, type: string, audience: string, before_minutes: int} $stage
      */
     private function runStage(array $stage, CarbonImmutable $now, int $limit): int
@@ -99,7 +125,7 @@ final class DispatchSessionReminders extends Command
         $until = $now->addMinutes($stage['before_minutes']);
 
         $sessionIds = Session::query()
-            ->whereIn('status', [SessionStatus::Scheduled, SessionStatus::Confirmed])
+            ->whereIn('status', $this->statusesFor($stage))
             ->where('scheduled_start', '>', $now)
             ->where('scheduled_start', '<=', $until)
             ->whereNotExists(static function ($query) use ($stage): void {
@@ -139,7 +165,7 @@ final class DispatchSessionReminders extends Command
                 ->first();
 
             if ($session === null
-                || !in_array($session->status, [SessionStatus::Scheduled, SessionStatus::Confirmed], true)
+                || !in_array($session->status, $this->statusesFor($stage), true)
                 || $session->scheduled_start->lessThanOrEqualTo($now)
                 || $session->scheduled_start->greaterThan($until)) {
                 return false;
