@@ -29,7 +29,7 @@ return [
         'expires_in' => 'Time left',
         'expired' => 'Expired',
         'hours_left' => ':hours h left',
-        'makeup' => 'Make-up session',
+        'makeup' => 'Makeup session',
         'propose_alternative' => 'Propose alternative',
         'alternative_proposed' => 'The alternative time was sent to the student.',
         'requires_admin_review' => 'Admin review required',

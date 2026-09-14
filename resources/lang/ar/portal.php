@@ -545,7 +545,7 @@ return [
     'teacher.earnings.columns.amount' => 'المبلغ',
 
     'payroll_outcomes.completed' => 'حصة أُقيمت',
-    'payroll_outcomes.makeup_completed' => 'حصة تلافي أُقيمت',
+    'payroll_outcomes.makeup_completed' => 'حصة تعويضية أُقيمت',
     'payroll_outcomes.student_no_show' => 'تغيّب الطالب',
     'payroll_outcomes.student_excused' => 'غياب الطالب بعذر',
     'payroll_outcomes.cancelled_accepted' => 'إلغاء مقبول',

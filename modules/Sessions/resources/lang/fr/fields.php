@@ -18,7 +18,7 @@ return [
     'first_joined_at' => 'Première connexion', 'id' => 'Identifiant', 'invited_at' => 'Invité le',
     'invitation_status' => 'Statut de l’invitation', 'invitation_active' => 'Invitation active',
     'invitation_revoked' => 'Invitation révoquée', 'last_left_at' => 'Dernière sortie',
-    'makeup_end' => 'Fin de la séance de remplacement', 'makeup_start' => 'Début de la séance de remplacement',
+    'makeup_end' => 'Fin de la séance de rattrapage', 'makeup_start' => 'Début de la séance de rattrapage',
     'notes' => 'Notes', 'not_available' => 'Non disponible', 'organization' => 'Organisation',
     'participant' => 'Participant', 'participation' => 'Participation', 'original_teacher' => 'Enseignant initial',
     'actual_teacher' => 'Enseignant intervenant', 'coverage_status' => 'Statut du remplacement',

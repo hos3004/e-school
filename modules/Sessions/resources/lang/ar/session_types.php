@@ -11,6 +11,6 @@ return [
     'individual' => 'فردية',
     'group' => 'جماعية',
     'webinar' => 'ندوة',
-    'makeup' => 'حصة تلافي',
+    'makeup' => 'حصة تعويضية',
     'assessment' => 'حصة تقييم',
 ];

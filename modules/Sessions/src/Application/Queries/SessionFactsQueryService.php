@@ -7,6 +7,7 @@ namespace Modules\Sessions\Application\Queries;
 use Carbon\CarbonImmutable;
 use Modules\Sessions\Domain\Contracts\SessionFactsQueries;
 use Modules\Sessions\Domain\Enums\ApologyStatus;
+use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\TeacherApology;
 use Modules\Sessions\Domain\ValueObjects\SessionPayrollFacts;
@@ -52,5 +53,62 @@ final readonly class SessionFactsQueryService implements SessionFactsQueries
                 ->whereNotNull('excused_at')
                 ->exists(),
         );
+    }
+
+    public function postponedPairs(int $limit, ?string $afterOriginalSessionId = null): array
+    {
+        $originals = Session::query()
+            ->where('status', SessionStatus::Postponed)
+            ->when(
+                $afterOriginalSessionId !== null && $afterOriginalSessionId !== '',
+                static fn ($query) => $query->where('id', '>', $afterOriginalSessionId),
+            )
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get(['id', 'organization_id', 'course_id', 'staff_profile_id']);
+
+        if ($originals->isEmpty()) {
+            return [];
+        }
+
+        $makeups = Session::query()
+            ->whereIn('makeup_for_session_id', $originals->pluck('id')->all())
+            ->get(['id', 'makeup_for_session_id', 'status', 'scheduled_start', 'scheduled_end'])
+            ->keyBy('makeup_for_session_id');
+
+        $pairs = [];
+
+        foreach ($originals as $original) {
+            $makeup = $makeups->get((string) $original->getKey());
+
+            /*
+             * حصة مؤجَّلة بلا تعويضية ليست زوجًا: لا مفتاح تحرير لها، فلا
+             * تُنشأ لها قيدة مؤجَّلة تبقى معلّقة إلى الأبد.
+             */
+            if ($makeup === null) {
+                continue;
+            }
+
+            /*
+             * تعويضية ألغيت أو استُبدلت لن تُقام أبدًا، فقيدة مؤجَّلة معلَّقة
+             * عليها تبقى معلَّقة إلى الأبد بلا مسار تحرير. هذه تسوية إدارية
+             * لا معالجة آلية.
+             */
+            if ($makeup->status->isTerminal()) {
+                continue;
+            }
+
+            $pairs[] = [
+                'original_session_id' => (string) $original->getKey(),
+                'makeup_session_id' => (string) $makeup->getKey(),
+                'organization_id' => (string) $original->organization_id,
+                'course_id' => (string) $original->course_id,
+                'staff_profile_id' => (string) $original->staff_profile_id,
+                'makeup_start' => CarbonImmutable::parse((string) $makeup->scheduled_start)->utc()->toIso8601String(),
+                'makeup_end' => CarbonImmutable::parse((string) $makeup->scheduled_end)->utc()->toIso8601String(),
+            ];
+        }
+
+        return $pairs;
     }
 }

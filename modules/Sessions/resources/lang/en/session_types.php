@@ -11,6 +11,6 @@ return [
     'individual' => 'Individual',
     'group' => 'Group',
     'webinar' => 'Webinar',
-    'makeup' => 'Make-up session',
+    'makeup' => 'Makeup session',
     'assessment' => 'Assessment session',
 ];

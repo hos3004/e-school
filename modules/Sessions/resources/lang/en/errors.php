@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'reason_required' => 'A written reason is required for this operation.',
+    'session_not_ended' => 'A session whose scheduled time has not ended cannot be recorded as held.',
     'terminal_status' => 'A session in terminal status :status cannot be changed.',
     'start_in_past' => 'The session must be scheduled in the future.',
     'end_before_start' => 'The end time must be after the start time.',

@@ -22,4 +22,7 @@ return [
     'ended_after_schedule' => 'La séance s’est terminée automatiquement après l’heure prévue et attend la revue.',
     'auto_end_summary' => ':count séances ayant dépassé leur fin prévue ont été terminées.',
     'untitled_session' => 'votre séance planifiée',
+    'auto_finalize_summary' => ':count séances au rapport et à la présence complets ont été validées.',
+    'finalized_after_review' => 'La séance a été validée automatiquement une fois le rapport et la présence complets.',
+    'finalized_all_absent' => 'La séance a été close automatiquement comme absence : tous les participants sont marqués absents.',
 ];

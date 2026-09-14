@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'reason_required' => 'كتابة السبب مطلوبة لإتمام هذا الإجراء.',
+    'session_not_ended' => 'لا يمكن تسجيل حصة لم ينتهِ موعدها بعد.',
     'terminal_status' => 'لا يمكن تعديل حصة في الحالة النهائية :status.',
     'start_in_past' => 'يجب أن يكون موعد الحصة في المستقبل.',
     'end_before_start' => 'يجب أن يكون وقت الانتهاء بعد وقت البدء.',
@@ -13,7 +14,7 @@ return [
     'cancel_target_invalid' => 'جهة الإلغاء المحددة غير صالحة.',
     'cancellation_window_passed' => 'انتهت مهلة إلغاء الطالب قبل :minutes دقيقة من الحصة.',
     'postponement_window_passed' => 'انتهت مهلة التأجيل قبل :minutes دقيقة من الحصة.',
-    'makeup_duration_changed' => 'يجب أن تحتفظ حصة التلافي بمدة الحصة الأصلية.',
+    'makeup_duration_changed' => 'يجب أن تحتفظ الحصة التعويضية بمدة الحصة الأصلية.',
     'attendance_type_invalid' => 'نوع تسجيل الحضور :type غير صالح.',
     'participant_not_active' => 'المشارك لا ينتمي إلى هذه الحصة أو أن دعوته لم تعد نشطة.',
     'not_joinable' => 'لا يمكن الانضمام إلى حصة حالتها :status.',

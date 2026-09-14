@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Payroll\Infrastructure\Providers;
 
+use Modules\Payroll\Application\Console\BackfillPostponements;
 use Modules\Payroll\Application\Listeners\RecordSessionPayrollEntry;
 use Modules\Payroll\Application\Policies\PayrollAdjustmentPolicy;
 use Modules\Payroll\Application\Policies\PayrollEntryPolicy;
@@ -30,6 +31,13 @@ final class PayrollServiceProvider extends BaseModuleServiceProvider
     protected function moduleName(): string
     {
         return 'Payroll';
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->commands([BackfillPostponements::class]);
     }
 
     /**

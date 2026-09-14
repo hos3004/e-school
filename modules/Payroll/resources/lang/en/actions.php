@@ -41,4 +41,18 @@ return [
         'none' => 'No deferred entries are linked to makeup session :makeup_session_id.',
         'invalid_transition' => 'Entry :entry_id is in status ":from" and cannot be released.',
     ],
+    'settle_makeup' => [
+        'manual' => 'The makeup session was taught by a teacher other than the one holding the deferred entry, so settlement is an administrative decision.',
+        'released' => 'Deferred earning released after the makeup session was held.',
+        'fallback' => 'The makeup session was held with no deferred entry on the original, so a single entry was recorded at the original session rate.',
+    ],
+    'backfill_postponements' => [
+        'reason' => 'Backfill for a postponement that never produced a deferred entry.',
+        'not_recorded' => 'No entry was created for this postponement - check the warning log (unresolved rate or closed period).',
+        'summary' => 'eligible: :planned - written: :written - skipped: :skipped - failed: :failed',
+        'dry_run' => 'Dry run: nothing was written. Re-run with --execute to write.',
+    ],
+    'rate_unresolved' => [
+        'reason' => 'No applicable rate for this teacher, session type and duration, so no payroll entry was created.',
+    ],
 ];

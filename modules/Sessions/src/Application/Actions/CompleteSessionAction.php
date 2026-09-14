@@ -22,9 +22,9 @@ final readonly class CompleteSessionAction
         private TransitionSessionStatusAction $transition,
     ) {}
 
-    public function execute(Session $session, string $actorId, string $reason): Session
+    public function execute(Session $session, string $actorId, string $reason, string $actorType = 'user'): Session
     {
-        DB::transaction(function () use (&$session, $actorId, $reason): void {
+        DB::transaction(function () use (&$session, $actorId, $reason, $actorType): void {
             $session = $this->transition->execute(
                 $session,
                 SessionStatus::Completed,
@@ -35,6 +35,7 @@ final readonly class CompleteSessionAction
                     'finalized_at' => CarbonImmutable::now('UTC')->toIso8601String(),
                     'finalized_by' => $actorId,
                 ],
+                actorType: $actorType,
             );
         });
 

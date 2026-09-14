@@ -6,6 +6,7 @@ namespace Modules\Sessions\Infrastructure\Providers;
 
 use Modules\Sessions\Application\Console\DispatchSessionReminders;
 use Modules\Sessions\Application\Console\EndElapsedSessions;
+use Modules\Sessions\Application\Console\FinalizeDueSessions;
 use Modules\Sessions\Application\Console\SearchPendingSubstitutes;
 use Modules\Sessions\Application\Listeners\StartAutomaticSubstituteSearch;
 use Modules\Sessions\Application\Policies\SessionParticipantPolicy;
@@ -77,6 +78,6 @@ final class SessionsServiceProvider extends BaseModuleServiceProvider
     {
         parent::boot();
 
-        $this->commands([DispatchSessionReminders::class, EndElapsedSessions::class, SearchPendingSubstitutes::class]);
+        $this->commands([DispatchSessionReminders::class, EndElapsedSessions::class, FinalizeDueSessions::class, SearchPendingSubstitutes::class]);
     }
 }

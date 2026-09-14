@@ -23,4 +23,7 @@ return [
     'ended_after_schedule' => 'The session ended automatically after its scheduled end and awaits review.',
     'auto_end_summary' => ':count sessions past their scheduled end were ended.',
     'untitled_session' => 'your scheduled session',
+    'auto_finalize_summary' => ':count sessions with a complete report and attendance were finalized.',
+    'finalized_after_review' => 'The session was finalized automatically once the report and attendance were complete.',
+    'finalized_all_absent' => 'The session was closed automatically as a no-show: every participant was recorded absent.',
 ];

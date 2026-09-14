@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 return [
     'completed' => 'الحصة أُقيمت',
-    'makeup_completed' => 'حصة تلافي أُقيمت',
+    'makeup_completed' => 'حصة تعويضية أُقيمت',
     'student_no_show' => 'الطالب لم يحضر',
     'no_show' => 'الطالب لم يحضر',
     'student_excused' => 'غياب الطالب بعذر',

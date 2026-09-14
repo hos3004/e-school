@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'reason_required' => 'Un motif écrit est obligatoire.',
+    'session_not_ended' => 'Une séance dont l’horaire n’est pas terminé ne peut pas être enregistrée comme tenue.',
     'terminal_status' => 'Une séance au statut final :status ne peut plus être modifiée.',
     'start_in_past' => 'La séance doit être planifiée dans le futur.',
     'end_before_start' => 'L’heure de fin doit être postérieure à l’heure de début.',

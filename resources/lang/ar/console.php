@@ -46,6 +46,7 @@ return [
         'teacher_dues' => 'مستحقات المعلمين',
         'settings' => 'الإعدادات',
         'sessions' => 'الحصص والجدول',
+        'session_review' => 'اعتماد الحصص',
         'placement' => 'تسكين طلاب الكورسات', 'directory' => 'فهرس الوظائف', 'portal' => 'بوابات التعلم',
     ],
     'environment_local' => 'بيئة تطوير مستقلة • بيانات اختبار',

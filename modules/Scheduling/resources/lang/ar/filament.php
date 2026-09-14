@@ -29,7 +29,7 @@ return [
         'expires_in' => 'المهلة المتبقية',
         'expired' => 'انقضت المهلة',
         'hours_left' => 'باقٍ :hours ساعة',
-        'makeup' => 'حصة التلافي',
+        'makeup' => 'الحصة التعويضية',
         'propose_alternative' => 'اقتراح موعد بديل',
         'alternative_proposed' => 'تم إرسال الموعد البديل للطالب.',
         'requires_admin_review' => 'مراجعة الإدارة مطلوبة',

@@ -39,7 +39,7 @@ return [
     ],
     'session.rescheduled' => [
         'subject' => 'Session time changed',
-        'body' => 'The replacement session is scheduled for {{makeup_start}}.',
+        'body' => 'The makeup session is scheduled for {{makeup_start}}.',
         'parameters' => ['makeup_start'],
     ],
     'teacher.apology.submitted' => [

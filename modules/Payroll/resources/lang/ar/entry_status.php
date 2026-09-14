@@ -9,6 +9,6 @@ declare(strict_types=1);
 
 return [
     'recorded' => 'مسجّلة نهائيًا',
-    'deferred' => 'مؤجّلة حتى حصة التلافي',
+    'deferred' => 'مؤجّلة حتى الحصة التعويضية',
     'released' => 'محرّرة — صارت مستحقة',
 ];

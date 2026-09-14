@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Sessions\Application\Services;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
@@ -13,6 +14,7 @@ use Modules\Sessions\Application\Concerns\TransitionsSessionStatus;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingGateway;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingQueries;
 use Modules\Sessions\Domain\Enums\SessionStatus;
+use Modules\Sessions\Domain\Events\SessionPostponed;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\SessionParticipant;
 use Modules\Sessions\Domain\ValueObjects\ScheduledParticipantData;
@@ -28,6 +30,7 @@ final readonly class SessionSchedulingService implements SessionSchedulingGatewa
         private ScheduleSessionAction $scheduleSession,
         private SessionSchedulingQueries $queries,
         private AuditRecorder $audit,
+        private Dispatcher $events,
     ) {}
 
     public function createScheduledSession(
@@ -208,6 +211,29 @@ final readonly class SessionSchedulingService implements SessionSchedulingGatewa
                 ],
                 reason: $reason,
             );
+
+            /*
+             * نقطة الإطلاق الوحيدة لـ`SessionPostponed`.
+             *
+             * كان الحدث يُطلق من `PostponeSessionAction` وحدها، فمسار «طلب
+             * المعلم المعتمد» — الذي يصل إلى هنا عبر `ApprovePostponement` —
+             * كان يؤجّل الحصة بلا أي أثر مالي: لا قيدة مؤجَّلة للمعلم إطلاقًا.
+             * المساران يمران من هنا، فالإطلاق من هنا يغطيهما مرة واحدة.
+             *
+             * `afterCommit` لأن المستمع يقرأ الحصة الأصلية والتعويضية من
+             * القاعدة؛ إطلاقه داخل المعاملة يجعله يقرأ حالة لم تُثبَّت بعد.
+             */
+            DB::afterCommit(fn () => $this->events->dispatch(new SessionPostponed(
+                sessionId: $originalSessionId,
+                organizationId: $organizationId,
+                courseId: (string) $original->course_id,
+                staffProfileId: (string) $original->staff_profile_id,
+                makeupSessionId: (string) $makeup->getKey(),
+                makeupStart: $startsAt->toIso8601String(),
+                makeupEnd: $endsAt->toIso8601String(),
+                reason: $reason,
+                actorId: $actorId,
+            )));
 
             return (string) $makeup->getKey();
         });

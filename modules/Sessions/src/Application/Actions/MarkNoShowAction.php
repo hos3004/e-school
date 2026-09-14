@@ -19,7 +19,7 @@ final readonly class MarkNoShowAction
         private TransitionSessionStatusAction $transition,
     ) {}
 
-    public function execute(Session $session, string $reason, string $actorId): Session
+    public function execute(Session $session, string $reason, string $actorId, string $actorType = 'user'): Session
     {
         $session = $this->transition->execute(
             $session,
@@ -27,6 +27,7 @@ final readonly class MarkNoShowAction
             $actorId,
             $reason,
             'sessions.session_no_show',
+            actorType: $actorType,
         );
 
         $this->events->dispatch(new SessionNoShowRecorded(

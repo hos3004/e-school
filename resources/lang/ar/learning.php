@@ -16,7 +16,7 @@ return [
         'recorded_apology' => 'تم تسجيل اعتذارك عن الحضور', 'current_request' => 'طلب التأجيل الحالي',
         'teacher_proposed' => 'الموعد البديل من المعلم', 'awaiting_admin' => 'لا يوجد قرار متاح لهذا الطلب؛ قد يكون بانتظار مراجعة الإدارة أو انتهى بالفعل.',
         'categories' => ['schedule' => 'تعارض في الموعد', 'health' => 'ظرف صحي', 'technical' => 'مشكلة تقنية', 'personal' => 'ظرف شخصي'],
-        'statuses' => ['scheduled' => 'تمت جدولة حصة التلافي', 'fulfilled' => 'أقيمت حصة التلافي', 'withdrawn' => 'مسحوب', 'requested' => 'بانتظار المراجعة', 'alternative_proposed' => 'موعد بديل مقترح', 'approved' => 'معتمد', 'rejected' => 'مرفوض', 'expired' => 'انتهت المهلة', 'cancelled' => 'ملغى'],
+        'statuses' => ['scheduled' => 'تمت جدولة الحصة التعويضية', 'fulfilled' => 'أقيمت الحصة التعويضية', 'withdrawn' => 'مسحوب', 'requested' => 'بانتظار المراجعة', 'alternative_proposed' => 'موعد بديل مقترح', 'approved' => 'معتمد', 'rejected' => 'مرفوض', 'expired' => 'انتهت المهلة', 'cancelled' => 'ملغى'],
     ],
     'schedule_change' => [
         'title' => 'الموعد الدائم للحصص',

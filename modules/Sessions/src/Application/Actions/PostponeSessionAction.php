@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Modules\Sessions\Application\Actions;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingGateway;
-use Modules\Sessions\Domain\Events\SessionPostponed;
 use Modules\Sessions\Domain\Models\Session;
 use Shared\Support\BusinessRuleViolation;
 
@@ -20,7 +18,6 @@ use Shared\Support\BusinessRuleViolation;
 final readonly class PostponeSessionAction
 {
     public function __construct(
-        private Dispatcher $events,
         private SessionSchedulingGateway $scheduling,
     ) {}
 
@@ -61,24 +58,19 @@ final readonly class PostponeSessionAction
             );
         }
 
-        $makeupId = $this->scheduling->scheduleMakeup(
+        /*
+         * `SessionPostponed` يُطلق داخل `scheduleMakeup` لا هنا: مسار طلب
+         * المعلم المعتمد يصل إلى نفس البوابة ولا يمر بهذا الإجراء، وكان
+         * تأجيله يمضي بلا قيدة مؤجَّلة. الإطلاق من البوابة يغطي المسارين
+         * مرة واحدة، ويحمل actorId الفعلي.
+         */
+        $this->scheduling->scheduleMakeup(
             organizationId: (string) $session->organization_id,
             originalSessionId: (string) $session->getKey(),
             startsAt: $newStart,
             actorId: $actorId,
             reason: $reason,
         );
-
-        $this->events->dispatch(new SessionPostponed(
-            sessionId: (string) $session->id,
-            organizationId: (string) $session->organization_id,
-            courseId: (string) $session->course_id,
-            staffProfileId: (string) $session->staff_profile_id,
-            makeupSessionId: $makeupId,
-            makeupStart: $newStart->toIso8601String(),
-            makeupEnd: $newEnd->toIso8601String(),
-            reason: $reason,
-        ));
 
         return $session->refresh();
     }

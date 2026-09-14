@@ -22,6 +22,7 @@ final readonly class ConsoleContext
             ['registration', '/manage/registration', 'work', 'student.create'],
             ['teacher_dues', '/manage/teacher-dues', 'work', 'payroll.view'],
             ['followup', '/manage/followup', 'work', ['student.view.any', 'enrollment.view', 'attendance.view', 'discipline.view_any']],
+            ['session_review', '/manage/sessions/review', 'work', ['session.view', 'session.finalize']],
             ['students', '/manage/students', 'records', 'student.view.any'],
             ['teachers', '/manage/teachers', 'records', 'staff.view.any'],
             ['groups', '/manage/groups', 'records', 'group.view'],
