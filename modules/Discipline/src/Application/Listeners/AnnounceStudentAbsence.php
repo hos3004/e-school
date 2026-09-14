@@ -54,8 +54,16 @@ final readonly class AnnounceStudentAbsence
             studentUserId: $student->userId,
             guardianUserIds: $this->guardianUserIds($event->studentProfileId),
             studentName: $this->studentName($event->organizationId, $event->studentProfileId),
-            courseName: $participant?->sessionTitle ?? [],
-            scheduledStart: $participant?->scheduledStart,
+            /*
+             * القالب يعلن course_name و scheduled_start بارامترين إلزاميين،
+             * وTemplateRenderer يرفض الإرسال إذا غاب أحدهما. المخالفة قد تُسجَّل
+             * بلا حصة (تسجيل إداري) أو لا يُعثر على المشارك، فلا يجوز أن يسقط
+             * الإخطار صامتًا — البديل نص مترجم ووقت وقوع المخالفة نفسه.
+             */
+            courseName: $this->courseName($participant),
+            scheduledStart: $participant === null
+                ? $event->occurredAt->toIso8601String()
+                : $participant->scheduledStart,
             violationType: $event->type->value,
             absenceCount: $event->countInWindow,
             freezeThreshold: $threshold,
@@ -77,6 +85,32 @@ final readonly class AnnounceStudentAbsence
         }
 
         return null;
+    }
+
+    /**
+     * اسم الكورس بكل اللغات المدعومة، أو بديل مترجم حين لا حصة مرتبطة.
+     *
+     * الخريطة الفارغة تُسقط الإشعار عند التركيب، فلا تُمرَّر أبدًا.
+     *
+     * @return array<string, string>
+     */
+    private function courseName(?SessionParticipantAdministrationData $participant): array
+    {
+        $title = $participant === null ? [] : $participant->sessionTitle;
+
+        if ($title !== []) {
+            return $title;
+        }
+
+        $names = [];
+
+        foreach ((array) config('notifications.localization.supported', ['ar', 'en']) as $locale) {
+            if (is_string($locale) && $locale !== '') {
+                $names[$locale] = (string) __('discipline::messages.absence_without_session', [], $locale);
+            }
+        }
+
+        return $names;
     }
 
     private function studentName(string $organizationId, string $studentProfileId): string

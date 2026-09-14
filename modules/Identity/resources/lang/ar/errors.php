@@ -31,4 +31,5 @@ return [
 
     'avatar_not_uploaded' => 'لم يتم رفع أي صورة، أو فُقد الملف قبل الحفظ. حاول من جديد.',
     'avatar_invalid_image' => 'الملف المرفوع ليس صورة صالحة. المسموح: JPEG أو PNG أو WebP فقط.',
+    'temporary_password_reason_required' => 'إصدار كلمة مرور مؤقتة يبطل كلمة المرور الحالية، فلا يتم بلا سبب مكتوب.',
 ];

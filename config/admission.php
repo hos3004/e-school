@@ -208,5 +208,11 @@ return [
         'recovery_channels' => ['email', 'whatsapp'],
         'recovery_token_ttl_minutes' => 60,
         'generated_password_length' => (int) env('ADMISSION_GENERATED_PASSWORD_LENGTH', 24),
+
+        /*
+         * كلمة المرور المؤقتة تُقرأ من رسالة ويُعاد كتابتها يدويًا، فطولها
+         * أقصر من المولّدة آليًا عند إنشاء الحساب. لا تنزل عن 8 في أي حال.
+         */
+        'temporary_password_length' => (int) env('ADMISSION_TEMPORARY_PASSWORD_LENGTH', 12),
     ],
 ];

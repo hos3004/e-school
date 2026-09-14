@@ -58,7 +58,7 @@ final class PageTranslations implements ProvidesInertiaProperties
         $shared = ['profile_completion', 'session_pay', 'teacher_visibility'];
         if (str_starts_with($component, 'Console/')) {
             return [...$shared, 'learning', 'console', 'console_dashboard', 'console_sessions', 'console_group',
-                'console_directory', 'console_profiles', 'console_people', 'console_courses',
+                'console_directory', 'console_profiles', 'console_people', 'console_courses', 'console_messaging',
                 'console_quran', 'console_settings', 'console_registration', 'console_followup', 'console_dues'];
         }
 

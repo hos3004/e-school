@@ -24,5 +24,6 @@ return [
     'audit_history' => 'Historique des décisions et de l’audit', 'action' => 'Action', 'actor' => 'Effectuée par',
     'recipient_type' => 'Type de destinataire', 'recipient_count' => 'Nombre de destinataires',
     'preview' => 'Aperçu de la notification',
-    'recipient_types' => ['student' => 'Élève', 'teacher' => 'Enseignant', 'group' => 'Groupe'],
+    'recipient_types' => ['student' => 'Élève', 'teacher' => 'Enseignant', 'group' => 'Groupe', 'course' => 'Cours', 'schedule' => 'Planning'],
+    'audiences' => ['students' => 'Élèves seulement', 'teacher' => 'Enseignant seulement', 'all' => 'Toute la classe'],
 ];

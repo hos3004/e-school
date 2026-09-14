@@ -21,4 +21,5 @@ return [
     'started_by_teacher_join' => 'La séance a démarré automatiquement à l’entrée de l’enseignant dans la classe virtuelle.',
     'ended_after_schedule' => 'La séance s’est terminée automatiquement après l’heure prévue et attend la revue.',
     'auto_end_summary' => ':count séances ayant dépassé leur fin prévue ont été terminées.',
+    'untitled_session' => 'votre séance planifiée',
 ];

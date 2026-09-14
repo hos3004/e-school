@@ -8,6 +8,9 @@ import TeacherQualifications, {
 } from "./TeacherQualifications";
 import { Head, usePage } from "@inertiajs/react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
+import PersonMessaging, {
+  type PersonMessagingData,
+} from "@/Components/Console/PersonMessaging";
 import ProfileView, {
   type ProfileHub,
   type ProfileWorkspace,
@@ -51,6 +54,7 @@ interface Props {
   programs?: StudentProgramsData | null;
   teaching?: TeacherPortfolioData | null;
   qualifications?: TeacherQualificationsData | null;
+  messaging?: PersonMessagingData | null;
 }
 export default function PeopleShow({
   kind,
@@ -67,6 +71,7 @@ export default function PeopleShow({
   programs,
   teaching,
   qualifications,
+  messaging,
 }: Props) {
   const t = useI18n();
   const { console: context } = usePage<
@@ -135,6 +140,7 @@ export default function PeopleShow({
       {qualifications && (
         <TeacherQualifications qualifications={qualifications} />
       )}
+      {messaging && <PersonMessaging messaging={messaging} />}
       {placement && <PlacementActions placement={placement} />}
       <LifecycleActions lifecycle={lifecycle} />
     </ConsoleLayout>

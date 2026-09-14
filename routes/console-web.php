@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Console\DirectoryController;
+use App\Http\Controllers\Console\MessagingController;
+use App\Http\Controllers\Console\NotificationsPageController;
+use App\Http\Controllers\Console\NotificationTemplateController;
 use App\Http\Controllers\Console\QuranController;
 use App\Http\Controllers\Console\ReportsController;
 use App\Http\Controllers\Console\SessionPayController;
@@ -14,8 +17,31 @@ use Illuminate\Support\Facades\Route;
 use Modules\Reporting\Presentation\Http\Controllers\ExportOperationalReportPdfController;
 
 Route::get('/', WorkspaceController::class)->name('home');
-Route::inertia('/notifications', 'Console/Notifications')->name('notifications');
+Route::get('/notifications', NotificationsPageController::class)->name('notifications');
+
+/*
+ * قوالب الرسائل. القالب العام مشترك بين المؤسسات فلا يُعدَّل ولا يُحذف من
+ * هنا — السياسة هي من تفرض ذلك، والواجهة تخفي أزراره فقط.
+ */
+Route::middleware('can:settings.manage')->prefix('notification-templates')->name('notification-templates.')->group(function (): void {
+    Route::post('/', [NotificationTemplateController::class, 'store'])->name('store');
+    Route::put('{template}', [NotificationTemplateController::class, 'update'])->whereUlid('template')->name('update');
+    Route::delete('{template}', [NotificationTemplateController::class, 'destroy'])->whereUlid('template')->name('destroy');
+});
 Route::get('/directory', DirectoryController::class)->name('directory');
+
+/*
+ * المراسلة اليدوية: من الملف الشخصي لشخص واحد، ومن صفحة الفصل لأطرافه.
+ * كلاهما يمر بمحرّك الإشعارات وصندوق الصادر، فيبقى التتبع والتدقيق وإعادة
+ * المحاولة والجدولة واحدة مهما اختلف مصدر الإرسال.
+ */
+Route::middleware('can:notifications.outbox.create')->prefix('messages')->name('messages.')->group(function (): void {
+    Route::get('targets', [MessagingController::class, 'targets'])->name('targets');
+    Route::get('templates', [MessagingController::class, 'templates'])->name('templates');
+    Route::post('audience', [MessagingController::class, 'audience'])->name('audience');
+    Route::post('{kind}/{profile}', [MessagingController::class, 'person'])
+        ->whereIn('kind', ['students', 'teachers'])->whereUlid('profile')->name('person');
+});
 Route::get('/reports', ReportsController::class)->middleware('can:report.view')->name('reports');
 Route::get('/reports/pdf', ExportOperationalReportPdfController::class)->middleware(['can:report.view', 'can:report.export'])->name('reports.pdf');
 

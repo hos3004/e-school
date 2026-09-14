@@ -50,4 +50,5 @@ return [
     'manual_empty_audience' => 'The selected group has no active recipients in the organization.',
     'manual_fields_required' => 'Subject, message, and send reason are required.',
     'manual_request_invalid' => 'The send request ID is invalid. Reopen the form and try again.',
+    'manual_schedule_past' => 'The chosen send time is already past in your timezone. Pick a future time.',
 ];

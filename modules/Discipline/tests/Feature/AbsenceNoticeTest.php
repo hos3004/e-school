@@ -19,6 +19,7 @@ use Modules\Groups\Domain\Models\GroupProgram;
 use Modules\Identity\Domain\Models\User;
 use Modules\Notifications\Database\Seeders\NotificationTemplateSeeder;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
+use Modules\Notifications\Infrastructure\Gateways\InAppChannelGateway;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
@@ -37,6 +38,7 @@ use Modules\Students\Domain\Models\StudentProfile;
  */
 uses(RefreshDatabase::class);
 
+/** @return array<string, mixed> */
 function absenceNoticeFixture(): array
 {
     $organization = Organization::factory()->create();
@@ -108,7 +110,7 @@ function absenceNoticeFixture(): array
 
     config([
         'notifications.channels' => [
-            'in_app' => ['enabled' => true, 'gateway' => \Modules\Notifications\Infrastructure\Gateways\InAppChannelGateway::class],
+            'in_app' => ['enabled' => true, 'gateway' => InAppChannelGateway::class],
         ],
         'notifications.quiet_hours.enabled' => false,
     ]);
@@ -116,6 +118,7 @@ function absenceNoticeFixture(): array
     return compact('organization', 'studentUser', 'student', 'enrollment', 'session');
 }
 
+/** @param array<string, mixed> $fixture */
 function recordAbsence(array $fixture): void
 {
     app(RecordViolationAction::class)->execute([

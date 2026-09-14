@@ -68,5 +68,13 @@ return [
         'student' => 'Student',
         'teacher' => 'Teacher',
         'group' => 'Group',
+        'course' => 'Course',
+        'schedule' => 'Schedule',
+    ],
+
+    'audiences' => [
+        'students' => 'Students only',
+        'teacher' => 'Teacher only',
+        'all' => 'Everyone on the class',
     ],
 ];

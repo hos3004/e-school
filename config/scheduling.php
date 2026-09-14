@@ -198,6 +198,14 @@ return [
         'student_link_route' => 'classroom.student-link',
     ],
 
+    /*
+     * المراسلة اليدوية: سقف مسح الجداول عند بناء قوائم اختيار الهدف.
+     * سقف حماية من تحميل كل الجداول، وليس حدًا لعدد النتائج المعروضة.
+     */
+    'messaging' => [
+        'schedule_scan_limit' => (int) env('MESSAGING_SCHEDULE_SCAN_LIMIT', 500),
+    ],
+
     'notification_summary' => [
         'max_sessions' => 200,
     ],

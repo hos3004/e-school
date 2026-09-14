@@ -325,6 +325,40 @@ final class PeopleController extends Controller
         return $course === null ? null : (string) $course->sessionMode;
     }
 
+    /**
+     * لوحة المراسلة داخل الملف الشخصي.
+     *
+     * تظهر فقط لمن يملك صلاحية الإرسال، ولا تظهر لملف مؤرشف: مراسلة حساب
+     * موقوف بجدوله أو ببيانات دخوله ليست إجراءً مفهومًا.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function messaging(Request $request, string $kind, object $record): ?array
+    {
+        if ($request->user()?->can('notifications.outbox.create') !== true
+            || (method_exists($record, 'trashed') && $record->trashed())) {
+            return null;
+        }
+
+        $enabled = array_keys(array_filter(
+            (array) config('notifications.channels', []),
+            static fn (mixed $settings, string $name): bool => is_array($settings)
+                && (bool) ($settings['enabled'] ?? false),
+            ARRAY_FILTER_USE_BOTH,
+        ));
+
+        return [
+            'sendUrl' => route('console.messages.person', [
+                'kind' => $kind,
+                'profile' => (string) $record->getKey(),
+            ]),
+            'channels' => $enabled,
+            'defaultChannel' => in_array('whatsapp', $enabled, true)
+                ? 'whatsapp'
+                : (string) ($enabled[0] ?? 'in_app'),
+        ];
+    }
+
     public function show(Request $request, string $profile, string $kind): Response
     {
         $record = $this->record($request, $kind, $profile);
@@ -368,6 +402,7 @@ final class PeopleController extends Controller
             'editUrl' => !$record->trashed() && $request->user()?->can($this->editPermission($kind))
                 ? route('console.'.$kind.'.edit', ['profile' => $record->id, ...$request->only('search', 'archived', 'page')]) : null,
             'displayTimezone' => (string) app(ConsoleContext::class)->forRequest($request)['timezone'],
+            'messaging' => $this->messaging($request, $kind, $record),
         ]);
     }
 

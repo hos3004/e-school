@@ -67,6 +67,40 @@ final class GroupProfileController extends Controller
             'abilities' => ['edit' => $user->can('group.manage'), 'students' => $user->can('student.view.any'),
                 'teachers' => $user->can('staff.view.any'), 'placement' => $user->can('student.view.any') && $user->can('enrollment.create') && $user->can('group.manage'),
                 'schedule' => $user->can('schedule.manage'), 'report' => $user->can('report.view')],
+            'messaging' => $this->messaging($request, $group, LocalizedJsonColumn::display($record['name'] ?? [])),
         ]);
+    }
+
+    /**
+     * زر مراسلة أطراف المجموعة.
+     *
+     * الهدف مثبّت على هذه المجموعة، والجمهور يختاره المرسل: الطلاب فقط أو
+     * المعلم فقط أو الجميع. الإرسال رسائل فردية منفصلة في كل الحالات.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function messaging(Request $request, string $groupId, string $label): ?array
+    {
+        if ($request->user()?->can('notifications.outbox.create') !== true) {
+            return null;
+        }
+
+        $enabled = array_keys(array_filter(
+            (array) config('notifications.channels', []),
+            static fn (mixed $settings, string $name): bool => is_array($settings)
+                && (bool) ($settings['enabled'] ?? false),
+            ARRAY_FILTER_USE_BOTH,
+        ));
+
+        return [
+            'sendUrl' => route('console.messages.audience'),
+            'targetsUrl' => route('console.messages.targets'),
+            'templatesUrl' => route('console.messages.templates'),
+            'channels' => $enabled,
+            'defaultChannel' => in_array('whatsapp', $enabled, true)
+                ? 'whatsapp'
+                : (string) ($enabled[0] ?? 'in_app'),
+            'fixedTarget' => ['type' => 'group', 'id' => $groupId, 'label' => $label],
+        ];
     }
 }

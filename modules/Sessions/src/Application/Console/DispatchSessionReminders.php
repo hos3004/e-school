@@ -227,7 +227,7 @@ final class DispatchSessionReminders extends Command
             scheduledEnd: $session->scheduled_end->toIso8601String(),
             studentUserIds: $studentUserIds,
             teacherUserId: $teacherUserId,
-            courseName: is_array($session->title) ? $session->title : [],
+            courseName: $this->courseName($session),
             durationMinutes: (int) $session->scheduled_start->diffInMinutes($session->scheduled_end),
         ));
 
@@ -313,9 +313,36 @@ final class DispatchSessionReminders extends Command
             scheduledEnd: $session->scheduled_end->toIso8601String(),
             studentUserIds: $studentUserIds,
             teacherUserId: $teacherUserId,
-            courseName: is_array($session->title) ? $session->title : [],
+            courseName: $this->courseName($session),
             minutesUntilStart: $minutesUntilStart,
         );
+    }
+
+    /**
+     * اسم الحصة بكل اللغات المدعومة، أو بديل مترجم حين يكون العنوان فارغًا.
+     *
+     * القوالب تعلن course_name بارامترًا إلزاميًا، وTemplateRenderer يرفض
+     * الإرسال إذا لم تُحل قيمته إلى نص. الخريطة الفارغة لا تُحل، فلا تُمرَّر.
+     *
+     * @return array<string, string>
+     */
+    private function courseName(Session $session): array
+    {
+        $title = is_array($session->title) ? $session->title : [];
+
+        if (array_filter($title, static fn (mixed $value): bool => is_string($value) && trim($value) !== '') !== []) {
+            return $title;
+        }
+
+        $names = [];
+
+        foreach ((array) config('notifications.localization.supported', ['ar', 'en']) as $locale) {
+            if (is_string($locale) && $locale !== '') {
+                $names[$locale] = (string) __('sessions::messages.untitled_session', [], $locale);
+            }
+        }
+
+        return $names;
     }
 
     /**

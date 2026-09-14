@@ -17,6 +17,7 @@ use Modules\Groups\Domain\Models\GroupProgram;
 use Modules\Identity\Domain\Models\User;
 use Modules\Notifications\Database\Seeders\NotificationTemplateSeeder;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
+use Modules\Notifications\Infrastructure\Gateways\InAppChannelGateway;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
@@ -24,6 +25,7 @@ use Modules\Sessions\Domain\Models\SessionParticipant;
 use Modules\Sessions\Domain\Models\SessionReminderDispatch;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Modules\Staff\Domain\Enums\StaffGender;
+use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Students\Domain\Models\StudentProfile;
 
 /*
@@ -41,6 +43,10 @@ afterEach(function (): void {
     CarbonImmutable::setTestNow();
 });
 
+/**
+ * @param array<string, mixed> $sessionOverrides
+ * @return array<string, mixed>
+ */
 function joinLinkFixture(array $sessionOverrides = []): array
 {
     $organization = Organization::factory()->create();
@@ -57,7 +63,7 @@ function joinLinkFixture(array $sessionOverrides = []): array
         'name' => ['ar' => 'مقرر الروابط', 'en' => 'Links Course'],
         'session_mode' => SessionMode::Group,
     ]);
-    $teacher = \Modules\Staff\Domain\Models\StaffProfile::query()->create([
+    $teacher = StaffProfile::query()->create([
         'organization_id' => $organization->id,
         'user_id' => $teacherUser->id,
         'staff_code' => 'T-LINK',
@@ -118,7 +124,7 @@ function joinLinkOnlyInApp(): void
 {
     config([
         'notifications.channels' => [
-            'in_app' => ['enabled' => true, 'gateway' => \Modules\Notifications\Infrastructure\Gateways\InAppChannelGateway::class],
+            'in_app' => ['enabled' => true, 'gateway' => InAppChannelGateway::class],
         ],
         'notifications.quiet_hours.enabled' => false,
     ]);

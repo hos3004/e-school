@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\Notifications\Application\Actions;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Notifications\Application\Services\ManualNotificationChannelResolver;
 use Modules\Notifications\Application\Services\ManualNotificationRecipientResolver;
 use Modules\Notifications\Domain\Enums\Channel;
+use Modules\Notifications\Domain\Enums\ManualAudience;
 use Modules\Notifications\Domain\Enums\ManualRecipientType;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
@@ -37,6 +39,8 @@ final readonly class QueueManualNotificationAction
         string $reason,
         string $requestId,
         string $locale,
+        ManualAudience $audience = ManualAudience::All,
+        ?CarbonImmutable $scheduledFor = null,
     ): ManualNotificationDispatchResult {
         return $this->dispatch(
             $organizationId,
@@ -49,7 +53,37 @@ final readonly class QueueManualNotificationAction
             trim($reason),
             $requestId,
             $locale,
+            $audience,
+            $scheduledFor,
         );
+    }
+
+    /**
+     * تحقق مسبق من أن هذه الرسالة ستُقيَّد فعلًا.
+     *
+     * سبب وجوده: بعض المُركِّبات تُحدث أثرًا لا رجعة فيه قبل التقييد — أبرزها
+     * إصدار كلمة مرور مؤقتة يبطل كلمة المرور الحالية لصاحب الحساب. لو فشل
+     * التقييد بعدها (مستلم غير نشط، أو قناة مطفأة، أو طلب مكرر) لبقي صاحب
+     * الحساب بلا كلمة مرور صالحة ولا رسالة تحمل الجديدة. فيُستدعى هذا أولًا.
+     *
+     *
+     * @return bool false إذا كان الطلب مُنفَّذًا سلفًا بنفس المعرّف
+     *
+     * @throws BusinessRuleViolation إذا تعذّر التقييد لأي سبب معروف مسبقًا
+     */
+    public function isDispatchable(
+        string $organizationId,
+        ManualRecipientType $recipientType,
+        string $targetId,
+        Channel $channel,
+        string $requestId,
+        ManualAudience $audience = ManualAudience::All,
+    ): bool {
+        $this->assertRequestShape($organizationId, $requestId);
+        $this->assertChannelAllowed($channel);
+        $this->recipients->resolve($organizationId, $recipientType, $targetId, $audience);
+
+        return $this->existingRows($organizationId, $requestId, $channel)->isEmpty();
     }
 
     private function dispatch(
@@ -63,6 +97,8 @@ final readonly class QueueManualNotificationAction
         string $reason,
         string $requestId,
         string $locale,
+        ManualAudience $audience,
+        ?CarbonImmutable $scheduledFor,
     ): ManualNotificationDispatchResult {
         if ($organizationId === '' || $actorId === '' || $subject === '' || $body === '' || $reason === '') {
             throw BusinessRuleViolation::make(
@@ -71,28 +107,11 @@ final readonly class QueueManualNotificationAction
             );
         }
 
-        if (!Str::isUlid($requestId)) {
-            throw BusinessRuleViolation::make(
-                'notifications.manual_request_invalid',
-                'notifications::errors.manual_request_invalid',
-            );
-        }
+        $this->assertRequestShape($organizationId, $requestId);
+        $this->assertChannelAllowed($channel);
 
-        if (!$this->channels->allows($channel)) {
-            throw BusinessRuleViolation::make(
-                'notifications.channel_disabled',
-                'notifications::errors.channel_disabled',
-                ['channel' => $channel->label()],
-            );
-        }
-
-        $resolution = $this->recipients->resolve($organizationId, $recipientType, $targetId);
-        $existing = NotificationOutbox::query()
-            ->forOrganization($organizationId)
-            ->where('event_name', 'notifications.manual')
-            ->where('event_id', $requestId)
-            ->where('channel', $channel->value)
-            ->get();
+        $resolution = $this->recipients->resolve($organizationId, $recipientType, $targetId, $audience);
+        $existing = $this->existingRows($organizationId, $requestId, $channel);
 
         if ($existing->isNotEmpty()) {
             return $this->resultFromExisting($existing);
@@ -110,6 +129,8 @@ final readonly class QueueManualNotificationAction
             $requestId,
             $locale,
             $resolution->userIds,
+            $audience,
+            $scheduledFor,
         );
     }
 
@@ -126,20 +147,22 @@ final readonly class QueueManualNotificationAction
         string $requestId,
         string $locale,
         array $userIds,
+        ManualAudience $audience,
+        ?CarbonImmutable $scheduledFor,
     ): ManualNotificationDispatchResult {
         $counts = ['queued' => 0, 'suppressed' => 0, 'skipped' => 0];
 
         foreach ($userIds as $userId) {
             $result = $this->queueOne(
                 $organizationId, $actorId, $recipientType, $targetId, $channel,
-                $subject, $body, $requestId, $locale, $userId,
+                $subject, $body, $requestId, $locale, $userId, $audience, $scheduledFor,
             );
             $counts[$result]++;
         }
 
         return $this->recordResult(
             $organizationId, $actorId, $recipientType, $targetId, $channel,
-            $reason, $requestId, count($userIds), $counts,
+            $reason, $requestId, count($userIds), $counts, $audience, $scheduledFor,
         );
     }
 
@@ -154,6 +177,8 @@ final readonly class QueueManualNotificationAction
         string $requestId,
         string $locale,
         string $userId,
+        ManualAudience $audience,
+        ?CarbonImmutable $scheduledFor,
     ): string {
         $outbox = $this->queue->execute(
             organizationId: $organizationId,
@@ -168,8 +193,10 @@ final readonly class QueueManualNotificationAction
                 'manual' => true,
                 'recipient_type' => $recipientType->value,
                 'recipient_target_id' => $targetId,
+                'recipient_audience' => $audience->value,
                 'manual_request_id' => $requestId,
             ],
+            scheduledFor: $scheduledFor,
             locale: $locale,
             correlationId: $requestId,
             actorId: $actorId,
@@ -195,6 +222,8 @@ final readonly class QueueManualNotificationAction
         string $requestId,
         int $recipientCount,
         array $counts,
+        ManualAudience $audience,
+        ?CarbonImmutable $scheduledFor,
     ): ManualNotificationDispatchResult {
         $this->audit->record(
             organizationId: $organizationId,
@@ -207,7 +236,9 @@ final readonly class QueueManualNotificationAction
             newValues: [
                 'recipient_type' => $recipientType->value,
                 'recipient_target_id' => $targetId,
+                'recipient_audience' => $audience->value,
                 'recipient_count' => $recipientCount,
+                'scheduled_for' => $scheduledFor?->toIso8601String(),
                 'channel' => $channel->value,
                 'queued_count' => $counts['queued'],
                 'suppressed_count' => $counts['suppressed'],
@@ -228,6 +259,41 @@ final readonly class QueueManualNotificationAction
                 OutboxStatus::Suppressed->value => $counts['suppressed'],
             ],
         );
+    }
+
+    private function assertRequestShape(string $organizationId, string $requestId): void
+    {
+        if ($organizationId === '' || !Str::isUlid($requestId)) {
+            throw BusinessRuleViolation::make(
+                'notifications.manual_request_invalid',
+                'notifications::errors.manual_request_invalid',
+            );
+        }
+    }
+
+    private function assertChannelAllowed(Channel $channel): void
+    {
+        if (!$this->channels->allows($channel)) {
+            throw BusinessRuleViolation::make(
+                'notifications.channel_disabled',
+                'notifications::errors.channel_disabled',
+                ['channel' => $channel->label()],
+            );
+        }
+    }
+
+    /** @return Collection<int, NotificationOutbox> */
+    private function existingRows(
+        string $organizationId,
+        string $requestId,
+        Channel $channel,
+    ): Collection {
+        return NotificationOutbox::query()
+            ->forOrganization($organizationId)
+            ->where('event_name', 'notifications.manual')
+            ->where('event_id', $requestId)
+            ->where('channel', $channel->value)
+            ->get();
     }
 
     /** @param Collection<int, NotificationOutbox> $rows */

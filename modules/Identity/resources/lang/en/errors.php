@@ -31,4 +31,5 @@ return [
 
     'avatar_not_uploaded' => 'No image was uploaded, or the file was lost before saving. Please try again.',
     'avatar_invalid_image' => 'The uploaded file is not a valid image. Only JPEG, PNG, or WebP are allowed.',
+    'temporary_password_reason_required' => 'Issuing a temporary password invalidates the current one, so it requires a written reason.',
 ];

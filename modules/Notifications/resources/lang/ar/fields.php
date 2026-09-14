@@ -68,5 +68,13 @@ return [
         'student' => 'طالب',
         'teacher' => 'معلم',
         'group' => 'مجموعة',
+        'course' => 'كورس',
+        'schedule' => 'جدول',
+    ],
+
+    'audiences' => [
+        'students' => 'الطلاب فقط',
+        'teacher' => 'المعلم فقط',
+        'all' => 'جميع الأطراف',
     ],
 ];

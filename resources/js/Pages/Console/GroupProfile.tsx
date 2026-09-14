@@ -2,6 +2,9 @@ import { Link } from "@inertiajs/react";
 import { useState } from "react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import ConsoleIcon from "@/Components/Console/ConsoleIcon";
+import AudienceMessaging, {
+  type AudienceMessagingData,
+} from "@/Components/Console/AudienceMessaging";
 import SessionTable, {
   type ReportRow,
 } from "@/Components/Console/SessionTable";
@@ -57,6 +60,7 @@ type Props = {
     placement: boolean;
     report: boolean;
   };
+  messaging?: AudienceMessagingData | null;
 };
 export default function GroupProfile({
   group,
@@ -70,6 +74,7 @@ export default function GroupProfile({
   timezone,
   abilities,
   limitExceeded,
+  messaging,
 }: Props) {
   const t = useI18n();
   const [tab, setTab] = useState("overview");
@@ -442,6 +447,7 @@ export default function GroupProfile({
             </Panel>
           </aside>
         </div>
+        {messaging && <AudienceMessaging messaging={messaging} />}
       </div>
     </ConsoleLayout>
   );

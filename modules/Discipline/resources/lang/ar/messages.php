@@ -9,4 +9,5 @@ declare(strict_types=1);
 
 return [
     'demo_reactivation_statement' => 'أتعهد بالحضور المنتظم والتزام مواعيد الحصص، وأتقدم بطلب إعادة التفعيل بعد فترة التجميد.',
+    'absence_without_session' => 'حصة غير محددة',
 ];
