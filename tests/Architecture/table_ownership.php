@@ -95,6 +95,7 @@ return [
     'teacher_apologies' => 'Sessions',
     'session_status_history' => 'Sessions',
     'session_participants' => 'Sessions',
+    'session_reminder_dispatches' => 'Sessions',
 
     // Attendance
     'attendances' => 'Attendance',

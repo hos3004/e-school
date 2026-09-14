@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Modules\Integrations\Infrastructure\Gateways\GreenApiGateway;
 use Modules\Integrations\Infrastructure\Gateways\WhatsAppCloudGateway;
 use Modules\Notifications\Infrastructure\Gateways\InAppChannelGateway;
 use Modules\Notifications\Infrastructure\Gateways\MailChannelGateway;
@@ -44,16 +45,41 @@ return [
             // فقط ولا تُوجَّه آليًا لأي مستخدم آخر.
             'enabled' => env('WHATSAPP_ENABLED', false),
             'mode' => env('WHATSAPP_MODE', 'outbound_only'),
-            'driver' => 'meta_cloud_api',
-            'gateway' => WhatsAppCloudGateway::class,
+
+            /*
+             * المزوّد يحدد البوابة وقواعد المحتوى معًا:
+             *   green_api  → نص حر، فلا يحتاج اعتماد قالب عند المزوّد.
+             *   meta_cloud → قوالب معتمدة فقط خارج نافذة الرد (24 ساعة).
+             * تغيير المزوّد قرار إعداد واحد، لا تعديل كود في أي موديول.
+             */
+            'provider' => env('WHATSAPP_PROVIDER', 'green_api'),
+            'driver' => env('WHATSAPP_PROVIDER', 'green_api'),
+            'gateway' => match (env('WHATSAPP_PROVIDER', 'green_api')) {
+                'meta_cloud', 'meta_cloud_api' => WhatsAppCloudGateway::class,
+                default => GreenApiGateway::class,
+            },
+
+            /*
+             * القالب المعتمد عند المزوّد شرط عند Meta فقط. مع Green API يُركَّب
+             * النص من قوالب المنصة نفسها ويُرسل كما هو.
+             */
+            'requires_template' => env('WHATSAPP_PROVIDER', 'green_api') !== 'green_api',
+
+            'green_api' => [
+                'api_url' => env('GREEN_API_URL', 'https://api.green-api.com'),
+                'instance_id' => env('GREEN_API_INSTANCE_ID'),
+                'token' => env('GREEN_API_TOKEN'),
+                'timeout_seconds' => (int) env('GREEN_API_TIMEOUT_SECONDS', 15),
+                'retry_delays_milliseconds' => [200, 500],
+            ],
+
             'token' => env('WHATSAPP_TOKEN', env('WHATSAPP_ACCESS_TOKEN')),
             'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
             'api_version' => env('WHATSAPP_API_VERSION', 'v23.0'),
             'timeout_seconds' => (int) env('WHATSAPP_TIMEOUT_SECONDS', 10),
             'retry_delays_milliseconds' => [200, 500],
             'inbound_visible_to_permissions' => ['messaging.inbound.view'],
-            'requires_template' => true,
-            'rate_limit_per_minute' => 60,
+            'rate_limit_per_minute' => (int) env('WHATSAPP_RATE_LIMIT_PER_MINUTE', 60),
         ],
         'sms' => [
             'enabled' => false,
@@ -93,6 +119,14 @@ return [
         'classroom_invitation' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'session_report' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => false],
         'attendance_recorded' => ['channels' => ['in_app'], 'critical' => false],
+
+        /*
+         * إخطار الغياب يقع مع كل غياب مُحتسَب لا عند العتبة وحدها، ويحمل
+         * تذكيرًا بعتبة التجميد. فئة مستقلة عن discipline_notice كي تستطيع
+         * الإدارة توجيه الاثنين إلى قنوات مختلفة دون أن يجرّ أحدهما الآخر.
+         */
+        'absence_notice' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => true],
+
         'discipline_notice' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'enrollment_frozen' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'assignment_due' => ['channels' => ['in_app', 'push'], 'critical' => false],
@@ -276,11 +310,36 @@ return [
             'recipient_fields' => ['student_user_ids', 'guardian_user_ids', 'teacher_user_id'],
             'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionApproaching'],
         ],
-        'session.joinable' => [
+        /*
+         * روابط الدخول قبل الحصة — مفتاحان لا مفتاح واحد.
+         *
+         * الرابط يختلف بالمستلم: المعلم يُوجَّه إلى صفحة الحصة داخل النظام كي
+         * يسجّل دخوله فيُحتسب حضوره وتُقيَّد مستحقاته، والطالب يأخذ رابط دخول
+         * موقّعًا باسمه وحده. المصدر حدث واحد، وpayload_match هو ما يفرزه.
+         */
+        'session.join_link.teacher' => [
             'category' => 'session_reminder',
-            'audiences' => ['student', 'teacher'],
-            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
-            'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionJoinable'],
+            'audiences' => ['teacher'],
+            'recipient_fields' => ['teacher_user_id'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionJoinWindowOpened'],
+            'payload_match' => ['audience' => 'teacher'],
+        ],
+        'session.join_link.student' => [
+            'category' => 'session_reminder',
+            'audiences' => ['student'],
+            'recipient_fields' => ['student_user_ids'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionJoinWindowOpened'],
+            'payload_match' => ['audience' => 'student'],
+        ],
+
+        /*
+         * غياب الطالب — إخطار في كل مرة كما قررت المدرسة، لا عند العتبة وحدها.
+         */
+        'discipline.absence_recorded' => [
+            'category' => 'absence_notice',
+            'audiences' => ['student', 'guardian'],
+            'recipient_fields' => ['student_user_id', 'guardian_user_ids'],
+            'source_events' => ['Modules\\Discipline\\Domain\\Events\\StudentAbsenceRecorded'],
         ],
         'classroom.guest_invited' => [
             'category' => 'classroom_invitation',

@@ -101,10 +101,6 @@ return [
         'body' => 'Reminder: your {{course_name}} session starts at {{scheduled_start}} and lasts {{duration_minutes}} minutes.',
         'parameters' => ['course_name', 'scheduled_start', 'duration_minutes'],
     ],
-    'session.joinable' => [
-        'subject' => 'You can join the session now',
-        'body' => 'The session join window is open. Use the secure join link from your schedule.',
-    ],
     'classroom.guest_invited' => [
         'subject' => 'Classroom guest invitation',
         'body' => 'A secure, limited guest invitation was created for the classroom.',
@@ -160,5 +156,20 @@ return [
         'subject' => 'Permanent lesson time change not approved',
         'body' => 'The request to move {{course_name}} sessions to {{proposed_schedule}} ended without approval; the current time stays in place.',
         'parameters' => ['course_name', 'proposed_schedule'],
+    ],
+    'session.join_link.teacher' => [
+        'subject' => 'Your session starts soon — entry link',
+        'body' => '{{course_name}} starts in {{minutes_until_start}} minutes, at {{scheduled_start}}. Open the session page and sign in from there so the system records your attendance and credits the session to your balance: {{join_url}}',
+        'parameters' => ['course_name', 'minutes_until_start', 'scheduled_start', 'join_url'],
+    ],
+    'session.join_link.student' => [
+        'subject' => 'Your session starts soon — entry link',
+        'body' => '{{course_name}} starts in {{minutes_until_start}} minutes, at {{scheduled_start}}. Join the classroom directly from this link: {{join_url}}',
+        'parameters' => ['course_name', 'minutes_until_start', 'scheduled_start', 'join_url'],
+    ],
+    'discipline.absence_recorded' => [
+        'subject' => 'Session absence recorded',
+        'body' => 'An absence was recorded for {{student_name}} from the {{course_name}} session on {{scheduled_start}}. The absence count is now {{absence_count}} for the current period. Please note that the system is set to freeze the enrolment automatically and release the seat to another student once absences without prior excuse reach {{freeze_threshold}}.',
+        'parameters' => ['student_name', 'course_name', 'scheduled_start', 'absence_count', 'freeze_threshold'],
     ],
 ];

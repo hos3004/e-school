@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Discipline\Infrastructure\Providers;
 
 use Modules\Attendance\Domain\Events\AttendanceConfirmed;
+use Modules\Discipline\Application\Listeners\AnnounceStudentAbsence;
 use Modules\Discipline\Application\Listeners\RecordConfirmedAbsenceViolation;
 use Modules\Discipline\Application\Policies\DisciplineActionPolicy;
 use Modules\Discipline\Application\Policies\ReactivationRequestPolicy;
@@ -15,6 +16,7 @@ use Modules\Discipline\Domain\Contracts\DisciplineFollowupQueries;
 use Modules\Discipline\Domain\Contracts\ReactivationRequestQueries;
 use Modules\Discipline\Domain\Models\DisciplineAction;
 use Modules\Discipline\Domain\Models\ReactivationRequest;
+use Modules\Discipline\Domain\Events\ViolationRecorded;
 use Modules\Discipline\Domain\Models\ViolationEvent;
 use Modules\Discipline\Domain\Services\EscalationLadder;
 use Shared\Module\BaseModuleServiceProvider;
@@ -36,6 +38,7 @@ final class DisciplineServiceProvider extends BaseModuleServiceProvider
     {
         return [
             AttendanceConfirmed::class => [RecordConfirmedAbsenceViolation::class],
+            ViolationRecorded::class => [AnnounceStudentAbsence::class],
         ];
     }
 

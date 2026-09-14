@@ -79,7 +79,12 @@ return [
      * الطالب لا يستطيع الدخول قبل الموعد بأكثر من هذه المدة.
      */
     'join_window' => [
-        'before_minutes' => env('CLASSROOM_JOIN_WINDOW_BEFORE_MINUTES', 10),
+        /*
+         * رُفعت من 10 إلى 15 دقيقة لتطابق لحظة إرسال رابط الدخول في
+         * config('scheduling.reminder_dispatch.stages'): الرابط يصل الطالب قبل
+         * الموعد بربع ساعة، فلو بقيت النافذة أضيق لرفض الفصلُ أول نقرة عليه.
+         */
+        'before_minutes' => env('CLASSROOM_JOIN_WINDOW_BEFORE_MINUTES', 15),
         'after_minutes' => env('CLASSROOM_JOIN_WINDOW_AFTER_MINUTES', 15),
         // المعلم يستطيع الدخول أبكر لتجهيز الفصل.
         'teacher_before_minutes' => 20,

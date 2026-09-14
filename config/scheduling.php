@@ -159,6 +159,43 @@ return [
     'reminder_dispatch' => [
         'before_minutes' => 60,
         'batch_size' => 200,
+
+        /*
+         * مراحل التذكير قبل الحصة. لكل مرحلة مفتاح حدث مستقل في
+         * config('notifications.events') وقالب مستقل، وصفّ واحد في
+         * session_reminder_dispatches يمنع تكرارها للحصة نفسها.
+         *
+         * type = approaching → تنبيه عام للطرفين.
+         * type = join_link   → رابط دخول يخصّ جمهورًا بعينه.
+         *
+         * قيد لا يجوز كسره: before_minutes لمرحلة رابط الطالب يجب ألا يسبق
+         * نافذة الدخول في config('virtual-classroom.join_window.before_minutes')،
+         * وإلا وصل الرابط قبل أن يقبله الفصل فيرى الطالب رسالة رفض.
+         */
+        'stages' => [
+            [
+                'key' => 'session.approaching',
+                'type' => 'approaching',
+                'audience' => 'all',
+                'before_minutes' => (int) env('SESSION_REMINDER_BEFORE_MINUTES', 120),
+            ],
+            [
+                'key' => 'session.join_link.teacher',
+                'type' => 'join_link',
+                'audience' => 'teacher',
+                'before_minutes' => (int) env('SESSION_JOIN_LINK_BEFORE_MINUTES', 15),
+            ],
+            [
+                'key' => 'session.join_link.student',
+                'type' => 'join_link',
+                'audience' => 'student',
+                'before_minutes' => (int) env('SESSION_JOIN_LINK_BEFORE_MINUTES', 15),
+            ],
+        ],
+
+        // أسماء المسارات إعداد لا كود، حتى لا يعرف الموديول بوابة بعينها.
+        'teacher_session_route' => 'learning.teacher.sessions.show',
+        'student_link_route' => 'classroom.student-link',
     ],
 
     'notification_summary' => [

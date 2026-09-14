@@ -101,10 +101,6 @@ return [
         'body' => 'تذكير: تبدأ حصة {{course_name}} في {{scheduled_start}}، ومدتها {{duration_minutes}} دقيقة.',
         'parameters' => ['course_name', 'scheduled_start', 'duration_minutes'],
     ],
-    'session.joinable' => [
-        'subject' => 'يمكنك دخول الحصة الآن',
-        'body' => 'فُتحت نافذة الدخول إلى الحصة. استخدم رابط الدخول الآمن من جدولك.',
-    ],
     'classroom.guest_invited' => [
         'subject' => 'دعوة ضيف إلى الفصل',
         'body' => 'تم إنشاء دعوة آمنة ومحدودة لحضور الفصل.',
@@ -160,5 +156,20 @@ return [
         'subject' => 'لم يُعتمد تغيير الموعد الدائم للحصص',
         'body' => 'انتهى طلب تغيير موعد حصص {{course_name}} إلى {{proposed_schedule}} دون اعتماد، والموعد الحالي مستمر كما هو.',
         'parameters' => ['course_name', 'proposed_schedule'],
+    ],
+    'session.join_link.teacher' => [
+        'subject' => 'اقترب موعد حصتك — رابط الدخول',
+        'body' => 'تبدأ حصة {{course_name}} بعد {{minutes_until_start}} دقيقة، في {{scheduled_start}}. افتح صفحة الحصة وسجّل دخولك منها ليحتسب النظام حضورك ويضيف مستحقات الحصة إلى رصيدك: {{join_url}}',
+        'parameters' => ['course_name', 'minutes_until_start', 'scheduled_start', 'join_url'],
+    ],
+    'session.join_link.student' => [
+        'subject' => 'اقترب موعد حصتك — رابط الدخول',
+        'body' => 'تبدأ حصة {{course_name}} بعد {{minutes_until_start}} دقيقة، في {{scheduled_start}}. ادخل الفصل مباشرة من هذا الرابط: {{join_url}}',
+        'parameters' => ['course_name', 'minutes_until_start', 'scheduled_start', 'join_url'],
+    ],
+    'discipline.absence_recorded' => [
+        'subject' => 'تسجيل غياب عن الحصة',
+        'body' => 'سُجِّل غياب {{student_name}} عن حصة {{course_name}} بتاريخ {{scheduled_start}}. بلغ عدد مرات الغياب {{absence_count}} خلال الفترة الحالية. رجاء العلم أن النظام مبرمج للقيام بتجميد القيد تلقائيًا وإتاحة المقعد لطالب آخر في حال بلوغ الغياب {{freeze_threshold}} مرات بدون عذر مسبق.',
+        'parameters' => ['student_name', 'course_name', 'scheduled_start', 'absence_count', 'freeze_threshold'],
     ],
 ];
