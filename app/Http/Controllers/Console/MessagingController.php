@@ -63,6 +63,8 @@ final class MessagingController extends Controller
                 $organizationId,
                 $type,
                 (string) ($input['search'] ?? ''),
+                // اختيار الأشخاص بالاسم يحتاج الكشف كاملًا؛ الفصول قائمة قصيرة.
+                $type->picksPeople() ? 300 : 25,
             ))->map(static fn (string $label, string $value): array => [
                 'value' => $value,
                 'label' => $label,

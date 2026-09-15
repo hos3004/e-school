@@ -46,7 +46,11 @@ final readonly class ManualNotificationRecipientResolver
         string $term,
         int $limit = 25,
     ): array {
-        $limit = max(1, min($limit, 50));
+        /*
+         * السقف يتسع لكشف مدرسة كاملة: منتقي الأشخاص يعرض القائمة ليختار منها
+         * المرسِل بالعين، وقصّها عند 50 اسمًا يخفي نصف المدرسة بلا أن يدري.
+         */
+        $limit = max(1, min($limit, 300));
 
         return match ($type) {
             ManualRecipientType::Student => $this->studentOptions($organizationId, $term, $limit),
