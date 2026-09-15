@@ -57,7 +57,9 @@ final readonly class PhaseOneDomainEventRecipientResolver implements DomainEvent
         }
 
         $sessionId = $payload['session_id'] ?? null;
-        if (is_string($sessionId) && $sessionId !== '') {
+        $isSessionScoped = is_string($sessionId) && $sessionId !== '';
+
+        if ($isSessionScoped) {
             $studentProfileIds = [
                 ...$studentProfileIds,
                 ...DB::table('session_participants')
@@ -88,8 +90,20 @@ final readonly class PhaseOneDomainEventRecipientResolver implements DomainEvent
             }
         }
 
+        /*
+         * التوسّع على مستوى الدورة ملاذ أخير لأحداث الدورة نفسها (مادة جديدة
+         * مثلًا) التي لا تحمل جمهورًا أضيق. إن حدّد الحدث حصته أو مجموعته أو
+         * مستقبليه صراحةً فهؤلاء هم الجمهور، ولا يُضاف إليهم أحد.
+         *
+         * كان التوسّع يُطبَّق دائمًا مع course_id، فتحوّلت حصة فردية واحدة إلى
+         * إشعار لكل طالب في البرنامج — وشمل ذلك روابط الدخول (حادثة 15 سبتمبر
+         * 2026).
+         */
         $courseId = $payload['course_id'] ?? null;
+        $hasNarrowerAudience = $isSessionScoped || $ids !== [] || $studentProfileIds !== [];
+
         if (($groupId === null || $groupId === '')
+            && !$hasNarrowerAudience
             && is_string($courseId)
             && $courseId !== ''
             && $this->hasAnyAudience($audiences, ['student', 'guardian'])) {
