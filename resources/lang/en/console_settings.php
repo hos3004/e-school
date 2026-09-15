@@ -20,6 +20,7 @@ return [
         'webhook_ready' => 'Incoming replies configured',
         'webhook_pending' => 'Incoming replies not configured yet',
         'token_required' => 'Enter an instance token before enabling.',
+        'toggle_blocked' => 'The current connection state does not allow this switch — check the connection settings.',
         'connection_failed' => 'The instance could not be verified or is not authorized.',
         'save' => 'Test connection and save',
         'register_webhook' => 'Enable incoming replies and statuses',

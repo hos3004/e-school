@@ -12,6 +12,7 @@ use App\Http\Controllers\Console\SessionPayController;
 use App\Http\Controllers\Console\SettingsController;
 use App\Http\Controllers\Console\SettingsOperationsController;
 use App\Http\Controllers\Console\TeacherFinancialVisibilityController;
+use App\Http\Controllers\Console\WhatsappController;
 use App\Http\Controllers\Console\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Modules\Integrations\Presentation\Http\Controllers\RegisterGreenApiWebhookController;
@@ -31,6 +32,18 @@ Route::middleware('can:settings.manage')->prefix('notification-templates')->name
     Route::delete('{template}', [NotificationTemplateController::class, 'destroy'])->whereUlid('template')->name('destroy');
 });
 Route::get('/directory', DirectoryController::class)->name('directory');
+
+/*
+ * مركز واتساب. قسم جامع لحالة القناة ومفتاح إيقافها وقوالبها وسجلّها ومحاكاة
+ * الإرسال — ولا يلغي مداخل واتساب الأخرى في المنصة، فكلها تمر بنفس المحرّك.
+ */
+Route::prefix('whatsapp')->name('whatsapp.')->group(function (): void {
+    Route::get('/', WhatsappController::class)->name('index');
+    Route::post('toggle', [WhatsappController::class, 'toggle'])
+        ->middleware('can:integrations.connection.update')->name('toggle');
+    Route::post('preview', [WhatsappController::class, 'preview'])
+        ->middleware('can:notifications.outbox.create')->name('preview');
+});
 
 /*
  * المراسلة اليدوية: من الملف الشخصي لشخص واحد، ومن صفحة الفصل لأطرافه.

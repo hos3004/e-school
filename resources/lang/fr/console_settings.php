@@ -20,6 +20,7 @@ return [
         'webhook_ready' => 'Réponses entrantes configurées',
         'webhook_pending' => 'Réponses entrantes non configurées',
         'token_required' => 'Saisissez un jeton avant l’activation.',
+        'toggle_blocked' => 'L’état actuel de la connexion ne permet pas ce basculement — vérifiez les paramètres de connexion.',
         'connection_failed' => 'Instance non vérifiée ou non autorisée.',
         'save' => 'Tester et enregistrer',
         'register_webhook' => 'Activer les réponses et statuts entrants',

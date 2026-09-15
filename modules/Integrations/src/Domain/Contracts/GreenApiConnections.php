@@ -26,4 +26,12 @@ interface GreenApiConnections
     public function registerWebhook(string $organizationId, string $actorId, string $reason): bool;
 
     public function recordState(string $organizationId, string $state): void;
+
+    /**
+     * إيقاف/تشغيل القناة فورًا دون إعادة إدخال بيانات الاعتماد.
+     *
+     * مفتاح طوارئ: يحتفظ بالتوكن كما هو، فالتشغيل مرة أخرى لا يحتاج نسخه من
+     * لوحة المزوّد. يعيد true إن تغيّرت الحالة فعلًا.
+     */
+    public function setChannelActive(string $organizationId, bool $active, string $actorId, string $reason): bool;
 }

@@ -177,9 +177,37 @@ final readonly class GreenApiGateway implements ChannelGateway
             : $body;
         $text = trim($text);
 
-        return mb_strlen($text) > (int) config('notifications.channels.whatsapp.green_api.max_message_length', 20000)
-            ? mb_substr($text, 0, (int) config('notifications.channels.whatsapp.green_api.max_message_length', 20000))
-            : $text;
+        /*
+         * وسم الرسالة التلقائية. المستلم يجب أن يعرف أن الرسالة من النظام لا من
+         * شخص يتابع محادثته، والرسالة اليدوية التي كتبها موظف لا تحمل الوسم.
+         * الوسم يُضاف بعد القص حتى لا تبتلعه رسالة طويلة.
+         */
+        $limit = (int) config('notifications.channels.whatsapp.green_api.max_message_length', 20000);
+        $signature = $this->automaticSignature($message);
+
+        if ($signature !== '') {
+            $limit = max(0, $limit - mb_strlen($signature));
+        }
+
+        if (mb_strlen($text) > $limit) {
+            $text = trim(mb_substr($text, 0, $limit));
+        }
+
+        return $signature === '' ? $text : $text.$signature;
+    }
+
+    /**
+     * سطر يوضح أن الرسالة تلقائية — فارغ للرسائل التي أرسلها موظف يدويًا.
+     */
+    private function automaticSignature(GatewayMessage $message): string
+    {
+        if (($message->payload['manual'] ?? false) === true) {
+            return '';
+        }
+
+        $line = trim((string) __('integrations::whatsapp.automatic_notice', [], $message->locale));
+
+        return $line === '' ? '' : PHP_EOL.PHP_EOL.$line;
     }
 
     /**

@@ -18,6 +18,22 @@ export type AudienceMessagingData = {
   defaultChannel: string;
   /** الهدف المثبّت حين يُفتح الزر من صفحة فصل بعينها. */
   fixedTarget?: { type: "group" | "course" | "schedule"; id: string; label: string } | null;
+  /**
+   * رابط المحاكاة. وجوده يجعل المعاينة شرطًا قبل الإرسال: لا يُفتح زر الإرسال
+   * حتى يرى المرسِل النص النهائي وقائمة المستلمين الفعليين لنفس المدخلات.
+   */
+  previewUrl?: string | null;
+};
+
+type PreviewPerson = { id: string; name: string; phone: string | null; reason?: string };
+
+type PreviewResult = {
+  label: string;
+  text: string;
+  resolved_count: number;
+  reachable: PreviewPerson[];
+  unreachable: PreviewPerson[];
+  channel_enabled: boolean;
 };
 
 type TargetOption = { value: string; label: string };
@@ -49,6 +65,10 @@ export default function AudienceMessaging({
   const [targets, setTargets] = useState<TargetOption[]>([]);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [previewSignature, setPreviewSignature] = useState("");
+  const [previewing, setPreviewing] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const form = useForm({
     recipient_type: messaging.fixedTarget?.type ?? "course",
     target_id: messaging.fixedTarget?.id ?? "",
@@ -111,6 +131,64 @@ export default function AudienceMessaging({
       .catch(() => setTemplates([]));
   }, [open, templates.length, messaging.templatesUrl]);
 
+  /*
+   * بصمة المدخلات التي تؤثر في نتيجة المحاكاة. تغيّر أي منها يُبطل المعاينة
+   * السابقة، فلا تُجيز معاينةُ رسالةٍ إرسالَ رسالة أخرى لجمهور آخر.
+   */
+  const signature = JSON.stringify([
+    form.data.recipient_type,
+    form.data.target_id,
+    form.data.audience,
+    form.data.subject,
+    form.data.body,
+  ]);
+  const previewStale = preview !== null && previewSignature !== signature;
+  const previewRequired = Boolean(messaging.previewUrl);
+
+  const runPreview = () => {
+    if (!messaging.previewUrl) {
+      return;
+    }
+
+    setPreviewing(true);
+    setPreviewError(null);
+
+    fetch(messaging.previewUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        "X-CSRF-TOKEN":
+          document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content") ?? "",
+      },
+      body: JSON.stringify({
+        recipient_type: form.data.recipient_type,
+        target_id: form.data.target_id,
+        audience: form.data.audience,
+        subject: form.data.subject,
+        body: form.data.body,
+      }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(String(response.status));
+        }
+        return (await response.json()) as PreviewResult;
+      })
+      .then((result) => {
+        setPreview(result);
+        setPreviewSignature(signature);
+      })
+      .catch(() => {
+        setPreview(null);
+        setPreviewError(t("console_whatsapp.preview.failed"));
+      })
+      .finally(() => setPreviewing(false));
+  };
+
   const applyTemplate = (id: string) => {
     form.setData("template_id", id);
     const template = templates.find((candidate) => candidate.id === id);
@@ -128,6 +206,8 @@ export default function AudienceMessaging({
       onSuccess: () => {
         form.reset("subject", "body", "reason", "scheduled_for", "template_id");
         form.setData("request_id", ulid());
+        setPreview(null);
+        setPreviewSignature("");
         setOpen(false);
       },
     });
@@ -137,7 +217,8 @@ export default function AudienceMessaging({
     form.data.target_id !== "" &&
     form.data.subject.trim() !== "" &&
     form.data.body.trim() !== "" &&
-    form.data.reason.trim().length >= 3;
+    form.data.reason.trim().length >= 3 &&
+    (!previewRequired || (preview !== null && !previewStale));
 
   return (
     <section className="rounded-xl border border-[var(--line)] bg-white p-5 my-5">
@@ -361,6 +442,99 @@ export default function AudienceMessaging({
               {error}
             </p>
           ))}
+
+          {previewRequired && (
+            <section className="rounded-lg border border-[var(--line)] p-4 my-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-bold">
+                    {t("console_whatsapp.preview.title")}
+                  </h3>
+                  <p className="text-sm">
+                    {t("console_whatsapp.preview.hint")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="rounded-lg border border-[var(--line)] px-4 py-2 disabled:opacity-50"
+                  onClick={runPreview}
+                  disabled={previewing || form.data.target_id === ""}
+                >
+                  {t("console_whatsapp.preview.run")}
+                </button>
+              </div>
+
+              {previewError && (
+                <p role="alert" className="text-red-700 mt-2">
+                  {previewError}
+                </p>
+              )}
+
+              {preview === null && !previewError && (
+                <p className="text-sm mt-2">
+                  {t("console_whatsapp.preview.empty")}
+                </p>
+              )}
+
+              {preview !== null && (
+                <div className="mt-3">
+                  {previewStale && (
+                    <p role="alert" className="text-amber-800">
+                      {t("console_whatsapp.preview.stale")}
+                    </p>
+                  )}
+
+                  {!preview.channel_enabled && (
+                    <p role="alert" className="text-amber-800">
+                      {t("console_whatsapp.preview.channel_off_warning")}
+                    </p>
+                  )}
+
+                  <p className="mt-2">
+                    <strong>{t("console_whatsapp.preview.message_preview")}</strong>
+                  </p>
+                  <pre className="whitespace-pre-wrap rounded-lg bg-[var(--surface,#f6f6f6)] p-3 mt-1">
+                    {preview.text}
+                  </pre>
+
+                  <p className="mt-3">
+                    {t("console_whatsapp.preview.count_summary")
+                      .replace(":reachable", String(preview.reachable.length))
+                      .replace(":total", String(preview.resolved_count))}
+                  </p>
+
+                  <div className="grid gap-3 md:grid-cols-2 mt-2">
+                    <div>
+                      <p className="font-bold">
+                        {t("console_whatsapp.preview.reachable")} (
+                        {preview.reachable.length})
+                      </p>
+                      <ul className="text-sm">
+                        {preview.reachable.map((person) => (
+                          <li key={person.id}>
+                            {person.name} — {person.phone}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-bold">
+                        {t("console_whatsapp.preview.unreachable")} (
+                        {preview.unreachable.length})
+                      </p>
+                      <ul className="text-sm">
+                        {preview.unreachable.map((person) => (
+                          <li key={person.id}>
+                            {person.name} — {person.reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           <div className="flex gap-2 mt-3">
             <button

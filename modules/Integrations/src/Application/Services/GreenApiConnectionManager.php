@@ -93,6 +93,65 @@ final readonly class GreenApiConnectionManager implements GreenApiConnections
             : $this->isEnabled($organizationId);
     }
 
+    public function setChannelActive(string $organizationId, bool $active, string $actorId, string $reason): bool
+    {
+        return (bool) DB::transaction(function () use ($organizationId, $active, $actorId, $reason): bool {
+            $provider = IntegrationProvider::query()->where('key', self::PROVIDER_KEY)->first();
+
+            if ($provider === null) {
+                return false;
+            }
+
+            $connection = IntegrationConnection::query()
+                ->forOrganization($organizationId)
+                ->where('provider_id', $provider->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($connection === null) {
+                return false;
+            }
+
+            $before = $this->view($organizationId);
+            $target = $active ? ConnectionStatus::Active : ConnectionStatus::Disabled;
+
+            if ($connection->status === $target) {
+                return false;
+            }
+
+            if (!$connection->status->canTransitionTo($target)) {
+                throw ValidationException::withMessages([
+                    'active' => __('console_settings.green_api.toggle_blocked'),
+                ]);
+            }
+
+            /*
+             * التشغيل يتطلب توكنًا محفوظًا؛ الإيقاف لا يتطلب شيئًا — مفتاح
+             * الطوارئ يجب أن يعمل حتى لو كان المزوّد نفسه معطلًا.
+             */
+            if ($active) {
+                $token = (string) (($connection->credentials ?? [])['token'] ?? '');
+
+                if ($token === '') {
+                    throw ValidationException::withMessages([
+                        'active' => __('console_settings.green_api.token_required'),
+                    ]);
+                }
+            }
+
+            $connection->status = $target;
+            $connection->activated_at = $active ? now('UTC') : $connection->activated_at;
+            $connection->disabled_at = $active ? null : now('UTC');
+            $connection->save();
+
+            $this->audit->record($organizationId, $actorId, 'user',
+                'console.whatsapp.channel_toggled', IntegrationConnection::class, (string) $connection->id,
+                $before, $this->view($organizationId), $reason);
+
+            return true;
+        });
+    }
+
     public function verify(string $apiUrl, string $instanceId, string $token): ?string
     {
         if (!$this->validUrl($apiUrl)
