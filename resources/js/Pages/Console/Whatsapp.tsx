@@ -4,6 +4,7 @@ import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import AudienceMessaging, {
   type AudienceMessagingData,
 } from "@/Components/Console/AudienceMessaging";
+import { WhatsappTemplateSettings } from "@/Pages/Console/SettingsEditors";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/console-format";
 
@@ -18,13 +19,12 @@ type Connection = {
 };
 
 type TemplateRow = {
-  id: string;
   event_key: string;
   locale: string;
-  subject: string | null;
-  body: string;
-  is_active: boolean;
-  is_global: boolean;
+  label: string;
+  parameters: string[];
+  original: { subject: string | null; body: string };
+  custom: { id: string; subject: string | null; body: string } | null;
 };
 
 type LogRow = {
@@ -260,48 +260,11 @@ export default function Whatsapp({
             {t("console_whatsapp.templates.title")}
           </h2>
           <p className="text-sm">{t("console_whatsapp.templates.hint")}</p>
-          <Link className="underline mt-2 inline-block" href={urls.notifications}>
-            {t("console_whatsapp.templates.open_editor")}
-          </Link>
 
-          {templates.length === 0 ? (
-            <p className="mt-3">{t("console_whatsapp.templates.empty")}</p>
+          {abilities.templates ? (
+            <WhatsappTemplateSettings templates={templates} />
           ) : (
-            <div className="overflow-x-auto mt-3">
-              <table className="w-full text-start">
-                <thead>
-                  <tr>
-                    <th scope="col" className="text-start p-2">
-                      {t("console_whatsapp.templates.event")}
-                    </th>
-                    <th scope="col" className="text-start p-2">
-                      {t("console_whatsapp.templates.locale")}
-                    </th>
-                    <th scope="col" className="text-start p-2">
-                      {t("console_whatsapp.templates.body")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {templates.map((template) => (
-                    <tr key={template.id} className="border-t border-[var(--line)]">
-                      <td className="p-2 align-top">
-                        {template.event_key}
-                        {template.is_global && (
-                          <span className="text-sm block">
-                            {t("console_whatsapp.templates.global")}
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-2 align-top">{template.locale}</td>
-                      <td className="p-2 align-top">
-                        <pre className="whitespace-pre-wrap">{template.body}</pre>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <p className="mt-3">{t("console_whatsapp.templates.empty")}</p>
           )}
         </section>
       )}

@@ -24,7 +24,6 @@ use Modules\Notifications\Domain\Enums\ManualAudience;
 use Modules\Notifications\Domain\Enums\ManualRecipientType;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
-use Modules\Notifications\Domain\Models\NotificationTemplate;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -59,7 +58,14 @@ final class WhatsappController extends Controller
             'channelEnabled' => $this->connections->isChannelEnabled($organizationId),
             'stats' => $this->stats($organizationId),
             'recent' => $this->recent($organizationId),
-            'templates' => $canManageTemplates ? $this->templates($organizationId) : [],
+            /*
+             * نفس محرّر القوالب المستخدم في الإعدادات: يعرض الأصل العام ونسخة
+             * المؤسسة، ويحفظ التعديل كنسخة خاصة بها، ويعيد النص الأصلي بحذفها.
+             * القالب العام مرجع مشترك بين المؤسسات فلا يُكتب عليه مباشرة.
+             */
+            'templates' => $canManageTemplates
+                ? app(ConsoleSettingsData::class)->whatsappTemplates($organizationId)
+                : [],
             'messaging' => $canSend ? $this->messaging() : null,
             'automaticNotice' => (string) __('integrations::whatsapp.automatic_notice'),
             'abilities' => [
@@ -260,37 +266,6 @@ final class WhatsappController extends Controller
                     'body' => $this->localized($row->body, (string) $row->locale),
                 ];
             })
-            ->values()
-            ->all();
-    }
-
-    /**
-     * قوالب واتساب وحدها — باقي القنوات لها مكانها في مركز الرسائل.
-     *
-     * @return list<array<string, mixed>>
-     */
-    private function templates(string $organizationId): array
-    {
-        return NotificationTemplate::query()
-            ->visibleToOrganization($organizationId)
-            ->where('channel', self::CHANNEL)
-            ->orderBy('event_key')
-            ->orderBy('locale')
-            ->get()
-            ->map(static fn (NotificationTemplate $template): array => [
-                'id' => (string) $template->getKey(),
-                'event_key' => (string) $template->event_key,
-                'channel' => (string) $template->channel,
-                'locale' => (string) $template->locale,
-                'subject' => $template->subject,
-                'body' => (string) $template->body,
-                'parameters' => $template->parameters,
-                'is_active' => (bool) $template->is_active,
-                'is_global' => $template->isGlobal(),
-                'updateUrl' => $template->isGlobal()
-                    ? null
-                    : route('console.notification-templates.update', ['template' => $template->getKey()]),
-            ])
             ->values()
             ->all();
     }

@@ -37,4 +37,14 @@ interface StudentDirectoryQueries
      * @return array<string, string> student_profile_id => display name
      */
     public function searchNames(string $organizationId, string $search, int $limit = 50): array;
+
+    /**
+     * معرّفات حسابات كل الطلاب غير المؤرشفين في المؤسسة.
+     *
+     * للمراسلة الإدارية الموجّهة لكل الطلاب؛ البحث المحدود بـlimit لا يصلح
+     * لجمهور يجب أن يكون كاملًا.
+     *
+     * @return list<string> user IDs
+     */
+    public function activeUserIdsForOrganization(string $organizationId): array;
 }

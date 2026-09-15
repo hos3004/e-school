@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    'recipient_selection' => ':count destinataires sélectionnés',
+    'recipient_all_students' => 'Tous les élèves (:count)',
+    'recipient_all_teachers' => 'Tous les enseignants (:count)',
     'id' => 'Identifiant', 'organization_id' => 'Organisation', 'user_id' => 'Utilisateur',
     'category' => 'Catégorie', 'channel' => 'Canal', 'locale' => 'Langue du message',
     'event_name' => 'Nom de l’événement', 'event_id' => 'Identifiant de l’événement',
@@ -24,6 +27,9 @@ return [
     'audit_history' => 'Historique des décisions et de l’audit', 'action' => 'Action', 'actor' => 'Effectuée par',
     'recipient_type' => 'Type de destinataire', 'recipient_count' => 'Nombre de destinataires',
     'preview' => 'Aperçu de la notification',
-    'recipient_types' => ['student' => 'Élève', 'teacher' => 'Enseignant', 'group' => 'Groupe', 'course' => 'Cours', 'schedule' => 'Planning'],
+    'recipient_types' => [
+        'people' => 'Personnes que je choisis',
+        'students_all' => 'Tous les élèves',
+        'teachers_all' => 'Tous les enseignants', 'student' => 'Élève', 'teacher' => 'Enseignant', 'group' => 'Groupe', 'course' => 'Cours', 'schedule' => 'Planning'],
     'audiences' => ['students' => 'Élèves seulement', 'teacher' => 'Enseignant seulement', 'all' => 'Toute la classe'],
 ];

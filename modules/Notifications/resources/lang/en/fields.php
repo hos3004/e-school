@@ -7,6 +7,9 @@ declare(strict_types=1);
 */
 
 return [
+    'recipient_selection' => ':count selected recipients',
+    'recipient_all_students' => 'All students (:count)',
+    'recipient_all_teachers' => 'All teachers (:count)',
 
     'id' => 'ID',
     'organization_id' => 'Organization',
@@ -65,6 +68,9 @@ return [
     'recipient_count' => 'Recipient count',
     'preview' => 'Notification preview',
     'recipient_types' => [
+        'people' => 'People I pick',
+        'students_all' => 'All students',
+        'teachers_all' => 'All teachers',
         'student' => 'Student',
         'teacher' => 'Teacher',
         'group' => 'Group',

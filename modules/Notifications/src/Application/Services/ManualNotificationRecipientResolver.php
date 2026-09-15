@@ -54,6 +54,13 @@ final readonly class ManualNotificationRecipientResolver
             ManualRecipientType::Group => $this->groupOptions($organizationId, $term, $limit),
             ManualRecipientType::Course => $this->courseOptions($organizationId, $term, $limit),
             ManualRecipientType::Schedule => $this->scheduleOptions($organizationId, $term, $limit),
+            // قائمة الأشخاص تُختار من الطلاب والمعلمين معًا.
+            ManualRecipientType::People => [
+                ...$this->studentOptions($organizationId, $term, $limit),
+                ...$this->teacherOptions($organizationId, $term, $limit),
+            ],
+            // جمهورهما المؤسسة كلها، فلا قائمة تُبحث فيها.
+            ManualRecipientType::AllStudents, ManualRecipientType::AllTeachers => [],
         };
     }
 
@@ -75,7 +82,12 @@ final readonly class ManualNotificationRecipientResolver
         string $targetId,
         ManualAudience $audience = ManualAudience::All,
     ): ManualRecipientResolution {
-        if ($organizationId === '' || $targetId === '') {
+        if ($organizationId === '') {
+            $this->recipientNotFound();
+        }
+
+        // «كل الطلاب» و«كل المعلمين» لا هدف لهما يُختار؛ البقية تتطلب هدفًا.
+        if ($targetId === '' && $type->needsSingleTarget()) {
             $this->recipientNotFound();
         }
 
@@ -85,6 +97,9 @@ final readonly class ManualNotificationRecipientResolver
             ManualRecipientType::Group => $this->resolveGroup($organizationId, $targetId, $audience),
             ManualRecipientType::Course => $this->resolveCourse($organizationId, $targetId, $audience),
             ManualRecipientType::Schedule => $this->resolveSchedule($organizationId, $targetId, $audience),
+            ManualRecipientType::People => $this->resolvePeople($organizationId, $targetId),
+            ManualRecipientType::AllStudents => $this->resolveAllStudents($organizationId),
+            ManualRecipientType::AllTeachers => $this->resolveAllTeachers($organizationId),
         };
     }
 
@@ -221,6 +236,120 @@ final readonly class ManualNotificationRecipientResolver
         }
 
         return $options;
+    }
+
+    /**
+     * قائمة أشخاص اختارهم المرسِل بالاسم.
+     *
+     * targetId هنا هو القائمة نفسها: user IDs مفصولة بفواصل. كل معرّف يُتحقق
+     * منه على حدة فلا يتسلل حساب من مؤسسة أخرى أو حساب موقوف، والترتيب يتبع
+     * ما اختاره المرسِل حتى تطابق المعاينةُ ما سيُرسل.
+     */
+    private function resolvePeople(string $organizationId, string $targetId): ManualRecipientResolution
+    {
+        $requested = array_values(array_unique(array_filter(
+            array_map(trim(...), explode(',', $targetId)),
+            static fn (string $id): bool => $id !== '',
+        )));
+
+        if ($requested === []) {
+            $this->recipientNotFound();
+        }
+
+        $accounts = $this->accounts->findMany($organizationId, $requested);
+        $userIds = [];
+
+        foreach ($requested as $userId) {
+            $account = $accounts[$userId] ?? null;
+
+            if ($account instanceof UserAccountData && $account->status === 'active') {
+                $userIds[] = $userId;
+            }
+        }
+
+        if ($userIds === []) {
+            $this->recipientNotFound();
+        }
+
+        return new ManualRecipientResolution(
+            type: ManualRecipientType::People,
+            targetId: implode(',', $userIds),
+            label: (string) __('notifications::fields.recipient_selection', ['count' => count($userIds)]),
+            userIds: $userIds,
+        );
+    }
+
+    private function resolveAllStudents(string $organizationId): ManualRecipientResolution
+    {
+        $userIds = $this->activeAccountsAmong(
+            $organizationId,
+            $this->students->activeUserIdsForOrganization($organizationId),
+        );
+
+        if ($userIds === []) {
+            $this->recipientNotFound();
+        }
+
+        return new ManualRecipientResolution(
+            type: ManualRecipientType::AllStudents,
+            targetId: ManualRecipientType::AllStudents->value,
+            label: (string) __('notifications::fields.recipient_all_students', ['count' => count($userIds)]),
+            userIds: $userIds,
+        );
+    }
+
+    private function resolveAllTeachers(string $organizationId): ManualRecipientResolution
+    {
+        $candidates = [];
+
+        foreach ($this->staff->activeTeacherSummariesForOrganization($organizationId) as $teacher) {
+            $userId = $this->staff->userIdForProfile($organizationId, $teacher['staff_profile_id']);
+
+            if ($userId !== null) {
+                $candidates[] = $userId;
+            }
+        }
+
+        $userIds = $this->activeAccountsAmong($organizationId, $candidates);
+
+        if ($userIds === []) {
+            $this->recipientNotFound();
+        }
+
+        return new ManualRecipientResolution(
+            type: ManualRecipientType::AllTeachers,
+            targetId: ManualRecipientType::AllTeachers->value,
+            label: (string) __('notifications::fields.recipient_all_teachers', ['count' => count($userIds)]),
+            userIds: $userIds,
+        );
+    }
+
+    /**
+     * يبقي الحسابات النشطة داخل المؤسسة وحدها، محافظًا على الترتيب الوارد.
+     *
+     * @param list<string> $userIds
+     * @return list<string>
+     */
+    private function activeAccountsAmong(string $organizationId, array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter($userIds)));
+
+        if ($userIds === []) {
+            return [];
+        }
+
+        $accounts = $this->accounts->findMany($organizationId, $userIds);
+        $active = [];
+
+        foreach ($userIds as $userId) {
+            $account = $accounts[$userId] ?? null;
+
+            if ($account instanceof UserAccountData && $account->status === 'active') {
+                $active[] = $userId;
+            }
+        }
+
+        return $active;
     }
 
     private function resolveStudent(string $organizationId, string $userId): ManualRecipientResolution

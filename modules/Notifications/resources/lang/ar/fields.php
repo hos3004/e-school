@@ -7,6 +7,9 @@ declare(strict_types=1);
 */
 
 return [
+    'recipient_selection' => ':count مستلمًا مختارًا',
+    'recipient_all_students' => 'كل الطلاب (:count)',
+    'recipient_all_teachers' => 'كل المعلمين (:count)',
 
     'id' => 'المعرّف',
     'organization_id' => 'المؤسسة',
@@ -65,6 +68,9 @@ return [
     'recipient_count' => 'عدد المستلمين',
     'preview' => 'معاينة الإشعار',
     'recipient_types' => [
+        'people' => 'قائمة أشخاص أختارهم',
+        'students_all' => 'كل الطلاب',
+        'teachers_all' => 'كل المعلمين',
         'student' => 'طالب',
         'teacher' => 'معلم',
         'group' => 'مجموعة',

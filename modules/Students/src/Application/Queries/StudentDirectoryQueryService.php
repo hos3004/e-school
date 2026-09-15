@@ -129,6 +129,19 @@ final readonly class StudentDirectoryQueryService implements StudentDirectoryQue
             ->all();
     }
 
+    public function activeUserIdsForOrganization(string $organizationId): array
+    {
+        return StudentProfile::query()
+            ->forOrganization($organizationId)
+            ->whereNotNull('user_id')
+            ->orderBy('student_code')
+            ->pluck('user_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     private static function toDto(StudentProfile $profile): StudentDirectoryData
     {
         return new StudentDirectoryData(

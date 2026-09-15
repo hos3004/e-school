@@ -38,6 +38,26 @@ type PreviewResult = {
 
 type TargetOption = { value: string; label: string };
 
+/** أنواع الهدف التي يعرضها المؤلِّف، مرتبة من الأضيق إلى الأوسع. */
+const RECIPIENT_TYPES = [
+  "student",
+  "teacher",
+  "people",
+  "course",
+  "schedule",
+  "group",
+  "students_all",
+  "teachers_all",
+] as const;
+
+type RecipientType = (typeof RECIPIENT_TYPES)[number];
+
+/** جمهوره المؤسسة كلها: لا هدف يُختار، وtarget_id هو اسم النوع نفسه. */
+const WHOLE_ORGANIZATION: readonly RecipientType[] = ["students_all", "teachers_all"];
+
+/** يُختار فيه شخص واحد أو أكثر بالاسم. */
+const PICKS_PEOPLE: readonly RecipientType[] = ["student", "teacher", "people"];
+
 type TemplateOption = {
   id: string;
   event_key: string;
@@ -63,6 +83,8 @@ export default function AudienceMessaging({
   const t = useI18n();
   const [open, setOpen] = useState(false);
   const [targets, setTargets] = useState<TargetOption[]>([]);
+  const [search, setSearch] = useState("");
+  const [picked, setPicked] = useState<TargetOption[]>([]);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
@@ -70,7 +92,7 @@ export default function AudienceMessaging({
   const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const form = useForm({
-    recipient_type: messaging.fixedTarget?.type ?? "course",
+    recipient_type: (messaging.fixedTarget?.type ?? "course") as RecipientType,
     target_id: messaging.fixedTarget?.id ?? "",
     audience: "all",
     channel: messaging.defaultChannel,
@@ -84,8 +106,16 @@ export default function AudienceMessaging({
 
   const fixed = messaging.fixedTarget ?? null;
 
+  const recipientType = form.data.recipient_type as RecipientType;
+  const wholeOrganization = WHOLE_ORGANIZATION.includes(recipientType);
+  const picksPeople = PICKS_PEOPLE.includes(recipientType);
+  const multiPick = recipientType === "people";
+  const audienceScoped = (["group", "course", "schedule"] as readonly RecipientType[]).includes(
+    recipientType,
+  );
+
   useEffect(() => {
-    if (!open || fixed) {
+    if (!open || fixed || wholeOrganization) {
       return;
     }
 
@@ -93,7 +123,10 @@ export default function AudienceMessaging({
     setLoading(true);
 
     fetch(
-      `${messaging.targetsUrl}?${new URLSearchParams({ type: form.data.recipient_type })}`,
+      `${messaging.targetsUrl}?${new URLSearchParams({
+        type: form.data.recipient_type,
+        search,
+      })}`,
       { headers: { Accept: "application/json" } },
     )
       .then((response) => (response.ok ? response.json() : { targets: [] }))
@@ -116,7 +149,7 @@ export default function AudienceMessaging({
     return () => {
       cancelled = true;
     };
-  }, [open, fixed, form.data.recipient_type, messaging.targetsUrl]);
+  }, [open, fixed, wholeOrganization, search, form.data.recipient_type, messaging.targetsUrl]);
 
   useEffect(() => {
     if (!open || templates.length > 0) {
@@ -189,6 +222,34 @@ export default function AudienceMessaging({
       .finally(() => setPreviewing(false));
   };
 
+  /**
+   * تبديل النوع يعيد ضبط الهدف كليًا: قائمة مختارة من نوع سابق لا تصلح هدفًا
+   * لنوع آخر، و«كل الطلاب» هدفه اسم النوع لا معرّف.
+   */
+  const changeRecipientType = (next: RecipientType) => {
+    form.setData("recipient_type", next);
+    setPicked([]);
+    setSearch("");
+    form.setData("target_id", WHOLE_ORGANIZATION.includes(next) ? next : "");
+  };
+
+  const togglePicked = (option: TargetOption) => {
+    setPicked((current) => {
+      const next = current.some((person) => person.value === option.value)
+        ? current.filter((person) => person.value !== option.value)
+        : [...current, option];
+
+      form.setData("target_id", next.map((person) => person.value).join(","));
+
+      return next;
+    });
+  };
+
+  const clearPicked = () => {
+    setPicked([]);
+    form.setData("target_id", "");
+  };
+
   const applyTemplate = (id: string) => {
     form.setData("template_id", id);
     const template = templates.find((candidate) => candidate.id === id);
@@ -250,59 +311,148 @@ export default function AudienceMessaging({
               {t("console_messaging.fields.target")}: <strong>{fixed.label}</strong>
             </p>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2 my-3">
-              <label className="block">
+            <div className="my-3">
+              <label className="block md:w-1/2">
                 <span className="block mb-2">
                   {t("console_messaging.fields.recipient_type")}
                 </span>
                 <select
                   className="w-full rounded-lg border border-[var(--line)] p-3"
                   value={form.data.recipient_type}
-                  onChange={(event) => {
-                    form.setData(
-                      "recipient_type",
-                      event.target.value as "group" | "course" | "schedule",
-                    );
-                    form.setData("target_id", "");
-                  }}
+                  onChange={(event) =>
+                    changeRecipientType(event.target.value as RecipientType)
+                  }
                 >
-                  {["course", "schedule", "group"].map((type) => (
+                  {RECIPIENT_TYPES.map((type) => (
                     <option key={type} value={type}>
                       {t("console_messaging.targets." + type)}
                     </option>
                   ))}
                 </select>
               </label>
-              <label className="block">
-                <span className="block mb-2">
-                  {t("console_messaging.fields.target")}
-                </span>
-                <select
-                  className="w-full rounded-lg border border-[var(--line)] p-3"
-                  value={form.data.target_id}
-                  onChange={(event) =>
-                    form.setData("target_id", event.target.value)
-                  }
-                  required
-                  disabled={loading}
-                >
-                  <option value="">
-                    {targets.length === 0 && !loading
-                      ? t("console_messaging.no_targets")
-                      : t("console_messaging.choose_target")}
-                  </option>
-                  {targets.map((target) => (
-                    <option key={target.value} value={target.value}>
-                      {target.label}
+
+              {wholeOrganization && (
+                <p className="text-sm mt-3">
+                  {t("console_messaging.whole_org_hint")}
+                </p>
+              )}
+
+              {!wholeOrganization && !multiPick && (
+                <label className="block md:w-1/2 mt-3">
+                  <span className="block mb-2">
+                    {t("console_messaging.fields.target")}
+                  </span>
+                  {picksPeople && (
+                    <input
+                      type="search"
+                      className="w-full rounded-lg border border-[var(--line)] p-3 mb-2"
+                      placeholder={t("console_messaging.people_search")}
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                    />
+                  )}
+                  <select
+                    className="w-full rounded-lg border border-[var(--line)] p-3"
+                    value={form.data.target_id}
+                    onChange={(event) =>
+                      form.setData("target_id", event.target.value)
+                    }
+                    required
+                    disabled={loading}
+                  >
+                    <option value="">
+                      {targets.length === 0 && !loading
+                        ? t("console_messaging.no_targets")
+                        : t("console_messaging.choose_target")}
                     </option>
-                  ))}
-                </select>
-              </label>
+                    {targets.map((target) => (
+                      <option key={target.value} value={target.value}>
+                        {target.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              {multiPick && (
+                <fieldset className="mt-3 rounded-lg border border-[var(--line)] p-3">
+                  <legend className="px-1">
+                    {t("console_messaging.people_label")}
+                  </legend>
+                  <input
+                    type="search"
+                    className="w-full rounded-lg border border-[var(--line)] p-3"
+                    placeholder={t("console_messaging.people_search")}
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+
+                  <div className="max-h-56 overflow-y-auto mt-2">
+                    {targets.length === 0 && !loading ? (
+                      <p className="text-sm">
+                        {t("console_messaging.no_targets")}
+                      </p>
+                    ) : (
+                      targets.map((target) => {
+                        const chosen = picked.some(
+                          (person) => person.value === target.value,
+                        );
+
+                        return (
+                          <label
+                            key={target.value}
+                            className="flex items-center gap-2 py-1"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={chosen}
+                              onChange={() => togglePicked(target)}
+                            />
+                            <span>{target.label}</span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
+                    <p className="text-sm" role="status">
+                      {picked.length === 0
+                        ? t("console_messaging.people_empty")
+                        : t("console_messaging.people_selected").replace(
+                            ":count",
+                            String(picked.length),
+                          )}
+                    </p>
+                    {picked.length > 0 && (
+                      <button
+                        type="button"
+                        className="rounded-lg border border-[var(--line)] px-3 py-1"
+                        onClick={clearPicked}
+                      >
+                        {t("console_messaging.people_clear")}
+                      </button>
+                    )}
+                  </div>
+
+                  {picked.length > 0 && (
+                    <ul className="text-sm mt-2">
+                      {picked.map((person) => (
+                        <li key={person.value}>{person.label}</li>
+                      ))}
+                    </ul>
+                  )}
+                </fieldset>
+              )}
             </div>
           )}
 
           <div className="grid gap-3 md:grid-cols-3 my-3">
-            <label className="block">
+            {/*
+              تقييد الجمهور يخص الهدف الذي يحمل أكثر من طرف — المجموعة والكورس
+              والجدول. اختيار شخص أو قائمة أو كل الطلاب يحدد جمهوره بنفسه.
+            */}
+            <label className={audienceScoped ? "block" : "hidden"}>
               <span className="block mb-2">
                 {t("console_messaging.fields.audience")}
               </span>

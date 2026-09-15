@@ -29,15 +29,13 @@ final class SendAudienceMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'recipient_type' => [
-                'required',
-                Rule::in([
-                    ManualRecipientType::Group->value,
-                    ManualRecipientType::Course->value,
-                    ManualRecipientType::Schedule->value,
-                ]),
-            ],
-            'target_id' => ['required', 'string', 'size:26'],
+            'recipient_type' => ['required', Rule::in(array_keys(ManualRecipientType::options()))],
+            /*
+             * شكل الهدف يتبع نوعه: معرّف واحد للفصل أو الشخص، وقائمة معرّفات
+             * مفصولة بفواصل لقائمة الأشخاص، واسم النوع نفسه لجمهور المؤسسة
+             * كاملة الذي لا هدف له يُختار.
+             */
+            'target_id' => ['required', 'string', 'max:4000', $this->targetShapeRule()],
             'audience' => ['required', Rule::in(array_keys(ManualAudience::options()))],
             'channel' => ['required', Rule::in(Channel::values())],
             'template_id' => ['nullable', 'string', 'size:26'],
@@ -49,6 +47,49 @@ final class SendAudienceMessageRequest extends FormRequest
             // بلا منطقة زمنية، وفحصه هنا يقيسه بتوقيت التطبيق فيرفض موعدًا صحيحًا.
             'scheduled_for' => ['nullable', 'date'],
         ];
+    }
+
+    /**
+     * قاعدة شكل الهدف بحسب النوع المختار.
+     */
+    private function targetShapeRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            $type = ManualRecipientType::tryFrom((string) $this->input('recipient_type'));
+
+            if ($type === null) {
+                return;
+            }
+
+            $value = (string) $value;
+
+            if (!$type->needsSingleTarget() && $type !== ManualRecipientType::People) {
+                if ($value !== $type->value) {
+                    $fail((string) __('console_messaging.errors.target_invalid'));
+                }
+
+                return;
+            }
+
+            $ids = $type === ManualRecipientType::People
+                ? array_map(trim(...), explode(',', $value))
+                : [$value];
+            $ids = array_values(array_filter($ids, static fn (string $id): bool => $id !== ''));
+
+            if ($ids === [] || count($ids) > 500) {
+                $fail((string) __('console_messaging.errors.target_invalid'));
+
+                return;
+            }
+
+            foreach ($ids as $id) {
+                if (mb_strlen($id) !== 26) {
+                    $fail((string) __('console_messaging.errors.target_invalid'));
+
+                    return;
+                }
+            }
+        };
     }
 
     /**

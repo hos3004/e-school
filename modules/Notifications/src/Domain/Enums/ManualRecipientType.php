@@ -22,6 +22,15 @@ enum ManualRecipientType: string
 
     case Schedule = 'schedule';
 
+    /** قائمة أشخاص يختارهم المرسِل بالاسم — targetId قائمة user IDs مفصولة بفواصل. */
+    case People = 'people';
+
+    /** كل طلاب المؤسسة النشطين. */
+    case AllStudents = 'students_all';
+
+    /** كل معلمي المؤسسة النشطين. */
+    case AllTeachers = 'teachers_all';
+
     /** @return array<string, string> */
     public static function options(): array
     {
@@ -36,6 +45,23 @@ enum ManualRecipientType: string
     public function isAudienceScoped(): bool
     {
         return in_array($this, [self::Group, self::Course, self::Schedule], true);
+    }
+
+    /**
+     * هل يحمل targetId معرّفًا حقيقيًا يُختار من قائمة؟
+     *
+     * «كل الطلاب» و«كل المعلمين» جمهورهما هو المؤسسة نفسها، فلا هدف يُختار،
+     * و«قائمة أشخاص» هدفها القائمة ذاتها لا عنصرًا واحدًا منها.
+     */
+    public function needsSingleTarget(): bool
+    {
+        return !in_array($this, [self::People, self::AllStudents, self::AllTeachers], true);
+    }
+
+    /** هل يختار المرسِل أشخاصًا بأسمائهم لهذا النوع؟ */
+    public function picksPeople(): bool
+    {
+        return in_array($this, [self::Student, self::Teacher, self::People], true);
     }
 
     public function label(): string

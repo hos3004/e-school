@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 return [
+    'people_label' => 'Pick recipients by name',
+    'people_search' => 'Search by name or code',
+    'people_selected' => 'Selected (:count)',
+    'people_clear' => 'Clear selection',
+    'people_empty' => 'Nobody picked yet.',
+    'whole_org_hint' => 'The message goes to everyone in the organization who matches. Run the simulation to see the count and names before sending.',
+    'errors' => ['target_invalid' => 'The chosen target is not valid for this type.'],
     'title' => 'Messaging',
     'open' => 'Send a message',
     'send' => 'Send',
@@ -34,6 +41,11 @@ return [
     ],
 
     'targets' => [
+        'student' => 'One student',
+        'teacher' => 'One teacher',
+        'people' => 'People I pick',
+        'students_all' => 'All students',
+        'teachers_all' => 'All teachers',
         'group' => 'Group',
         'course' => 'Course',
         'schedule' => 'Schedule',
