@@ -108,16 +108,26 @@ final readonly class ManualNotificationRecipientResolver
     }
 
     /** @return array<string, string> */
+    /**
+     * خيارات الطلاب للمنتقي.
+     *
+     * البداية من كشف طلاب المؤسسة لا من بحث الحسابات العام: بحث الحسابات
+     * محكوم بسقف دليل الهوية ويخلط الطلاب بغيرهم، فكان يعيد بضعة وثلاثين
+     * اسمًا من مدرسة فيها ضعفهم ويخفي البقية بلا أن يدري المرسِل. التصفية
+     * بالاسم والكود تجري هنا على الكشف نفسه.
+     *
+     * @return array<string, string>
+     */
     private function studentOptions(string $organizationId, string $term, int $limit): array
     {
-        $accounts = array_values(array_filter(
-            $this->accounts->search($organizationId, $term, $limit),
-            static fn (UserAccountData $account): bool => $account->status === 'active',
-        ));
-        $profiles = $this->students->forUserIds(
-            $organizationId,
-            array_map(static fn (UserAccountData $account): string => $account->id, $accounts),
-        );
+        $userIds = $this->students->activeUserIdsForOrganization($organizationId);
+
+        if ($userIds === []) {
+            return [];
+        }
+
+        $accounts = $this->accounts->findMany($organizationId, $userIds);
+        $profiles = $this->students->forUserIds($organizationId, $userIds);
         $profilesByUser = [];
 
         foreach ($profiles as $profile) {
@@ -126,13 +136,27 @@ final readonly class ManualNotificationRecipientResolver
             }
         }
 
+        $needle = mb_strtolower(trim($term));
         $options = [];
 
-        foreach ($accounts as $account) {
-            $profile = $profilesByUser[$account->id] ?? null;
+        foreach ($userIds as $userId) {
+            $account = $accounts[$userId] ?? null;
+            $profile = $profilesByUser[$userId] ?? null;
 
-            if ($profile !== null) {
-                $options[$account->id] = $account->name.' · '.$profile->studentCode;
+            if (!$account instanceof UserAccountData || $account->status !== 'active' || $profile === null) {
+                continue;
+            }
+
+            $label = $account->name.' · '.$profile->studentCode;
+
+            if ($needle !== '' && !str_contains(mb_strtolower($label), $needle)) {
+                continue;
+            }
+
+            $options[$userId] = $label;
+
+            if (count($options) >= $limit) {
+                break;
             }
         }
 
