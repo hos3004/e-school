@@ -27,6 +27,8 @@ return [
     'leave_transition_forbidden' => 'لا يمكن نقل الإجازة إلى هذه الحالة من حالتها الحالية.',
     'profile_already_exists' => 'لهذا الحساب ملف موظف قائم بالفعل.',
     'profile_already_terminated' => 'خدمة هذا الموظف منتهية بالفعل.',
+    'rate_contract_missing' => 'لا يوجد عقد ساري لهذا المعلم بتاريخ السريان المطلوب.',
+    'rate_effective_before_current' => 'تاريخ سريان السعر الجديد يسبق السعر الساري الحالي لنفس النطاق.',
     'rate_overlaps' => 'يوجد سعر ساري يتقاطع مع هذه الفترة لنفس النطاق.',
     'rate_scope_course_required' => 'تحديد الدورة مطلوب عندما يكون نطاق السعر دورة.',
     'rate_scope_program_required' => 'تحديد البرنامج مطلوب عندما يكون نطاق السعر برنامجًا.',

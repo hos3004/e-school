@@ -13,6 +13,7 @@ use Modules\Groups\Domain\ValueObjects\SchedulingGroupData;
 use Modules\Staff\Domain\Contracts\SessionPayCatalog;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 use Modules\Staff\Domain\Contracts\TeacherQualificationQueries;
+use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Shared\Support\BusinessRuleViolation;
 
 final readonly class ScheduleDefinitionValidator
@@ -54,11 +55,9 @@ final readonly class ScheduleDefinitionValidator
             throw BusinessRuleViolation::make('scheduling.ends_before_start', 'scheduling::errors.ends_before_start');
         }
 
+        $sessionType = $studentId !== null ? 'individual' : 'group';
         $duration = (int) ($data['duration_minutes'] ?? 0);
-        $allowedDurations = app(SessionPayCatalog::class)->durations($organizationId, $studentId !== null ? 'individual' : 'group');
-        if (!in_array($duration, $allowedDurations, true)) {
-            throw BusinessRuleViolation::make('scheduling.duration_invalid', 'scheduling::errors.duration_invalid');
-        }
+        $this->validateDuration($organizationId, $sessionType, $duration, $staffProfileId, $startsOn, $course->programId, $courseId);
 
         try {
             new DateTimeZone((string) ($data['timezone'] ?? ''));
@@ -94,6 +93,46 @@ final readonly class ScheduleDefinitionValidator
         );
         if (!isset($enrollment[$studentId])) {
             throw BusinessRuleViolation::make('scheduling.student_not_schedulable', 'scheduling::errors.student_not_schedulable');
+        }
+    }
+
+    /**
+     * مدة الحصة: الجماعي على مدد المؤسسة المسعّرة، والفردي يقبل مدة مخصّصة.
+     *
+     * المدة المخصّصة لا يقابلها سعر في كتالوج المؤسسة، فلو لم يكن للمعلم سعر
+     * ساري بتاريخ البداية أُقفلت حصصه بلا قيدة مستحق (`rate_unresolved`).
+     * لذلك يُمنع الإسناد هنا بدل أن يظهر النقص بعد شهر في كشف الأجر.
+     * العقد الشهري لا يحتسب بالحصة، فلا يُطالَب بسعر.
+     */
+    private function validateDuration(
+        string $organizationId,
+        string $sessionType,
+        int $duration,
+        string $staffProfileId,
+        CarbonImmutable $startsOn,
+        string $programId,
+        string $courseId,
+    ): void {
+        if (in_array($duration, app(SessionPayCatalog::class)->durations($organizationId, $sessionType), true)) {
+            return;
+        }
+
+        if ($sessionType !== 'individual'
+            || $duration < (int) config('session_pay.min_duration')
+            || $duration > (int) config('session_pay.max_duration')) {
+            throw BusinessRuleViolation::make('scheduling.duration_invalid', 'scheduling::errors.duration_invalid');
+        }
+
+        if ($this->staff->requiresSessionRates($staffProfileId, $startsOn)
+            && app(TeacherRateResolver::class)->resolve(
+                $staffProfileId,
+                $startsOn,
+                $programId,
+                $courseId,
+                $sessionType,
+                $duration,
+            ) === null) {
+            throw BusinessRuleViolation::make('scheduling.duration_unpriced', 'scheduling::errors.duration_unpriced');
         }
     }
 

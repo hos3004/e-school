@@ -27,6 +27,8 @@ return [
     'leave_transition_forbidden' => 'Le congé ne peut pas passer à cet état depuis son état actuel.',
     'profile_already_exists' => 'Ce compte possède déjà un profil du personnel.',
     'profile_already_terminated' => 'Ce membre du personnel a déjà été licencié.',
+    'rate_contract_missing' => 'Cet enseignant n’a aucun contrat en vigueur à la date d’effet demandée.',
+    'rate_effective_before_current' => 'La nouvelle date d’effet précède le tarif actuellement en vigueur pour la même portée.',
     'rate_overlaps' => 'Un tarif en cours chevauche déjà cette période pour la même portée.',
     'rate_scope_course_required' => 'Un cours doit être sélectionné lorsque la portée du tarif est un cours.',
     'rate_scope_program_required' => 'Un programme doit être sélectionné lorsque la portée du tarif est un programme.',

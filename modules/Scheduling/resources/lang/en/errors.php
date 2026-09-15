@@ -33,6 +33,7 @@ return [
     'teacher_not_assigned' => 'The teacher is not assigned to this group course for the schedule period.',
     'ends_before_start' => 'The schedule end date cannot precede its start date.',
     'duration_invalid' => 'The session duration is not approved.',
+    'duration_unpriced' => 'This duration is outside the organisation priced durations and the teacher has no active session rate. Record the session rate on the teacher profile first, or pick a priced duration.',
     'course_mode_mismatch' => 'The schedule target does not match the course session mode.',
     'group_not_eligible' => 'The group is inactive or not linked to the course program.',
     'student_not_schedulable' => 'The student has no enrollment that permits scheduling in this program.',

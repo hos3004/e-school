@@ -82,6 +82,7 @@ type Props = {
   backUrl: string;
   teaching?: {
     durations: number[];
+    durationLimits?: { min: number; max: number };
     timezone: string;
     startsOn: string;
   } | null;
@@ -1129,26 +1130,32 @@ export default function PeopleForm(props: Props) {
                           )}
                           error={fieldErrors.teaching_duration_minutes}
                         >
-                          <select
-                            id="teaching_duration_minutes"
-                            value={data.teaching_duration_minutes}
-                            className={fieldClass}
-                            onChange={(event) =>
-                              setData(
-                                "teaching_duration_minutes",
-                                event.target.value,
-                              )
-                            }
-                            aria-invalid={Boolean(
-                              fieldErrors.teaching_duration_minutes,
-                            )}
-                          >
-                            {props.teaching.durations.map((duration) => (
-                              <option key={duration} value={String(duration)}>
-                                {duration}
-                              </option>
-                            ))}
-                          </select>
+                          <>
+                            <input
+                              id="teaching_duration_minutes"
+                              type="number"
+                              list="teaching-session-durations"
+                              value={data.teaching_duration_minutes}
+                              className={fieldClass}
+                              min={props.teaching.durationLimits?.min ?? 5}
+                              max={props.teaching.durationLimits?.max ?? 240}
+                              step={1}
+                              onChange={(event) =>
+                                setData(
+                                  "teaching_duration_minutes",
+                                  event.target.value,
+                                )
+                              }
+                              aria-invalid={Boolean(
+                                fieldErrors.teaching_duration_minutes,
+                              )}
+                            />
+                            <datalist id="teaching-session-durations">
+                              {props.teaching.durations.map((duration) => (
+                                <option key={duration} value={String(duration)} />
+                              ))}
+                            </datalist>
+                          </>
                         </Field>
                         <Field
                           name="teaching_weekday"

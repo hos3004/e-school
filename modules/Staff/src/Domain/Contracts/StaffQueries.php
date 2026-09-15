@@ -20,6 +20,14 @@ interface StaffQueries
 
     public function isActiveTeacherForOrganization(string $organizationId, string $staffProfileId): bool;
 
+    /**
+     * هل يحتسب عقد المعلم الساري بهذا التاريخ أجرًا لكل حصة؟
+     *
+     * العقد الشهري يُدفع بالراتب لا بالحصة، فلا يُطالَب بسعر حصة عند الجدولة.
+     * غياب العقد يُعامل معاملة المحتاج للسعر: الحصة بلا عقد لا يُحتسب لها أجر.
+     */
+    public function requiresSessionRates(string $staffProfileId, CarbonImmutable $on): bool;
+
     public function hasDeclaredAvailability(string $staffProfileId, CarbonImmutable $on): bool;
 
     public function isAvailableDuring(

@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Console;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-/** إسناد معلم لكورس فردي: مواعيد أسبوعية ومدة ضمن مدد المؤسسة المعتمدة. */
+/** إسناد معلم لكورس فردي: مواعيد أسبوعية ومدة ضمن حدود المؤسسة. */
 final class AssignIndividualTeacherRequest extends FormRequest
 {
     /** @return array<string, mixed> */
@@ -19,7 +18,13 @@ final class AssignIndividualTeacherRequest extends FormRequest
             'weekly_slots' => ['required', 'array', 'min:1', 'max:7'],
             'weekly_slots.*.weekday' => ['required', 'integer', 'between:0,6'],
             'weekly_slots.*.start_time' => ['required', 'date_format:H:i'],
-            'duration_minutes' => ['required', 'integer', Rule::in((array) config('scheduling.individual_session_durations'))],
+            // مدة مخصّصة ضمن حدود المؤسسة؛ تسعير المدة خارج الكتالوج يتحقق منه
+            // ScheduleDefinitionValidator على سعر عقد المعلم.
+            'duration_minutes' => [
+                'required', 'integer',
+                'min:'.config('session_pay.min_duration'),
+                'max:'.config('session_pay.max_duration'),
+            ],
             'interval_weeks' => ['nullable', 'integer', 'min:1', 'max:8'],
             'timezone' => ['required', 'timezone'],
             'starts_on' => ['required', 'date_format:Y-m-d'],

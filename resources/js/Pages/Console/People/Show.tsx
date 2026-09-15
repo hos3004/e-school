@@ -6,6 +6,7 @@ import TeacherPrograms, { type TeacherPortfolioData } from "./TeacherPrograms";
 import TeacherQualifications, {
   type TeacherQualificationsData,
 } from "./TeacherQualifications";
+import TeacherRates, { type TeacherRatesData } from "./TeacherRates";
 import { Head, usePage } from "@inertiajs/react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import PersonMessaging, {
@@ -54,6 +55,7 @@ interface Props {
   programs?: StudentProgramsData | null;
   teaching?: TeacherPortfolioData | null;
   qualifications?: TeacherQualificationsData | null;
+  rates?: TeacherRatesData | null;
   messaging?: PersonMessagingData | null;
 }
 export default function PeopleShow({
@@ -71,6 +73,7 @@ export default function PeopleShow({
   programs,
   teaching,
   qualifications,
+  rates,
   messaging,
 }: Props) {
   const t = useI18n();
@@ -140,6 +143,7 @@ export default function PeopleShow({
       {qualifications && (
         <TeacherQualifications qualifications={qualifications} />
       )}
+      {rates && <TeacherRates rates={rates} />}
       {messaging && <PersonMessaging messaging={messaging} />}
       {placement && <PlacementActions placement={placement} />}
       <LifecycleActions lifecycle={lifecycle} />

@@ -28,6 +28,7 @@ return [
     'teacher_not_assigned' => 'L’enseignant n’est pas affecté à ce cours du groupe sur toute la période.',
     'ends_before_start' => 'La date de fin ne peut pas précéder la date de début.',
     'duration_invalid' => 'La durée de séance n’est pas autorisée.',
+    'duration_unpriced' => 'Cette durée sort des durées tarifées de l’établissement et l’enseignant n’a aucun tarif de séance en vigueur. Enregistrez d’abord le tarif sur la fiche de l’enseignant, ou choisissez une durée tarifée.',
     'course_mode_mismatch' => 'La cible ne correspond pas au mode de séance du cours.',
     'group_not_eligible' => 'Le groupe est inactif ou non lié au programme du cours.',
     'student_not_schedulable' => 'Aucune inscription de l’étudiant n’autorise cette planification.',

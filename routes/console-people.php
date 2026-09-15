@@ -10,6 +10,7 @@ use App\Http\Controllers\Console\StudentProgramController;
 use App\Http\Controllers\Console\StudentTeacherController;
 use App\Http\Controllers\Console\TeacherLifecycleController;
 use App\Http\Controllers\Console\TeacherQualificationController;
+use App\Http\Controllers\Console\TeacherRateController;
 use Illuminate\Support\Facades\Route;
 
 // Included inside the authenticated, enabled /manage group owned by the console shell.
@@ -86,6 +87,13 @@ Route::middleware('can:staff.contract.update')->group(function (): void {
         ->whereUlid('profile')->name('teachers.qualifications.store');
     Route::delete('teachers/{profile}/qualifications', [TeacherQualificationController::class, 'destroy'])
         ->whereUlid('profile')->name('teachers.qualifications.destroy');
+
+    /*
+     * سعر حصة المعلم: يُسجَّل من تاريخ سريان ويُقفل السابق عنده. لا تعديل
+     * لسعر قائم ولا حذف، فقيود الحصص الماضية تبقى بسعرها وقت الحصة.
+     */
+    Route::post('teachers/{profile}/rates', [TeacherRateController::class, 'store'])
+        ->whereUlid('profile')->name('teachers.rates.store');
 });
 
 /* قيد الطالب في برنامج إضافي — لا يحتاج مجموعة؛ المعلم يُسنَد بعده. */

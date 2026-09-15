@@ -98,6 +98,7 @@ export interface Defaults extends Omit<
   "staff_profile_id" | "weekly_slots"
 > {
   durations: number[];
+  duration_limits?: { min: number; max: number };
   max_interval: number;
   time_step: number;
 }

@@ -28,6 +28,7 @@ export default function Quran(props: QuranProps) {
     registration,
   } = props;
   const t = useI18n();
+  const durationLimits = defaults.duration_limits ?? { min: 5, max: 240 };
   const [search, setSearch] = useState(filters.search);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(
     filters.tab === "students" ? filters.student : null,
@@ -291,6 +292,11 @@ export default function Quran(props: QuranProps) {
       section={filters.phase}
     >
       <Head title={t("console_quran.title")} />
+      <datalist id="quran-session-durations">
+        {defaults.durations.map((duration) => (
+          <option key={duration} value={duration} />
+        ))}
+      </datalist>
       <div className="quran-workspace">
         <div className="quran-context">
           <span>
@@ -512,14 +518,19 @@ export default function Quran(props: QuranProps) {
                                     defaults={defaults}
                                     disabled={busy[student.id]}
                                   />
-                                  <select
+                                  <input
+                                    type="number"
                                     className="console-control quran-duration"
+                                    list="quran-session-durations"
                                     aria-label={
                                       t("console_quran.duration") +
                                       " " +
                                       student.name
                                     }
                                     value={value.duration_minutes}
+                                    min={durationLimits.min}
+                                    max={durationLimits.max}
+                                    step={1}
                                     onChange={(event) =>
                                       setDraft(student, {
                                         ...value,
@@ -528,13 +539,7 @@ export default function Quran(props: QuranProps) {
                                         ),
                                       })
                                     }
-                                  >
-                                    {defaults.durations.map((duration) => (
-                                      <option key={duration} value={duration}>
-                                        {duration} {t("console_quran.minute")}
-                                      </option>
-                                    ))}
-                                  </select>
+                                  />
                                 </>
                               ) : (
                                 displaySlots(student)

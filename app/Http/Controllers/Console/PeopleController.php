@@ -14,6 +14,7 @@ use App\Http\Controllers\Console\Support\TeacherPortfolioData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Console\PeopleStoreRequest;
 use App\Http\Requests\Console\PeopleUpdateRequest;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
@@ -41,9 +42,11 @@ use Modules\Organization\Domain\Models\Organization;
 use Modules\Scheduling\Application\Services\ConsoleIndividualTeacherService;
 use Modules\Staff\Application\Actions\CreateTeacherOnboardingAction;
 use Modules\Staff\Application\Actions\UpdateStaffProfileAction;
+use Modules\Staff\Domain\Contracts\StaffAdministrationQueries;
 use Modules\Staff\Domain\Enums\ContractBasis;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Modules\Staff\Domain\Models\StaffProfile;
+use Modules\Staff\Domain\ValueObjects\TeacherRateData;
 use Modules\Students\Application\Actions\CreateStudentOnboardingAction;
 use Modules\Students\Application\Actions\UpdateStudentProfileAction;
 use Modules\Students\Domain\Models\StudentProfile;
@@ -146,6 +149,7 @@ final class PeopleController extends Controller
              */
             'teaching' => $kind === 'students' && ($request->user()?->can('schedule.manage') ?? false) ? [
                 'durations' => array_values((array) config('scheduling.individual_session_durations')),
+                'durationLimits' => self::durationLimits(),
                 'timezone' => $consoleTimezone,
                 'startsOn' => now($consoleTimezone)->toDateString(),
             ] : null,
@@ -391,6 +395,7 @@ final class PeopleController extends Controller
                 : null,
             'qualifications' => $record instanceof StaffProfile
                 ? $this->qualifications($request, $record, $hub) : null,
+            'rates' => $record instanceof StaffProfile ? $this->rates($request, $record) : null,
             'hub' => $hub,
             'availabilityUrl' => $kind === 'teachers' && $request->user()?->can('staff.view') && $request->user()->can('staff.view.any') ? route('console.availability.index', ['teacher' => $record->id]) : null,
             'profileWorkspace' => app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),
@@ -597,7 +602,21 @@ final class PeopleController extends Controller
             'changeUrl' => $canSchedule ? route('console.students.teacher', ['profile' => $record->id]) : null,
             'removeUrl' => $canSchedule ? route('console.students.teacher.remove', ['profile' => $record->id]) : null,
             'durations' => array_values((array) config('scheduling.individual_session_durations')),
+            'durationLimits' => self::durationLimits(),
             'timezone' => (string) app(ConsoleContext::class)->forRequest($request)['timezone'],
+        ];
+    }
+
+    /**
+     * حدود مدة الحصة المخصّصة — نفس حدود إعدادات أجر الحصص التي يفرضها الخادم.
+     *
+     * @return array{min: int, max: int}
+     */
+    private static function durationLimits(): array
+    {
+        return [
+            'min' => (int) config('session_pay.min_duration'),
+            'max' => (int) config('session_pay.max_duration'),
         ];
     }
 
@@ -648,6 +667,72 @@ final class PeopleController extends Controller
             'availableCourses' => $available,
             'assignUrl' => route('console.teachers.qualifications.store', ['profile' => $record->id]),
             'revokeUrl' => route('console.teachers.qualifications.destroy', ['profile' => $record->id]),
+        ];
+    }
+
+    /**
+     * أسعار حصص المعلم: الساري وسجله، ومدخل تسجيل سعر جديد.
+     *
+     * السعر كان يُدخَل عند إنشاء الملف وحده فلا يُعدَّل بعده من أي شاشة، بينما
+     * حلّ الأجر يقرأ **السعر الساري بتاريخ الحصة**. العرض هنا يفصل الساري عن
+     * المنتهي كي يُقرأ أثر كل تغيير على الحصص القادمة وحدها.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function rates(Request $request, StaffProfile $record): ?array
+    {
+        $user = $request->user();
+
+        if ($record->trashed() || $user === null || !$user->can('staff.contract.view')) {
+            return null;
+        }
+
+        $organizationId = (string) $record->organization_id;
+        $today = CarbonImmutable::now('UTC')->toDateString();
+        $programs = $this->profiles->programOptions($organizationId);
+        $courses = $this->profiles->allCourseOptions($organizationId);
+        $administration = app(StaffAdministrationQueries::class);
+        $contract = null;
+
+        foreach ($administration->contractsForTeacher($organizationId, (string) $record->id) as $item) {
+            if ($item->effectiveFrom <= $today && ($item->effectiveTo === null || $item->effectiveTo > $today)) {
+                $contract = $item;
+
+                break;
+            }
+        }
+
+        $current = array_map(
+            static fn (TeacherRateData $rate): array => [
+                'id' => $rate->id,
+                'scope' => __('staff::enums.rate_scope.'.$rate->scope),
+                'target' => match (true) {
+                    $rate->courseId !== null => $courses[$rate->courseId] ?? $rate->courseId,
+                    $rate->programId !== null => $programs[$rate->programId] ?? $rate->programId,
+                    $rate->sessionType !== null => __('session_pay.'.$rate->sessionType),
+                    default => __('console_people.rates.all_sessions'),
+                },
+                'amount' => $rate->amountMajor.' '.$rate->currency,
+                'effective_from' => $rate->effectiveFrom,
+                'effective_to' => $rate->effectiveTo,
+                'active' => $rate->effectiveFrom <= $today
+                    && ($rate->effectiveTo === null || $rate->effectiveTo > $today),
+            ],
+            $administration->ratesForTeacher($organizationId, (string) $record->id),
+        );
+
+        return [
+            'current' => $current,
+            'programs' => $this->choices($programs),
+            'courses' => $this->choices($courses),
+            'contract' => $contract === null ? null : [
+                'basis' => __('staff::enums.contract_basis.'.$contract->basis),
+                'currency' => $contract->currency ?? (string) config('staff.currency.default', 'EGP'),
+            ],
+            'storeUrl' => $user->can('staff.contract.update')
+                ? route('console.teachers.rates.store', ['profile' => $record->id])
+                : null,
+            'today' => $today,
         ];
     }
 

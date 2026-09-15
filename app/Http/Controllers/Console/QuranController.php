@@ -171,6 +171,10 @@ final class QuranController extends Controller
                 'duration_minutes' => (int) config('scheduling.default_individual_duration_minutes'),
                 'interval_weeks' => 1, 'timezone' => $timezone, 'starts_on' => now($timezone)->toDateString(), 'ends_on' => '',
                 'durations' => array_values((array) config('scheduling.individual_session_durations')),
+                'duration_limits' => [
+                    'min' => (int) config('session_pay.min_duration'),
+                    'max' => (int) config('session_pay.max_duration'),
+                ],
                 'max_interval' => (int) config('scheduling.individual_quran.max_interval_weeks'),
                 'time_step' => (int) config('scheduling.booking_slots.interval_minutes') * 60,
             ],

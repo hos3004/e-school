@@ -11,6 +11,7 @@ use Modules\Staff\Domain\Enums\TeacherAvailabilityApprovalStatus;
 use Modules\Staff\Domain\Enums\TeacherLeaveStatus;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Domain\Models\TeacherAvailability;
+use Modules\Staff\Domain\Models\TeacherContract;
 use Modules\Staff\Domain\Models\TeacherLeave;
 
 final readonly class StaffQueryService implements StaffQueries
@@ -45,6 +46,18 @@ final readonly class StaffQueryService implements StaffQueries
             ->active()
             ->whereKey($staffProfileId)
             ->exists();
+    }
+
+    public function requiresSessionRates(string $staffProfileId, CarbonImmutable $on): bool
+    {
+        /** @var TeacherContract|null $contract */
+        $contract = TeacherContract::query()
+            ->forProfile($staffProfileId)
+            ->activeOn($on)
+            ->orderByDesc('effective_from')
+            ->first();
+
+        return $contract?->basis->requiresRates() ?? true;
     }
 
     public function hasDeclaredAvailability(string $staffProfileId, CarbonImmutable $on): bool

@@ -361,23 +361,27 @@ export default function QuranEditor({
             <label htmlFor={id + "duration"}>
               {t("console_quran.duration")}
             </label>
-            <select
+            <input
               id={id + "duration"}
+              type="number"
               className="console-control"
+              list={id + "durations"}
               value={value.duration_minutes}
+              min={defaults.duration_limits?.min ?? 5}
+              max={defaults.duration_limits?.max ?? 240}
+              step={1}
               onChange={(event) =>
                 onChange({
                   ...value,
                   duration_minutes: Number(event.target.value),
                 })
               }
-            >
+            />
+            <datalist id={id + "durations"}>
               {defaults.durations.map((duration) => (
-                <option key={duration} value={duration}>
-                  {duration}
-                </option>
+                <option key={duration} value={duration} />
               ))}
-            </select>
+            </datalist>
           </div>
           <div className="field">
             <label htmlFor={id + "interval"}>

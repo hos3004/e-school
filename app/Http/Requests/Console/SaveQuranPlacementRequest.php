@@ -6,7 +6,6 @@ namespace App\Http\Requests\Console;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class SaveQuranPlacementRequest extends FormRequest
 {
@@ -29,7 +28,13 @@ final class SaveQuranPlacementRequest extends FormRequest
             'application_id' => $this->isMethod('POST') ? ['nullable', 'ulid'] : ['prohibited'],
             'course_id' => ['prohibited'], 'group_id' => ['prohibited'], 'student_profile_id' => ['prohibited'],
             'staff_profile_id' => ['required', 'string', 'size:26'],
-            'duration_minutes' => ['required', 'integer', Rule::in((array) config('scheduling.individual_session_durations'))],
+            // مدة مخصّصة ضمن حدود المؤسسة؛ ما خرج عن كتالوج الأسعار يلزمه سعر
+            // ساري في عقد المعلم، ويتحقق منه ScheduleDefinitionValidator.
+            'duration_minutes' => [
+                'required', 'integer',
+                'min:'.config('session_pay.min_duration'),
+                'max:'.config('session_pay.max_duration'),
+            ],
             'interval_weeks' => ['required', 'integer', 'min:1', 'max:'.config('scheduling.individual_quran.max_interval_weeks')],
             'timezone' => ['required', 'timezone'],
             'starts_on' => ['required', 'date_format:Y-m-d', ...($this->isMethod('PATCH') || ($this->isMethod('GET') && $this->filled('schedule_id')) ? [] : ['after_or_equal:'.$today])],

@@ -27,6 +27,8 @@ return [
     'leave_transition_forbidden' => 'The leave cannot move to this state from its current one.',
     'profile_already_exists' => 'This account already has a staff profile.',
     'profile_already_terminated' => 'This staff member has already been terminated.',
+    'rate_contract_missing' => 'This teacher has no active contract on the requested effective date.',
+    'rate_effective_before_current' => 'The new effective date precedes the rate currently active for the same scope.',
     'rate_overlaps' => 'An active rate already overlaps this period for the same scope.',
     'rate_scope_course_required' => 'A course must be selected when the rate scope is a course.',
     'rate_scope_program_required' => 'A program must be selected when the rate scope is a program.',

@@ -60,7 +60,12 @@ final class PeopleStoreRequest extends FormRequest
             'preferred_language' => ['nullable', Rule::in(Locales::supported())],
             'notes' => ['nullable', 'string', 'max:5000'],
             'teaching_staff_profile_id' => [$teaching, 'string', 'size:26', 'required_with:teaching_weekday,teaching_start_time,teaching_starts_on'],
-            'teaching_duration_minutes' => [$teaching, 'integer', Rule::in((array) config('scheduling.individual_session_durations')), 'required_with:teaching_staff_profile_id'],
+            'teaching_duration_minutes' => [
+                $teaching, 'integer',
+                'min:'.config('session_pay.min_duration'),
+                'max:'.config('session_pay.max_duration'),
+                'required_with:teaching_staff_profile_id',
+            ],
             'teaching_weekday' => [$teaching, 'integer', 'between:0,6', 'required_with:teaching_start_time'],
             'teaching_start_time' => [$teaching, 'date_format:H:i', 'required_with:teaching_weekday'],
             'teaching_starts_on' => [$teaching, 'date_format:Y-m-d', 'required_with:teaching_start_time'],

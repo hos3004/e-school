@@ -32,6 +32,7 @@ export type StudentProgramsData = {
   changeUrl: string | null;
   removeUrl: string | null;
   durations: number[];
+  durationLimits?: { min: number; max: number };
   timezone: string;
 };
 
@@ -54,6 +55,7 @@ export default function StudentPrograms({
   programs: StudentProgramsData;
 }) {
   const t = useI18n();
+  const limits = programs.durationLimits ?? { min: 5, max: 240 };
   const [panel, setPanel] = useState<Panel | null>(null);
   const [teachers, setTeachers] = useState<Choice[]>([]);
   const [loading, setLoading] = useState(false);
@@ -494,19 +496,25 @@ export default function StudentPrograms({
                   <span className="block mb-2">
                     {t("console_people.programs.duration")}
                   </span>
-                  <select
+                  <input
+                    type="number"
                     className={field}
+                    list="individual-session-durations"
                     value={form.data.duration_minutes}
+                    min={limits.min}
+                    max={limits.max}
+                    step={1}
                     onChange={(event) =>
                       form.setData("duration_minutes", Number(event.target.value))
                     }
-                  >
+                    required
+                    aria-describedby="individual-duration-hint"
+                  />
+                  <datalist id="individual-session-durations">
                     {programs.durations.map((duration) => (
-                      <option key={duration} value={duration}>
-                        {duration}
-                      </option>
+                      <option key={duration} value={duration} />
                     ))}
-                  </select>
+                  </datalist>
                 </label>
                 <label className="block my-1">
                   <span className="block mb-2">
@@ -523,6 +531,12 @@ export default function StudentPrograms({
                   />
                 </label>
               </div>
+              <p id="individual-duration-hint" className="text-sm my-2">
+                {t("console_people.programs.duration_hint")
+                  .replace(":min", String(limits.min))
+                  .replace(":max", String(limits.max))
+                  .replace(":durations", programs.durations.join("، "))}
+              </p>
               {reasonField}
               {errors}
               {actions(
