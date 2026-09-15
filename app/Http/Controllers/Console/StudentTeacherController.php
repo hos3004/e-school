@@ -8,12 +8,20 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Console\AssignIndividualTeacherRequest;
 use App\Http\Requests\Console\ChangeIndividualTeacherRequest;
 use App\Http\Requests\Console\RemoveIndividualTeacherRequest;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
+use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Scheduling\Application\Services\ConsoleIndividualTeacherService;
+use Modules\Staff\Application\Actions\SupersedeTeacherRate;
+use Modules\Staff\Domain\Contracts\TeacherRateResolver;
+use Modules\Staff\Domain\Enums\RateScope;
 use Modules\Students\Domain\Models\StudentProfile;
+use Shared\Support\BusinessRuleViolation;
 
 /**
  * معلمو الكورسات الفردية للطالب: إسناد وتغيير وإزالة، من صفحة ملفه.
@@ -44,19 +52,33 @@ final class StudentTeacherController extends Controller
     {
         $student = $this->student($request, $profile);
 
-        $this->schedules->assignTeacher(
-            organizationId: (string) $student->organization_id,
-            studentProfileId: (string) $student->getKey(),
-            courseId: (string) $request->validated('course_id'),
-            staffProfileId: (string) $request->validated('staff_profile_id'),
-            weeklySlots: $request->weeklySlots(),
-            durationMinutes: (int) $request->validated('duration_minutes'),
-            intervalWeeks: (int) ($request->validated('interval_weeks') ?? 1),
-            timezone: (string) $request->validated('timezone'),
-            startsOn: (string) $request->validated('starts_on'),
-            actorId: (string) $request->user()?->getAuthIdentifier(),
-            reason: $request->reason(),
-        );
+        /*
+         * السعر قبل الإسناد: المدة المخصّصة لا يقبلها حارس الجدولة بلا سعر
+         * ساري للمعلم. المعاملة تضم الاثنين فلا يبقى سعر لإسناد لم يتم.
+         */
+        DB::transaction(function () use ($request, $student): void {
+            $this->recordRate(
+                $request,
+                (string) $student->organization_id,
+                (string) $request->validated('course_id'),
+                (string) $request->validated('staff_profile_id'),
+                (string) $request->validated('starts_on'),
+            );
+
+            $this->schedules->assignTeacher(
+                organizationId: (string) $student->organization_id,
+                studentProfileId: (string) $student->getKey(),
+                courseId: (string) $request->validated('course_id'),
+                staffProfileId: (string) $request->validated('staff_profile_id'),
+                weeklySlots: $request->weeklySlots(),
+                durationMinutes: (int) $request->validated('duration_minutes'),
+                intervalWeeks: (int) ($request->validated('interval_weeks') ?? 1),
+                timezone: (string) $request->validated('timezone'),
+                startsOn: (string) $request->validated('starts_on'),
+                actorId: (string) $request->user()?->getAuthIdentifier(),
+                reason: $request->reason(),
+            );
+        });
 
         return back()->with('success', __('console_people.teaching.assigned'));
     }
@@ -64,15 +86,32 @@ final class StudentTeacherController extends Controller
     public function update(ChangeIndividualTeacherRequest $request, string $profile): RedirectResponse
     {
         $student = $this->student($request, $profile);
+        $scheduleId = (string) $request->validated('schedule_id');
 
-        $this->schedules->changeTeacher(
-            organizationId: (string) $student->organization_id,
-            studentProfileId: (string) $student->getKey(),
-            scheduleId: (string) $request->validated('schedule_id'),
-            staffProfileId: (string) $request->validated('staff_profile_id'),
-            actorId: (string) $request->user()?->getAuthIdentifier(),
-            reason: $request->reason(),
-        );
+        DB::transaction(function () use ($request, $student, $scheduleId): void {
+            // كورس الجدول يأتي من الجدول نفسه لا من العميل.
+            $schedule = collect($this->schedules->forStudent(
+                (string) $student->organization_id,
+                (string) $student->getKey(),
+            ))->firstWhere('id', $scheduleId);
+
+            $this->recordRate(
+                $request,
+                (string) $student->organization_id,
+                (string) ($schedule['course_id'] ?? ''),
+                (string) $request->validated('staff_profile_id'),
+                CarbonImmutable::now('UTC')->toDateString(),
+            );
+
+            $this->schedules->changeTeacher(
+                organizationId: (string) $student->organization_id,
+                studentProfileId: (string) $student->getKey(),
+                scheduleId: $scheduleId,
+                staffProfileId: (string) $request->validated('staff_profile_id'),
+                actorId: (string) $request->user()?->getAuthIdentifier(),
+                reason: $request->reason(),
+            );
+        });
 
         return back()->with('success', __('console_people.teaching.changed'));
     }
@@ -90,6 +129,68 @@ final class StudentTeacherController extends Controller
         );
 
         return back()->with('success', __('console_people.teaching.removed'));
+    }
+
+    /**
+     * سعر حصة المعلم في هذا الكورس، حين يُرسله المستخدم مع الإسناد أو التغيير.
+     *
+     * السعر المرسل مطابقًا للسعر الساري لا يُعاد تسجيله: الحقل يصل معبّأً
+     * بالسعر الحالي، فحفظ الجدول وحده كان سينشئ سطرًا جديدًا بلا تغيير.
+     */
+    private function recordRate(
+        AssignIndividualTeacherRequest|ChangeIndividualTeacherRequest $request,
+        string $organizationId,
+        string $courseId,
+        string $staffProfileId,
+        string $effectiveFrom,
+    ): void {
+        $amount = $request->validated('session_rate_major');
+
+        if ($amount === null || (string) $amount === '') {
+            return;
+        }
+
+        $course = $courseId === ''
+            ? null
+            : (app(AcademicCatalogQueries::class)->coursesByIds($organizationId, [$courseId])[$courseId] ?? null);
+
+        if ($course === null || $course->programId === null) {
+            throw ValidationException::withMessages([
+                'session_rate_major' => __('console_people.rates.course_unavailable'),
+            ]);
+        }
+
+        $requested = number_format((float) $amount, 2, '.', '');
+        $current = app(TeacherRateResolver::class)->resolve(
+            $staffProfileId,
+            CarbonImmutable::parse($effectiveFrom, 'UTC'),
+            $course->programId,
+            $courseId,
+            'individual',
+        );
+
+        if ($current !== null
+            && $current['scope'] === RateScope::Course
+            && number_format((float) $current['money']->toMajor(), 2, '.', '') === $requested) {
+            return;
+        }
+
+        try {
+            app(SupersedeTeacherRate::class)->execute(
+                staffProfileId: $staffProfileId,
+                scope: RateScope::Course,
+                amountMajor: $requested,
+                effectiveFrom: $effectiveFrom,
+                programId: $course->programId,
+                courseId: $courseId,
+                actorId: (string) $request->user()?->getAuthIdentifier(),
+                reason: $request->reason(),
+            );
+        } catch (BusinessRuleViolation $violation) {
+            throw ValidationException::withMessages([
+                'session_rate_major' => $violation->getMessage(),
+            ]);
+        }
     }
 
     private function student(Request $request, string $profile): StudentProfile

@@ -4,6 +4,12 @@ import { useI18n } from "@/lib/i18n";
 
 type Choice = { value: string; label: string };
 
+type TeacherChoice = Choice & {
+  rate_major: string | null;
+  currency: string;
+  requires_rate: boolean;
+};
+
 export type StudentEnrollment = {
   id: string;
   program: string;
@@ -57,7 +63,7 @@ export default function StudentPrograms({
   const t = useI18n();
   const limits = programs.durationLimits ?? { min: 5, max: 240 };
   const [panel, setPanel] = useState<Panel | null>(null);
-  const [teachers, setTeachers] = useState<Choice[]>([]);
+  const [teachers, setTeachers] = useState<TeacherChoice[]>([]);
   const [loading, setLoading] = useState(false);
   const form = useForm({
     program_id: "",
@@ -69,6 +75,7 @@ export default function StudentPrograms({
     interval_weeks: 1,
     timezone: programs.timezone,
     starts_on: new Date().toISOString().slice(0, 10),
+    session_rate_major: "",
     reason: "",
   });
 
@@ -111,6 +118,54 @@ export default function StudentPrograms({
         rows={2}
       />
     </label>
+  );
+
+  const selectedTeacher = teachers.find(
+    (option) => option.value === form.data.staff_profile_id,
+  );
+
+  const chooseTeacher = (value: string) => {
+    form.setData("staff_profile_id", value);
+    form.setData(
+      "session_rate_major",
+      teachers.find((option) => option.value === value)?.rate_major ?? "",
+    );
+  };
+
+  /** أجر المعلم عن الحصة — يظهر ما إن يُختار المعلم، ويُحفظ مع الإسناد. */
+  const rateField = selectedTeacher && (
+    <div className="my-3">
+      <label className="block">
+        <span className="block mb-2">
+          {t("console_people.programs.session_rate")}
+          {" (" + selectedTeacher.currency + ")"}
+        </span>
+        <input
+          type="number"
+          className={field}
+          value={form.data.session_rate_major}
+          min="0.01"
+          step="0.01"
+          onChange={(event) =>
+            form.setData("session_rate_major", event.target.value)
+          }
+        />
+      </label>
+      <p className="text-sm my-2">
+        {!selectedTeacher.requires_rate
+          ? t("console_people.programs.rate_not_needed")
+          : selectedTeacher.rate_major === null
+            ? t("console_people.programs.no_rate")
+            : t("console_people.programs.current_rate") +
+              " " +
+              selectedTeacher.rate_major +
+              " " +
+              selectedTeacher.currency}
+      </p>
+      <p className="text-sm my-2">
+        {t("console_people.programs.session_rate_hint")}
+      </p>
+    </div>
   );
 
   const slot = form.data.weekly_slots[0] ?? { weekday: 0, start_time: "16:00" };
@@ -323,9 +378,7 @@ export default function StudentPrograms({
                   <select
                     className={field}
                     value={form.data.staff_profile_id}
-                    onChange={(event) =>
-                      form.setData("staff_profile_id", event.target.value)
-                    }
+                    onChange={(event) => chooseTeacher(event.target.value)}
                     required
                   >
                     <option value="">
@@ -342,6 +395,7 @@ export default function StudentPrograms({
                       ))}
                   </select>
                 </label>
+                {rateField}
                 {reasonField}
                 {errors}
                 {actions(
@@ -431,9 +485,7 @@ export default function StudentPrograms({
                 <select
                   className={field}
                   value={form.data.staff_profile_id}
-                  onChange={(event) =>
-                    form.setData("staff_profile_id", event.target.value)
-                  }
+                  onChange={(event) => chooseTeacher(event.target.value)}
                   required
                   disabled={form.data.course_id === ""}
                 >
@@ -531,6 +583,7 @@ export default function StudentPrograms({
                   />
                 </label>
               </div>
+              {rateField}
               <p id="individual-duration-hint" className="text-sm my-2">
                 {t("console_people.programs.duration_hint")
                   .replace(":min", String(limits.min))

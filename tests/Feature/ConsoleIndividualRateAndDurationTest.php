@@ -209,6 +209,73 @@ final class ConsoleIndividualRateAndDurationTest extends TestCase
         $this->assertDatabaseCount('teacher_rates', 0);
     }
 
+    public function test_the_assignment_form_carries_each_teacher_rate(): void
+    {
+        $student = $this->student();
+        $teacher = $this->teacher();
+
+        $this->actingAs($this->admin(), 'web')
+            ->getJson('/manage/students/'.$student->id.'/teacher-options?course_id='.$this->courseId)
+            ->assertOk()
+            ->assertJsonPath('teachers.0.value', $teacher)
+            ->assertJsonPath('teachers.0.rate_major', null)
+            ->assertJsonPath('teachers.0.requires_rate', true);
+
+        $this->post('/manage/teachers/'.$teacher.'/rates', [
+            'scope' => RateScope::Course->value,
+            'course_id' => $this->courseId,
+            'amount_major' => '45.50',
+            'effective_from' => CarbonImmutable::now('UTC')->toDateString(),
+            'reason' => 'سعر حصة القرآن الفردي',
+        ])->assertSessionHasNoErrors();
+
+        $this->getJson('/manage/students/'.$student->id.'/teacher-options?course_id='.$this->courseId)
+            ->assertOk()->assertJsonPath('teachers.0.rate_major', '45.50');
+    }
+
+    public function test_the_rate_sent_with_the_assignment_prices_the_custom_duration(): void
+    {
+        $student = $this->student();
+        $teacher = $this->teacher();
+
+        $this->actingAs($this->admin(), 'web')->post(
+            '/manage/students/'.$student->id.'/teacher',
+            [...$this->assignment($teacher), 'session_rate_major' => '52.00'],
+        )->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame(self::CUSTOM_DURATION, (int) Schedule::query()
+            ->where('student_profile_id', (string) $student->id)->value('duration_minutes'));
+        $this->assertDatabaseHas('teacher_rates', [
+            'scope' => RateScope::Course->value,
+            'course_id' => $this->courseId,
+            'amount' => 5200,
+            'effective_to' => null,
+        ]);
+    }
+
+    /** الحقل يصل معبّأً بالسعر الساري، فإعادة إرساله كما هو لا تنشئ سطرًا جديدًا. */
+    public function test_resending_the_same_rate_records_nothing_new(): void
+    {
+        $student = $this->student();
+        $teacher = $this->teacher();
+        $admin = $this->admin();
+
+        $this->actingAs($admin, 'web')->post('/manage/teachers/'.$teacher.'/rates', [
+            'scope' => RateScope::Course->value,
+            'course_id' => $this->courseId,
+            'amount_major' => '45.50',
+            'effective_from' => CarbonImmutable::now('UTC')->toDateString(),
+            'reason' => 'السعر المتفق عليه',
+        ])->assertSessionHasNoErrors();
+
+        $this->post(
+            '/manage/students/'.$student->id.'/teacher',
+            [...$this->assignment($teacher), 'session_rate_major' => '45.50'],
+        )->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame(1, DB::table('teacher_rates')->count());
+    }
+
     /** @return array<string, mixed> */
     private function assignment(string $teacher, int $duration = self::CUSTOM_DURATION): array
     {

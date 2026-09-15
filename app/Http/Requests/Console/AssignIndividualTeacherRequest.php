@@ -25,6 +25,9 @@ final class AssignIndividualTeacherRequest extends FormRequest
                 'min:'.config('session_pay.min_duration'),
                 'max:'.config('session_pay.max_duration'),
             ],
+            // سعر حصة المعلم في هذا الكورس — اختياري؛ يُسجَّل من تاريخ البداية
+            // ويُقفل سعره السابق عنده، فلا يمس حصة ماضية.
+            'session_rate_major' => ['nullable', 'numeric', 'min:0.01', 'decimal:0,2'],
             'interval_weeks' => ['nullable', 'integer', 'min:1', 'max:8'],
             'timezone' => ['required', 'timezone'],
             'starts_on' => ['required', 'date_format:Y-m-d'],

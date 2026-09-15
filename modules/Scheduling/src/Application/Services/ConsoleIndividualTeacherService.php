@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Scheduling\Application\Services;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
@@ -16,6 +17,7 @@ use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Scheduling\Domain\ValueObjects\WeeklyRecurrence;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 use Modules\Staff\Domain\Contracts\TeacherQualificationQueries;
+use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -41,6 +43,7 @@ final readonly class ConsoleIndividualTeacherService
         private AcademicCatalogQueries $academics,
         private StaffQueries $staff,
         private TeacherQualificationQueries $qualifications,
+        private TeacherRateResolver $rates,
         private AuditRecorder $audit,
     ) {}
 
@@ -98,9 +101,12 @@ final readonly class ConsoleIndividualTeacherService
     }
 
     /**
-     * المعلمون المؤهلون لهذا الكورس والعاملون في المؤسسة.
+     * المعلمون المؤهلون لهذا الكورس والعاملون في المؤسسة، ومعهم سعر حصتهم.
      *
-     * @return list<array{value: string, label: string}>
+     * السعر يُعرض عند الإسناد لأن المدة المخصّصة لا تُقبل بلا سعر ساري: إظهاره
+     * هنا يمنع اكتشاف النقص عند الحفظ. `rate_major` قيمة الحقل لا نصًّا معروضًا.
+     *
+     * @return list<array{value: string, label: string, rate_major: string|null, currency: string, requires_rate: bool}>
      */
     public function teacherOptions(string $organizationId, string $courseId): array
     {
@@ -109,9 +115,29 @@ final readonly class ConsoleIndividualTeacherService
             fn (string $staffProfileId): bool => $this->staff->isActiveTeacherForOrganization($organizationId, $staffProfileId),
         ));
         $names = $this->staff->namesForProfiles($organizationId, $qualified);
+        $course = $this->academics->coursesByIds($organizationId, [$courseId])[$courseId] ?? null;
+        $today = CarbonImmutable::now('UTC');
 
         return array_values(array_map(
-            static fn (string $id): array => ['value' => $id, 'label' => $names[$id] ?? $id],
+            function (string $id) use ($names, $course, $courseId, $today): array {
+                $rate = $course?->programId === null ? null : $this->rates->resolve(
+                    $id,
+                    $today,
+                    $course->programId,
+                    $courseId,
+                    'individual',
+                );
+
+                return [
+                    'value' => $id,
+                    'label' => $names[$id] ?? $id,
+                    'rate_major' => $rate === null ? null : $rate['money']->toMajor(),
+                    'currency' => $rate === null
+                        ? (string) config('staff.currency.default', 'EGP')
+                        : $rate['money']->currency,
+                    'requires_rate' => $this->staff->requiresSessionRates($id, $today),
+                ];
+            },
             array_values(array_filter($qualified, static fn (string $id): bool => isset($names[$id]))),
         ));
     }
