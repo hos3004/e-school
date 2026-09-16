@@ -1232,6 +1232,21 @@
   background: #edf6f1;
   border-color: #bcd9ca;
 }
+.console-shell .console-toolbar-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border: 1px solid var(--console-line);
+  border-radius: 7px;
+  background: #fff;
+  max-width: 100%;
+}
+.console-shell .console-toolbar-suggestions li {
+  padding: 2px 4px;
+}
 .console-shell .catalog-search {
   flex: 1;
   min-width: 180px;

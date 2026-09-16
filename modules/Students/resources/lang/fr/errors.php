@@ -21,6 +21,7 @@ return [
     'registration_duplicate_blocked' => 'Une demande d’inscription antérieure correspond à ces informations.',
     'registration_user_account_required' => 'La demande doit être liée à un compte utilisateur avant son acceptation.',
     'registration_student_profile_exists' => 'Un profil étudiant est déjà lié à ce compte.',
+    'registration_student_profile_not_found' => 'Le profil étudiant sélectionné est introuvable ou n\'appartient pas à cette organisation.',
     'registration_rejection_reason_required' => 'Un motif de rejet est requis.',
     'registration_acceptance_reason_required' => 'Un motif d’acceptation est requis.',
     'registration_form_unavailable' => 'Ce formulaire d’inscription n’est plus disponible.',

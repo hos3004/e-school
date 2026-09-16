@@ -23,6 +23,7 @@ return [
     'registration_duplicate_blocked' => 'A previous registration application matches these details.',
     'registration_user_account_required' => 'The application must be linked to a user account before acceptance.',
     'registration_student_profile_exists' => 'A student profile is already linked to this account.',
+    'registration_student_profile_not_found' => 'The selected student profile was not found or does not belong to this organization.',
     'registration_rejection_reason_required' => 'A rejection reason is required.',
     'registration_acceptance_reason_required' => 'An acceptance reason is required.',
     'direct_profile_creation_disabled' => 'A student profile cannot be created directly; accept the registration application first.',
