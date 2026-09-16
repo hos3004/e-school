@@ -1,6 +1,6 @@
 import { Head, Link, router } from "@inertiajs/react";
 import axios from "axios";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import { useI18n } from "@/lib/i18n";
 import type {
@@ -317,6 +317,7 @@ export default function Placement({
       {!courseId && (
         <div className="catalog-tip">{p("choose_course_help")}</div>
       )}
+      {courseId && <ExistingStudentPlacer courseId={courseId} />}
       <section className="panel">
         <div className="toolbar">
           <div className="filters">
@@ -739,5 +740,153 @@ export default function Placement({
       </section>
       <div className="catalog-tip">{p("final_check")}</div>
     </ConsoleLayout>
+  );
+}
+
+/**
+ * إضافة طالب له حساب وملف بالفعل إلى قائمة انتظار هذا الكورس مباشرة، دون
+ * المرور بنموذج تسجيل عام. التسكين الفعلي في مجموعة يبقى من الجدول أسفله
+ * بعد ظهور الطالب فيه.
+ */
+function ExistingStudentPlacer({ courseId }: { courseId: string }) {
+  const t = useI18n();
+  const p = (key: string) => t("console_registration.placement." + key);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ id: string; name: string }[]>([]);
+  const [studentId, setStudentId] = useState("");
+  const [studentName, setStudentName] = useState("");
+  const [reason, setReason] = useState("");
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchToken = useRef(0);
+
+  function search(value: string) {
+    setQuery(value);
+    setStudentId("");
+    setStudentName("");
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (value.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+    const token = ++searchToken.current;
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const { data } = await axios.get<{
+          data: { id: string; name: string }[];
+        }>("/manage/placement/students/search", { params: { q: value } });
+        if (token === searchToken.current) setResults(data.data);
+      } catch {
+        if (token === searchToken.current) setResults([]);
+      } finally {
+        if (token === searchToken.current) setSearching(false);
+      }
+    }, 300);
+  }
+
+  function pick(row: { id: string; name: string }) {
+    setStudentId(row.id);
+    setStudentName(row.name);
+    setQuery(row.name);
+    setResults([]);
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!studentId || !reason.trim() || busy) return;
+    setBusy(true);
+    setError("");
+    router.post(
+      "/manage/placement/existing-student",
+      { student_profile_id: studentId, course_id: courseId, reason },
+      {
+        onError: (errors) => {
+          setError(Object.values(errors).flat().join(" · "));
+        },
+        onSuccess: () => {
+          setQuery("");
+          setStudentId("");
+          setStudentName("");
+          setReason("");
+          setOpen(false);
+        },
+        onFinish: () => setBusy(false),
+      },
+    );
+  }
+
+  return (
+    <section className="panel">
+      <button
+        type="button"
+        className="console-button"
+        onClick={() => setOpen((value) => !value)}
+      >
+        {p("existing_student")}
+      </button>
+      {open && (
+        <form
+          className="console-toolbar console-filter-bar console-filter-mobile-pairs"
+          onSubmit={submit}
+        >
+          <div className="catalog-tip">{p("existing_student_help")}</div>
+          <label className="field console-filter-mobile-full">
+            <span>{p("existing_student_search")}</span>
+            <input
+              className="console-control"
+              value={query}
+              placeholder={p("existing_student_search_placeholder")}
+              onChange={(e) => search(e.target.value)}
+              autoComplete="off"
+            />
+          </label>
+          {!studentId && query.trim().length >= 2 && !searching && (
+            <ul className="console-toolbar-suggestions">
+              {results.length === 0 && (
+                <li>
+                  <span>{p("existing_student_no_matches")}</span>
+                </li>
+              )}
+              {results.map((row) => (
+                <li key={row.id}>
+                  <button
+                    type="button"
+                    className="inline-link"
+                    onClick={() => pick(row)}
+                  >
+                    {row.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {studentId && <span className="pill current">{studentName}</span>}
+          <label className="field">
+            <span>{p("existing_student_reason")}</span>
+            <input
+              className="console-control"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </label>
+          <button
+            className="console-button primary"
+            type="submit"
+            disabled={!studentId || !reason.trim() || busy}
+          >
+            {p("existing_student_add")}
+          </button>
+          {error && (
+            <span role="alert" className="console-error">
+              {error}
+            </span>
+          )}
+        </form>
+      )}
+    </section>
   );
 }

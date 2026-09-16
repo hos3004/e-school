@@ -7,9 +7,11 @@ namespace App\Http\Controllers\Console;
 use App\Application\Actions\BulkAssignStudentsToGroupAction;
 use App\Http\Controllers\Console\Support\ConsoleContext;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Console\DirectPlacementRequest;
 use App\Http\Requests\Console\PlacementIndexRequest;
 use App\Http\Requests\Console\PlacementRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -19,7 +21,9 @@ use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Scheduling\Application\Queries\GroupPlacementScheduleQueries;
 use Modules\Staff\Domain\Contracts\StaffQueries;
+use Modules\Students\Application\Actions\EnrollExistingStudentInWaitlistAction;
 use Modules\Students\Application\Services\ConsoleRegistrationService;
+use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
 use Shared\Support\BusinessRuleViolation;
 
 final class PlacementController extends Controller
@@ -32,6 +36,8 @@ final class PlacementController extends Controller
         private GroupPlacementScheduleQueries $schedules,
         private BulkAssignStudentsToGroupAction $place,
         private ConsoleContext $context,
+        private StudentDirectoryQueries $students,
+        private EnrollExistingStudentInWaitlistAction $enrollExisting,
     ) {}
 
     public function index(PlacementIndexRequest $request): Response
@@ -106,6 +112,54 @@ final class PlacementController extends Controller
             'applications' => $rows,
             'groups' => $this->groupData($organizationId, $course['program_id'], $course['id'], $this->groupIds($rows)),
         ]);
+    }
+
+    /** يبحث في الطلاب النشطين للمؤسسة لأجل مُحدِّد إضافة طالب موجود لقائمة الانتظار. */
+    public function searchStudents(Request $request): JsonResponse
+    {
+        $organizationId = $this->organizationId($request);
+        $search = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($search) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        $names = $this->students->searchNames($organizationId, $search, 15);
+
+        return response()->json([
+            'data' => array_map(
+                static fn (string $id, string $name): array => ['id' => $id, 'name' => $name],
+                array_keys($names),
+                array_values($names),
+            ),
+        ]);
+    }
+
+    /**
+     * يضيف طالبًا له حساب وملف بالفعل إلى قائمة انتظار كورس مباشرة، دون
+     * رحلة التسجيل الذاتي — التسكين الفعلي في مجموعة يبقى من نفس الشاشة.
+     */
+    public function enrollExisting(DirectPlacementRequest $request): RedirectResponse
+    {
+        $organizationId = $this->organizationId($request);
+        $data = $request->validated();
+        $course = $this->course($organizationId, $data['course_id']);
+
+        try {
+            $this->enrollExisting->execute(
+                organizationId: $organizationId,
+                studentProfileId: $data['student_profile_id'],
+                programId: $course['program_id'],
+                courseId: $course['id'],
+                actorId: (string) $request->user()?->getAuthIdentifier(),
+                reason: $data['reason'],
+            );
+        } catch (BusinessRuleViolation $exception) {
+            throw ValidationException::withMessages(['form' => $exception->getMessage()]);
+        }
+
+        return redirect()->route('console.placement.index', ['course' => $course['id']])
+            ->with('success', __('console_registration.placement.existing_student_added'));
     }
 
     /** @return list<array<string, string>> */

@@ -23,6 +23,7 @@ return [
     'registration_duplicate_blocked' => 'يوجد طلب تسجيل سابق مطابق لهذه البيانات.',
     'registration_user_account_required' => 'يجب ربط الطلب بحساب مستخدم قبل القبول.',
     'registration_student_profile_exists' => 'يوجد بالفعل ملف طالب مرتبط بهذا الحساب.',
+    'registration_student_profile_not_found' => 'ملف الطالب المحدد غير موجود أو لا ينتمي لهذه المؤسسة.',
     'registration_rejection_reason_required' => 'سبب رفض طلب التسجيل إلزامي.',
     'registration_acceptance_reason_required' => 'سبب قبول طلب التسجيل إلزامي.',
     'direct_profile_creation_disabled' => 'لا يمكن إنشاء ملف طالب مباشرة؛ يجب قبول طلب التسجيل أولًا.',

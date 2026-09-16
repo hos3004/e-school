@@ -19,6 +19,8 @@ Route::middleware('can:student.create')->group(function (): void {
 
 Route::middleware(['can:student.view.any', 'can:enrollment.create', 'can:group.manage'])->group(function (): void {
     Route::get('/placement', [PlacementController::class, 'index'])->name('placement.index');
+    Route::get('/placement/students/search', [PlacementController::class, 'searchStudents'])->name('placement.students.search');
+    Route::post('/placement/existing-student', [PlacementController::class, 'enrollExisting'])->name('placement.existing-student');
     Route::post('/placement/preflight', [PlacementController::class, 'preflight'])->name('placement.preflight');
     Route::post('/placement', [PlacementController::class, 'store'])->name('placement.store');
 });
