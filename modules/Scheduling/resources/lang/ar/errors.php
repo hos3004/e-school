@@ -57,4 +57,9 @@ return [
     'schedule_change_expired' => 'انقضت مهلة الرد على طلب تغيير الموعد.',
     'schedule_change_response_not_allowed' => 'لا يوجد لك رد معلّق على طلب تغيير الموعد هذا.',
     'schedule_change_invalid_transition' => 'لا يمكن نقل طلب تغيير الموعد من :from إلى :to.',
+    'extra_session_target_invalid' => 'اختر مجموعة أو طالبًا واحدًا فقط للحصة الإضافية.',
+    'invalid_duration' => 'مدة الحصة يجب أن تكون أكبر من صفر.',
+    'extra_session_payroll_conflict' => 'لا يمكن تحديد سعر مخصّص لحصة معفاة من المستحقات.',
+    'invalid_payroll_override' => 'السعر المخصّص يجب أن يكون رقمًا موجبًا.',
+    'group_has_no_active_members' => 'لا يوجد طلاب نشطون في هذه المجموعة يمكن جدولتهم.',
 ];

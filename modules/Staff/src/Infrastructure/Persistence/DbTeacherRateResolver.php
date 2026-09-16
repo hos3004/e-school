@@ -23,11 +23,7 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
         ?string $sessionType = null,
         ?int $durationMinutes = null,
     ): ?array {
-        $contract = TeacherContract::query()
-            ->forProfile($staffProfileId)
-            ->activeOn($sessionDate)
-            ->orderByDesc('effective_from')
-            ->first();
+        $contract = $this->findActiveContract($staffProfileId, $sessionDate);
 
         if ($contract === null) {
             return null;
@@ -132,11 +128,7 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
             return null;
         }
 
-        $contract = TeacherContract::query()
-            ->forProfile($staffProfileId)
-            ->activeOn($sessionDate)
-            ->orderByDesc('effective_from')
-            ->first();
+        $contract = $this->findActiveContract($staffProfileId, $sessionDate);
 
         if ($contract === null
             || !$contract->basis->requiresBaseAmount()
@@ -163,5 +155,30 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
             'contract_id' => (string) $contract->getKey(),
             'contract_basis' => $contract->basis->value,
         ];
+    }
+
+    public function activeContract(
+        string $staffProfileId,
+        CarbonImmutable $sessionDate,
+    ): ?array {
+        $contract = $this->findActiveContract($staffProfileId, $sessionDate);
+
+        if ($contract === null) {
+            return null;
+        }
+
+        return [
+            'contract_id' => (string) $contract->getKey(),
+            'contract_basis' => $contract->basis->value,
+        ];
+    }
+
+    private function findActiveContract(string $staffProfileId, CarbonImmutable $sessionDate): ?TeacherContract
+    {
+        return TeacherContract::query()
+            ->forProfile($staffProfileId)
+            ->activeOn($sessionDate)
+            ->orderByDesc('effective_from')
+            ->first();
     }
 }

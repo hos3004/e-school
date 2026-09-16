@@ -33,6 +33,10 @@ final readonly class SessionPayrollFacts
         public bool $hasApprovedTeacherApology,
         /** يوجد مشارك قدّم اعتذار طالب مسجّلًا على الحصة. */
         public bool $hasStudentApology,
+        /** حصة بلا مستحقات إطلاقًا — قرار إداري وقت إنشائها؛ لا قيدة تُنشأ لها مهما كانت نتيجتها. */
+        public bool $payrollExempt = false,
+        /** سعر يدوي بوحدات العملة الصغرى يحل محل محلّل السعر التلقائي لهذه الحصة فقط. */
+        public ?int $payrollRateOverrideMinorUnits = null,
     ) {}
 
     public function isMakeup(): bool

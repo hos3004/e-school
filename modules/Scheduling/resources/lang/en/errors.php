@@ -57,4 +57,9 @@ return [
     'schedule_change_expired' => 'The response window for the schedule change request has elapsed.',
     'schedule_change_response_not_allowed' => 'You have no pending response on this schedule change request.',
     'schedule_change_invalid_transition' => 'A schedule change request cannot move from :from to :to.',
+    'extra_session_target_invalid' => 'Choose either a group or a single student for the extra session.',
+    'invalid_duration' => 'The session duration must be greater than zero.',
+    'extra_session_payroll_conflict' => 'A custom price cannot be set for a session exempt from payroll.',
+    'invalid_payroll_override' => 'The custom price must be a positive amount.',
+    'group_has_no_active_members' => 'This group has no active students who can be scheduled.',
 ];
