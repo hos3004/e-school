@@ -117,6 +117,7 @@ return [
     'copy_student_link_done' => 'Lien copié',
     'copy_student_link_failed' => 'Échec de la copie. Copiez le lien manuellement.',
     'student_link_help' => 'Un lien de secours à envoyer manuellement à l’élève qui ne peut pas se connecter. Il ouvre le cours à son nom et enregistre sa présence, et expire avec le cours. Ne l’envoyez à personne d’autre.',
+    'persistent_student_link_notice' => 'Lien permanent pour cet élève sur ce planning — valable pour chaque prochaine séance ; envoyez-le une seule fois. Ne le partagez avec personne d’autre ; seul un administrateur peut le régénérer en cas de fuite.',
     'join_window' => 'L’accès ouvre à :',
     'watch_recording' => 'Voir l’enregistrement',
     'requests_recordings' => 'Reports, absences et enregistrements',

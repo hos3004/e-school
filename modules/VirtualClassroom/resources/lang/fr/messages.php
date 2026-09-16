@@ -36,4 +36,7 @@ return [
     'webhook_ended_reason' => 'Le fournisseur a signalé la fin de la classe.',
     'scheduled_provision_reason' => 'Création automatique de la classe avant la séance.',
     'provisioning_summary' => 'Classes prêtes : :provisioned ; échecs : :failed.',
+    'persistent_student_link_audit_reason' => 'L’élève est entré via le lien permanent lié à son planning.',
+    'link_rotation_reason' => 'Régénération du lien permanent de ce planning pour des raisons de sécurité.',
+    'no_session_now' => 'Aucune séance accessible sur ce planning pour le moment.',
 ];

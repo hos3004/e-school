@@ -41,4 +41,7 @@ return [
     'webhook_ended_reason' => 'The provider reported that the classroom ended.',
     'scheduled_provision_reason' => 'Automatically provision the classroom before the session starts.',
     'provisioning_summary' => 'Classrooms ready: :provisioned; failed: :failed.',
+    'persistent_student_link_audit_reason' => 'Student entered through the persistent link tied to their schedule.',
+    'link_rotation_reason' => 'Rotating the persistent link for this schedule for security reasons.',
+    'no_session_now' => 'No joinable session on this schedule right now.',
 ];

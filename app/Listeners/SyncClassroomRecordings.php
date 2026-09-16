@@ -18,7 +18,7 @@ final readonly class SyncClassroomRecordings
     public function handle(ClassroomEnded $event): void
     {
         try {
-            $this->synchronizer->syncClassroom($event->classroomId);
+            $this->synchronizer->syncClassroom($event->classroomId, $event->sessionId);
         } catch (Throwable $exception) {
             /*
              * BBB قد لا ينهي معالجة التسجيل لحظة انتهاء الحصة. ندوّن الفشل

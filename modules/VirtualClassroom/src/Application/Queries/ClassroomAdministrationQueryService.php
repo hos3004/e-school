@@ -10,6 +10,8 @@ use Modules\VirtualClassroom\Domain\Enums\ClassroomStatus;
 use Modules\VirtualClassroom\Domain\Models\Classroom;
 use Modules\VirtualClassroom\Domain\Models\ClassroomEvent;
 use Modules\VirtualClassroom\Domain\ValueObjects\ClassroomAdministrationData;
+use Modules\VirtualClassroom\Domain\ValueObjects\PersistentRoomData;
+use Modules\VirtualClassroom\Domain\ValueObjects\RoomIdentity;
 
 final readonly class ClassroomAdministrationQueryService implements ClassroomAdministrationQueries
 {
@@ -42,6 +44,50 @@ final readonly class ClassroomAdministrationQueryService implements ClassroomAdm
             'ended' => (clone $query)->where('status', ClassroomStatus::Ended)->count(),
             'failed' => (clone $query)->where('status', ClassroomStatus::Failed)->count(),
         ];
+    }
+
+    public function generationForRoomIdentity(string $roomIdentity): int
+    {
+        $generation = Classroom::query()->forRoomIdentity($roomIdentity)->value('link_generation');
+
+        return $generation === null ? 1 : (int) $generation;
+    }
+
+    public function persistentRoomsForOrganization(string $organizationId): array
+    {
+        return Classroom::query()
+            ->whereNotNull('room_identity')
+            ->orderBy('room_identity')
+            ->get()
+            ->map(function (Classroom $classroom) use ($organizationId): ?PersistentRoomData {
+                $scheduleId = RoomIdentity::scheduleIdFrom((string) $classroom->room_identity);
+
+                if ($scheduleId === null) {
+                    return null;
+                }
+
+                $recent = $this->sessions->forSchedule($organizationId, $scheduleId, 1);
+
+                // الجدول لا ينتمي لهذه المؤسسة، أو لم يُنتج حصصًا بعد.
+                if ($recent === []) {
+                    return null;
+                }
+
+                $titleByLocale = $recent[0]->title;
+                $title = $titleByLocale[app()->getLocale()] ?? (reset($titleByLocale) ?: $scheduleId);
+
+                return new PersistentRoomData(
+                    scheduleId: $scheduleId,
+                    label: (string) $title,
+                    status: $classroom->status->value,
+                    generation: (int) $classroom->link_generation,
+                    rotatedAt: $classroom->rotated_at?->toIso8601String(),
+                    lastErrorAt: $classroom->last_error_at?->toIso8601String(),
+                );
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private function data(Classroom $classroom): ClassroomAdministrationData

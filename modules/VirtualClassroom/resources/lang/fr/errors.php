@@ -17,4 +17,5 @@ return [
     'classroom_not_ready' => 'La classe n’est pas prête. Vérifiez la connexion ou relancez sa création.',
     'reason_required' => 'Un motif écrit est requis.',
     'invalid_status' => 'La classe ne peut pas être créée depuis son statut actuel : :status.',
+    'room_not_found' => 'Aucune salle permanente n’existe encore pour ce planning ; rien à régénérer.',
 ];

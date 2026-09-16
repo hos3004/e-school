@@ -41,4 +41,13 @@ return [
     'preparation_webhook' => 'تثبيت وتشغيل bbb-webhooks في خادم BBB وتسجيل عنوان الاستقبال المعروض أعلاه باستخدام نفس سر BBB.',
     'preparation_recording' => 'تفعيل التسجيل وواجهة تشغيل التسجيلات في خادم BBB، ثم إجراء حصة قصيرة حتى تنتهي معالجة التسجيل.',
     'env_hint' => 'لا تضع السر في لقطة شاشة أو رسالة. بعد إعداد المتغيرات استخدم زر الفحص، ثم سجّل Webhook من أمر الإدارة.',
+    'persistent_rooms_heading' => 'الروابط الدائمة',
+    'persistent_rooms_description' => 'كل جدول متكرر له غرفة ورابط ثابتان طوال عمره. دوّر الرابط فورًا عند الاشتباه في تسربه؛ الحصة القادمة تُنشئ غرفة ومفاتيح جديدة تلقائيًا.',
+    'persistent_rooms_empty' => 'لا توجد غرف دائمة بعد.',
+    'persistent_room_generation' => 'الجيل الحالي: :generation',
+    'persistent_room_rotated_at' => 'آخر تدوير: :date',
+    'persistent_room_rotate' => 'تدوير الرابط',
+    'persistent_room_rotate_confirm' => 'سيُبطَل الرابط الحالي فورًا لكل من يملكه، ويُنشأ رابط جديد عند أول دخول قادم. متابعة؟',
+    'persistent_room_rotate_success' => 'تم تدوير الرابط. الرابط القديم لم يعد يعمل.',
+    'persistent_room_rotate_failed' => 'تعذّر تدوير الرابط.',
 ];

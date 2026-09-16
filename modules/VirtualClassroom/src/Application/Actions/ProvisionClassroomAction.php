@@ -16,6 +16,7 @@ use Modules\VirtualClassroom\Domain\Events\ClassroomProvisioned;
 use Modules\VirtualClassroom\Domain\Exceptions\ClassroomProviderException;
 use Modules\VirtualClassroom\Domain\Models\Classroom;
 use Modules\VirtualClassroom\Domain\ValueObjects\ClassroomSpec;
+use Modules\VirtualClassroom\Domain\ValueObjects\RoomIdentity;
 use Shared\Support\BusinessRuleViolation;
 
 /** إنشاء قابل لإعادة المحاولة يحتفظ بالفشل المحلي بدل فقد أثره. */
@@ -57,7 +58,8 @@ final readonly class ProvisionClassroomAction
             );
         }
 
-        $classroom = $this->prepareForProvisioning($sessionId);
+        $roomIdentity = $this->resolveRoomIdentity($sessionId, $organizationId);
+        $classroom = $this->prepareForProvisioning($sessionId, $roomIdentity);
 
         if ($classroom->isProvisioned()) {
             if (!$ensureRemoteIsRunning
@@ -77,7 +79,7 @@ final readonly class ProvisionClassroomAction
                 return $classroom;
             }
 
-            $classroom = $this->prepareForProvisioning($sessionId);
+            $classroom = $this->prepareForProvisioning($sessionId, $roomIdentity);
 
             if ($classroom->isProvisioned()) {
                 return $classroom;
@@ -87,9 +89,7 @@ final readonly class ProvisionClassroomAction
         $spec = new ClassroomSpec(
             sessionId: $sessionId,
             title: $title,
-            externalMeetingId: 'SES-'.$sessionId.($classroom->provision_attempts > 1
-                ? '-R'.$classroom->provision_attempts
-                : ''),
+            externalMeetingId: $this->externalMeetingId($classroom, $roomIdentity, $sessionId),
             startsAt: $startsAt,
             maxParticipants: $maxParticipants,
             recordable: $recordable,
@@ -188,18 +188,77 @@ final readonly class ProvisionClassroomAction
         return $classroom;
     }
 
-    private function prepareForProvisioning(string $sessionId): Classroom
+    /**
+     * هوية الغرفة الدائمة لهذه الحصة عبر Sessions، أو null لحصة مفردة بلا
+     * جدول ولا تعويض — تُمنح عندها غرفة خاصة بها كما كان الحال قبل الميزة.
+     */
+    private function resolveRoomIdentity(string $sessionId, ?string $organizationId): ?string
     {
-        return DB::transaction(function () use ($sessionId): Classroom {
-            /** @var Classroom $record */
-            $record = Classroom::query()->firstOrCreate(
-                ['session_id' => $sessionId],
-                [
-                    'provider' => $this->provider->name(),
-                    'status' => ClassroomStatus::Pending,
-                    'health_status' => ClassroomHealthStatus::Unknown,
-                ],
-            );
+        $organizationId ??= $this->sessions->organizationIdForSession($sessionId);
+
+        if ($organizationId === null) {
+            return null;
+        }
+
+        $scheduleId = $this->sessions->roomIdentityForSession($organizationId, $sessionId);
+
+        return $scheduleId === null ? null : RoomIdentity::forSchedule($scheduleId);
+    }
+
+    /**
+     * معرّف الاجتماع عند المزوّد.
+     *
+     * غرفة دائمة (roomIdentity محدد): تبقى ثابتة طول عمر الجدول بصرف النظر
+     * عن عدد مرات إعادة تجهيزها أسبوعيًا؛ التغيير الوحيد المسموح لها هو جيل
+     * تدوير صريح من الإدارة (RotateClassroomLinkAction يرفع link_generation).
+     * غرفة حصة مفردة (roomIdentity=null): سلوكها القديم كما هو، بلاحقة
+     * إعادة المحاولة -R{attempts} حين يعاد تجهيزها أكثر من مرة.
+     */
+    private function externalMeetingId(Classroom $classroom, ?string $roomIdentity, string $sessionId): string
+    {
+        if ($roomIdentity !== null) {
+            $generation = max(1, (int) $classroom->link_generation);
+
+            return $roomIdentity.($generation > 1 ? '-G'.$generation : '');
+        }
+
+        return 'SES-'.$sessionId.($classroom->provision_attempts > 1 ? '-R'.$classroom->provision_attempts : '');
+    }
+
+    private function prepareForProvisioning(string $sessionId, ?string $roomIdentity): Classroom
+    {
+        return DB::transaction(function () use ($sessionId, $roomIdentity): Classroom {
+            if ($roomIdentity !== null) {
+                /** @var Classroom $record */
+                $record = Classroom::query()->firstOrCreate(
+                    ['room_identity' => $roomIdentity],
+                    [
+                        'session_id' => $sessionId,
+                        'provider' => $this->provider->name(),
+                        'status' => ClassroomStatus::Pending,
+                        'health_status' => ClassroomHealthStatus::Unknown,
+                    ],
+                );
+
+                if ((string) $record->session_id !== $sessionId) {
+                    /*
+                     * مناسبة جديدة على نفس الغرفة الدائمة (أسبوع تالٍ، أو حصة
+                     * تلافٍ تحل محل حصة أصلية): أعد توجيه الغرفة للحصة الحالية
+                     * دون المساس بهويتها عند المزوّد ولا بأسرارها المخزَّنة.
+                     */
+                    $record->forceFill(['session_id' => $sessionId])->save();
+                }
+            } else {
+                /** @var Classroom $record */
+                $record = Classroom::query()->firstOrCreate(
+                    ['session_id' => $sessionId],
+                    [
+                        'provider' => $this->provider->name(),
+                        'status' => ClassroomStatus::Pending,
+                        'health_status' => ClassroomHealthStatus::Unknown,
+                    ],
+                );
+            }
 
             if ($record->isProvisioned()) {
                 return $record;

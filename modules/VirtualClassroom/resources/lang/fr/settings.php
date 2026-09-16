@@ -28,4 +28,13 @@ return [
     'preparation_webhook' => 'Installez bbb-webhooks et inscrivez l’URL de rappel affichée.',
     'preparation_recording' => 'Activez l’enregistrement et terminez une courte séance de test.',
     'env_hint' => 'Ne placez jamais le secret dans une capture ou un message. Lancez ensuite le contrôle et inscrivez le webhook.',
+    'persistent_rooms_heading' => 'Liens permanents',
+    'persistent_rooms_description' => 'Chaque planning récurrent garde une salle et un lien fixes toute sa durée. Régénérez un lien immédiatement en cas de fuite ; la séance suivante crée automatiquement une nouvelle salle et de nouveaux secrets.',
+    'persistent_rooms_empty' => 'Aucune salle permanente pour le moment.',
+    'persistent_room_generation' => 'Génération actuelle : :generation',
+    'persistent_room_rotated_at' => 'Dernière régénération : :date',
+    'persistent_room_rotate' => 'Régénérer le lien',
+    'persistent_room_rotate_confirm' => 'Le lien actuel cessera immédiatement de fonctionner pour tous ceux qui le détiennent, et un nouveau sera créé à la prochaine connexion. Continuer ?',
+    'persistent_room_rotate_success' => 'Le lien a été régénéré. L’ancien lien ne fonctionne plus.',
+    'persistent_room_rotate_failed' => 'Impossible de régénérer le lien.',
 ];

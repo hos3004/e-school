@@ -83,4 +83,28 @@ interface SessionAdministrationQueries
      * @return array<string, array{upcoming: int, completed: int, cancelled: int}>
      */
     public function countsForTeachers(string $organizationId, array $staffProfileIds, CarbonImmutable $monthStart, ?CarbonImmutable $monthEnd = null): array;
+
+    /**
+     * هوية الغرفة الدائمة التي تخص هذه الحصة: معرّف الجدول المتكرر الذي
+     * وُلِّدت منه، أو — لحصة تلافٍ لا تحمل جدولًا مباشرة — معرّف جدول الحصة
+     * الأصلية التي تعوّضها (بتتبع سلسلة makeup_for_session_id).
+     *
+     * ترجع null لحصة مفردة بلا جدول ولا تعويض (تجريبية أو ويبينار)، وعندها
+     * تُمنح غرفة خاصة بها فقط كما كان الحال قبل هذه الميزة.
+     */
+    public function roomIdentityForSession(string $organizationId, string $sessionId): ?string;
+
+    /**
+     * الحصة القابلة للدخول الآن على هذا الجدول: إما حصته العادية أو حصة
+     * التلافي القائمة مقام حصة ملغاة منه، أيهما تقع الآن ضمن نافذة الدخول.
+     *
+     * تُستخدم لحلّ الرابط الدائم الذي يرسله المعلم للطالب مرة واحدة.
+     */
+    public function currentJoinableForSchedule(
+        string $organizationId,
+        string $scheduleId,
+        CarbonImmutable $asOf,
+        int $beforeMinutes,
+        int $afterMinutes,
+    ): ?SessionAdministrationData;
 }

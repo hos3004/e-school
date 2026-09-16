@@ -25,6 +25,7 @@ interface Props extends SessionRequestProps {
   canSubmitReport?: boolean;
   canViewStudents?: boolean;
   studentJoinLinks?: Record<string, string>;
+  studentJoinLinksPersistent?: Record<string, boolean>;
   reportScoreMin: number;
   reportScoreMax: number;
 }
@@ -40,6 +41,7 @@ export default function Session({
   canSubmitReport = false,
   canViewStudents = false,
   studentJoinLinks = {},
+  studentJoinLinksPersistent = {},
   reportScoreMin,
   reportScoreMax,
   ...requestProps
@@ -278,6 +280,11 @@ export default function Session({
                           {copyFailedStudentId === row.studentId && (
                             <small role="status">
                               {t("learning.copy_student_link_failed")}
+                            </small>
+                          )}
+                          {studentJoinLinksPersistent[row.studentId] && (
+                            <small className="learning-help">
+                              {t("learning.persistent_student_link_notice")}
                             </small>
                           )}
                         </div>

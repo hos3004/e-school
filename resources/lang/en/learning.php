@@ -117,6 +117,7 @@ return [
     'copy_student_link_done' => 'Link copied',
     'copy_student_link_failed' => 'Copy failed. Copy the link manually.',
     'student_link_help' => 'A fallback link to send the student manually when they cannot sign in. It opens the lesson under their name and records their attendance, and expires with the lesson. Do not send it to anyone else.',
+    'persistent_student_link_notice' => 'A permanent link for this student on this schedule — valid for every upcoming lesson, so send it just once. Do not share it with anyone else; only an administrator can rotate it if it leaks.',
     'join_window' => 'Joining opens at:',
     'watch_recording' => 'Watch recording',
     'requests_recordings' => 'Postponements, apologies and recordings',
