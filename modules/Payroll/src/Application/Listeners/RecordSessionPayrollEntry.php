@@ -63,6 +63,14 @@ final readonly class RecordSessionPayrollEntry
             return;
         }
 
+        /*
+         * قرار إداري وقت إنشاء الحصة: لا مستحقات لها إطلاقًا مهما كانت
+         * نتيجتها. غالبًا حصة إضافية اتُّفق أن يؤديها المعلم دون أجر.
+         */
+        if ($facts->payrollExempt) {
+            return;
+        }
+
         $isApprovedApology = $event instanceof TeacherApologyDecided
             && $event->substituteRequired
             && $event->decision === 'approved';
@@ -388,6 +396,27 @@ final readonly class RecordSessionPayrollEntry
         string $staffProfileId,
         bool $forDeduction,
     ): ?array {
+        /*
+         * سعر يدوي أُقرّ وقت إنشاء الحصة (حصة إضافية بسعر مختلف عن الافتراضي)
+         * يحل محل محلّل السعر كليًا. العقد الساري ما زال لازمًا: القيدة تُنسب
+         * إليه وتُحدَّد آثار الحسم/التأجيل بحسب أساسه، تمامًا كأي قيدة أخرى.
+         */
+        if ($facts->payrollRateOverrideMinorUnits !== null) {
+            $contract = $this->rates->activeContract($staffProfileId, $facts->scheduledStart);
+
+            if ($contract === null) {
+                return null;
+            }
+
+            return [
+                'money' => Money::of($facts->payrollRateOverrideMinorUnits, (string) config('payroll.currency')),
+                'scope' => RateScope::Default,
+                'rate_id' => 'manual_override',
+                'contract_id' => $contract['contract_id'],
+                'contract_basis' => $contract['contract_basis'],
+            ];
+        }
+
         $programIds = $this->programs->programIdsOfCourse($facts->courseId);
         $programId = $programIds === [] ? null : (string) reset($programIds);
 

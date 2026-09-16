@@ -25,6 +25,8 @@ use Shared\Concerns\HasUlid;
  * @property string $original_teacher_id
  * @property string|null $substitute_for_staff_id
  * @property string|null $makeup_for_session_id
+ * @property bool $payroll_exempt
+ * @property int|null $payroll_rate_override_minor_units
  * @property string $session_type
  * @property SessionStatus $status
  * @property CarbonImmutable $scheduled_start
@@ -62,6 +64,8 @@ final class Session extends Model
         'original_teacher_id',
         'substitute_for_staff_id',
         'makeup_for_session_id',
+        'payroll_exempt',
+        'payroll_rate_override_minor_units',
         'session_type',
         'status',
         'scheduled_start',
@@ -90,6 +94,7 @@ final class Session extends Model
             'title' => 'array',
             'cancelled_at' => 'immutable_datetime',
             'finalized_at' => 'immutable_datetime',
+            'payroll_exempt' => 'bool',
         ];
     }
 

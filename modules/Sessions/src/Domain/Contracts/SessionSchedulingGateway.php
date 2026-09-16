@@ -35,6 +35,31 @@ interface SessionSchedulingGateway
         string $reason,
     ): string;
 
+    /**
+     * حصة إضافية خارج أي جدول دائم — لا يُنشئها تمرير جدولٍ ولا تأجيل حصة قائمة.
+     *
+     * تُدرَج مباشرة بحالة scheduled دون أي موافقة مسبقة؛ حراس التعارض
+     * والحجز المزدوج نفسها التي تحمي كل مسارات الجدولة الأخرى تحميها هنا.
+     *
+     * @param array<string, string> $title
+     * @param list<ScheduledParticipantData> $participants
+     */
+    public function scheduleExtraSession(
+        string $organizationId,
+        ?string $groupId,
+        string $courseId,
+        string $staffProfileId,
+        string $sessionType,
+        CarbonImmutable $startsAt,
+        CarbonImmutable $endsAt,
+        array $title,
+        array $participants,
+        bool $payrollExempt,
+        ?int $payrollRateOverrideMinorUnits,
+        string $actorId,
+        string $reason,
+    ): string;
+
     public function supersedeFutureForSchedule(
         string $organizationId,
         string $scheduleId,

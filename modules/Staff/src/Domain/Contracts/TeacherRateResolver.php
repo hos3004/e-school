@@ -48,4 +48,17 @@ interface TeacherRateResolver
         ?string $sessionType = null,
         ?int $durationMinutes = null,
     ): ?array;
+
+    /**
+     * العقد الساري لهذا المعلم بتاريخ الحصة، دون أي بحث عن سعر.
+     *
+     * يستعمله مستهلك يملك مبلغًا يدويًا جاهزًا (سعر مخصّص لحصة بعينها) ويحتاج
+     * فقط معرفة العقد المنسوب إليه القيدة وأساسه، دون قراءة جداول هذا الموديول.
+     *
+     * @return array{contract_id: string, contract_basis: string}|null
+     */
+    public function activeContract(
+        string $staffProfileId,
+        CarbonImmutable $sessionDate,
+    ): ?array;
 }

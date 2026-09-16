@@ -52,4 +52,9 @@ return [
     'schedule_change_expired' => 'Le délai de réponse à la demande de changement d’horaire est écoulé.',
     'schedule_change_response_not_allowed' => 'Vous n’avez aucune réponse en attente sur cette demande.',
     'schedule_change_invalid_transition' => 'Une demande de changement d’horaire ne peut pas passer de :from à :to.',
+    'extra_session_target_invalid' => 'Choisissez un groupe ou un seul élève pour la séance supplémentaire.',
+    'invalid_duration' => 'La durée de la séance doit être supérieure à zéro.',
+    'extra_session_payroll_conflict' => 'Un prix personnalisé ne peut pas être défini pour une séance exemptée de rémunération.',
+    'invalid_payroll_override' => 'Le prix personnalisé doit être un montant positif.',
+    'group_has_no_active_members' => 'Ce groupe n’a aucun élève actif pouvant être planifié.',
 ];

@@ -113,6 +113,102 @@ final readonly class SessionSchedulingService implements SessionSchedulingGatewa
         });
     }
 
+    public function scheduleExtraSession(
+        string $organizationId,
+        ?string $groupId,
+        string $courseId,
+        string $staffProfileId,
+        string $sessionType,
+        CarbonImmutable $startsAt,
+        CarbonImmutable $endsAt,
+        array $title,
+        array $participants,
+        bool $payrollExempt,
+        ?int $payrollRateOverrideMinorUnits,
+        string $actorId,
+        string $reason,
+    ): string {
+        return DB::transaction(function () use (
+            $organizationId,
+            $groupId,
+            $courseId,
+            $staffProfileId,
+            $sessionType,
+            $startsAt,
+            $endsAt,
+            $title,
+            $participants,
+            $payrollExempt,
+            $payrollRateOverrideMinorUnits,
+            $actorId,
+            $reason,
+        ): string {
+            $this->lockResources($staffProfileId, $groupId, $participants);
+
+            $studentIds = array_map(
+                static fn (ScheduledParticipantData $participant): string => $participant->studentProfileId,
+                $participants,
+            );
+            $conflicts = $this->queries->conflictsFor(
+                organizationId: $organizationId,
+                range: new TimeRange($startsAt, $endsAt),
+                staffProfileId: $staffProfileId,
+                groupId: $groupId,
+                studentProfileIds: $studentIds,
+            );
+
+            if ($conflicts !== []) {
+                throw BusinessRuleViolation::make(
+                    'scheduling.conflict_detected',
+                    'scheduling::errors.conflict_detected',
+                    ['count' => count($conflicts)],
+                );
+            }
+
+            $session = $this->scheduleSession->execute([
+                'organization_id' => $organizationId,
+                'group_id' => $groupId,
+                'course_id' => $courseId,
+                'staff_profile_id' => $staffProfileId,
+                'session_type' => $sessionType,
+                'scheduled_start' => $startsAt,
+                'scheduled_end' => $endsAt,
+                'title' => $title,
+                'payroll_exempt' => $payrollExempt,
+                'payroll_rate_override_minor_units' => $payrollRateOverrideMinorUnits,
+            ], $actorId, $reason);
+
+            $this->insertParticipants((string) $session->getKey(), $participants);
+
+            /*
+             * القرار المالي جزء من طلب إنشاء الحصة لا تفصيل تشغيلي، فيُسجَّل
+             * صراحة هنا فوق تدقيق `sessions.session_scheduled` العام — من راجع
+             * الدفتر لاحقًا يرى سبب غياب القيدة أو مصدر سعرها دون افتراض.
+             */
+            $this->audit->record(
+                organizationId: $organizationId,
+                actorId: $actorId,
+                actorType: 'user',
+                action: 'sessions.extra_session_created',
+                auditableType: 'sessions',
+                auditableId: (string) $session->getKey(),
+                oldValues: null,
+                newValues: [
+                    'payroll_exempt' => $payrollExempt,
+                    'payroll_rate_override_minor_units' => $payrollRateOverrideMinorUnits,
+                    'staff_profile_id' => $staffProfileId,
+                    'course_id' => $courseId,
+                    'group_id' => $groupId,
+                    'scheduled_start' => $startsAt->toIso8601String(),
+                    'scheduled_end' => $endsAt->toIso8601String(),
+                ],
+                reason: $reason,
+            );
+
+            return (string) $session->getKey();
+        });
+    }
+
     public function scheduleMakeup(
         string $organizationId,
         string $originalSessionId,

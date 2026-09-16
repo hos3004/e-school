@@ -52,6 +52,10 @@ final readonly class SessionFactsQueryService implements SessionFactsQueries
             hasStudentApology: $session->participants()
                 ->whereNotNull('excused_at')
                 ->exists(),
+            payrollExempt: (bool) $session->payroll_exempt,
+            payrollRateOverrideMinorUnits: $session->payroll_rate_override_minor_units === null
+                ? null
+                : (int) $session->payroll_rate_override_minor_units,
         );
     }
 
