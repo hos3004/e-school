@@ -21,3 +21,5 @@ Route::post('/groups', [GroupSetupController::class, 'save'])->middleware('can:g
 Route::patch('/groups/{group}', [GroupSetupController::class, 'save'])->whereUlid('group')->middleware('can:group.manage')->name('groups.update');
 Route::post('/groups/{group}/teachers', [GroupSetupController::class, 'assign'])->whereUlid('group')->middleware('can:group.manage')->name('groups.teachers');
 Route::post('/groups/{group}/activate', [GroupSetupController::class, 'activate'])->whereUlid('group')->middleware('can:group.manage')->name('groups.activate');
+Route::post('/groups/{group}/students', [GroupSetupController::class, 'enrollExisting'])->whereUlid('group')
+    ->middleware(['can:student.view.any', 'can:enrollment.create', 'can:group.manage'])->name('groups.students.enroll');

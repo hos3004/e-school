@@ -1,5 +1,6 @@
-import { Link } from "@inertiajs/react";
-import { useState } from "react";
+import { Link, router } from "@inertiajs/react";
+import axios from "axios";
+import { useRef, useState, type FormEvent } from "react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import ConsoleIcon from "@/Components/Console/ConsoleIcon";
 import AudienceMessaging, {
@@ -52,12 +53,14 @@ type Props = {
   summary: Record<string, number> | null;
   timezone: string;
   limitExceeded: boolean;
+  enrollableCourses: { id: string; label: string }[];
   abilities: {
     edit: boolean;
     schedule: boolean;
     students: boolean;
     teachers: boolean;
     placement: boolean;
+    addStudent: boolean;
     report: boolean;
   };
   messaging?: AudienceMessagingData | null;
@@ -74,6 +77,7 @@ export default function GroupProfile({
   timezone,
   abilities,
   limitExceeded,
+  enrollableCourses,
   messaging,
 }: Props) {
   const t = useI18n();
@@ -191,6 +195,12 @@ export default function GroupProfile({
                   )
                 }
               >
+                {abilities.addStudent && (
+                  <AddExistingStudent
+                    groupId={group.id}
+                    courses={enrollableCourses}
+                  />
+                )}
                 {!abilities.students ? (
                   <div className="console-empty">
                     {t("console_group.no_permission")}
@@ -450,5 +460,160 @@ export default function GroupProfile({
         {messaging && <AudienceMessaging messaging={messaging} />}
       </div>
     </ConsoleLayout>
+  );
+}
+
+/**
+ * إضافة طالب له حساب وملف بالفعل مباشرة لهذه المجموعة، بضغطة واحدة: بحث
+ * بالاسم ثم اختيار الكورس (إن كان للمجموعة أكثر من كورس) ثم تأكيد — لا
+ * شاشة انتظار وسيطة ولا سبب يكتبه من يضيف الطالب.
+ */
+function AddExistingStudent({
+  groupId,
+  courses,
+}: {
+  groupId: string;
+  courses: { id: string; label: string }[];
+}) {
+  const t = useI18n();
+  const g = (key: string) => t("console_group." + key);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ id: string; name: string }[]>([]);
+  const [studentId, setStudentId] = useState("");
+  const [studentName, setStudentName] = useState("");
+  const [courseId, setCourseId] = useState(
+    courses.length === 1 ? (courses[0]?.id ?? "") : "",
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchToken = useRef(0);
+
+  function search(value: string) {
+    setQuery(value);
+    setStudentId("");
+    setStudentName("");
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (value.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+    const token = ++searchToken.current;
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const { data } = await axios.get<{
+          data: { id: string; name: string }[];
+        }>("/manage/placement/students/search", { params: { q: value } });
+        if (token === searchToken.current) setResults(data.data);
+      } catch {
+        if (token === searchToken.current) setResults([]);
+      } finally {
+        if (token === searchToken.current) setSearching(false);
+      }
+    }, 300);
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!studentId || !courseId || busy) return;
+    setBusy(true);
+    setError("");
+    router.post(
+      "/manage/groups/" + groupId + "/students",
+      { student_profile_id: studentId, course_id: courseId },
+      {
+        onError: (errors) => {
+          setError(Object.values(errors).flat().join(" · "));
+        },
+        onFinish: () => setBusy(false),
+      },
+    );
+  }
+
+  return (
+    <div className="console-panel-inline-action">
+      <button
+        type="button"
+        className="console-button"
+        onClick={() => setOpen((value) => !value)}
+      >
+        {g("add_existing_student")}
+      </button>
+      {open && (
+        <form
+          className="console-toolbar console-filter-bar console-filter-mobile-pairs"
+          onSubmit={submit}
+        >
+          <label className="field console-filter-mobile-full">
+            <span>{g("add_existing_student_search")}</span>
+            <input
+              className="console-control"
+              value={query}
+              placeholder={g("add_existing_student_placeholder")}
+              onChange={(e) => search(e.target.value)}
+              autoComplete="off"
+            />
+          </label>
+          {!studentId && query.trim().length >= 2 && !searching && (
+            <ul className="console-toolbar-suggestions">
+              {results.length === 0 && (
+                <li>
+                  <span>{g("add_existing_student_no_matches")}</span>
+                </li>
+              )}
+              {results.map((row) => (
+                <li key={row.id}>
+                  <button
+                    type="button"
+                    className="inline-link"
+                    onClick={() => {
+                      setStudentId(row.id);
+                      setStudentName(row.name);
+                      setQuery(row.name);
+                      setResults([]);
+                    }}
+                  >
+                    {row.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {studentId && <span className="pill current">{studentName}</span>}
+          {courses.length > 1 && (
+            <label className="field">
+              <span>{g("add_existing_student_course")}</span>
+              <select
+                className="console-control"
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
+              >
+                <option value="" />
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button
+            className="console-button primary"
+            type="submit"
+            disabled={!studentId || !courseId || busy}
+          >
+            {g("add_existing_student_submit")}
+          </button>
+          {error && (
+            <span role="alert" className="console-error">
+              {error}
+            </span>
+          )}
+        </form>
+      )}
+    </div>
   );
 }

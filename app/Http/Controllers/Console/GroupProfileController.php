@@ -42,6 +42,7 @@ final class GroupProfileController extends Controller
         $courses = $catalog->coursesByIds($organizationId, $courseIds);
         $teacherNames = $staff->namesForProfiles($organizationId, array_values(array_unique([...array_column($assignments, 'staffProfileId'), ...array_column($scheduleRows, 'staff_profile_id')])));
         $report = $user->can('report.view') ? $reports->run($criteria->fromInput(['preset' => 'this_month', 'group_id' => $group], $user)) : null;
+        $enrollableCourses = $this->enrollableCourses($catalog, $organizationId, $record['program_ids']);
 
         return Inertia::render('Console/GroupProfile', [
             'group' => $record,
@@ -65,11 +66,38 @@ final class GroupProfileController extends Controller
             'summary' => $report?->summary,
             'limitExceeded' => $report !== null && $report->limitExceeded,
             'timezone' => $context->forRequest($request)['timezone'],
+            'enrollableCourses' => $enrollableCourses,
             'abilities' => ['edit' => $user->can('group.manage'), 'students' => $user->can('student.view.any'),
                 'teachers' => $user->can('staff.view.any'), 'placement' => $user->can('student.view.any') && $user->can('enrollment.create') && $user->can('group.manage'),
+                'addStudent' => $enrollableCourses !== [] && $user->can('student.view.any') && $user->can('enrollment.create') && $user->can('group.manage'),
                 'schedule' => $user->can('schedule.manage'), 'report' => $user->can('report.view')],
             'messaging' => $this->messaging($request, $group, LocalizedJsonColumn::display($record['name'] ?? [])),
         ]);
+    }
+
+    /**
+     * الكورسات القابلة لإسناد طالب موجود لها في هذه المجموعة: كورسات
+     * برامج المجموعة نفسها، باستثناء كورسات الجلسات الفردية التي لا
+     * تُدار عبر مجموعات أصلًا.
+     *
+     * @param list<string> $programIds
+     * @return list<array{id: string, label: string}>
+     */
+    private function enrollableCourses(AcademicCatalogQueries $catalog, string $organizationId, array $programIds): array
+    {
+        $result = [];
+
+        foreach ($programIds as $programId) {
+            foreach ($catalog->courses($organizationId, $programId) as $course) {
+                if ($course->sessionMode === 'individual') {
+                    continue;
+                }
+
+                $result[] = ['id' => $course->id, 'label' => LocalizedJsonColumn::display($course->name)];
+            }
+        }
+
+        return $result;
     }
 
     /**

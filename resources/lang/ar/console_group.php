@@ -13,4 +13,8 @@ return [
     'weekly' => 'كل أسبوع', 'interval' => 'كل :count أسابيع', 'schedule_timezone' => 'مواعيد الجدول بتوقيت', 'history' => 'سجل العضوية يبقى محفوظًا بعد مغادرة الطالب.',
     'reports' => 'تقارير المجموعة', 'report_help' => 'المعروض حصص هذا الشهر. افتح التقرير لاختيار فترة أخرى أو طباعة النتيجة كاملة.',
     'no_permission' => 'تحتاج صلاحية عرض الطلاب للاطلاع على الأسماء والعضوية.', 'group_timezone' => 'توقيت المجموعة',
+    'add_existing_student' => 'إضافة طالب له حساب بالفعل', 'add_existing_student_search' => 'ابحث بالاسم',
+    'add_existing_student_placeholder' => 'اكتب حرفين على الأقل من اسم الطالب…', 'add_existing_student_course' => 'الكورس',
+    'add_existing_student_submit' => 'إضافة للمجموعة', 'add_existing_student_no_matches' => 'لا يوجد طالب مطابق لهذا البحث.',
+    'add_existing_student_added' => 'أُضيف الطالب للمجموعة بنجاح.',
 ];
