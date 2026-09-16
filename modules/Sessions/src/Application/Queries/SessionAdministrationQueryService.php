@@ -6,6 +6,7 @@ namespace Modules\Sessions\Application\Queries;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
@@ -14,6 +15,9 @@ use Modules\Sessions\Domain\ValueObjects\SessionAdministrationData;
 
 final readonly class SessionAdministrationQueryService implements SessionAdministrationQueries
 {
+    /** أقصى عدد قفزات عبر سلسلة حصص التلافي قبل التوقف؛ يمنع حلقة بيانات فاسدة من تعليق الطلب. */
+    private const MAX_MAKEUP_CHAIN_HOPS = 10;
+
     public function findForOrganization(
         string $organizationId,
         string $sessionId,
@@ -278,6 +282,86 @@ final readonly class SessionAdministrationQueryService implements SessionAdminis
         return $counts;
     }
 
+    public function roomIdentityForSession(string $organizationId, string $sessionId): ?string
+    {
+        $currentId = $sessionId;
+
+        for ($hop = 0; $hop < self::MAX_MAKEUP_CHAIN_HOPS; $hop++) {
+            /** @var object{schedule_id: string|null, makeup_for_session_id: string|null}|null $session */
+            $session = Session::query()
+                ->forOrganization($organizationId)
+                ->whereKey($currentId)
+                ->first(['schedule_id', 'makeup_for_session_id']);
+
+            if ($session === null) {
+                return null;
+            }
+
+            if ($session->schedule_id !== null) {
+                return (string) $session->schedule_id;
+            }
+
+            if ($session->makeup_for_session_id === null) {
+                return null;
+            }
+
+            $currentId = (string) $session->makeup_for_session_id;
+        }
+
+        return null;
+    }
+
+    public function currentJoinableForSchedule(
+        string $organizationId,
+        string $scheduleId,
+        CarbonImmutable $asOf,
+        int $beforeMinutes,
+        int $afterMinutes,
+    ): ?SessionAdministrationData {
+        $joinableStatuses = array_map(
+            static fn (SessionStatus $status): string => $status->value,
+            array_values(array_filter(
+                SessionStatus::cases(),
+                static fn (SessionStatus $status): bool => $status->allowsJoining(),
+            )),
+        );
+
+        if ($joinableStatuses === []) {
+            return null;
+        }
+
+        $directMakeupIds = static fn (QueryBuilder $query): QueryBuilder => $query
+            ->select('id')
+            ->from('sessions')
+            ->where('organization_id', $organizationId)
+            ->where('schedule_id', $scheduleId);
+
+        $session = Session::query()
+            ->forOrganization($organizationId)
+            ->whereIn('status', $joinableStatuses)
+            ->where(function (Builder $query) use ($organizationId, $directMakeupIds, $scheduleId): void {
+                $query->where('schedule_id', $scheduleId)
+                    ->orWhereIn('makeup_for_session_id', $directMakeupIds)
+                    ->orWhereIn(
+                        'makeup_for_session_id',
+                        static fn (QueryBuilder $nested): QueryBuilder => $nested
+                            ->select('id')
+                            ->from('sessions')
+                            ->where('organization_id', $organizationId)
+                            ->whereIn('makeup_for_session_id', $directMakeupIds),
+                    );
+            })
+            ->get()
+            ->first(static function (Session $candidate) use ($asOf, $beforeMinutes, $afterMinutes): bool {
+                $windowStart = $candidate->scheduled_start->subMinutes(max(0, $beforeMinutes));
+                $windowEnd = $candidate->scheduled_end->addMinutes(max(0, $afterMinutes));
+
+                return $asOf->greaterThanOrEqualTo($windowStart) && $asOf->lessThanOrEqualTo($windowEnd);
+            });
+
+        return $session === null ? null : self::data($session);
+    }
+
     private static function label(Session $session, string $locale): string
     {
         $title = is_array($session->title)
@@ -334,6 +418,8 @@ final readonly class SessionAdministrationQueryService implements SessionAdminis
                 ? null
                 : (string) $session->cancellation_reason,
             finalizedAt: $session->finalized_at?->toIso8601String(),
+            scheduleId: $session->schedule_id === null ? null : (string) $session->schedule_id,
+            makeupForSessionId: $session->makeup_for_session_id === null ? null : (string) $session->makeup_for_session_id,
         );
     }
 }

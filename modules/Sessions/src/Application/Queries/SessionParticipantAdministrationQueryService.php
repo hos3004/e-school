@@ -133,6 +133,7 @@ final readonly class SessionParticipantAdministrationQueryService implements Ses
             attendedMinutes: (int) $participant->attended_minutes,
             excusedAt: $participant->excused_at?->toIso8601String(),
             invitationActive: $participant->revoked_at === null && !$participant->trashed(),
+            scheduleId: $session->schedule_id === null ? null : (string) $session->schedule_id,
         );
     }
 }

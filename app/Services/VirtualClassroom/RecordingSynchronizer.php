@@ -24,7 +24,17 @@ final readonly class RecordingSynchronizer
         private StoreProviderRecordingAction $storeRecording,
     ) {}
 
-    public function syncClassroom(string $classroomId): int
+    /**
+     * $sessionId: الحصة التي كانت تشغل الغرفة لحظة انتهائها فعليًا.
+     *
+     * غرفة دائمة (مرتبطة بجدول متكرر) تُعاد أسبوعيًا لحصة تالية، و
+     * classrooms.session_id يتحرك معها. تمرير الحصة صراحة من الحدث الذي
+     * أطلق المزامنة (ClassroomEnded يلتقطها لحظة الانتهاء) يمنع نسبة تسجيل
+     * حصة منتهية إلى حصة الأسبوع التالي إن نُفِّذت هذه الدالة متأخرة. القيمة
+     * الافتراضية (null) تُبقي السلوك القديم لعمليات المسح المجدولة التي لا
+     * تملك سياق حصة بعينها.
+     */
+    public function syncClassroom(string $classroomId, ?string $sessionId = null): int
     {
         $context = DB::table('classrooms')
             ->join('sessions', 'sessions.id', '=', 'classrooms.session_id')
@@ -42,6 +52,8 @@ final readonly class RecordingSynchronizer
             return 0;
         }
 
+        $resolvedSessionId = $sessionId ?? (string) $context->session_id;
+
         $stored = 0;
 
         foreach ($this->provider->recordings((string) $context->external_id) as $recording) {
@@ -53,7 +65,7 @@ final readonly class RecordingSynchronizer
 
             $this->storeRecording->execute(
                 organizationId: (string) $context->organization_id,
-                sessionId: (string) $context->session_id,
+                sessionId: $resolvedSessionId,
                 classroomId: (string) $context->classroom_id,
                 provider: (string) $context->provider,
                 externalRecordingId: $recording->recordingId,

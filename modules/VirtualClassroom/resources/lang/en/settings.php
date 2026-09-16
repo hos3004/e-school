@@ -41,4 +41,13 @@ return [
     'preparation_webhook' => 'Install and run bbb-webhooks on the BBB server, then register the callback shown above using the BBB secret.',
     'preparation_recording' => 'Enable recording and playback on the BBB server, then complete a short session while recording is enabled.',
     'env_hint' => 'Never include the secret in a screenshot or message. After setting the environment, run the check and register the webhook from the management command.',
+    'persistent_rooms_heading' => 'Persistent links',
+    'persistent_rooms_description' => 'Every recurring schedule keeps one room and link for its whole lifetime. Rotate a link immediately if it may have leaked; the next session provisions a fresh room and secrets automatically.',
+    'persistent_rooms_empty' => 'No persistent rooms yet.',
+    'persistent_room_generation' => 'Current generation: :generation',
+    'persistent_room_rotated_at' => 'Last rotated: :date',
+    'persistent_room_rotate' => 'Rotate link',
+    'persistent_room_rotate_confirm' => 'The current link will stop working immediately for everyone who has it, and a new one will be created on the next join. Continue?',
+    'persistent_room_rotate_success' => 'The link was rotated. The old link no longer works.',
+    'persistent_room_rotate_failed' => 'Could not rotate the link.',
 ];

@@ -24,5 +24,7 @@ final readonly class SessionAdministrationData
         public ?string $actualEnd = null,
         public ?string $cancellationReason = null,
         public ?string $finalizedAt = null,
+        public ?string $scheduleId = null,
+        public ?string $makeupForSessionId = null,
     ) {}
 }

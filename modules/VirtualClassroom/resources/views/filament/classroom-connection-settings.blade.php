@@ -27,6 +27,36 @@
             @if ($webhookRegistered !== null)<p @class(['mt-3 text-sm font-semibold', 'text-success-600 dark:text-success-400' => $webhookRegistered, 'text-danger-600 dark:text-danger-400' => ! $webhookRegistered])>{{ $webhookRegistered ? __('virtualclassroom::settings.webhook_registered') : __('virtualclassroom::settings.webhook_not_registered') }}</p>@endif
         </x-filament::section>
     </div>
+    <x-filament::section icon="heroicon-o-link" :heading="__('virtualclassroom::settings.persistent_rooms_heading')" :description="__('virtualclassroom::settings.persistent_rooms_description')">
+        @if (empty($persistentRooms))
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('virtualclassroom::settings.persistent_rooms_empty') }}</p>
+        @else
+            <div class="space-y-3">
+                @foreach ($persistentRooms as $room)
+                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                        <div>
+                            <p class="font-semibold text-gray-950 dark:text-white">{{ $room['label'] }}</p>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                {{ __('virtualclassroom::settings.persistent_room_generation', ['generation' => $room['generation']]) }}
+                                @if ($room['rotatedAt'])
+                                    &middot; {{ __('virtualclassroom::settings.persistent_room_rotated_at', ['date' => $room['rotatedAt']]) }}
+                                @endif
+                            </p>
+                        </div>
+                        <x-filament::button
+                            color="danger"
+                            size="sm"
+                            icon="heroicon-o-arrow-path"
+                            wire:click="rotateLink('{{ $room['scheduleId'] }}')"
+                            wire:confirm="{{ __('virtualclassroom::settings.persistent_room_rotate_confirm') }}"
+                        >
+                            {{ __('virtualclassroom::settings.persistent_room_rotate') }}
+                        </x-filament::button>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </x-filament::section>
     <x-filament::section icon="heroicon-o-list-bullet" :heading="__('virtualclassroom::settings.preparation_heading')" :description="__('virtualclassroom::settings.preparation_description')">
         <ol class="list-decimal space-y-3 ps-5 text-sm leading-6 text-gray-700 dark:text-gray-200">
             <li>{{ __('virtualclassroom::settings.preparation_url') }}</li><li>{{ __('virtualclassroom::settings.preparation_secret') }}</li><li>{{ __('virtualclassroom::settings.preparation_webhook') }}</li><li>{{ __('virtualclassroom::settings.preparation_recording') }}</li>

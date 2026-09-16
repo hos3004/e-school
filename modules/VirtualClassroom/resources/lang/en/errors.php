@@ -22,4 +22,5 @@ return [
     'classroom_not_ready' => 'The classroom is not ready to join. Check its connection or retry provisioning.',
     'reason_required' => 'A written reason is required.',
     'invalid_status' => 'The classroom cannot be provisioned from its current status: :status.',
+    'room_not_found' => 'There is no persistent room for this schedule yet; nothing to rotate.',
 ];

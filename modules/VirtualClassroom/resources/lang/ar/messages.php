@@ -41,4 +41,7 @@ return [
     'webhook_ended_reason' => 'أبلغ المزوّد أن الفصل انتهى فعليًا.',
     'scheduled_provision_reason' => 'تجهيز آلي للفصل قبل موعد الحصة.',
     'provisioning_summary' => 'الفصول الجاهزة: :provisioned، والفاشلة: :failed.',
+    'persistent_student_link_audit_reason' => 'دخول الطالب عبر الرابط الدائم المرتبط بجدوله.',
+    'link_rotation_reason' => 'تدوير الرابط الدائم لهذا الجدول لأسباب أمنية.',
+    'no_session_now' => 'لا توجد حصة قابلة للدخول على هذا الجدول الآن.',
 ];

@@ -18,6 +18,10 @@ use Shared\Concerns\HasUlid;
 /**
  * @property string $id
  * @property string $session_id
+ * @property string|null $room_identity
+ * @property int $link_generation
+ * @property CarbonInterface|null $rotated_at
+ * @property string|null $rotated_by
  * @property string $provider
  * @property string|null $external_id
  * @property ClassroomStatus $status
@@ -43,6 +47,10 @@ final class Classroom extends Model
 
     protected $fillable = [
         'session_id',
+        'room_identity',
+        'link_generation',
+        'rotated_at',
+        'rotated_by',
         'provider',
         'external_id',
         'external_meta',
@@ -67,6 +75,8 @@ final class Classroom extends Model
             'external_meta' => 'array',
             'moderator_secret' => 'encrypted',
             'attendee_secret' => 'encrypted',
+            'link_generation' => 'int',
+            'rotated_at' => 'immutable_datetime',
             'created_remote_at' => 'immutable_datetime',
             'started_at' => 'immutable_datetime',
             'ended_at' => 'immutable_datetime',
@@ -91,6 +101,15 @@ final class Classroom extends Model
     public function scopeForSession(Builder $query, string $sessionId): Builder
     {
         return $query->where('session_id', $sessionId);
+    }
+
+    /**
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
+    public function scopeForRoomIdentity(Builder $query, string $roomIdentity): Builder
+    {
+        return $query->where('room_identity', $roomIdentity);
     }
 
     /**
@@ -129,6 +148,12 @@ final class Classroom extends Model
     public function isRunning(): bool
     {
         return $this->hasStarted() && !$this->hasEnded();
+    }
+
+    /** هل هذه غرفة دائمة تخدم أكثر من حصة عبر الزمن، لا حصة واحدة؟ */
+    public function isPersistentRoom(): bool
+    {
+        return $this->room_identity !== null;
     }
 
     public function isProvisioned(): bool

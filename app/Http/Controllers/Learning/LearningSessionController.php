@@ -19,6 +19,8 @@ use Modules\AcademicReports\Domain\Models\SessionReportStudent;
 use Modules\Attendance\Domain\Contracts\AttendanceAdministrationQueries;
 use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
 use Modules\Sessions\Domain\ValueObjects\SessionParticipantAdministrationData;
+use Modules\VirtualClassroom\Domain\Contracts\ClassroomAdministrationQueries;
+use Modules\VirtualClassroom\Domain\ValueObjects\RoomIdentity;
 
 /** Reuse the existing session presentation contract, including recording grants. */
 final class LearningSessionController extends Controller
@@ -26,6 +28,7 @@ final class LearningSessionController extends Controller
     public function __construct(
         private readonly SessionParticipantAdministrationQueries $participants,
         private readonly AttendanceAdministrationQueries $attendance,
+        private readonly ClassroomAdministrationQueries $classrooms,
     ) {}
 
     public function student(Request $request, string $session, StudentSessionController $controller, PortalData $data): Response
@@ -68,7 +71,8 @@ final class LearningSessionController extends Controller
             }
             $props['attendance'] = array_map(static fn (array $row): array => [...$row,
                 'confirmedAt' => $confirmed[$row['studentId']] ?? null], $props['attendance'] ?? []);
-            $props['studentJoinLinks'] = $this->studentJoinLinks($request, $participants);
+            ['links' => $props['studentJoinLinks'], 'persistent' => $props['studentJoinLinksPersistent']]
+                = $this->studentJoinLinks($request, $participants);
         }
         if (isset($props['session'])) {
             $props['session']['joinUrl'] = $request->user()?->can('session.join')
@@ -95,24 +99,43 @@ final class LearningSessionController extends Controller
     /**
      * روابط الدخول اليدوية التي ينسخها المعلم للطالب المتعذّر دخوله لحسابه.
      *
-     * الرابط موقّع لكل مشارك على حدة حتى يبقى الحضور منسوبًا لصاحبه، وينتهي
-     * مع نهاية نافذة الدخول فلا يصلح لحصة أخرى ولا لما بعد انتهاء هذه الحصة.
+     * حصة ضمن جدول متكرر (scheduleId محدد): رابط دائم بلا تاريخ انتهاء يحل
+     * كل مرة إلى الحصة الجارية الآن على هذا الجدول — يُنسخ مرة واحدة ويصلح
+     * لكل الحصص القادمة. الإدارة وحدها تملك تدويره عند تسرّبه.
+     *
+     * حصة مفردة بلا جدول (تجريبية أو تلافٍ لا يحمل schedule_id مباشرة):
+     * السلوك القديم كما هو — رابط موقّع لهذا المشارك بعينه وينتهي بنهاية
+     * نافذة دخول هذه الحصة تحديدًا، فلا يصلح لحصة أخرى.
      *
      * @param list<SessionParticipantAdministrationData> $participants
-     * @return array<string, string> معرّف ملف الطالب => الرابط
+     * @return array{links: array<string, string>, persistent: array<string, bool>}
      */
     private function studentJoinLinks(Request $request, array $participants): array
     {
         if ((bool) config('virtual-classroom.student_link.enabled') !== true
             || $request->user()?->can('session.join') !== true) {
-            return [];
+            return ['links' => [], 'persistent' => []];
         }
 
         $afterMinutes = max(0, (int) config('virtual-classroom.join_window.after_minutes'));
         $links = [];
+        $persistent = [];
 
         foreach ($participants as $participant) {
             if (!$participant->invitationActive) {
+                continue;
+            }
+
+            if ($participant->scheduleId !== null) {
+                $generation = $this->classrooms->generationForRoomIdentity(
+                    RoomIdentity::forSchedule($participant->scheduleId),
+                );
+                $links[$participant->studentProfileId] = URL::signedRoute(
+                    'classroom.student-link.persistent',
+                    ['schedule' => $participant->scheduleId, 'enrollment' => $participant->enrollmentId, 'v' => $generation],
+                );
+                $persistent[$participant->studentProfileId] = true;
+
                 continue;
             }
 
@@ -121,8 +144,9 @@ final class LearningSessionController extends Controller
                 CarbonImmutable::parse($participant->scheduledEnd, 'UTC')->addMinutes($afterMinutes),
                 ['session' => $participant->sessionId, 'participant' => $participant->id],
             );
+            $persistent[$participant->studentProfileId] = false;
         }
 
-        return $links;
+        return ['links' => $links, 'persistent' => $persistent];
     }
 }

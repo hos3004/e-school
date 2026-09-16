@@ -6,9 +6,12 @@ namespace Modules\VirtualClassroom\Presentation\Filament\Pages;
 
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
+use Modules\VirtualClassroom\Application\Actions\RotateClassroomLinkAction;
 use Modules\VirtualClassroom\Domain\Contracts\ClassroomAdministrationQueries;
 use Modules\VirtualClassroom\Domain\Contracts\SupportsWebhookRegistration;
 use Modules\VirtualClassroom\Domain\Contracts\VirtualClassroomProvider;
+use Shared\Support\BusinessRuleViolation;
 use Throwable;
 
 final class ClassroomConnectionSettings extends Page
@@ -42,11 +45,63 @@ final class ClassroomConnectionSettings extends Page
     /** @var array<string, int> */
     public array $operationsSummary = [];
 
+    /** @var list<array{scheduleId: string, label: string, generation: int, rotatedAt: string|null}> */
+    public array $persistentRooms = [];
+
     public function mount(): void
     {
         $this->loadConfigurationState();
+        $organizationId = (string) data_get(auth()->user(), 'organization_id', '');
         $this->operationsSummary = app(ClassroomAdministrationQueries::class)
-            ->summaryForOrganization((string) data_get(auth()->user(), 'organization_id', ''));
+            ->summaryForOrganization($organizationId);
+        $this->loadPersistentRooms($organizationId);
+    }
+
+    /**
+     * تدوير الرابط الدائم لجدول — إجراء إداري بحت يبطل الرابط القديم فورًا.
+     *
+     * محمي بنفس صلاحية هذه الصفحة (canAccess) عبر بوابة Filament نفسها؛
+     * لا وصول لهذا الإجراء إلا لمن يملك أصلًا فتح صفحة إعدادات الفصل المباشر.
+     */
+    public function rotateLink(string $scheduleId): void
+    {
+        $user = Auth::user();
+        $organizationId = (string) data_get($user, 'organization_id', '');
+
+        try {
+            app(RotateClassroomLinkAction::class)->execute(
+                organizationId: $organizationId,
+                scheduleId: $scheduleId,
+                actorId: (string) data_get($user, 'id', ''),
+                reason: __('virtualclassroom::messages.link_rotation_reason'),
+            );
+
+            Notification::make()
+                ->title(__('virtualclassroom::settings.persistent_room_rotate_success'))
+                ->success()
+                ->send();
+        } catch (BusinessRuleViolation $violation) {
+            Notification::make()
+                ->title(__('virtualclassroom::settings.persistent_room_rotate_failed'))
+                ->body($violation->getMessage())
+                ->danger()
+                ->send();
+        }
+
+        $this->loadPersistentRooms($organizationId);
+    }
+
+    private function loadPersistentRooms(string $organizationId): void
+    {
+        $this->persistentRooms = array_map(
+            static fn ($room): array => [
+                'scheduleId' => $room->scheduleId,
+                'label' => $room->label,
+                'generation' => $room->generation,
+                'rotatedAt' => $room->rotatedAt,
+            ],
+            app(ClassroomAdministrationQueries::class)->persistentRoomsForOrganization($organizationId),
+        );
     }
 
     public static function canAccess(): bool

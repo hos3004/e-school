@@ -7,6 +7,7 @@ use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MarketingPageController;
 use App\Http\Controllers\Portal\ClassroomJoinController;
+use App\Http\Controllers\Portal\ClassroomPersistentStudentLinkController;
 use App\Http\Controllers\Portal\ClassroomStudentLinkController;
 use App\Http\Controllers\Portal\GuardianAttendanceController;
 use App\Http\Controllers\Portal\GuardianChildController;
@@ -91,6 +92,17 @@ Route::get('/classroom/student-link/{session}/{participant}', ClassroomStudentLi
     ->whereUlid('participant')
     ->middleware(['signed', 'throttle:'.(int) config('virtual-classroom.student_link.rate_limit_per_minute').',1'])
     ->name('classroom.student-link');
+
+/*
+ * الرابط الدائم: مرة واحدة لكل جدول متكرر بدل رابط جديد كل حصة. موقّع بلا
+ * تاريخ انتهاء — التاريخ لا معنى له لرابط يخدم الجدول طول عمره؛ الإبطال عند
+ * الحاجة عبر تدوير جيل الرابط (v) من الإدارة، لا عبر صلاحية زمنية.
+ */
+Route::get('/classroom/student-link/persistent/{schedule}/{enrollment}', ClassroomPersistentStudentLinkController::class)
+    ->whereUlid('schedule')
+    ->whereUlid('enrollment')
+    ->middleware(['signed', 'throttle:'.(int) config('virtual-classroom.student_link.rate_limit_per_minute').',1'])
+    ->name('classroom.student-link.persistent');
 
 Route::get('/register/submitted', [PublicStudentRegistrationController::class, 'showSubmitted'])->name('register.submitted');
 Route::get('/register/status/{id}', [PublicStudentRegistrationController::class, 'showStatus'])->name('register.status');
