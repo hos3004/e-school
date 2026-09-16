@@ -137,6 +137,7 @@ return [
         'recording.view.any' => 'View all recordings',
         'report.export' => 'Export reports',
         'report.view' => 'View reports',
+        'reporting.settings.manage' => 'Manage monthly program digest recipient setting',
         'schedule.manage' => 'Manage schedules',
         'schedule.view' => 'View schedules',
         'schedule.change.request' => 'Request a permanent lesson time change',

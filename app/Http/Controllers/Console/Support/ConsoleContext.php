@@ -28,6 +28,7 @@ final readonly class ConsoleContext
             ['groups', '/manage/groups', 'records', 'group.view'],
             ['sessions', '/manage/sessions', 'records', ['session.view', 'student.view.any']],
             ['reports', '/manage/reports', 'work', 'report.view'],
+            ['session_reports', '/manage/reports/session-reports', 'work', 'report.view'],
             ['whatsapp', '/manage/whatsapp', 'tools', 'admin.panel.access'],
             ['settings', '/manage/settings', 'tools', 'organizations.view'],
             ['directory', '/manage/directory', 'tools', 'admin.panel.access'],

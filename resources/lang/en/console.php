@@ -40,6 +40,7 @@ return [
         'teachers' => 'Teachers',
         'groups' => 'Groups',
         'reports' => 'Reports',
+        'session_reports' => 'Session Reports',
         'settings' => 'Settings',
     ],
     'environment_local' => 'Separate development environment · Test data',

@@ -40,6 +40,7 @@ return [
         'teachers' => 'Enseignants',
         'groups' => 'Groupes',
         'reports' => 'Rapports',
+        'session_reports' => 'Rapports de séances',
         'settings' => 'Paramètres',
     ],
     'environment_local' => 'Environnement de développement distinct · Données de test',

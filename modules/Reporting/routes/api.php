@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Modules\Reporting\Presentation\Http\Controllers\CorrectStudentDashboardController;
+use Modules\Reporting\Presentation\Http\Controllers\SaveProgramDigestRecipientSettingController;
+use Modules\Reporting\Presentation\Http\Controllers\ShowProgramDigestRecipientSettingController;
 use Modules\Reporting\Presentation\Http\Controllers\ShowStudentDashboardController;
 use Modules\Reporting\Presentation\Http\Controllers\StoreOrganizationSnapshotController;
 
@@ -26,4 +28,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::post('/student-dashboards/corrections', CorrectStudentDashboardController::class)
         ->name('reporting.student-dashboards.correct');
+});
+
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::get('/program-digest-recipient-setting', ShowProgramDigestRecipientSettingController::class)
+        ->name('reporting.program-digest-recipient-setting.show');
+
+    Route::post('/program-digest-recipient-setting', SaveProgramDigestRecipientSettingController::class)
+        ->name('reporting.program-digest-recipient-setting.save');
 });

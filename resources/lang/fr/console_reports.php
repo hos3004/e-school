@@ -1,0 +1,76 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'nav' => [
+        'session_reports' => 'Rapports de séances',
+    ],
+    'title' => 'Rapports de séances',
+    'description' => 'Rapports de séances soumis par les enseignants, regroupés par programme et par élève.',
+    'views' => [
+        'today' => "Aujourd'hui",
+        'month' => 'Mois',
+        'custom' => 'Période personnalisée',
+    ],
+    'filters' => [
+        'from' => 'Du',
+        'to' => 'Au',
+        'month' => 'Mois',
+        'program' => 'Programme',
+        'all_programs' => 'Tous les programmes',
+        'apply' => 'Appliquer',
+        'previous_month' => 'Mois précédent',
+        'next_month' => 'Mois suivant',
+    ],
+    'totals' => [
+        'programs' => 'Programmes',
+        'students' => 'Élèves',
+        'reports' => 'Rapports',
+    ],
+    'empty' => 'Aucun rapport de séance soumis durant cette période.',
+    'error' => 'Impossible de charger les rapports. Réessayez.',
+    'loading' => 'Chargement...',
+    'view_program' => 'Voir les rapports du programme',
+    'columns' => [
+        'date' => 'Date du rapport',
+        'topics' => 'Sujets',
+        'homework' => 'Devoirs',
+        'participation' => 'Participation',
+        'performance' => 'Performance',
+        'commitment' => 'Engagement',
+        'note' => 'Remarque',
+        'strengths' => 'Points forts',
+        'weaknesses' => 'Points à améliorer',
+    ],
+    'program_profile' => [
+        'title' => 'Profil des rapports du programme',
+        'back' => 'Retour aux rapports de séances',
+        'no_students' => "Aucun élève n'a de rapport durant cette période.",
+    ],
+    'settings' => [
+        'title' => 'Paramètre du destinataire du rapport mensuel',
+        'description' => "Détermine qui reçoit l'e-mail mensuel du rapport groupé par programme.",
+        'recipient_type' => 'Type de destinataire',
+        'type_staff' => 'Utilisateur existant du système',
+        'type_custom' => 'Adresse e-mail personnalisée',
+        'select_user' => 'Sélectionner un utilisateur',
+        'custom_email' => 'Adresse e-mail',
+        'reason' => 'Motif du changement',
+        'reason_placeholder' => 'Écrivez un motif bref (5 caractères minimum)',
+        'save' => "Enregistrer le paramètre",
+        'saved' => 'Paramètre du destinataire enregistré avec succès.',
+        'not_configured' => "Aucun destinataire configuré pour l'instant.",
+        'last_changed_by' => 'Dernière modification par',
+        'last_changed_at' => 'Le',
+        'last_changed_reason' => 'Motif',
+        'unknown_actor' => 'Utilisateur supprimé',
+        'no_accounts' => 'Aucun compte avec un e-mail valide dans cette organisation.',
+        'back' => 'Retour aux rapports de séances',
+    ],
+    'errors' => [
+        'invalid_date' => 'Format de date invalide.',
+        'invalid_month' => 'Format de mois invalide.',
+        'range_order' => 'La date de fin doit être postérieure ou égale à la date de début.',
+    ],
+];

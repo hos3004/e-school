@@ -21,10 +21,12 @@ use Modules\Notifications\Application\Policies\PopupCampaignPolicy;
 use Modules\Notifications\Application\Queries\EloquentPopupQueryService;
 use Modules\Notifications\Application\Queries\NotificationAdministrationQueryService;
 use Modules\Notifications\Application\Services\AccessControlPopupAudienceResolver;
+use Modules\Notifications\Application\Services\EmailDeliverabilityGuard;
 use Modules\Notifications\Application\Services\GreenApiDeliveryStatusRecorder;
 use Modules\Notifications\Application\Services\OutboxDispatcher;
 use Modules\Notifications\Application\Services\PayloadDomainEventRecipientResolver;
 use Modules\Notifications\Domain\Contracts\DomainEventRecipientResolver;
+use Modules\Notifications\Domain\Contracts\EmailDeliverabilityCheck;
 use Modules\Notifications\Domain\Contracts\NotificationAdministrationQueries;
 use Modules\Notifications\Domain\Contracts\NotificationDispatcher;
 use Modules\Notifications\Domain\Contracts\PopupAudienceResolver;
@@ -99,6 +101,7 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
         return [
             // محرّك الإشعارات — ما تعتمده بقية الموديولات عبر العقد.
             NotificationDispatcher::class => OutboxDispatcher::class,
+            EmailDeliverabilityCheck::class => EmailDeliverabilityGuard::class,
             ProviderDeliveryStatusRecorder::class => GreenApiDeliveryStatusRecorder::class,
             DomainEventRecipientResolver::class => PayloadDomainEventRecipientResolver::class,
             NotificationAdministrationQueries::class => NotificationAdministrationQueryService::class,
