@@ -46,3 +46,10 @@ Artisan::command('recordings:enforce-retention', function (ExpireRecordingsActio
 })->purpose('Archive or expire recordings that passed their retention period');
 
 Schedule::command('recordings:enforce-retention')->hourly()->withoutOverlapping();
+
+// التقرير الشهري المجمَّع لكل برنامج — آخر يوم من الشهر بتوقيت المؤسسة الافتراضي.
+// الأمر نفسه يُشغَّل يدويًا بنطاق تاريخ مخصَّص عبر --from/--to.
+Schedule::command('reporting:send-monthly-program-digests')
+    ->lastDayOfMonth('23:50')
+    ->timezone((string) config('academic.default_timezone'))
+    ->withoutOverlapping();

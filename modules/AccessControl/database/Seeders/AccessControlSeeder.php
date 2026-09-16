@@ -138,7 +138,7 @@ final class AccessControlSeeder extends Seeder
             'reporting.teacher.view',
             'reporting.teacher.correct',
             'reporting.teacher.delete',
-            'report.view', 'report.export'],
+            'report.view', 'report.export', 'reporting.settings.manage'],
         'Audit' => [
             'audit.view_any',
             'audit.export',
@@ -229,7 +229,7 @@ final class AccessControlSeeder extends Seeder
             'certificate.issue', 'badge.award',
             'message.send', 'message.moderate', 'messaging.inbound.view',
             'announcement.publish', 'class_wall.post',
-            'report.view', 'report.export', 'system.alerts',
+            'report.view', 'report.export', 'system.alerts', 'reporting.settings.manage',
             // يقترح التسوية ولا يعتمدها — طلب صريح من العميل
             'payroll.adjustment.propose',
         ],

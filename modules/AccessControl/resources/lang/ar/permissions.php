@@ -164,6 +164,7 @@ return [
 
         'report.export' => 'تصدير التقارير',
         'report.view' => 'عرض التقارير',
+        'reporting.settings.manage' => 'إدارة إعداد مستلم التقرير الشهري',
 
         'schedule.manage' => 'إدارة الجداول',
         'schedule.view' => 'عرض الجداول',

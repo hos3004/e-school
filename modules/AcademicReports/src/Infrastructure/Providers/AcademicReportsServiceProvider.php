@@ -7,8 +7,10 @@ namespace Modules\AcademicReports\Infrastructure\Providers;
 use Modules\AcademicReports\Application\Policies\MonthlyReportPolicy;
 use Modules\AcademicReports\Application\Policies\SessionReportPolicy;
 use Modules\AcademicReports\Application\Policies\SessionReportStudentPolicy;
+use Modules\AcademicReports\Application\Queries\SessionReportBatchQueryService;
 use Modules\AcademicReports\Application\Queries\SessionReportStatusQueryService;
 use Modules\AcademicReports\Application\Queries\StudentLearningReportQueryService;
+use Modules\AcademicReports\Domain\Contracts\SessionReportBatchQueries;
 use Modules\AcademicReports\Domain\Contracts\SessionReportStatusQueries;
 use Modules\AcademicReports\Domain\Contracts\StudentLearningReportQueries;
 use Modules\AcademicReports\Domain\Models\MonthlyReport;
@@ -56,6 +58,7 @@ final class AcademicReportsServiceProvider extends BaseModuleServiceProvider
     {
         return [
             SessionReportStatusQueries::class => SessionReportStatusQueryService::class,
+            SessionReportBatchQueries::class => SessionReportBatchQueryService::class,
             StudentLearningReportQueries::class => StudentLearningReportQueryService::class,
             Transaction::class => DatabaseTransaction::class,
         ];
