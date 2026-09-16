@@ -42,6 +42,7 @@ return [
         'teachers' => 'المعلمون',
         'groups' => 'المجموعات',
         'reports' => 'التقارير',
+        'session_reports' => 'تقارير الحصص',
         'followup' => 'الغياب وتعليق الدراسة',
         'registration' => 'التسجيل والطلبات',
         'teacher_dues' => 'مستحقات المعلمين',
