@@ -6,6 +6,7 @@ namespace App\Http\Requests\Console;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class SaveQuranPlacementRequest extends FormRequest
 {
@@ -45,6 +46,13 @@ final class SaveQuranPlacementRequest extends FormRequest
             'ends_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
         ];
 
+        if ($this->isMethod('PATCH')) {
+            // تجاوز مهلة حماية الحصص القريبة (recurrence.edit_lock_hours) — استثنائي،
+            // يحتاج سببًا صريحًا يفسر أثره على الحصص القادمة خلال المهلة.
+            $rules['apply_immediately'] = ['sometimes', 'boolean'];
+            $rules['override_reason'] = [Rule::requiredIf($this->boolean('apply_immediately')), 'nullable', 'string', 'min:3', 'max:1000'];
+        }
+
         return $this->isMethod('GET') ? [...$rules,
             'schedule_id' => ['nullable', 'required_with:student_id', 'ulid'],
             'student_id' => ['nullable', 'required_with:schedule_id', 'ulid'],
@@ -74,6 +82,7 @@ final class SaveQuranPlacementRequest extends FormRequest
             'weekly_slots.*.weekday' => __('console_quran.weekday'),
             'weekly_slots.*.start_time' => __('console_quran.start_time'),
             'weekdays' => __('console_quran.weekday'),
+            'override_reason' => __('console_quran.override_reason'),
         ];
     }
 }

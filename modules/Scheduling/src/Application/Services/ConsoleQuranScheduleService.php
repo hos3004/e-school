@@ -26,9 +26,9 @@ final readonly class ConsoleQuranScheduleService
     /** @param array<string, mixed> $data
      * @return array<string, mixed>
      */
-    public function update(string $organizationId, string $studentId, string $scheduleId, string $courseId, array $data, string $actorId): array
+    public function update(string $organizationId, string $studentId, string $scheduleId, string $courseId, array $data, string $actorId, bool $applyImmediately = false, ?string $overrideReason = null): array
     {
-        return $this->transaction->run(function () use ($organizationId, $studentId, $scheduleId, $courseId, $data, $actorId): array {
+        return $this->transaction->run(function () use ($organizationId, $studentId, $scheduleId, $courseId, $data, $actorId, $applyImmediately, $overrideReason): array {
             $schedule = $this->owned($organizationId, $studentId, $scheduleId, $courseId, true);
             Gate::authorize('update', $schedule);
             $student = $this->students->find($organizationId, $studentId);
@@ -36,9 +36,12 @@ final readonly class ConsoleQuranScheduleService
             if ($account === null || $account->organizationId !== $organizationId || !$account->isActive()) {
                 throw BusinessRuleViolation::make('scheduling.student_not_schedulable', 'scheduling::errors.student_not_schedulable');
             }
+            // التطبيق الفوري يمس حصصًا قريبة، فالسبب المعروض للمعلم والطالب هو
+            // ما كتبه الإداري، وليس الجملة العامة لتحديث الجدول.
+            $reason = $applyImmediately ? trim((string) $overrideReason) : __('console_quran.audit_update');
             $saved = $this->update->execute($schedule, [
                 ...$data, 'target_type' => 'student', 'student_profile_id' => $studentId, 'group_id' => null, 'course_id' => $courseId,
-            ], $actorId, __('console_quran.audit_update'));
+            ], $actorId, $reason, $applyImmediately);
 
             return $this->summary($saved);
         });

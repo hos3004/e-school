@@ -52,6 +52,10 @@ return [
     'saved' => 'Affectation et planning enregistrés.',
     'schedule_saved' => 'Planning enregistré',
     'edit_schedule' => 'Modifier le planning existant',
+    'apply_immediately' => 'Appliquer le nouvel horaire immédiatement, y compris les séances proches',
+    'apply_immediately_help' => 'Exceptionnel : lève la protection des séances proches, y compris la séance du jour si elle n’a pas commencé. L’enseignant et l’élève sont informés du motif.',
+    'override_reason' => 'Motif de l’application immédiate',
+    'override_reason_placeholder' => 'Expliquez pourquoi une séance proche ou du jour est modifiée sans attendre le délai de protection',
     'row_help' => 'Les conflits et l’admissibilité sont vérifiés à l’enregistrement. Les brouillons des autres lignes sont conservés.',
     'failed' => 'La demande a échoué. Vérifiez votre connexion puis réessayez.',
     'days' => [

@@ -96,7 +96,12 @@ export default function Quran(props: QuranProps) {
   };
   const save = async (
     student: Student,
-    rate?: { session_rate_major: string; rate_reason: string },
+    rate?: {
+      session_rate_major: string;
+      rate_reason: string;
+      apply_immediately?: boolean;
+      override_reason?: string;
+    },
   ) => {
     const value = draft(student);
     setBusy((old) => ({ ...old, [student.id]: true }));
@@ -128,6 +133,12 @@ export default function Quran(props: QuranProps) {
             ? {
                 session_rate_major: rate.session_rate_major,
                 rate_reason: rate.rate_reason,
+              }
+            : {}),
+          ...(student.schedule && rate?.apply_immediately
+            ? {
+                apply_immediately: true,
+                override_reason: rate.override_reason,
               }
             : {}),
         },

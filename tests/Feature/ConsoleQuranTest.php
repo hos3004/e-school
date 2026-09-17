@@ -198,6 +198,43 @@ final class ConsoleQuranTest extends TestCase
         $this->assertDatabaseHas('audit_log', ['action' => 'scheduling.schedule_updated', 'actor_id' => $this->actor->id, 'reason' => __('console_quran.audit_update')]);
     }
 
+    public function test_apply_immediately_requires_override_reason_and_reschedules_a_protected_near_term_session(): void
+    {
+        $this->postJson('/manage/quran/'.$this->student->id, [...$this->payload(), 'ends_on' => '2026-10-28'])->assertOk();
+        $schedule = Schedule::query()->firstOrFail();
+        $this->travelTo(CarbonImmutable::parse('2026-10-13 08:00:00 UTC'));
+        $protected = Session::query()->where('schedule_id', $schedule->id)->where('scheduled_start', '2026-10-14 12:00:00')->firstOrFail();
+
+        $override = [
+            ...$this->payload(), 'ends_on' => '2026-10-28', 'apply_immediately' => true,
+            'weekly_slots' => [['weekday' => 0, 'start_time' => '10:00'], ['weekday' => 3, 'start_time' => '13:00']],
+        ];
+        $this->patchJson('/manage/quran/'.$this->student->id.'/schedules/'.$schedule->id, $override)
+            ->assertUnprocessable()->assertJsonValidationErrors('override_reason');
+        $this->assertDatabaseHas('sessions', ['id' => $protected->id, 'status' => 'scheduled']);
+
+        $this->patchJson('/manage/quran/'.$this->student->id.'/schedules/'.$schedule->id, [
+            ...$override, 'override_reason' => 'ولي أمر طلب تعديل حصة اليوم بسبب ظرف طارئ',
+        ])->assertOk()->assertJsonPath('schedule.weekly_slots.1.start_time', '13:00');
+
+        $this->assertDatabaseHas('sessions', ['id' => $protected->id, 'status' => 'superseded']);
+        $this->assertDatabaseHas('sessions', ['schedule_id' => $schedule->id, 'scheduled_start' => '2026-10-14 13:00:00', 'status' => 'scheduled']);
+        $audit = DB::table('audit_log')->where('action', 'scheduling.schedule_updated')->orderByDesc('created_at')->first();
+        $this->assertNotNull($audit);
+        $this->assertSame('ولي أمر طلب تعديل حصة اليوم بسبب ظرف طارئ', $audit->reason);
+        $this->assertTrue((bool) (json_decode((string) $audit->new_values, true)['applied_immediately'] ?? false));
+    }
+
+    public function test_apply_immediately_is_rejected_without_manage_permission(): void
+    {
+        $this->postJson('/manage/quran/'.$this->student->id, [...$this->payload(), 'ends_on' => '2026-10-28'])->assertOk();
+        $schedule = Schedule::query()->firstOrFail();
+        Gate::define('schedule.manage', static fn (): bool => false);
+        $this->patchJson('/manage/quran/'.$this->student->id.'/schedules/'.$schedule->id, [
+            ...$this->payload(), 'ends_on' => '2026-10-28', 'apply_immediately' => true, 'override_reason' => 'سبب عاجل',
+        ])->assertForbidden();
+    }
+
     public function test_update_rolls_back_superseded_sessions_slots_and_audit_when_teacher_conflicts(): void
     {
         $firstPayload = [...$this->payload(), 'ends_on' => '2026-10-28'];

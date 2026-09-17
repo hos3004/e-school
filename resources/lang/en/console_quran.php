@@ -52,6 +52,10 @@ return [
     'saved' => 'Student placement and schedule saved.',
     'schedule_saved' => 'Schedule saved',
     'edit_schedule' => 'Edit existing schedule',
+    'apply_immediately' => 'Apply the new time immediately, including upcoming sessions',
+    'apply_immediately_help' => 'Exceptional: lifts the protection for sessions within the edit-lock window, including today\'s session if it has not started. The teacher and student are notified with the reason.',
+    'override_reason' => 'Reason for immediate application',
+    'override_reason_placeholder' => 'Explain why an upcoming or today\'s session is changed without waiting for the protection window',
     'row_help' => 'Conflicts and teacher eligibility are checked on save. Drafts in other rows remain in place.',
     'failed' => 'The request could not be completed. Check your connection and retry.',
     'days' => [
