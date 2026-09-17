@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from "@inertiajs/react";
 import {
   cloneElement,
+  useEffect,
   useState,
   type FormEvent,
   type ReactNode,
@@ -53,6 +54,7 @@ type Props = {
   teachers: { staff_profile_id: string; name: string }[];
   timezones: string[];
   durations: number[];
+  durationLimits: { min: number; max: number };
   maxInterval: number;
   editLockHours: number;
   outsideAvailability: string;
@@ -66,6 +68,7 @@ export default function GroupScheduleEditor({
   teachers,
   timezones,
   durations,
+  durationLimits,
   maxInterval,
   editLockHours,
   outsideAvailability,
@@ -79,6 +82,8 @@ export default function GroupScheduleEditor({
     weekdays: schedule.weekdays,
     start_time: schedule.start_time,
     duration_minutes: schedule.duration_minutes,
+    session_rate_major: "",
+    rate_reason: "",
     interval_weeks: schedule.interval_weeks,
     timezone: schedule.timezone,
     starts_on: schedule.starts_on,
@@ -87,6 +92,11 @@ export default function GroupScheduleEditor({
   const [checking, setChecking] = useState(false);
   const [availability, setAvailability] = useState<string[] | null>(null);
   const [availabilityError, setAvailabilityError] = useState("");
+  const [teacherRate, setTeacherRate] = useState<{
+    rate_major: string | null;
+    currency: string;
+    requires_rate: boolean;
+  } | null>(null);
   const group = groups.find((item) => item.id === form.data.group_id);
   const availableCourses = courses.filter((item) =>
     group?.program_ids.includes(item.program_id),
@@ -110,6 +120,35 @@ export default function GroupScheduleEditor({
   const selectedTeacher = teachers.find(
     (item) => item.staff_profile_id === form.data.staff_profile_id,
   );
+  const courseId = form.data.course_id;
+  const staffProfileId = form.data.staff_profile_id;
+  useEffect(() => {
+    if (!courseId || !staffProfileId) {
+      setTeacherRate(null);
+      return;
+    }
+    let active = true;
+    axios
+      .get("/manage/schedules/rate", {
+        params: { course_id: courseId, staff_profile_id: staffProfileId },
+      })
+      .then((result) => {
+        if (active) {
+          setTeacherRate(result.data);
+          form.setData(
+            "session_rate_major",
+            result.data.rate_major ?? "",
+          );
+        }
+      })
+      .catch(() => {
+        if (active) setTeacherRate(null);
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, staffProfileId]);
   const title = t(
     "console_sessions." + (schedule.id ? "edit_title" : "create_title"),
   );
@@ -375,19 +414,87 @@ export default function GroupScheduleEditor({
             )}
             {field(
               "duration_minutes",
-              <select
+              <input
                 className="console-control"
+                type="number"
+                required
+                list="group-session-durations"
+                min={durationLimits.min}
+                max={durationLimits.max}
+                step={1}
                 value={form.data.duration_minutes}
                 onChange={(event) =>
                   set("duration_minutes", Number(event.target.value))
                 }
-              >
-                {durations.map((value) => (
-                  <option key={value} value={value}>
-                    {value} {t("console_sessions.minutes")}
-                  </option>
-                ))}
-              </select>,
+                aria-describedby="group-duration-hint"
+              />,
+            )}
+            <datalist id="group-session-durations">
+              {durations.map((value) => (
+                <option key={value} value={value} />
+              ))}
+            </datalist>
+            <p id="group-duration-hint" className="sessions-field-note">
+              {t("console_sessions.rates.duration_hint")
+                .replace(":min", String(durationLimits.min))
+                .replace(":max", String(durationLimits.max))
+                .replace(":durations", durations.join("، "))}
+            </p>
+            {selectedTeacher && (
+              <div className="field">
+                <span>{t("console_sessions.rates.session_rate")}</span>
+                <input
+                  className="console-control"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={form.data.session_rate_major}
+                  onChange={(event) =>
+                    set("session_rate_major", event.target.value)
+                  }
+                  aria-label={t("console_sessions.rates.session_rate")}
+                />
+                {form.errors.session_rate_major && (
+                  <small className="sessions-error">
+                    {form.errors.session_rate_major}
+                  </small>
+                )}
+                <p className="sessions-field-note">
+                  {!teacherRate || !teacherRate.requires_rate
+                    ? t("console_sessions.rates.rate_not_needed")
+                    : teacherRate.rate_major === null
+                      ? t("console_sessions.rates.no_rate")
+                      : t("console_sessions.rates.current_rate") +
+                        " " +
+                        teacherRate.rate_major +
+                        " " +
+                        teacherRate.currency}
+                </p>
+                <p className="sessions-field-note">
+                  {t("console_sessions.rates.session_rate_hint")}
+                </p>
+              </div>
+            )}
+            {form.data.session_rate_major !== "" && (
+              <div className="field">
+                <span>{t("console_sessions.rates.rate_reason")}</span>
+                <input
+                  className="console-control"
+                  type="text"
+                  required
+                  minLength={3}
+                  value={form.data.rate_reason}
+                  onChange={(event) =>
+                    set("rate_reason", event.target.value)
+                  }
+                  aria-label={t("console_sessions.rates.rate_reason")}
+                />
+                {form.errors.rate_reason && (
+                  <small className="sessions-error">
+                    {form.errors.rate_reason}
+                  </small>
+                )}
+              </div>
             )}
             {field(
               "interval_weeks",
