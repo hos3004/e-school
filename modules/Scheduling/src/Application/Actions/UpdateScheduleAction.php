@@ -9,7 +9,9 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Scheduling\Application\Services\ScheduleDefinitionValidator;
 use Modules\Scheduling\Application\Services\ScheduleMaterializer;
+use Modules\Scheduling\Application\Services\ScheduleNotificationPayloadFactory;
 use Modules\Scheduling\Domain\Events\ScheduleChanged;
+use Modules\Scheduling\Domain\Events\ScheduleTimesChanged;
 use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Scheduling\Domain\ValueObjects\WeeklyRecurrence;
 use Modules\Sessions\Domain\Contracts\SessionSchedulingGateway;
@@ -25,6 +27,7 @@ final readonly class UpdateScheduleAction
         private ScheduleDefinitionValidator $validator,
         private ScheduleMaterializer $materializer,
         private SessionSchedulingGateway $sessions,
+        private ScheduleNotificationPayloadFactory $notificationPayload,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -101,6 +104,16 @@ final readonly class UpdateScheduleAction
 
         $this->events->dispatch(new ScheduleChanged(
             scheduleId: (string) $schedule->getKey(),
+            effectiveFrom: $cutoff->toIso8601String(),
+            actorId: $actorId,
+        ));
+
+        /*
+         * رسالة واحدة تحمل المواعيد الجديدة. الحصص المولّدة من هذا التعديل لا
+         * تُشعِر كلٌّ عن نفسها، وإلا وصل للمعلم عشرون إشعارًا عن موعد واحد.
+         */
+        $this->events->dispatch(new ScheduleTimesChanged(
+            ...$this->notificationPayload->forSchedule($schedule->refresh()),
             effectiveFrom: $cutoff->toIso8601String(),
             actorId: $actorId,
         ));

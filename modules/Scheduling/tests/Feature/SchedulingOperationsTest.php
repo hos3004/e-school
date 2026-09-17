@@ -175,7 +175,12 @@ it('creates an individual schedule and builds its notification from serialized s
     $outbox = NotificationOutbox::query()->where('category', 'schedule_summary')->get();
     $emailBody = $outbox->firstWhere('channel', 'email')?->body ?? [];
 
-    expect($outbox)->toHaveCount(4)
+    // صف لكل مستلم في كل قناة مفعّلة للفئة — لا رقم ثابت يتعطّل كلما تغيّرت القنوات.
+    $channels = (array) config('notifications.categories.schedule_summary.channels');
+
+    expect($outbox)->toHaveCount(2 * count($channels))
+        ->and($outbox->pluck('channel')->unique()->sort()->values()->all())
+        ->toBe(collect($channels)->sort()->values()->all())
         ->and($outbox->pluck('user_id')->unique())->toHaveCount(2)
         ->and(implode(' ', $emailBody))->toContain('القرآن الفردي')
         ->and(implode(' ', $emailBody))->toContain($session->scheduled_start->format('Y-m-d'));

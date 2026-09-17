@@ -8,6 +8,11 @@ return [
         'body' => 'تم اعتماد جدول {{target_name}} في كورس {{course_name}} ({{course_code}}) مع المعلم {{teacher_name}}. مدة الحصة {{duration_minutes}} دقيقة، وعدد الحصص {{session_count}}. مواعيد الحصص: {{schedule_times}}',
         'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
     ],
+    'schedule.times_changed' => [
+        'subject' => 'تم تعديل مواعيد الحصص',
+        'body' => 'تم تعديل مواعيد جدول {{target_name}} في كورس {{course_name}} ({{course_code}}) مع المعلم {{teacher_name}}. مدة الحصة {{duration_minutes}} دقيقة، وعدد الحصص {{session_count}}. المواعيد الجديدة: {{schedule_times}}',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
+    ],
     'registration.submitted' => [
         'subject' => 'تم استلام طلب التسجيل',
         'body' => 'تم استلام طلب التسجيل، وسيصلك إشعار عند اكتمال المراجعة.',

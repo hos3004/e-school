@@ -8,6 +8,11 @@ return [
         'body' => 'The schedule for {{target_name}} in {{course_name}} ({{course_code}}) with {{teacher_name}} has been confirmed. Session duration: {{duration_minutes}} minutes. Total sessions: {{session_count}}. Session times: {{schedule_times}}',
         'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
     ],
+    'schedule.times_changed' => [
+        'subject' => 'Session times updated',
+        'body' => 'The schedule for {{target_name}} in {{course_name}} ({{course_code}}) with {{teacher_name}} has been updated. Session duration: {{duration_minutes}} minutes. Total sessions: {{session_count}}. New times: {{schedule_times}}',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
+    ],
     'registration.submitted' => [
         'subject' => 'Registration request received',
         'body' => 'Your registration request was received. You will be notified when the review is complete.',

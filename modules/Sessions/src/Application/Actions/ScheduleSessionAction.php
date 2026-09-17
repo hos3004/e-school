@@ -35,9 +35,14 @@ final readonly class ScheduleSessionAction
 
     /**
      * @param array<string, mixed> $data
+     * @param bool $generatedFromSchedule تفريغ جدول متكرر لا حصة أنشأها إنسان الآن
      */
-    public function execute(array $data, ?string $actorId = null, ?string $reason = null): Session
-    {
+    public function execute(
+        array $data,
+        ?string $actorId = null,
+        ?string $reason = null,
+        bool $generatedFromSchedule = false,
+    ): Session {
         $organizationId = (string) ($data['organization_id'] ?? '');
         $courseId = (string) ($data['course_id'] ?? '');
         $teacherId = (string) ($data['staff_profile_id'] ?? '');
@@ -113,7 +118,7 @@ final readonly class ScheduleSessionAction
             throw BusinessRuleViolation::make('sessions.reason_required', 'sessions::errors.reason_required');
         }
 
-        [$session, $event] = DB::transaction(function () use ($data, $start, $end, $actorId, $reason): array {
+        [$session, $event] = DB::transaction(function () use ($data, $start, $end, $actorId, $reason, $generatedFromSchedule): array {
             $session = new Session;
             $session->fill([
                 ...$data,
@@ -159,6 +164,7 @@ final readonly class ScheduleSessionAction
                 scheduledStart: $start->toIso8601String(),
                 scheduledEnd: $end->toIso8601String(),
                 groupId: $session->group_id,
+                generatedFromSchedule: $generatedFromSchedule,
             )];
         });
 

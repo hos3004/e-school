@@ -105,7 +105,7 @@ final readonly class SessionSchedulingService implements SessionSchedulingGatewa
                 'scheduled_start' => $startsAt,
                 'scheduled_end' => $endsAt,
                 'title' => $title,
-            ], $actorId, __('scheduling::messages.generated_from_schedule'));
+            ], $actorId, __('scheduling::messages.generated_from_schedule'), generatedFromSchedule: true);
 
             $this->insertParticipants((string) $session->getKey(), $participants);
 

@@ -110,7 +110,7 @@ return [
      */
     'categories' => [
         'schedule_summary' => [
-            'channels' => ['in_app', 'email'],
+            'channels' => ['in_app', 'email', 'whatsapp'],
             'critical' => false,
             'respects_quiet_hours' => false,
         ],
@@ -157,6 +157,12 @@ return [
             'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
             'source_events' => ['Modules\Scheduling\Domain\Events\ScheduleCreated'],
         ],
+        'schedule.times_changed' => [
+            'category' => 'schedule_summary',
+            'audiences' => ['student', 'teacher'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\ScheduleTimesChanged'],
+        ],
         'registration.submitted' => [
             'category' => 'registration_update',
             'audiences' => ['student', 'guardian', 'admin'],
@@ -198,6 +204,12 @@ return [
             'audiences' => ['student', 'guardian', 'teacher'],
             'recipient_fields' => ['student_user_ids', 'guardian_user_ids', 'teacher_user_id'],
             'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionScheduled'],
+            /*
+             * الحصة المولّدة ضمن تفريغ جدول متكرر لا تُشعِر وحدها: تعديل جدول
+             * واحد يولّد عشرات الحصص، فيصل للمعلم عشرون رسالة عن موعد واحد.
+             * جمهور الجدول يأخذ ملخّصًا واحدًا عبر schedule.created وschedule.times_changed.
+             */
+            'payload_match' => ['generated_from_schedule' => false],
         ],
         'session.rescheduled' => [
             'category' => 'session_changed',
