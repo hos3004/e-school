@@ -77,6 +77,7 @@ Route::post('/settings/{operation}', SettingsOperationsController::class)
 
 Route::get('/quran', [QuranController::class, 'index'])->middleware('can:student.view.any')->name('quran');
 Route::get('/quran/availability', [QuranController::class, 'availability'])->middleware(['can:student.view.any', 'can:schedule.manage'])->name('quran.availability');
+Route::get('/quran/rate', [QuranController::class, 'rate'])->middleware(['can:student.view.any', 'can:schedule.manage'])->name('quran.rate');
 Route::post('/quran/{student}', [QuranController::class, 'store'])->whereUlid('student')->middleware(['can:student.view.any', 'can:schedule.manage'])->name('quran.store');
 
 require __DIR__.'/console-quran.php';

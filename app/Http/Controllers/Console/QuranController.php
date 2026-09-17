@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -26,7 +27,11 @@ use Modules\Scheduling\Application\Services\ConsoleQuranScheduleService;
 use Modules\Scheduling\Application\Services\TeacherAvailabilityPlanner;
 use Modules\Scheduling\Domain\Models\PendingTeachingAssignment;
 use Modules\Sessions\Domain\Enums\SessionStatus;
+use Modules\Staff\Application\Actions\SupersedeTeacherRate;
+use Modules\Staff\Domain\Contracts\StaffQueries;
 use Modules\Staff\Domain\Contracts\TeacherDirectoryQueries;
+use Modules\Staff\Domain\Contracts\TeacherRateResolver;
+use Modules\Staff\Domain\Enums\RateScope;
 use Modules\Students\Application\Services\ConsoleQuranRegistrationService;
 use Modules\Students\Application\Services\ConsoleRegistrationService;
 use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
@@ -47,6 +52,7 @@ final class QuranController extends Controller
         private readonly ConsoleRegistrationService $registration,
         private readonly ConsoleQuranRegistrationService $quranRegistrations,
         private readonly PlaceConsoleQuranStudentAction $placeStudent,
+        private readonly StaffQueries $staff,
     ) {}
 
     public function index(Request $request): Response
@@ -192,9 +198,15 @@ final class QuranController extends Controller
         }
         $course = $this->course($organizationId);
         abort_if($course === null || $course->programId === null, 404);
+        $programId = $course->programId;
+        $courseId = $course->id;
         $data = $request->validated();
         try {
-            $id = $this->placeStudent->execute($organizationId, $student, $course->programId, $course->id, $data, (string) $request->user()?->getAuthIdentifier());
+            $id = DB::transaction(function () use ($organizationId, $student, $programId, $courseId, $data, $request): string {
+                $this->recordRate($request, $courseId, $programId, (string) $data['staff_profile_id'], (string) $data['starts_on']);
+
+                return $this->placeStudent->execute($organizationId, $student, $programId, $courseId, $data, (string) $request->user()?->getAuthIdentifier());
+            });
         } catch (BusinessRuleViolation $exception) {
             throw ValidationException::withMessages(['placement' => $exception->getMessage()]);
         }
@@ -209,13 +221,91 @@ final class QuranController extends Controller
         $organizationId = (string) $request->user()?->organization_id;
         $course = $this->course($organizationId);
         abort_if($course === null, 404);
+        $courseId = $course->id;
+        $programId = $course->programId;
+        $data = $request->validated();
         try {
-            $saved = $this->schedules->update($organizationId, $student, $schedule, $course->id, $request->validated(), (string) $request->user()?->getAuthIdentifier());
+            $saved = DB::transaction(function () use ($organizationId, $student, $schedule, $courseId, $programId, $data, $request): array {
+                $this->recordRate($request, $courseId, $programId, (string) $data['staff_profile_id'], (string) $data['starts_on']);
+
+                return $this->schedules->update($organizationId, $student, $schedule, $courseId, $data, (string) $request->user()?->getAuthIdentifier());
+            });
         } catch (BusinessRuleViolation $exception) {
             throw ValidationException::withMessages(['placement' => $exception->getMessage()]);
         }
 
         return response()->json(['message' => __('console_quran.updated'), 'schedule' => $saved]);
+    }
+
+    /** سعر المعلم الساري لهذا الكورس، ليُعرض عند اختيار مدة خارج كتالوج الحصص الفردية. */
+    public function rate(Request $request): JsonResponse
+    {
+        $organizationId = (string) $request->user()?->organization_id;
+        abort_if($organizationId === '', 403);
+        $input = $request->validate(['staff_profile_id' => ['required', 'string', 'size:26']]);
+        $course = $this->course($organizationId);
+        $today = CarbonImmutable::now('UTC');
+        $rate = $course?->programId === null ? null : app(TeacherRateResolver::class)->resolve(
+            $input['staff_profile_id'], $today, $course->programId, $course->id, 'individual',
+        );
+
+        return response()->json([
+            'rate_major' => $rate === null ? null : $rate['money']->toMajor(),
+            'currency' => $rate === null ? (string) config('staff.currency.default', 'EGP') : $rate['money']->currency,
+            'requires_rate' => $this->staff->requiresSessionRates($input['staff_profile_id'], $today),
+        ]);
+    }
+
+    /**
+     * سعر حصة المعلم في هذا الكورس عند إرساله مع حفظ التسكين — النطاق بمستوى
+     * الكورس بلا تمييز نوع الحصة، فيسري على حصص المجموعات لنفس الكورس أيضًا
+     * إن وُجدت. نفس منطق StudentTeacherController::recordRate.
+     */
+    private function recordRate(SaveQuranPlacementRequest $request, string $courseId, ?string $programId, string $staffProfileId, string $effectiveFrom): void
+    {
+        $amount = $request->validated('session_rate_major');
+
+        if ($amount === null || (string) $amount === '') {
+            return;
+        }
+
+        if ($programId === null) {
+            throw ValidationException::withMessages([
+                'session_rate_major' => __('console_quran.rates.course_unavailable'),
+            ]);
+        }
+
+        $requested = number_format((float) $amount, 2, '.', '');
+        $current = app(TeacherRateResolver::class)->resolve(
+            $staffProfileId,
+            CarbonImmutable::parse($effectiveFrom, 'UTC'),
+            $programId,
+            $courseId,
+            'individual',
+        );
+
+        if ($current !== null
+            && $current['scope'] === RateScope::Course
+            && number_format((float) $current['money']->toMajor(), 2, '.', '') === $requested) {
+            return;
+        }
+
+        try {
+            app(SupersedeTeacherRate::class)->execute(
+                staffProfileId: $staffProfileId,
+                scope: RateScope::Course,
+                amountMajor: $requested,
+                effectiveFrom: $effectiveFrom,
+                programId: $programId,
+                courseId: $courseId,
+                actorId: (string) $request->user()?->getAuthIdentifier(),
+                reason: (string) $request->validated('rate_reason'),
+            );
+        } catch (BusinessRuleViolation $violation) {
+            throw ValidationException::withMessages([
+                'session_rate_major' => $violation->getMessage(),
+            ]);
+        }
     }
 
     public function availability(SaveQuranPlacementRequest $request): JsonResponse
