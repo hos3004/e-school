@@ -224,11 +224,14 @@ final class QuranController extends Controller
         $courseId = $course->id;
         $programId = $course->programId;
         $data = $request->validated();
+        $applyImmediately = (bool) ($data['apply_immediately'] ?? false);
+        $overrideReason = $data['override_reason'] ?? null;
+        unset($data['apply_immediately'], $data['override_reason']);
         try {
-            $saved = DB::transaction(function () use ($organizationId, $student, $schedule, $courseId, $programId, $data, $request): array {
+            $saved = DB::transaction(function () use ($organizationId, $student, $schedule, $courseId, $programId, $data, $request, $applyImmediately, $overrideReason): array {
                 $this->recordRate($request, $courseId, $programId, (string) $data['staff_profile_id'], (string) $data['starts_on']);
 
-                return $this->schedules->update($organizationId, $student, $schedule, $courseId, $data, (string) $request->user()?->getAuthIdentifier());
+                return $this->schedules->update($organizationId, $student, $schedule, $courseId, $data, (string) $request->user()?->getAuthIdentifier(), $applyImmediately, $overrideReason);
             });
         } catch (BusinessRuleViolation $exception) {
             throw ValidationException::withMessages(['placement' => $exception->getMessage()]);

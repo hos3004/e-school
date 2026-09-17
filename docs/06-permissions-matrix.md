@@ -311,7 +311,7 @@ if ($user->hasRole('teacher')) { ... }
 | POST /learn/student/schedule-changes/{change}/respond | `schedule.change.respond` + ScheduleChangeRequestPolicy::respond؛ الرد مقصور على صف القبول المعلّق لهذا الطالب. رفض واحد ينهي الطلب، واكتمال القبول يطبّق الموعد عبر UpdateScheduleAction. |
 | POST /learn/teacher/schedule-changes/{change}/withdraw | `schedule.change.request` أو `schedule.manage` + ScheduleChangeRequestPolicy::withdraw؛ ومطابقة staff_profile_id لصاحب الطلب. |
 | GET /manage/schedules/availability | schedule.manage؛ مجموعة وكورس ومعلم صالحون من المؤسسة، واستثناء جدول موجود يتطلب SchedulePolicy::update وتطابق الوجهة |
-| PATCH /manage/quran/{student}/schedules/{schedule} | student.view.any + schedule.manage + SchedulePolicy::update؛ تطابق الطالب والكورس الفردي والمؤسسة وحساب الطالب النشط |
+| PATCH /manage/quran/{student}/schedules/{schedule} | student.view.any + schedule.manage + SchedulePolicy::update؛ تطابق الطالب والكورس الفردي والمؤسسة وحساب الطالب النشط. `apply_immediately=true` (17 سبتمبر 2026) يتجاوز مهلة `scheduling.recurrence.edit_lock_hours` ويمس حصصًا قريبة أو حصة اليوم؛ يحتاج `override_reason` صريحًا، محصور بنفس صلاحية schedule.manage (platform_admin/academic_supervisor)، ويُسجَّل في التدقيق ويصل سببه للمعلم والطالب ضمن إشعار تغيّر الموعد |
 | تسكين طلب قرآن مقبول جديد | student.view.any + schedule.manage + enrollment.create + RegistrationApplicationPolicy::scheduleIndividual؛ قفل الطلب المختار، تحقق الأهلية والحالة، معاملة واحدة للقيد والجدول وحالة الطلب |
 | GET /manage/teachers/{teacher}/availability | staff.view + StaffProfilePolicy::view؛ ملف المعلم المسموح من المؤسسة فقط |
 | إضافة نافذة إتاحة | staff.view + staff.availability.create وسياسة إضافة إتاحة الملف؛ المعلم وحسابه نشطان |

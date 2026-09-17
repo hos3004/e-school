@@ -30,8 +30,15 @@ final readonly class UpdateScheduleAction
         private ScheduleNotificationPayloadFactory $notificationPayload,
     ) {}
 
-    /** @param array<string, mixed> $data */
-    public function execute(Schedule $schedule, array $data, string $actorId, string $reason): Schedule
+    /**
+     * @param array<string, mixed> $data
+     *
+     * $applyImmediately يتجاوز مهلة حماية الحصص القريبة (recurrence.edit_lock_hours)
+     * فيسري الموعد الجديد من الآن، بما يشمل حصة اليوم إن لم تبدأ بعد. استثنائي
+     * ومحصور بمن يملك schedule.manage أصلًا؛ $reason يصف السبب في كل الحالات،
+     * ويُعرَض على المعلم والطالب ضمن إشعار تغيّر الموعد عند التطبيق الفوري.
+     */
+    public function execute(Schedule $schedule, array $data, string $actorId, string $reason, bool $applyImmediately = false): Schedule
     {
         $reason = trim($reason);
         if ($reason === '') {
@@ -45,7 +52,13 @@ final readonly class UpdateScheduleAction
         $this->validator->validate((string) $schedule->organization_id, $data);
         $weeklySlots = array_key_exists('weekly_slots', $data) ? (array) $data['weekly_slots'] : null;
         unset($data['weekly_slots']);
-        $cutoff = CarbonImmutable::now('UTC')->addHours((int) config('scheduling.recurrence.edit_lock_hours'));
+        // الدقيقة الفاصلة تمنع سباقًا نظريًا: ScheduleMaterializer يعيد حساب
+        // now() الخاصة به بعد كتابات هذه المعاملة (الإلغاء ثم حفظ الجدول
+        // والخانات)، فحصة توشك أن تبدأ الآن تمامًا قد تُلغى هنا ولا تُعاد
+        // توليدها هناك. هامش دقيقة كافٍ عمليًا ولا يمس معنى «فورًا».
+        $cutoff = $applyImmediately
+            ? CarbonImmutable::now('UTC')->addMinute()
+            : CarbonImmutable::now('UTC')->addHours((int) config('scheduling.recurrence.edit_lock_hours'));
         $tracked = [
             'group_id', 'student_profile_id', 'course_id', 'staff_profile_id', 'session_type',
             'rrule', 'start_time', 'duration_minutes', 'timezone', 'starts_on', 'ends_on',
@@ -57,7 +70,7 @@ final readonly class UpdateScheduleAction
                 'start_time' => (string) $slot->start_time,
             ])->all();
 
-        $schedule = $this->transaction->run(function () use ($schedule, $data, $weeklySlots, $actorId, $reason, $cutoff, $old, $tracked): Schedule {
+        $schedule = $this->transaction->run(function () use ($schedule, $data, $weeklySlots, $actorId, $reason, $cutoff, $old, $tracked, $applyImmediately): Schedule {
             $superseded = $this->sessions->supersedeFutureForSchedule(
                 (string) $schedule->organization_id,
                 (string) $schedule->getKey(),
@@ -95,6 +108,7 @@ final readonly class UpdateScheduleAction
                     'superseded_sessions' => $superseded,
                     'created_sessions' => $materialized->created,
                     'availability_warnings' => $materialized->outsideAvailabilityWarnings,
+                    'applied_immediately' => $applyImmediately,
                 ],
                 reason: $reason,
             );

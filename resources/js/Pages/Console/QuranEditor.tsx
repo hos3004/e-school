@@ -274,7 +274,12 @@ export default function QuranEditor({
   teachers: Record<string, string>;
   busy: boolean;
   error: string;
-  onSave: (rate: { session_rate_major: string; rate_reason: string }) => void;
+  onSave: (rate: {
+    session_rate_major: string;
+    rate_reason: string;
+    apply_immediately: boolean;
+    override_reason: string;
+  }) => void;
   editLockHours: number;
 }) {
   const t = useI18n();
@@ -286,6 +291,8 @@ export default function QuranEditor({
   } | null>(null);
   const [sessionRateMajor, setSessionRateMajor] = useState("");
   const [rateReason, setRateReason] = useState("");
+  const [applyImmediately, setApplyImmediately] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
   const staffProfileId = value.staff_profile_id;
   useEffect(() => {
     if (!staffProfileId) {
@@ -341,17 +348,60 @@ export default function QuranEditor({
         onSave({
           session_rate_major: sessionRateMajor,
           rate_reason: rateReason,
+          apply_immediately: student.schedule ? applyImmediately : false,
+          override_reason: overrideReason,
         });
       }}
       className="quran-editor"
     >
       {student.schedule && (
-        <p className="detail-note">
-          {t("console_quran.edit_protection").replace(
-            ":hours",
-            String(editLockHours),
-          )}
-        </p>
+        <>
+          <p className="detail-note">
+            {t("console_quran.edit_protection").replace(
+              ":hours",
+              String(editLockHours),
+            )}
+          </p>
+          <div className="field quran-override">
+            <label htmlFor={id + "apply-immediately"}>
+              <input
+                id={id + "apply-immediately"}
+                type="checkbox"
+                checked={applyImmediately}
+                disabled={busy}
+                onChange={(event) => {
+                  setApplyImmediately(event.target.checked);
+                  if (!event.target.checked) setOverrideReason("");
+                }}
+              />
+              {t("console_quran.apply_immediately")}
+            </label>
+            <small className="cell-sub">
+              {t("console_quran.apply_immediately_help").replace(
+                ":hours",
+                String(editLockHours),
+              )}
+            </small>
+            {applyImmediately && (
+              <>
+                <label htmlFor={id + "override-reason"}>
+                  {t("console_quran.override_reason")}
+                </label>
+                <textarea
+                  id={id + "override-reason"}
+                  className="console-control"
+                  required
+                  minLength={3}
+                  maxLength={1000}
+                  placeholder={t("console_quran.override_reason_placeholder")}
+                  value={overrideReason}
+                  disabled={busy}
+                  onChange={(event) => setOverrideReason(event.target.value)}
+                />
+              </>
+            )}
+          </div>
+        </>
       )}
       <fieldset disabled={busy}>
         <div className="field">
