@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Modules\Notifications\Application\Services\ManualNotificationRecipientResolver;
 use Modules\Notifications\Domain\Enums\ManualAudience;
 use Modules\Notifications\Domain\Enums\ManualRecipientType;
@@ -79,7 +80,7 @@ it('drops an account from another organization out of a hand-picked list', funct
     $mine = (string) DB::table('student_profiles')
         ->where('id', Fixtures::studentProfileId())->value('user_id');
 
-    $otherOrganizationId = (string) Illuminate\Support\Str::ulid();
+    $otherOrganizationId = (string) Str::ulid();
     DB::table('organizations')->insert([
         'id' => $otherOrganizationId,
         'name' => json_encode(['ar' => 'أخرى', 'en' => 'Other'], JSON_UNESCAPED_UNICODE),
@@ -88,7 +89,7 @@ it('drops an account from another organization out of a hand-picked list', funct
         'updated_at' => now(),
     ]);
 
-    $outsiderId = (string) Illuminate\Support\Str::ulid();
+    $outsiderId = (string) Str::ulid();
     DB::table('users')->insert([
         'id' => $outsiderId,
         'organization_id' => $otherOrganizationId,

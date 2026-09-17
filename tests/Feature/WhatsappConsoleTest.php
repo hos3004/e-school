@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Modules\Identity\Domain\Models\User;
 use Modules\Integrations\Domain\Contracts\GreenApiConnections;
 use Modules\Integrations\Domain\Enums\ConnectionStatus;
 use Modules\Integrations\Domain\Models\IntegrationConnection;
@@ -130,7 +131,7 @@ it('cancels the queued whatsapp messages when the switch is turned off', functio
     whatsappConnection();
     $row = whatsappOutboxRow($organizationId);
 
-    $admin = Modules\Identity\Domain\Models\User::query()->findOrFail(Fixtures::userId());
+    $admin = User::query()->findOrFail(Fixtures::userId());
     $admin->forceFill(['organization_id' => $organizationId])->save();
 
     // الصلاحية تُعرَّف في البوابة حتى لا يعتمد الفحص على بذور الأدوار،
@@ -197,7 +198,7 @@ it('previews the real recipients of a schedule without queueing anything', funct
     $organizationId = Fixtures::organizationId();
     whatsappConnection();
 
-    $admin = Modules\Identity\Domain\Models\User::query()->findOrFail(Fixtures::userId());
+    $admin = User::query()->findOrFail(Fixtures::userId());
     $admin->forceFill(['organization_id' => $organizationId])->save();
     config()->set('console.enabled', true);
     Gate::define('admin.panel.access', static fn (): bool => true);

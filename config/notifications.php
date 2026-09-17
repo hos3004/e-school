@@ -119,9 +119,14 @@ return [
             'critical' => false,
             'respects_quiet_hours' => false,
         ],
-        'session_changed' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => true],
-        'postponement_request' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => true],
-        'schedule_change_request' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => true],
+        /*
+         * تغيّر الحصة والتأجيل وطلب تغيير الجدول لم تعد حرجة: الحرج يتجاوز
+         * ساعات الهدوء، فوصلت دفعة تعديل جدول بعد منتصف الليل. موعد يبعد أيامًا
+         * يحتمل الانتظار إلى الصباح.
+         */
+        'session_changed' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => false, 'respects_quiet_hours' => true],
+        'postponement_request' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => false, 'respects_quiet_hours' => true],
+        'schedule_change_request' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => false, 'respects_quiet_hours' => true],
         'registration_update' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'assignment_update' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'teacher_workflow' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
@@ -479,6 +484,8 @@ return [
             'expires_at',
             'due_at',
             'effective_from',
+            'proposed_start',
+            'agreed_start',
         ],
         'datetime_list_parameters' => ['schedule_times'],
         'localized_parameters' => ['course_name', 'target_name', 'current_schedule', 'proposed_schedule'],
