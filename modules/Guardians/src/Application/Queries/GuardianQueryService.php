@@ -8,6 +8,7 @@ use Carbon\CarbonInterface;
 use Modules\Guardians\Domain\Contracts\GuardianQuery;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Modules\Guardians\Domain\Models\GuardianProfile;
+use Modules\Guardians\Domain\ValueObjects\GuardianDirectoryEntry;
 use Modules\Identity\Domain\Contracts\DTOs\UserSummary;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Identity\Domain\Contracts\UserQueryService;
@@ -43,6 +44,63 @@ final readonly class GuardianQueryService implements GuardianQuery
             ->orderBy('created_at')
             ->get()
             ->map(fn (GuardianLink $link): GuardianSummary => $this->toSummary($link))
+            ->all();
+    }
+
+    public function studentsForGuardian(string $guardianProfileId): array
+    {
+        return GuardianLink::query()
+            ->forGuardian($guardianProfileId)
+            ->orderByDesc('is_primary')
+            ->orderBy('created_at')
+            ->get()
+            ->map(static fn (GuardianLink $link): GuardianStudentLink => new GuardianStudentLink(
+                guardianLinkId: (string) $link->id,
+                studentProfileId: (string) $link->student_profile_id,
+                relationship: $link->relationship,
+                isPrimary: $link->is_primary,
+                canActFor: $link->can_act_for,
+                verifiedAt: $link->verified_at?->toIso8601String(),
+                visibleSections: $link->visible_sections ?? [],
+            ))
+            ->all();
+    }
+
+    public function forUserIds(string $organizationId, array $userIds): array
+    {
+        if ($userIds === []) {
+            return [];
+        }
+
+        /** @var list<GuardianProfile> $profiles */
+        $profiles = GuardianProfile::query()
+            ->forOrganization($organizationId)
+            ->withTrashed()
+            ->whereIn('user_id', array_values(array_unique($userIds)))
+            ->get()
+            ->all();
+
+        $entries = [];
+
+        foreach ($profiles as $profile) {
+            $entries[(string) $profile->user_id] = new GuardianDirectoryEntry(
+                id: (string) $profile->getKey(),
+                organizationId: (string) $profile->organization_id,
+                userId: (string) $profile->user_id,
+                guardianCode: (string) $profile->guardian_code,
+                archived: $profile->trashed(),
+            );
+        }
+
+        return $entries;
+    }
+
+    public function activeUserIdsForOrganization(string $organizationId): array
+    {
+        return GuardianProfile::query()
+            ->forOrganization($organizationId)
+            ->pluck('user_id')
+            ->map(static fn ($id): string => (string) $id)
             ->all();
     }
 

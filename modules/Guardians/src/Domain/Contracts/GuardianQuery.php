@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Guardians\Domain\Contracts;
 
+use Modules\Guardians\Application\Queries\GuardianStudentLink;
 use Modules\Guardians\Application\Queries\GuardianSummary;
+use Modules\Guardians\Domain\ValueObjects\GuardianDirectoryEntry;
 
 /**
  * قراءة عامة من موديول Guardians — العقد الوحيد المسموح لموديولات أخرى.
@@ -24,6 +26,28 @@ interface GuardianQuery
      * @return list<GuardianSummary>
      */
     public function guardiansForStudent(string $studentProfileId): array;
+
+    /**
+     * كل الطلاب المرتبطين بوصي — الاتجاه العكسي لـ guardiansForStudent.
+     *
+     * @return list<GuardianStudentLink>
+     */
+    public function studentsForGuardian(string $guardianProfileId): array;
+
+    /**
+     * ملفات الوصاية المرتبطة بحسابات مستخدمين محددين، إن وُجدت.
+     *
+     * @param list<string> $userIds
+     * @return array<string, GuardianDirectoryEntry> مفتاحه user_id
+     */
+    public function forUserIds(string $organizationId, array $userIds): array;
+
+    /**
+     * user_id لكل ملف وصي غير مؤرشف داخل مؤسسة.
+     *
+     * @return list<string>
+     */
+    public function activeUserIdsForOrganization(string $organizationId): array;
 
     /**
      * خيارات الأوصياء المتاحين داخل مؤسسة (profile_id => تسمية عرض).

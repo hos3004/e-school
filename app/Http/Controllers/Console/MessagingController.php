@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Modules\Guardians\Domain\Models\GuardianProfile;
 use Modules\Identity\Application\Actions\IssueTemporaryPassword;
 use Modules\Identity\Domain\Models\User;
 use Modules\Notifications\Application\Actions\QueueManualNotificationAction;
@@ -113,9 +114,11 @@ final class MessagingController extends Controller
         $actorId = (string) $request->user()?->getAuthIdentifier();
         $data = $request->validated();
         [$profileId, $user] = $this->personTarget($organizationId, $kind, $profile);
-        $recipientType = $kind === 'teachers'
-            ? ManualRecipientType::Teacher
-            : ManualRecipientType::Student;
+        $recipientType = match ($kind) {
+            'teachers' => ManualRecipientType::Teacher,
+            'guardians' => ManualRecipientType::Guardian,
+            default => ManualRecipientType::Student,
+        };
         $channel = Channel::from((string) $data['channel']);
 
         try {
@@ -263,17 +266,20 @@ final class MessagingController extends Controller
      */
     private function personTarget(string $organizationId, string $kind, string $profile): array
     {
-        if ($kind === 'teachers') {
-            $record = StaffProfile::query()
+        $record = match ($kind) {
+            'teachers' => StaffProfile::query()
                 ->where('organization_id', $organizationId)
                 ->whereKey($profile)
-                ->firstOrFail();
-        } else {
-            $record = StudentProfile::query()
+                ->firstOrFail(),
+            'guardians' => GuardianProfile::query()
                 ->where('organization_id', $organizationId)
                 ->whereKey($profile)
-                ->firstOrFail();
-        }
+                ->firstOrFail(),
+            default => StudentProfile::query()
+                ->where('organization_id', $organizationId)
+                ->whereKey($profile)
+                ->firstOrFail(),
+        };
 
         $user = User::query()
             ->where('organization_id', $organizationId)

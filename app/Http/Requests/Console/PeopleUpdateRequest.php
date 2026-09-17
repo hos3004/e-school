@@ -6,6 +6,7 @@ namespace App\Http\Requests\Console;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Guardians\Domain\Enums\ContactChannel;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Shared\Support\Locales;
 
@@ -13,12 +14,29 @@ final class PeopleUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can($this->route('kind') === 'students' ? 'student.update' : 'staff.contract.update') ?? false;
+        return $this->user()?->can(match ($this->route('kind')) {
+            'students' => 'student.update',
+            'guardians' => 'guardian.link',
+            default => 'staff.contract.update',
+        }) ?? false;
     }
 
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        $kind = $this->route('kind');
+
+        if ($kind === 'guardians') {
+            return [
+                'full_name' => ['sometimes', 'required', 'string', 'max:255'],
+                'phone' => ['nullable', 'string', 'max:32'],
+                'timezone' => ['sometimes', 'required', 'timezone:all'],
+                'national_id_last4' => ['nullable', 'digits:4'],
+                'occupation' => ['nullable', 'string', 'max:120'],
+                'preferred_contact_channel' => ['nullable', Rule::enum(ContactChannel::class)],
+            ];
+        }
+
         $rules = [
             'full_name' => ['sometimes', 'required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:32'],
@@ -30,7 +48,7 @@ final class PeopleUpdateRequest extends FormRequest
             'region_id' => ['nullable', 'ulid', 'required_with:country_id'],
         ];
 
-        return $this->route('kind') === 'students' ? [...$rules,
+        return $kind === 'students' ? [...$rules,
             'nationality' => ['nullable', 'string', 'size:2'],
             'city' => ['nullable', 'string', 'max:120'],
             'preferred_language' => ['nullable', Rule::in(Locales::supported())],

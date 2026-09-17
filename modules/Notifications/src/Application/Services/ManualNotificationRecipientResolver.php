@@ -7,6 +7,7 @@ namespace Modules\Notifications\Application\Services;
 use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\ValueObjects\SchedulingGroupData;
+use Modules\Guardians\Domain\Contracts\GuardianQuery;
 use Modules\Identity\Domain\Contracts\DTOs\UserAccountData;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Notifications\Domain\Enums\ManualAudience;
@@ -34,6 +35,7 @@ final readonly class ManualNotificationRecipientResolver
         private UserAccountDirectory $accounts,
         private StudentDirectoryQueries $students,
         private StaffQueries $staff,
+        private GuardianQuery $guardians,
         private GroupAdministrationQueries $groups,
         private ScheduleDirectoryQueries $schedules,
         private AcademicCatalogQueries $catalog,
@@ -55,13 +57,15 @@ final readonly class ManualNotificationRecipientResolver
         return match ($type) {
             ManualRecipientType::Student => $this->studentOptions($organizationId, $term, $limit),
             ManualRecipientType::Teacher => $this->teacherOptions($organizationId, $term, $limit),
+            ManualRecipientType::Guardian => $this->guardianOptions($organizationId, $term, $limit),
             ManualRecipientType::Group => $this->groupOptions($organizationId, $term, $limit),
             ManualRecipientType::Course => $this->courseOptions($organizationId, $term, $limit),
             ManualRecipientType::Schedule => $this->scheduleOptions($organizationId, $term, $limit),
-            // قائمة الأشخاص تُختار من الطلاب والمعلمين معًا.
+            // قائمة الأشخاص تُختار من الطلاب والمعلمين وأولياء الأمور معًا.
             ManualRecipientType::People => [
                 ...$this->studentOptions($organizationId, $term, $limit),
                 ...$this->teacherOptions($organizationId, $term, $limit),
+                ...$this->guardianOptions($organizationId, $term, $limit),
             ],
             // جمهورهما المؤسسة كلها، فلا قائمة تُبحث فيها.
             ManualRecipientType::AllStudents, ManualRecipientType::AllTeachers => [],
@@ -98,6 +102,7 @@ final readonly class ManualNotificationRecipientResolver
         return match ($type) {
             ManualRecipientType::Student => $this->resolveStudent($organizationId, $targetId),
             ManualRecipientType::Teacher => $this->resolveTeacher($organizationId, $targetId),
+            ManualRecipientType::Guardian => $this->resolveGuardian($organizationId, $targetId),
             ManualRecipientType::Group => $this->resolveGroup($organizationId, $targetId, $audience),
             ManualRecipientType::Course => $this->resolveCourse($organizationId, $targetId, $audience),
             ManualRecipientType::Schedule => $this->resolveSchedule($organizationId, $targetId, $audience),
@@ -148,6 +153,46 @@ final readonly class ManualNotificationRecipientResolver
             }
 
             $label = $account->name.' · '.$profile->studentCode;
+
+            if ($needle !== '' && !str_contains(mb_strtolower($label), $needle)) {
+                continue;
+            }
+
+            $options[$userId] = $label;
+
+            if (count($options) >= $limit) {
+                break;
+            }
+        }
+
+        return $options;
+    }
+
+    /** @return array<string, string> */
+    private function guardianOptions(string $organizationId, string $term, int $limit): array
+    {
+        $userIds = $this->guardians->activeUserIdsForOrganization($organizationId);
+
+        if ($userIds === []) {
+            return [];
+        }
+
+        $accounts = $this->accounts->findMany($organizationId, $userIds);
+        $profiles = $this->guardians->forUserIds($organizationId, $userIds);
+
+        $needle = mb_strtolower(trim($term));
+        $options = [];
+
+        foreach ($userIds as $userId) {
+            $account = $accounts[$userId] ?? null;
+            $profile = $profiles[$userId] ?? null;
+
+            if (!$account instanceof UserAccountData || $account->status !== 'active'
+                || $profile === null || $profile->archived) {
+                continue;
+            }
+
+            $label = $account->name.' · '.$profile->guardianCode;
 
             if ($needle !== '' && !str_contains(mb_strtolower($label), $needle)) {
                 continue;
@@ -393,6 +438,23 @@ final readonly class ManualNotificationRecipientResolver
             type: ManualRecipientType::Student,
             targetId: $userId,
             label: $account->name.' · '.$profile->studentCode,
+            userIds: [$userId],
+        );
+    }
+
+    private function resolveGuardian(string $organizationId, string $userId): ManualRecipientResolution
+    {
+        $account = $this->accounts->find($organizationId, $userId);
+        $profile = $this->guardians->forUserIds($organizationId, [$userId])[$userId] ?? null;
+
+        if ($account === null || $account->status !== 'active' || $profile === null || $profile->archived) {
+            $this->recipientNotFound();
+        }
+
+        return new ManualRecipientResolution(
+            type: ManualRecipientType::Guardian,
+            targetId: $userId,
+            label: $account->name.' · '.$profile->guardianCode,
             userIds: [$userId],
         );
     }

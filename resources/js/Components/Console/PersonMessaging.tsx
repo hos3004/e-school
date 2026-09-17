@@ -29,8 +29,10 @@ const CREDENTIAL_FIELDS = ["name", "email", "username", "password"] as const;
  */
 export default function PersonMessaging({
   messaging,
+  allowSchedule = true,
 }: {
   messaging: PersonMessagingData;
+  allowSchedule?: boolean;
 }) {
   const t = useI18n();
   const [open, setOpen] = useState(false);
@@ -94,7 +96,11 @@ export default function PersonMessaging({
       {open && (
         <form onSubmit={submit} className="mt-4">
           <div className="flex flex-wrap gap-2">
-            {(["credentials", "schedule", "free_text"] as Kind[]).map((kind) => (
+            {(
+              ["credentials", "schedule", "free_text"] as Kind[]
+            )
+              .filter((kind) => allowSchedule || kind !== "schedule")
+              .map((kind) => (
               <button
                 key={kind}
                 type="button"

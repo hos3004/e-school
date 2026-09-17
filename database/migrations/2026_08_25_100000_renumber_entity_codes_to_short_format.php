@@ -57,6 +57,13 @@ return new class extends Migration
             return;
         }
 
+        // config/codes.php يُقرأ حيًّا هنا لا كما كان وقت كتابة هذه الهجرة؛ كيان
+        // يُضاف للإعداد لاحقًا (مثل guardian) قد لا يملك عمود كوده بعد عند إعادة
+        // تشغيل الهجرات من الصفر، فتُتخطى تلك الحالة بدل فشل الهجرة بالكامل.
+        if (!DB::getSchemaBuilder()->hasColumn($table, $column)) {
+            return;
+        }
+
         $rows = DB::table($table)
             ->select(array_values(array_filter(['id', $column, $scopeColumn])))
             ->orderBy('created_at')

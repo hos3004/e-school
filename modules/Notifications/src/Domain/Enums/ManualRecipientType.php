@@ -16,6 +16,8 @@ enum ManualRecipientType: string
 
     case Teacher = 'teacher';
 
+    case Guardian = 'guardian';
+
     case Group = 'group';
 
     case Course = 'course';
@@ -61,7 +63,7 @@ enum ManualRecipientType: string
     /** هل يختار المرسِل أشخاصًا بأسمائهم لهذا النوع؟ */
     public function picksPeople(): bool
     {
-        return in_array($this, [self::Student, self::Teacher, self::People], true);
+        return in_array($this, [self::Student, self::Teacher, self::Guardian, self::People], true);
     }
 
     public function label(): string
