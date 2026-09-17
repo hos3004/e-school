@@ -33,6 +33,8 @@ export default function SetupEditor({
   const isTeacher = kind === "teachers";
   const isEdit = !!item && !isTeacher;
   const record = item as AcademicItem | undefined;
+  // من يملك صلاحية البرامج ينشئ كورسًا مباشرة تحت برنامج؛ المستوى يُنشأ تلقائيًا خلف الكواليس بلا خطوة إضافية.
+  const simplifiedCourseFlow = kind === "items" && !isEdit && props.abilities.programs;
   const [suggestedCode] = useState(
     () =>
       kind.slice(0, 1).toUpperCase() +
@@ -255,17 +257,23 @@ export default function SetupEditor({
         else onClose();
       },
     };
-    form.transform((values) => ({
-      ...values,
-      ...(kind === "items" && values.session_mode === "individual"
-        ? {
-            first_group_name: "",
-            first_group_capacity: "",
-            first_group_starts_on: "",
-            first_group_ends_on: "",
-          }
-        : {}),
-    }));
+    form.transform((values) => {
+      const { level_id, ...rest } = values;
+      return {
+        ...rest,
+        ...(simplifiedCourseFlow
+          ? { program_id: selectedProgram }
+          : { level_id }),
+        ...(kind === "items" && values.session_mode === "individual"
+          ? {
+              first_group_name: "",
+              first_group_capacity: "",
+              first_group_starts_on: "",
+              first_group_ends_on: "",
+            }
+          : {}),
+      };
+    });
     if (isEdit) form.patch(endpoint, options);
     else form.post(endpoint, options);
   };
@@ -289,7 +297,9 @@ export default function SetupEditor({
     ...(kind === "items"
       ? [
           [translated("program_id"), programLabel],
-          [translated("level_id"), levelLabel],
+          ...(simplifiedCourseFlow
+            ? []
+            : [[translated("level_id"), levelLabel]]),
           ...(!isEdit &&
           val("first_group_name") &&
           val("session_mode") !== "individual"
@@ -443,26 +453,28 @@ export default function SetupEditor({
                       </button>
                     )}
                   </div>
-                  <div className="field">
-                    {select(
-                      "level_id",
-                      props.levels
-                        .filter((level) => level.program_id === selectedProgram)
-                        .map((level) => ({ id: level.id, name: level.label })),
-                    )}
-                    {props.abilities.programs && (
-                      <button
-                        type="button"
-                        className="inline-link"
-                        disabled={!selectedProgram}
-                        onClick={() => setNested("levels")}
-                      >
-                        <span aria-hidden="true">+</span>
-                        {t("console_courses.create_level")}
-                      </button>
-                    )}
-                  </div>
-                  {props.levels.length === 0 && (
+                  {!simplifiedCourseFlow && (
+                    <div className="field">
+                      {select(
+                        "level_id",
+                        props.levels
+                          .filter((level) => level.program_id === selectedProgram)
+                          .map((level) => ({ id: level.id, name: level.label })),
+                      )}
+                      {props.abilities.programs && (
+                        <button
+                          type="button"
+                          className="inline-link"
+                          disabled={!selectedProgram}
+                          onClick={() => setNested("levels")}
+                        >
+                          <span aria-hidden="true">+</span>
+                          {t("console_courses.create_level")}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {!simplifiedCourseFlow && props.levels.length === 0 && (
                     <p className="span2 cell-sub">
                       {t("console_courses.need_level")}
                     </p>

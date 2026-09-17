@@ -61,9 +61,16 @@ final class CourseSetupRequest extends FormRequest
         ];
         if ($kind === 'items') {
             unset($rules['sort_order']);
+            $isCreate = !is_string($id);
 
             return [...$rules,
-                'level_id' => ['required', 'string', 'size:26'],
+                // إنشاء كورس بلا مستوى قائم يمرّر program_id، والمستوى يُنشأ ضمنيًا في ConsoleSetupService::saveCourse.
+                'level_id' => ['required_without:program_id', 'string', 'size:26'],
+                'program_id' => [
+                    Rule::prohibitedIf($isCreate === false),
+                    'required_without:level_id', 'string', 'size:26',
+                    Rule::exists('programs', 'id')->where('organization_id', (string) $this->user()?->organization_id)->whereNull('deleted_at'),
+                ],
                 'first_group_name' => ['nullable', 'string', 'max:120', Rule::prohibitedIf(is_string($id) || $this->input('session_mode') === 'individual')],
                 'first_group_capacity' => ['nullable', 'integer', 'min:'.config('groups.capacity.minimum'), 'max:'.config('groups.capacity.maximum')],
                 'first_group_starts_on' => ['nullable', 'date'],
@@ -124,7 +131,7 @@ final class CourseSetupRequest extends FormRequest
             ],
             default => [
                 'code', 'name', 'description', 'is_active', 'target_gender', 'age_from', 'age_to',
-                'level_id', 'session_mode', 'total_sessions', 'default_duration_minutes', 'sessions_per_week',
+                'level_id', 'program_id', 'session_mode', 'total_sessions', 'default_duration_minutes', 'sessions_per_week',
             ],
         };
 

@@ -94,6 +94,20 @@ final readonly class ConsoleSetupService
     {
         $course = $id === null ? null : Course::query()->where('organization_id', $organizationId)->findOrFail($id);
         Gate::authorize($course === null ? 'create' : 'update', $course ?? Course::class);
+
+        if ($course === null && !array_key_exists('level_id', $data) && array_key_exists('program_id', $data)) {
+            Gate::authorize('create', Level::class);
+            $level = $this->createLevel->execute([
+                'organization_id' => $organizationId,
+                'program_id' => $data['program_id'],
+                'code' => $data['code'],
+                'name' => $data['name'],
+                'sort_order' => 0,
+            ], $actorId, $reason);
+            $data['level_id'] = (string) $level->getKey();
+        }
+        unset($data['program_id']);
+
         if ($course !== null) {
             $data = $this->preserveTranslations($data, $course->only(['name', 'description']));
         }

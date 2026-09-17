@@ -356,6 +356,55 @@ final class ConsoleCourseSetupTest extends TestCase
         self::assertFalse(Course::query()->where('code', 'INDIVIDUAL-GROUP')->exists());
     }
 
+    public function test_course_created_with_program_id_auto_creates_a_matching_level(): void
+    {
+        $this->post('/manage/courses/programs', $this->programData())->assertSessionHasNoErrors();
+        $program = Program::query()->where('code', 'CONSOLE-PROGRAM')->firstOrFail();
+        $this->post('/manage/courses/items', [
+            'program_id' => $program->id, 'code' => 'AUTO-LEVEL-COURSE', 'name' => ['ar' => 'كورس بلا مستوى مختار'],
+            'session_mode' => 'group', 'is_active' => true,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        $course = Course::query()->where('code', 'AUTO-LEVEL-COURSE')->firstOrFail();
+        $level = Level::query()->findOrFail($course->level_id);
+        $this->assertSame($program->id, $level->program_id);
+        $this->assertSame('AUTO-LEVEL-COURSE', $level->code);
+        $this->assertSame('كورس بلا مستوى مختار', $level->name['ar']);
+        $this->assertDatabaseHas('audit_log', ['action' => 'academics.level_created', 'auditable_id' => $level->id]);
+        $this->assertDatabaseHas('audit_log', ['action' => 'academics.course_created', 'auditable_id' => $course->id]);
+    }
+
+    public function test_course_creation_requires_either_a_level_or_a_program(): void
+    {
+        $this->post('/manage/courses/items', [
+            'code' => 'NO-PATH-COURSE', 'name' => ['ar' => 'بلا مسار'], 'session_mode' => 'group', 'is_active' => true,
+        ])->assertSessionHasErrors(['level_id', 'program_id']);
+        self::assertFalse(Course::query()->where('code', 'NO-PATH-COURSE')->exists());
+    }
+
+    public function test_program_id_creation_path_is_rejected_without_program_manage_permission(): void
+    {
+        $this->post('/manage/courses/programs', $this->programData())->assertSessionHasNoErrors();
+        $program = Program::query()->where('code', 'CONSOLE-PROGRAM')->firstOrFail();
+        Gate::define('program.manage', static fn (): bool => false);
+        $this->post('/manage/courses/items', [
+            'program_id' => $program->id, 'code' => 'ESCALATION-COURSE', 'name' => ['ar' => 'تجاوز صلاحية'],
+            'session_mode' => 'group', 'is_active' => true,
+        ])->assertForbidden();
+        self::assertFalse(Course::query()->where('code', 'ESCALATION-COURSE')->exists());
+        self::assertFalse(Level::query()->where('code', 'ESCALATION-COURSE')->exists());
+    }
+
+    public function test_program_id_is_prohibited_when_editing_an_existing_course(): void
+    {
+        $course = Course::query()->findOrFail(Fixtures::courseId());
+        $level = Level::query()->findOrFail($course->level_id);
+        $program = Program::query()->findOrFail($level->program_id);
+        $this->patch('/manage/courses/items/'.$course->id, [
+            'program_id' => $program->id, 'code' => $course->code, 'name' => ['ar' => 'تعديل غير مسموح'],
+            'session_mode' => 'group', 'is_active' => true,
+        ])->assertSessionHasErrors('program_id');
+    }
+
     /** @return array<string, mixed> */
     private function programData(): array
     {
