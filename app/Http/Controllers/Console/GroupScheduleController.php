@@ -6,9 +6,11 @@ namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Console\GroupScheduleRequest;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,8 +19,11 @@ use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Organization\Domain\Contracts\SchoolClockQueries;
 use Modules\Scheduling\Application\Services\ConsoleGroupScheduleService;
 use Modules\Scheduling\Application\Services\TeacherAvailabilityPlanner;
+use Modules\Staff\Application\Actions\SupersedeTeacherRate;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 use Modules\Staff\Domain\Contracts\TeacherQualificationQueries;
+use Modules\Staff\Domain\Contracts\TeacherRateResolver;
+use Modules\Staff\Domain\Enums\RateScope;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\LocalizedJsonColumn;
 
@@ -86,15 +91,97 @@ final class GroupScheduleController extends Controller
         return response()->json(['available_start_times' => $result['available_start_times'], 'has_declared_availability' => $result['has_declared_availability']]);
     }
 
+    /** سعر المعلم الساري لهذا الكورس، ليُعرض عند اختيار مدة خارج كتالوج المجموعات. */
+    public function rate(Request $request): JsonResponse
+    {
+        $organizationId = $this->organization($request);
+        $input = $request->validate(['course_id' => ['required', 'ulid'], 'staff_profile_id' => ['required', 'string']]);
+        $course = $this->catalog->coursesByIds($organizationId, [$input['course_id']])[$input['course_id']] ?? null;
+        $today = CarbonImmutable::now('UTC');
+        $rate = $course?->programId === null ? null : app(TeacherRateResolver::class)->resolve(
+            $input['staff_profile_id'], $today, $course->programId, $input['course_id'], 'group',
+        );
+
+        return response()->json([
+            'rate_major' => $rate === null ? null : $rate['money']->toMajor(),
+            'currency' => $rate === null ? (string) config('staff.currency.default', 'EGP') : $rate['money']->currency,
+            'requires_rate' => $this->staff->requiresSessionRates($input['staff_profile_id'], $today),
+        ]);
+    }
+
     private function persist(GroupScheduleRequest $request, ?string $schedule): RedirectResponse
     {
+        $organizationId = $this->organization($request);
         try {
-            $id = $this->schedules->save($this->organization($request), $schedule, $request->validated(), (string) $request->user()?->getAuthIdentifier());
+            $id = DB::transaction(function () use ($request, $organizationId, $schedule): string {
+                $this->recordRate(
+                    $request, $organizationId,
+                    (string) $request->validated('course_id'), (string) $request->validated('staff_profile_id'),
+                    (string) $request->validated('starts_on'),
+                );
+
+                return $this->schedules->save($organizationId, $schedule, $request->validated(), (string) $request->user()?->getAuthIdentifier());
+            });
         } catch (BusinessRuleViolation $error) {
             throw ValidationException::withMessages(['form' => $error->getMessage()]);
         }
 
         return redirect()->route('console.schedules.edit', ['schedule' => $id])->with('success', __('console_sessions.saved'));
+    }
+
+    /**
+     * سعر حصة المعلم في هذا الكورس عند إرساله مع حفظ الجدول — النطاق بمستوى
+     * الكورس بلا تمييز نوع الحصة (فردي/جماعي)، فيسري على الاثنين لنفس الكورس.
+     *
+     * نفس منطق StudentTeacherController::recordRate.
+     */
+    private function recordRate(GroupScheduleRequest $request, string $organizationId, string $courseId, string $staffProfileId, string $effectiveFrom): void
+    {
+        $amount = $request->validated('session_rate_major');
+
+        if ($amount === null || (string) $amount === '') {
+            return;
+        }
+
+        $course = $courseId === '' ? null : ($this->catalog->coursesByIds($organizationId, [$courseId])[$courseId] ?? null);
+
+        if ($course === null || $course->programId === null) {
+            throw ValidationException::withMessages([
+                'session_rate_major' => __('console_sessions.rates.course_unavailable'),
+            ]);
+        }
+
+        $requested = number_format((float) $amount, 2, '.', '');
+        $current = app(TeacherRateResolver::class)->resolve(
+            $staffProfileId,
+            CarbonImmutable::parse($effectiveFrom, 'UTC'),
+            $course->programId,
+            $courseId,
+            'group',
+        );
+
+        if ($current !== null
+            && $current['scope'] === RateScope::Course
+            && number_format((float) $current['money']->toMajor(), 2, '.', '') === $requested) {
+            return;
+        }
+
+        try {
+            app(SupersedeTeacherRate::class)->execute(
+                staffProfileId: $staffProfileId,
+                scope: RateScope::Course,
+                amountMajor: $requested,
+                effectiveFrom: $effectiveFrom,
+                programId: $course->programId,
+                courseId: $courseId,
+                actorId: (string) $request->user()?->getAuthIdentifier(),
+                reason: (string) $request->validated('rate_reason'),
+            );
+        } catch (BusinessRuleViolation $violation) {
+            throw ValidationException::withMessages([
+                'session_rate_major' => $violation->getMessage(),
+            ]);
+        }
     }
 
     /** @param array<string, mixed> $schedule */
@@ -117,6 +204,7 @@ final class GroupScheduleController extends Controller
         return Inertia::render('Console/GroupScheduleEditor', [
             'schedule' => $schedule, ...$options, 'timezones' => timezone_identifiers_list(),
             'durations' => array_values(config('scheduling.session_durations')),
+            'durationLimits' => ['min' => (int) config('session_pay.min_duration'), 'max' => (int) config('session_pay.max_duration')],
             'maxInterval' => (int) config('scheduling.individual_quran.max_interval_weeks'),
             'editLockHours' => (int) config('scheduling.recurrence.edit_lock_hours'),
             'outsideAvailability' => (string) config('scheduling.availability.outside_declared'),

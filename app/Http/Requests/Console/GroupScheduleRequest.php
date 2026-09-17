@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Console;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class GroupScheduleRequest extends FormRequest
 {
@@ -26,7 +25,17 @@ final class GroupScheduleRequest extends FormRequest
             'group_id' => ['required', 'ulid'], 'course_id' => ['required', 'ulid'], 'staff_profile_id' => ['required', 'ulid'],
             'weekdays' => ['required', 'array', 'min:1', 'max:7'], 'weekdays.*' => ['required', 'integer', 'between:0,6', 'distinct'],
             'start_time' => ['required', 'date_format:H:i'],
-            'duration_minutes' => ['required', 'integer', Rule::in(config('scheduling.session_durations'))],
+            // مدة مخصّصة ضمن حدود المؤسسة؛ تسعير المدة خارج كتالوج المجموعات
+            // يتحقق منه ScheduleDefinitionValidator على سعر عقد المعلم بهذا الكورس.
+            'duration_minutes' => [
+                'required', 'integer',
+                'min:'.config('session_pay.min_duration'),
+                'max:'.config('session_pay.max_duration'),
+            ],
+            // سعر حصة المعلم في هذا الكورس — اختياري؛ يُسجَّل من تاريخ البداية
+            // ويُقفل سعره السابق عنده، فلا يمس حصة ماضية.
+            'session_rate_major' => ['nullable', 'numeric', 'min:0.01', 'decimal:0,2'],
+            'rate_reason' => [$this->isMethod('GET') ? 'nullable' : 'required_with:session_rate_major', 'nullable', 'string', 'min:3', 'max:1000'],
             'interval_weeks' => ['required', 'integer', 'min:1', 'max:'.config('scheduling.individual_quran.max_interval_weeks')],
             'timezone' => ['required', 'timezone:all'],
             'starts_on' => ['required', 'date_format:Y-m-d', ...($this->isMethod('POST') ? ['after_or_equal:'.$today] : [])],

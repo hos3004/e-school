@@ -97,7 +97,8 @@ final readonly class ScheduleDefinitionValidator
     }
 
     /**
-     * مدة الحصة: الجماعي على مدد المؤسسة المسعّرة، والفردي يقبل مدة مخصّصة.
+     * مدة الحصة: مدد المؤسسة المسعّرة مقبولة دومًا، وأي مدة أخرى ضمن حدود
+     * المؤسسة تُقبل للفردي والجماعي معًا بشرط وجود سعر ساري للمعلم عن هذا الكورس.
      *
      * المدة المخصّصة لا يقابلها سعر في كتالوج المؤسسة، فلو لم يكن للمعلم سعر
      * ساري بتاريخ البداية أُقفلت حصصه بلا قيدة مستحق (`rate_unresolved`).
@@ -117,8 +118,7 @@ final readonly class ScheduleDefinitionValidator
             return;
         }
 
-        if ($sessionType !== 'individual'
-            || $duration < (int) config('session_pay.min_duration')
+        if ($duration < (int) config('session_pay.min_duration')
             || $duration > (int) config('session_pay.max_duration')) {
             throw BusinessRuleViolation::make('scheduling.duration_invalid', 'scheduling::errors.duration_invalid');
         }

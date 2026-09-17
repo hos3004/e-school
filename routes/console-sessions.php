@@ -28,6 +28,7 @@ Route::get('/sessions/{session}/report', SessionReportController::class)
 Route::middleware('can:schedule.manage')->group(function (): void {
     Route::get('/schedules/create', [GroupScheduleController::class, 'create'])->name('schedules.create');
     Route::get('/schedules/availability', [GroupScheduleController::class, 'availability'])->name('schedules.availability');
+    Route::get('/schedules/rate', [GroupScheduleController::class, 'rate'])->name('schedules.rate');
     Route::post('/schedules', [GroupScheduleController::class, 'store'])->name('schedules.store');
     Route::get('/schedules/{schedule}/edit', [GroupScheduleController::class, 'edit'])->whereUlid('schedule')->name('schedules.edit');
     Route::patch('/schedules/{schedule}', [GroupScheduleController::class, 'update'])->whereUlid('schedule')->name('schedules.update');
