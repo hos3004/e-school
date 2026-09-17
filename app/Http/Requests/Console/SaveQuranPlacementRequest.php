@@ -35,6 +35,10 @@ final class SaveQuranPlacementRequest extends FormRequest
                 'min:'.config('session_pay.min_duration'),
                 'max:'.config('session_pay.max_duration'),
             ],
+            // سعر حصة المعلم في هذا الكورس — اختياري؛ يُسجَّل من تاريخ البداية
+            // ويُقفل سعره السابق عنده، فلا يمس حصة ماضية.
+            'session_rate_major' => ['nullable', 'numeric', 'min:0.01', 'decimal:0,2'],
+            'rate_reason' => [$this->isMethod('GET') ? 'nullable' : 'required_with:session_rate_major', 'nullable', 'string', 'min:3', 'max:1000'],
             'interval_weeks' => ['required', 'integer', 'min:1', 'max:'.config('scheduling.individual_quran.max_interval_weeks')],
             'timezone' => ['required', 'timezone'],
             'starts_on' => ['required', 'date_format:Y-m-d', ...($this->isMethod('PATCH') || ($this->isMethod('GET') && $this->filled('schedule_id')) ? [] : ['after_or_equal:'.$today])],
@@ -60,6 +64,8 @@ final class SaveQuranPlacementRequest extends FormRequest
         return [
             'staff_profile_id' => __('console_quran.teacher'),
             'duration_minutes' => __('console_quran.duration'),
+            'session_rate_major' => __('console_quran.rates.session_rate'),
+            'rate_reason' => __('console_quran.rates.rate_reason'),
             'interval_weeks' => __('console_quran.interval'),
             'timezone' => __('console_quran.timezone'),
             'starts_on' => __('console_quran.starts_on'),

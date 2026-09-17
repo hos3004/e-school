@@ -94,7 +94,10 @@ export default function Quran(props: QuranProps) {
     setSelectedStudent(null);
     setEditing(false);
   };
-  const save = async (student: Student) => {
+  const save = async (
+    student: Student,
+    rate?: { session_rate_major: string; rate_reason: string },
+  ) => {
     const value = draft(student);
     setBusy((old) => ({ ...old, [student.id]: true }));
     setErrors((old) => ({ ...old, [student.id]: "" }));
@@ -121,6 +124,12 @@ export default function Quran(props: QuranProps) {
           timezone: value.timezone,
           starts_on: value.starts_on,
           ends_on: value.ends_on || null,
+          ...(rate?.session_rate_major
+            ? {
+                session_rate_major: rate.session_rate_major,
+                rate_reason: rate.rate_reason,
+              }
+            : {}),
         },
       });
       setSaved((old) => ({ ...old, [student.id]: response.data.schedule }));
@@ -1232,7 +1241,7 @@ export default function Quran(props: QuranProps) {
                 teachers={teachers}
                 busy={busy[current.id] ?? false}
                 error={errors[current.id] ?? ""}
-                onSave={() => void save(current)}
+                onSave={(rate) => void save(current, rate)}
                 editLockHours={policy.edit_lock_hours}
               />
             ) : (

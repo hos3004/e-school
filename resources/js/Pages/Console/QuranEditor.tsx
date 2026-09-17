@@ -274,11 +274,42 @@ export default function QuranEditor({
   teachers: Record<string, string>;
   busy: boolean;
   error: string;
-  onSave: () => void;
+  onSave: (rate: { session_rate_major: string; rate_reason: string }) => void;
   editLockHours: number;
 }) {
   const t = useI18n();
   const id = useId();
+  const [teacherRate, setTeacherRate] = useState<{
+    rate_major: string | null;
+    currency: string;
+    requires_rate: boolean;
+  } | null>(null);
+  const [sessionRateMajor, setSessionRateMajor] = useState("");
+  const [rateReason, setRateReason] = useState("");
+  const staffProfileId = value.staff_profile_id;
+  useEffect(() => {
+    if (!staffProfileId) {
+      setTeacherRate(null);
+      return;
+    }
+    let active = true;
+    axios
+      .get("/manage/quran/rate", {
+        params: { staff_profile_id: staffProfileId },
+      })
+      .then((result) => {
+        if (active) {
+          setTeacherRate(result.data);
+          setSessionRateMajor(result.data.rate_major ?? "");
+        }
+      })
+      .catch(() => {
+        if (active) setTeacherRate(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [staffProfileId]);
   const field = (key: "starts_on" | "ends_on" | "timezone", type: string) => (
     <div className="field">
       <label htmlFor={id + key}>
@@ -307,7 +338,10 @@ export default function QuranEditor({
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        onSave();
+        onSave({
+          session_rate_major: sessionRateMajor,
+          rate_reason: rateReason,
+        });
       }}
       className="quran-editor"
     >
@@ -383,6 +417,52 @@ export default function QuranEditor({
               ))}
             </datalist>
           </div>
+          {value.staff_profile_id && (
+            <div className="field">
+              <label htmlFor={id + "rate"}>
+                {t("console_quran.rates.session_rate")}
+              </label>
+              <input
+                id={id + "rate"}
+                type="number"
+                className="console-control"
+                min="0.01"
+                step="0.01"
+                value={sessionRateMajor}
+                onChange={(event) => setSessionRateMajor(event.target.value)}
+              />
+              <small className="cell-sub">
+                {!teacherRate || !teacherRate.requires_rate
+                  ? t("console_quran.rates.rate_not_needed")
+                  : teacherRate.rate_major === null
+                    ? t("console_quran.rates.no_rate")
+                    : t("console_quran.rates.current_rate") +
+                      " " +
+                      teacherRate.rate_major +
+                      " " +
+                      teacherRate.currency}
+              </small>
+              <small className="cell-sub">
+                {t("console_quran.rates.session_rate_hint")}
+              </small>
+            </div>
+          )}
+          {sessionRateMajor !== "" && (
+            <div className="field">
+              <label htmlFor={id + "rate-reason"}>
+                {t("console_quran.rates.rate_reason")}
+              </label>
+              <input
+                id={id + "rate-reason"}
+                type="text"
+                className="console-control"
+                required
+                minLength={3}
+                value={rateReason}
+                onChange={(event) => setRateReason(event.target.value)}
+              />
+            </div>
+          )}
           <div className="field">
             <label htmlFor={id + "interval"}>
               {t("console_quran.interval")}
