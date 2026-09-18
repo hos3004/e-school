@@ -55,6 +55,7 @@ final readonly class QueueNotificationAction
         ?string $correlationId = null,
         ?string $actorId = null,
     ): ?NotificationOutbox {
+        $payload = $this->withRecipientContact($channel, $userId, $payload);
         $enabledChannels = $this->enabledChannels();
 
         if (!in_array($channel->value, $enabledChannels, true)) {
@@ -144,6 +145,36 @@ final readonly class QueueNotificationAction
         }
 
         return $outbox;
+    }
+
+    /**
+     * يضيف بيانات الاتصال اللازمة لبوابة القناة — الهاتف للواتساب والبريد
+     * للبريد — من سجل المستلم في users، ما لم يحملها payload المستدعي أصلًا.
+     *
+     * هذا هو مصدر التعبئة الوحيد لمسار الإرسال اليدوي (المراسلة من بروفايل
+     * شخص، ومركز واتساب، وواجهة القيد الإدارية عبر QueueNotificationController،
+     * ولوحة Filament القديمة) — كلها تستدعي execute() مباشرة ولا تمرّ بمسار
+     * الأحداث التلقائية الذي يملأ الهاتف في OutboxDispatcher::gatewayPayload().
+     * بلا هذا، كل رسالة واتساب يدوية تفشل بـwhatsapp_payload_invalid مهما
+     * صحّ رقم المستلم — لأن البوابة لا ترى رقمًا أصلًا لا لأنه خطأ.
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function withRecipientContact(Channel $channel, string $userId, array $payload): array
+    {
+        if ($channel === Channel::Whatsapp && !array_key_exists('phone', $payload)) {
+            $row = DB::table('users')->where('id', $userId)->first(['phone', 'phone_country']);
+            $payload['phone'] = is_string($row->phone ?? null) ? $row->phone : null;
+            $payload['phone_country'] = is_string($row->phone_country ?? null) ? $row->phone_country : null;
+        }
+
+        if ($channel === Channel::Email && !array_key_exists('email', $payload)) {
+            $email = DB::table('users')->where('id', $userId)->value('email');
+            $payload['email'] = is_string($email) ? $email : null;
+        }
+
+        return $payload;
     }
 
     /**
