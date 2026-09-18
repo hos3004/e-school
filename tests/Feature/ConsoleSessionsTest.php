@@ -203,6 +203,38 @@ final class ConsoleSessionsTest extends TestCase
         $this->get('/manage/sessions?date=2026-10-25')->assertInertia(fn (Assert $page) => $page->where('sessions.0.is_quran', false)->has('sessions.0.students', 1));
     }
 
+    public function test_availability_and_store_accept_a_teacher_assigned_to_the_group_without_a_specific_course(): void
+    {
+        // course_id فارغ في GroupTeacher يعني المعلم معيّن للمجموعة كلها، لا كورسًا واحدًا فقط،
+        // وكان الفلتر القديم يستبعد هذا التعيين فتظهر قائمة معلمين فارغة رغم صلاحيته.
+        $group = Group::query()->create(['organization_id' => $this->organization->id, 'code' => 'GR-GENERAL', 'name' => ['ar' => 'مجموعة عامة'], 'capacity' => 12, 'timezone' => 'Europe/Paris', 'status' => GroupStatus::Active, 'starts_on' => '2026-10-01']);
+        GroupProgram::query()->create(['group_id' => $group->id, 'program_id' => $this->program->id]);
+        GroupTeacher::query()->create(['group_id' => $group->id, 'staff_profile_id' => $this->teacher->id, 'course_id' => null, 'role' => GroupTeacherRole::Lead, 'assigned_from' => '2026-10-01']);
+
+        $payload = [...$this->payload(), 'group_id' => $group->id];
+        $this->getJson('/manage/schedules/availability?'.http_build_query($payload))->assertOk();
+        $this->post('/manage/schedules', $payload)->assertSessionHasNoErrors();
+        $this->assertSame(1, Schedule::query()->where('group_id', $group->id)->count());
+    }
+
+    public function test_create_form_prefills_from_an_existing_schedule_to_add_another_time_slot(): void
+    {
+        $this->post('/manage/schedules', $this->payload())->assertSessionHasNoErrors();
+        $schedule = Schedule::query()->sole();
+        $query = http_build_query([
+            'group' => $schedule->group_id, 'course' => $schedule->course_id, 'teacher' => $schedule->staff_profile_id,
+            'duration' => $schedule->duration_minutes, 'interval' => 1, 'timezone' => $schedule->timezone,
+            'starts' => $schedule->starts_on->toDateString(), 'ends' => $schedule->ends_on?->toDateString(),
+        ]);
+        $this->get('/manage/schedules/create?'.$query)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('schedule.group_id', (string) $schedule->group_id)
+            ->where('schedule.course_id', (string) $schedule->course_id)
+            ->where('schedule.staff_profile_id', (string) $schedule->staff_profile_id)
+            ->where('schedule.duration_minutes', $schedule->duration_minutes)
+            ->where('schedule.weekdays', [])
+            ->where('schedule.start_time', ''));
+    }
+
     private function createGroup(string $code): Group
     {
         $group = Group::query()->create(['organization_id' => $this->organization->id, 'code' => $code, 'name' => ['ar' => 'مجموعة '.$code], 'capacity' => 12, 'timezone' => 'Europe/Paris', 'status' => GroupStatus::Active, 'starts_on' => '2026-10-01']);

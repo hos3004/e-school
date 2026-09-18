@@ -41,13 +41,25 @@ final class GroupScheduleController extends Controller
 
     public function create(Request $request): Response
     {
-        $filters = $request->validate(['group' => ['nullable', 'ulid'], 'course' => ['nullable', 'ulid']]);
+        // الحقول الاختيارية تسمح بحمل قيم جدول موجود عند إضافة موعد آخر لنفس
+        // المجموعة/الكورس/المعلم بيوم ووقت مختلفين، دون إعادة تعبئة الخطوة الأولى.
+        $filters = $request->validate([
+            'group' => ['nullable', 'ulid'], 'course' => ['nullable', 'ulid'], 'teacher' => ['nullable', 'ulid'],
+            'duration' => ['nullable', 'integer', 'min:'.config('session_pay.min_duration'), 'max:'.config('session_pay.max_duration')],
+            'interval' => ['nullable', 'integer', 'min:1', 'max:'.config('scheduling.individual_quran.max_interval_weeks')],
+            'timezone' => ['nullable', 'timezone:all'],
+            'starts' => ['nullable', 'date_format:Y-m-d'], 'ends' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:starts'],
+        ]);
         $clock = $this->clock->forOrganization($this->organization($request));
 
         return $this->editor($request, [
-            'id' => null, 'group_id' => $filters['group'] ?? '', 'course_id' => $filters['course'] ?? '', 'staff_profile_id' => '',
-            'weekdays' => [], 'start_time' => '', 'duration_minutes' => (int) config('scheduling.default_duration_minutes'),
-            'interval_weeks' => 1, 'timezone' => $clock['timezone'], 'starts_on' => now($clock['timezone'])->toDateString(), 'ends_on' => '',
+            'id' => null, 'group_id' => $filters['group'] ?? '', 'course_id' => $filters['course'] ?? '', 'staff_profile_id' => $filters['teacher'] ?? '',
+            'weekdays' => [], 'start_time' => '',
+            'duration_minutes' => isset($filters['duration']) ? (int) $filters['duration'] : (int) config('scheduling.default_duration_minutes'),
+            'interval_weeks' => isset($filters['interval']) ? (int) $filters['interval'] : 1,
+            'timezone' => $filters['timezone'] ?? $clock['timezone'],
+            'starts_on' => $filters['starts'] ?? now($clock['timezone'])->toDateString(),
+            'ends_on' => $filters['ends'] ?? '',
         ]);
     }
 
@@ -247,7 +259,9 @@ final class GroupScheduleController extends Controller
         abort_unless($group !== null && $course !== null && in_array($course['program_id'], $group['program_ids'], true), 404);
         abort_unless(in_array($data['staff_profile_id'], array_column($options['teachers'], 'staff_profile_id'), true)
             && in_array($data['staff_profile_id'], $course['teachers'], true)
-            && collect((array) $group['assignments'])->contains(fn (array $assignment): bool => $assignment['teacher_id'] === $data['staff_profile_id'] && $assignment['course_id'] === $data['course_id']), 404);
+            && collect((array) $group['assignments'])->contains(fn (array $assignment): bool => $assignment['teacher_id'] === $data['staff_profile_id']
+                // تعيين المعلم للمجموعة بلا كورس محدد (course_id فارغ) يعني "كل كورسات المجموعة".
+                && ($assignment['course_id'] === $data['course_id'] || $assignment['course_id'] === null)), 404);
     }
 
     private function organization(Request $request): string
