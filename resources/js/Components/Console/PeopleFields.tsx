@@ -8,7 +8,7 @@ export type Choice = {
   code?: string;
   timezones?: string[];
 };
-export type PersonKind = "students" | "teachers";
+export type PersonKind = "students" | "teachers" | "guardians";
 export const fieldClass = "console-control";
 export const primaryClass = "console-button primary";
 export const secondaryClass = "console-button";

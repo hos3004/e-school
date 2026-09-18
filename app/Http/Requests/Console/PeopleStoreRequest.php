@@ -8,6 +8,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
+use Modules\Guardians\Domain\Enums\ContactChannel;
+use Modules\Guardians\Domain\Enums\GuardianRelationship;
 use Modules\Staff\Domain\Enums\ContractBasis;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Shared\Support\Locales;
@@ -16,14 +18,20 @@ final class PeopleStoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can($this->route('kind') === 'students' ? 'student.create' : 'staff.contract.update') ?? false;
+        return $this->user()?->can(match ($this->route('kind')) {
+            'students' => 'student.create',
+            'guardians' => 'guardian.link',
+            default => 'staff.contract.update',
+        }) ?? false;
     }
 
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        $kind = $this->route('kind');
         $new = $this->input('account_mode') === 'new';
-        $student = $this->route('kind') === 'students';
+        $student = $kind === 'students';
+        $guardian = $kind === 'guardians';
         $required = $new ? 'required' : 'nullable';
         $rules = [
             'account_mode' => ['required', Rule::in(['new', 'existing'])],
@@ -44,6 +52,34 @@ final class PeopleStoreRequest extends FormRequest
         ];
         // The action validates confirmation too; keep it in the validated payload without ever flashing it.
         $rules['password_confirmation'] = [$required, 'string', 'same:password'];
+
+        if ($guardian) {
+            $studentLinked = $this->filled('student_profile_id');
+
+            return [
+                'account_mode' => $rules['account_mode'],
+                'existing_user_id' => $rules['existing_user_id'],
+                'full_name' => $rules['full_name'],
+                'username' => $rules['username'],
+                'email' => [...$rules['email'], $new ? 'required_without:phone' : 'nullable'],
+                'phone' => [...$rules['phone'], $new ? 'required_without:email' : 'nullable'],
+                'password' => $rules['password'],
+                'password_confirmation' => $rules['password_confirmation'],
+                'locale' => $rules['locale'],
+                'timezone' => $rules['timezone'],
+                'national_id_last4' => ['nullable', 'digits:4'],
+                'occupation' => ['nullable', 'string', 'max:120'],
+                'preferred_contact_channel' => ['nullable', Rule::enum(ContactChannel::class)],
+                // الربط الأولي بطالب اختياري: يمكن إنشاء حساب ولي الأمر
+                // أولًا ثم ربطه لاحقًا من صفحة ملفه.
+                'student_profile_id' => ['nullable', 'ulid'],
+                'relationship' => [$studentLinked ? 'required' : 'nullable', Rule::enum(GuardianRelationship::class)],
+                'is_primary' => ['nullable', 'boolean'],
+                'can_act_for' => ['nullable', 'boolean'],
+                'visible_sections' => ['nullable', 'array'],
+                'visible_sections.*' => ['string', Rule::in((array) config('guardians.links.allowed_visible_sections'))],
+            ];
+        }
 
         // حقول المعلم اختيارية، ولا تُقبل أصلًا ممن لا يملك إدارة الجداول.
         $teaching = $this->user()?->can('schedule.manage') ? 'nullable' : 'prohibited';

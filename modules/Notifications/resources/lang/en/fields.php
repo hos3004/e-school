@@ -73,6 +73,7 @@ return [
         'teachers_all' => 'All teachers',
         'student' => 'Student',
         'teacher' => 'Teacher',
+        'guardian' => 'Guardian',
         'group' => 'Group',
         'course' => 'Course',
         'schedule' => 'Schedule',

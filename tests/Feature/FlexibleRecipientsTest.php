@@ -15,6 +15,27 @@ function recipientResolver(): ManualNotificationRecipientResolver
     return app(ManualNotificationRecipientResolver::class);
 }
 
+/**
+ * Fixtures::guardianProfileId() لا وجود له بعد؛ إدراج مباشر هنا مثل حالة
+ * "outsider" أعلاه بدل توسيع Fixtures المشتركة لهذا الاختبار وحده.
+ */
+function insertGuardianProfileId(string $organizationId, ?string $userId = null): string
+{
+    $id = (string) Str::ulid();
+    $userId ??= Fixtures::userId();
+
+    DB::table('guardian_profiles')->insert([
+        'id' => $id,
+        'organization_id' => $organizationId,
+        'user_id' => $userId,
+        'guardian_code' => 'W'.strtoupper(substr($id, -8)),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return $id;
+}
+
 it('sends to every active student in the organization', function (): void {
     $organizationId = Fixtures::organizationId();
     $first = Fixtures::studentProfileId();
@@ -154,4 +175,42 @@ it('resolves a single student by their own user id', function (): void {
     );
 
     expect($resolution->userIds)->toBe([$userId]);
+});
+
+it('resolves a single guardian by their own user id', function (): void {
+    $organizationId = Fixtures::organizationId();
+    $guardianProfileId = insertGuardianProfileId($organizationId);
+    $userId = (string) DB::table('guardian_profiles')
+        ->where('id', $guardianProfileId)->value('user_id');
+
+    $resolution = recipientResolver()->resolve(
+        $organizationId,
+        ManualRecipientType::Guardian,
+        $userId,
+        ManualAudience::All,
+    );
+
+    expect($resolution->userIds)->toBe([$userId]);
+});
+
+it('refuses to resolve an archived guardian', function (): void {
+    $organizationId = Fixtures::organizationId();
+    $guardianProfileId = insertGuardianProfileId($organizationId);
+    $userId = (string) DB::table('guardian_profiles')
+        ->where('id', $guardianProfileId)->value('user_id');
+    DB::table('guardian_profiles')->where('id', $guardianProfileId)
+        ->update(['deleted_at' => now()]);
+
+    recipientResolver()->resolve($organizationId, ManualRecipientType::Guardian, $userId);
+})->throws(BusinessRuleViolation::class);
+
+it('includes guardians alongside students and teachers in the people picker', function (): void {
+    $organizationId = Fixtures::organizationId();
+    insertGuardianProfileId($organizationId);
+    $userId = (string) DB::table('guardian_profiles')->orderByDesc('created_at')->value('user_id');
+    $name = (string) DB::table('users')->where('id', $userId)->value('name');
+
+    $options = recipientResolver()->search($organizationId, ManualRecipientType::People, $name);
+
+    expect($options)->toHaveKey($userId);
 });

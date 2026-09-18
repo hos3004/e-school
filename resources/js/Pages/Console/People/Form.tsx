@@ -62,6 +62,13 @@ type Data = {
   placement_group_name: string;
   placement_group_capacity: string;
   placement_group_starts_on: string;
+  national_id_last4: string;
+  occupation: string;
+  preferred_contact_channel: string;
+  student_profile_id: string;
+  relationship: string;
+  is_primary: boolean;
+  can_act_for: boolean;
 };
 type Props = {
   kind: PersonKind;
@@ -76,6 +83,8 @@ type Props = {
   employmentTypes: Choice[];
   contractBases: Choice[];
   currencies: string[];
+  contactChannels: Choice[];
+  relationshipOptions: Choice[];
   optionsUrl: string;
   usernameUrl: string;
   submitUrl: string;
@@ -101,6 +110,7 @@ type Options = {
   regions: Choice[];
   courses: Choice[];
   accounts: Choice[];
+  students: Choice[];
   teachers: Choice[];
   courseMode: string | null;
   groups: GroupChoice[];
@@ -116,6 +126,8 @@ export default function PeopleForm(props: Props) {
     employmentTypes,
     contractBases,
     currencies,
+    contactChannels,
+    relationshipOptions,
     optionsUrl,
     usernameUrl,
     submitUrl,
@@ -123,6 +135,7 @@ export default function PeopleForm(props: Props) {
   } = props;
   const t = useI18n();
   const isStudent = kind === "students";
+  const isGuardian = kind === "guardians";
   const creating = mode === "create";
   const accountReadOnly = !creating && !props.canUpdateAccount;
   const initial: Data = {
@@ -173,6 +186,13 @@ export default function PeopleForm(props: Props) {
     placement_group_name: "",
     placement_group_capacity: "",
     placement_group_starts_on: props.placement?.startsOn ?? "",
+    national_id_last4: "",
+    occupation: "",
+    preferred_contact_channel: "",
+    student_profile_id: "",
+    relationship: "",
+    is_primary: false,
+    can_act_for: false,
     ...Object.fromEntries(
       Object.entries(person).map(([key, value]) => [key, value ?? ""]),
     ),
@@ -197,6 +217,8 @@ export default function PeopleForm(props: Props) {
   const [courseMode, setCourseMode] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Choice[]>([]);
   const [accountSearch, setAccountSearch] = useState("");
+  const [studentOptions, setStudentOptions] = useState<Choice[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [optionsLoading, setOptionsLoading] = useState(false);
@@ -329,6 +351,20 @@ export default function PeopleForm(props: Props) {
       if (!response.ok) throw new Error();
       const result = (await response.json()) as Options;
       setAccounts(result.accounts);
+    } catch {
+      setLookupError(t("console_people.lookup_error"));
+    }
+  }
+  async function findStudent() {
+    setLookupError("");
+    try {
+      const response = await fetch(
+        optionsUrl + "?" + new URLSearchParams({ search: studentSearch }),
+        { headers: { Accept: "application/json" } },
+      );
+      if (!response.ok) throw new Error();
+      const result = (await response.json()) as Options;
+      setStudentOptions(result.students ?? []);
     } catch {
       setLookupError(t("console_people.lookup_error"));
     }
@@ -502,7 +538,14 @@ export default function PeopleForm(props: Props) {
                   ))
                 ) : (
                   <span className="pill current">
-                    {t("console_people." + (isStudent ? "student" : "teacher"))}
+                    {t(
+                      "console_people." +
+                        (isStudent
+                          ? "student"
+                          : isGuardian
+                            ? "guardian"
+                            : "teacher"),
+                    )}
                   </span>
                 )}
               </div>
@@ -806,119 +849,219 @@ export default function PeopleForm(props: Props) {
               title={t("console_people.profile_section")}
               description={t("console_people.profile_intro")}
             >
-              {select(
-                "gender",
-                [
-                  { value: "male", label: t("console_people.male") },
-                  { value: "female", label: t("console_people.female") },
-                ],
-                true,
-              )}
-              {input("date_of_birth", "date", true)}
-              <Field
-                name="country_id"
-                label={t("console_people.fields.country_id")}
-                error={errors.country_id}
-                optional
-                hint={t("console_people.country_hint")}
-              >
-                <CountryInput
-                  id="country_id"
-                  className={fieldClass}
-                  options={countries}
-                  value={data.country_id}
-                  aria-invalid={Boolean(errors.country_id)}
-                  aria-describedby={
-                    errors.country_id ? "country_id-error" : "country_id-hint"
-                  }
-                  onChange={(value) => {
-                    setData("country_id", value);
-                    setData("region_id", "");
-                    if (creating) {
-                      const zones =
-                        countries.find((country) => country.value === value)
-                          ?.timezones ?? [];
-                      setData(
-                        "timezone",
-                        zones.length === 1 ? (zones[0] ?? "") : "",
-                      );
-                    }
-                  }}
-                />
-              </Field>
-              {select("region_id", regions, true)}
-              {optionsLoading && (
-                <p role="status" className="text-xs text-slate-500">
-                  {t("console_people.loading")}
-                </p>
-              )}
-              <Field
-                name="timezone"
-                label={t("console_people.fields.timezone")}
-                error={errors.timezone}
-                hint={t("console_people.timezone_hint")}
-              >
-                <input
-                  id="timezone"
-                  readOnly={accountReadOnly}
-                  value={data.timezone}
-                  onChange={(event) => setData("timezone", event.target.value)}
-                  list="people-timezones"
-                  dir="ltr"
-                  className={fieldClass}
-                  aria-invalid={Boolean(errors.timezone)}
-                  aria-describedby={
-                    errors.timezone ? "timezone-error" : "timezone-hint"
-                  }
-                />
-                <datalist id="people-timezones">
-                  {timezones.map((zone) => (
-                    <option key={zone} value={zone} />
-                  ))}
-                </datalist>
-              </Field>
-              {isStudent ? (
+              {isGuardian ? (
                 <>
-                  {input("city", "text", true)}
-                  {select(
-                    "nationality",
-                    countries.map((country) => ({
-                      value: country.iso2 ?? "",
-                      label: country.label,
-                    })),
-                    true,
+                  <Field
+                    name="timezone"
+                    label={t("console_people.fields.timezone")}
+                    error={errors.timezone}
+                    hint={t("console_people.timezone_hint")}
+                  >
+                    <input
+                      id="timezone"
+                      readOnly={accountReadOnly}
+                      value={data.timezone}
+                      onChange={(event) =>
+                        setData("timezone", event.target.value)
+                      }
+                      list="people-timezones"
+                      dir="ltr"
+                      className={fieldClass}
+                      aria-invalid={Boolean(errors.timezone)}
+                      aria-describedby={
+                        errors.timezone ? "timezone-error" : "timezone-hint"
+                      }
+                    />
+                    <datalist id="people-timezones">
+                      {timezones.map((zone) => (
+                        <option key={zone} value={zone} />
+                      ))}
+                    </datalist>
+                  </Field>
+                  {input("national_id_last4", "text", true)}
+                  {input("occupation", "text", true)}
+                  {select("preferred_contact_channel", contactChannels, true)}
+                  {creating && (
+                    <div className="span2 space-y-4 rounded-lg bg-slate-50 p-4">
+                      <p className="text-sm leading-7 text-slate-600">
+                        {t("console_people.guardians.link_hint")}
+                      </p>
+                      <div>
+                        <label
+                          htmlFor="student-search"
+                          className="mb-2 block text-sm font-medium"
+                        >
+                          {t("console_people.fields.student_profile_id")}
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            id="student-search"
+                            value={studentSearch}
+                            onChange={(event) =>
+                              setStudentSearch(event.target.value)
+                            }
+                            className={fieldClass}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void findStudent()}
+                            className={secondaryClass}
+                          >
+                            {t("console_people.search")}
+                          </button>
+                        </div>
+                      </div>
+                      {select("student_profile_id", studentOptions, true)}
+                      {data.student_profile_id && (
+                        <>
+                          {select("relationship", relationshipOptions)}
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={data.is_primary}
+                              onChange={(event) =>
+                                setData("is_primary", event.target.checked)
+                              }
+                            />
+                            {t("console_people.fields.is_primary")}
+                          </label>
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={data.can_act_for}
+                              onChange={(event) =>
+                                setData("can_act_for", event.target.checked)
+                              }
+                            />
+                            {t("console_people.fields.can_act_for")}
+                          </label>
+                        </>
+                      )}
+                    </div>
                   )}
-                  {textarea("notes", 5000)}
                 </>
               ) : (
                 <>
-                  {input("staff_code")}
-                  {select("employment_type", employmentTypes)}
-                  {input("hired_at", "date", !creating)}
+                  {select(
+                    "gender",
+                    [
+                      { value: "male", label: t("console_people.male") },
+                      { value: "female", label: t("console_people.female") },
+                    ],
+                    true,
+                  )}
+                  {input("date_of_birth", "date", true)}
                   <Field
-                    name="specializations"
-                    label={t("console_people.fields.specializations")}
+                    name="country_id"
+                    label={t("console_people.fields.country_id")}
+                    error={errors.country_id}
                     optional
-                    error={errors.specializations}
+                    hint={t("console_people.country_hint")}
+                  >
+                    <CountryInput
+                      id="country_id"
+                      className={fieldClass}
+                      options={countries}
+                      value={data.country_id}
+                      aria-invalid={Boolean(errors.country_id)}
+                      aria-describedby={
+                        errors.country_id
+                          ? "country_id-error"
+                          : "country_id-hint"
+                      }
+                      onChange={(value) => {
+                        setData("country_id", value);
+                        setData("region_id", "");
+                        if (creating) {
+                          const zones =
+                            countries.find(
+                              (country) => country.value === value,
+                            )?.timezones ?? [];
+                          setData(
+                            "timezone",
+                            zones.length === 1 ? (zones[0] ?? "") : "",
+                          );
+                        }
+                      }}
+                    />
+                  </Field>
+                  {select("region_id", regions, true)}
+                  {optionsLoading && (
+                    <p role="status" className="text-xs text-slate-500">
+                      {t("console_people.loading")}
+                    </p>
+                  )}
+                  <Field
+                    name="timezone"
+                    label={t("console_people.fields.timezone")}
+                    error={errors.timezone}
+                    hint={t("console_people.timezone_hint")}
                   >
                     <input
-                      id="specializations"
-                      value={data.specializations.join(", ")}
+                      id="timezone"
+                      readOnly={accountReadOnly}
+                      value={data.timezone}
                       onChange={(event) =>
-                        setData(
-                          "specializations",
-                          event.target.value
-                            .split(/[,،]/)
-                            .map((value) => value.trimStart()),
-                        )
+                        setData("timezone", event.target.value)
                       }
+                      list="people-timezones"
+                      dir="ltr"
                       className={fieldClass}
+                      aria-invalid={Boolean(errors.timezone)}
+                      aria-describedby={
+                        errors.timezone ? "timezone-error" : "timezone-hint"
+                      }
                     />
-                    <p className="text-xs text-slate-500">
-                      {t("console_people.specializations_hint")}
-                    </p>
+                    <datalist id="people-timezones">
+                      {timezones.map((zone) => (
+                        <option key={zone} value={zone} />
+                      ))}
+                    </datalist>
                   </Field>
-                  {textarea("bio", 5000)}
+                  {isStudent ? (
+                    <>
+                      {input("city", "text", true)}
+                      {select(
+                        "nationality",
+                        countries.map((country) => ({
+                          value: country.iso2 ?? "",
+                          label: country.label,
+                        })),
+                        true,
+                      )}
+                      {textarea("notes", 5000)}
+                    </>
+                  ) : (
+                    <>
+                      {input("staff_code")}
+                      {select("employment_type", employmentTypes)}
+                      {input("hired_at", "date", !creating)}
+                      <Field
+                        name="specializations"
+                        label={t("console_people.fields.specializations")}
+                        optional
+                        error={errors.specializations}
+                      >
+                        <input
+                          id="specializations"
+                          value={data.specializations.join(", ")}
+                          onChange={(event) =>
+                            setData(
+                              "specializations",
+                              event.target.value
+                                .split(/[,،]/)
+                                .map((value) => value.trimStart()),
+                            )
+                          }
+                          className={fieldClass}
+                        />
+                        <p className="text-xs text-slate-500">
+                          {t("console_people.specializations_hint")}
+                        </p>
+                      </Field>
+                      {textarea("bio", 5000)}
+                    </>
+                  )}
                 </>
               )}
             </Section>

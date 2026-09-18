@@ -22,6 +22,7 @@ use Shared\Concerns\HasUlid;
  * @property string $id
  * @property string $organization_id
  * @property string $user_id
+ * @property string $guardian_code
  * @property string|null $national_id_last4
  * @property string|null $occupation
  * @property ContactChannel|null $preferred_contact_channel
@@ -41,6 +42,7 @@ final class GuardianProfile extends Model
     protected $fillable = [
         'organization_id',
         'user_id',
+        'guardian_code',
         'national_id_last4',
         'occupation',
         'preferred_contact_channel',

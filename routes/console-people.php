@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Console\EnrollmentFreezeController;
+use App\Http\Controllers\Console\GuardianLinkController;
 use App\Http\Controllers\Console\PeopleController;
 use App\Http\Controllers\Console\StudentLifecycleController;
 use App\Http\Controllers\Console\StudentPlacementController;
@@ -14,10 +15,22 @@ use App\Http\Controllers\Console\TeacherRateController;
 use Illuminate\Support\Facades\Route;
 
 // Included inside the authenticated, enabled /manage group owned by the console shell.
-foreach (['students', 'teachers'] as $kind) {
-    $view = $kind === 'students' ? 'student.view.any' : 'staff.view.any';
-    $create = $kind === 'students' ? 'student.create' : 'staff.contract.update';
-    $update = $kind === 'students' ? 'student.update' : 'staff.contract.update';
+foreach (['students', 'teachers', 'guardians'] as $kind) {
+    $view = match ($kind) {
+        'students' => 'student.view.any',
+        'guardians' => 'guardian.view',
+        default => 'staff.view.any',
+    };
+    $create = match ($kind) {
+        'students' => 'student.create',
+        'guardians' => 'guardian.link',
+        default => 'staff.contract.update',
+    };
+    $update = match ($kind) {
+        'students' => 'student.update',
+        'guardians' => 'guardian.link',
+        default => 'staff.contract.update',
+    };
 
     Route::get($kind, [PeopleController::class, 'index'])->defaults('kind', $kind)
         ->middleware('can:'.$view)->name($kind.'.index');
@@ -99,3 +112,14 @@ Route::middleware('can:staff.contract.update')->group(function (): void {
 /* قيد الطالب في برنامج إضافي — لا يحتاج مجموعة؛ المعلم يُسنَد بعده. */
 Route::post('students/{profile}/programs', [StudentProgramController::class, 'store'])
     ->middleware('can:enrollment.create')->whereUlid('profile')->name('students.programs');
+
+/*
+ * ربط طالب بحساب ولي أمر قائم وفكّه، من صفحة ملف الوصي. لا حذف: فك الرابط
+ * تعليق (SoftDeletes) يحتفظ بالسجل.
+ */
+Route::middleware('can:guardian.link')->group(function (): void {
+    Route::post('guardians/{profile}/links', [GuardianLinkController::class, 'store'])
+        ->whereUlid('profile')->name('guardians.links.store');
+    Route::delete('guardians/{profile}/links/{link}', [GuardianLinkController::class, 'destroy'])
+        ->whereUlid('profile')->whereUlid('link')->name('guardians.links.destroy');
+});

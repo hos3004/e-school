@@ -7,6 +7,7 @@ namespace Modules\Guardians\Application\Actions;
 use Illuminate\Support\Facades\DB;
 use Modules\Guardians\Domain\Events\GuardianProfileCreated;
 use Modules\Guardians\Domain\Models\GuardianProfile;
+use Shared\Codes\EntityCodeGenerator;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -16,6 +17,10 @@ use Shared\Support\BusinessRuleViolation;
  */
 final readonly class CreateGuardianProfile
 {
+    public function __construct(
+        private EntityCodeGenerator $codes,
+    ) {}
+
     /**
      * @param  array{
      *     organization_id: string,
@@ -44,6 +49,7 @@ final readonly class CreateGuardianProfile
             return GuardianProfile::query()->create([
                 'organization_id' => $data['organization_id'],
                 'user_id' => $data['user_id'],
+                'guardian_code' => $this->codes->next('guardian'),
                 'national_id_last4' => $data['national_id_last4'] ?? null,
                 'occupation' => $data['occupation'] ?? null,
                 'preferred_contact_channel' => $data['preferred_contact_channel'] ?? null,

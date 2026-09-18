@@ -73,6 +73,7 @@ return [
         'teachers_all' => 'كل المعلمين',
         'student' => 'طالب',
         'teacher' => 'معلم',
+        'guardian' => 'ولي أمر',
         'group' => 'مجموعة',
         'course' => 'كورس',
         'schedule' => 'جدول',

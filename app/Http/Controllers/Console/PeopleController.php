@@ -33,6 +33,12 @@ use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Groups\Application\Services\ConsoleSetupService;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\Enums\MembershipStatus;
+use Modules\Guardians\Application\Actions\CreateGuardianOnboardingAction;
+use Modules\Guardians\Application\Actions\LinkStudentToGuardian;
+use Modules\Guardians\Application\Actions\UnlinkStudentFromGuardian;
+use Modules\Guardians\Application\Actions\UpdateGuardianProfile;
+use Modules\Guardians\Domain\Enums\ContactChannel;
+use Modules\Guardians\Domain\Models\GuardianProfile;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Identity\Domain\Contracts\UserAccountOperations;
 use Modules\Identity\Domain\Contracts\UserQueryService;
@@ -49,6 +55,7 @@ use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Domain\ValueObjects\TeacherRateData;
 use Modules\Students\Application\Actions\CreateStudentOnboardingAction;
 use Modules\Students\Application\Actions\UpdateStudentProfileAction;
+use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Codes\EntityCodeGenerator;
 use Shared\Support\BusinessRuleViolation;
@@ -171,16 +178,22 @@ final class PeopleController extends Controller
     {
         $organizationId = $this->organizationId($request);
         $data = $request->validated();
+        $actorId = (string) $request->user()?->getAuthIdentifier();
         try {
-            $profile = $kind === 'students'
-                ? app(CreateStudentOnboardingAction::class)->execute(
+            $profile = match ($kind) {
+                'students' => app(CreateStudentOnboardingAction::class)->execute(
                     [...$data, 'acceptance_reason' => __('console_people.audit.student_created')],
-                    $organizationId, (string) $request->user()?->getAuthIdentifier(),
-                )
-                : app(CreateTeacherOnboardingAction::class)->execute(
+                    $organizationId, $actorId,
+                ),
+                'guardians' => app(CreateGuardianOnboardingAction::class)->execute(
+                    [...$data, 'onboarding_reason' => __('console_people.audit.guardian_created')],
+                    $organizationId, $actorId,
+                ),
+                default => app(CreateTeacherOnboardingAction::class)->execute(
                     [...$data, 'onboarding_reason' => __('console_people.audit.teacher_created')],
-                    $organizationId, (string) $request->user()?->getAuthIdentifier(),
-                );
+                    $organizationId, $actorId,
+                ),
+            };
         } catch (BusinessRuleViolation $error) {
             $this->businessError($error);
         } catch (QueryException $error) {
@@ -364,14 +377,16 @@ final class PeopleController extends Controller
         $record = $this->record($request, $kind, $profile);
         Gate::authorize('view', $record);
         $organizationId = $this->organizationId($request);
-        $hub = $kind === 'students'
-            ? $this->profiles->studentHub($organizationId, (string) $record->id, (string) $record->user_id)
-            : $this->profiles->teacherHub($organizationId, (string) $record->id, (string) $record->user_id);
+        $hub = match (true) {
+            $record instanceof StudentProfile => $this->profiles->studentHub($organizationId, (string) $record->id, (string) $record->user_id),
+            $record instanceof StaffProfile => $this->profiles->teacherHub($organizationId, (string) $record->id, (string) $record->user_id),
+            default => $this->profiles->guardianHub($organizationId, (string) $record->id, (string) $record->user_id),
+        };
         if (!$request->user()?->can('staff.contract.view')) {
             unset($hub['contracts'], $hub['rates']);
         }
         if (!$request->user()?->can('guardian.view')) {
-            unset($hub['guardians']);
+            unset($hub['guardians'], $hub['students']);
         }
         $person = $this->person($record, $organizationId);
         if (!$request->user()?->can('contact.pii.view')) {
@@ -396,15 +411,42 @@ final class PeopleController extends Controller
             'qualifications' => $record instanceof StaffProfile
                 ? $this->qualifications($request, $record, $hub) : null,
             'rates' => $record instanceof StaffProfile ? $this->rates($request, $record) : null,
+            'guardianLinks' => $record instanceof GuardianProfile
+                ? $this->guardianLinks($request, $record) : null,
             'hub' => $hub,
             'availabilityUrl' => $kind === 'teachers' && $request->user()?->can('staff.view') && $request->user()->can('staff.view.any') ? route('console.availability.index', ['teacher' => $record->id]) : null,
-            'profileWorkspace' => app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),
+            'profileWorkspace' => $record instanceof GuardianProfile ? null
+                : app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),
             'backUrl' => route('console.'.$kind.'.index', $request->only('search', 'archived', 'page')),
             'editUrl' => !$record->trashed() && $request->user()?->can($this->editPermission($kind))
                 ? route('console.'.$kind.'.edit', ['profile' => $record->id, ...$request->only('search', 'archived', 'page')]) : null,
             'displayTimezone' => (string) app(ConsoleContext::class)->forRequest($request)['timezone'],
             'messaging' => $this->messaging($request, $kind, $record),
         ]);
+    }
+
+    /**
+     * أبناء وصي مرتبطون ببرامجهم وأدوارهم الأخرى إن كان الحساب نفسه طالبًا
+     * أو معلمًا أيضًا — حساب واحد يمكن أن يحمل أكثر من صفة في آن.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function guardianLinks(Request $request, GuardianProfile $record): ?array
+    {
+        $user = $request->user();
+
+        if ($record->trashed() || $user === null || !$user->can('guardian.view')) {
+            return null;
+        }
+
+        return [
+            'canLink' => $user->can('guardian.link'),
+            'linkUrl' => $user->can('guardian.link')
+                ? route('console.guardians.links.store', ['profile' => $record->id]) : null,
+            // فك الرابط يحتاج معرّف الرابط نفسه؛ يُبنى لكل صف من hub.students.unlink_url.
+            'studentSearchUrl' => $user->can('guardian.link') ? route('console.guardians.options') : null,
+            'relationshipOptions' => $this->choices($this->profiles->guardianRelationshipOptions()),
+        ];
     }
 
     public function edit(Request $request, string $profile, string $kind): Response
@@ -458,6 +500,16 @@ final class PeopleController extends Controller
                 }
                 if ($record instanceof StudentProfile) {
                     app(UpdateStudentProfileAction::class)->execute($record, $data, $actorId, $reason);
+                } elseif ($record instanceof GuardianProfile) {
+                    // تحديث هوية بحتة (اسم/هاتف/توقيت) بلا أي حقل خاص بملف الوصي
+                    // لا يستدعي الإجراء أصلًا؛ نداءه بلا حقول يرفض بـ"لا يوجد ما
+                    // يُحدَّث" ويُسقط تحديث الهوية الذي سبق أن نجح في نفس المعاملة.
+                    $guardianChanges = array_intersect_key($data, array_flip([
+                        'national_id_last4', 'occupation', 'preferred_contact_channel',
+                    ]));
+                    if ($guardianChanges !== []) {
+                        app(UpdateGuardianProfile::class)->execute((string) $record->id, $guardianChanges);
+                    }
                 } else {
                     $changes = $data;
                     if (array_key_exists('bio', $changes)) {
@@ -495,6 +547,9 @@ final class PeopleController extends Controller
             'courses' => $this->choices($this->profiles->courseOptions($organizationId, $input['program_id'] ?? null)),
             'accounts' => array_key_exists('search', $input) && $request->user()->can($this->createPermission($kind))
                 ? $this->choices($this->profiles->accountOptions($organizationId, (string) $input['search'], $excludedIds)) : [],
+            // بحث عن طالب لربطه بوصي — القيمة هنا student_profile_id لا user_id.
+            'students' => $kind === 'guardians' && array_key_exists('search', $input) && $request->user()->can('guardian.link')
+                ? $this->choices(app(StudentDirectoryQueries::class)->searchNames($organizationId, (string) $input['search'])) : [],
             // المعلمون المؤهلون لهذا الكورس؛ يُحجبون بلا صلاحية إدارة الجداول.
             'teachers' => $kind === 'students' && ($input['course_id'] ?? null) !== null && $request->user()->can('schedule.manage')
                 ? app(ConsoleIndividualTeacherService::class)->teacherOptions($organizationId, (string) $input['course_id']) : [],
@@ -786,7 +841,7 @@ final class PeopleController extends Controller
      * @param array<string, mixed> $hub
      * @return array<string, mixed>
      */
-    private function lifecycle(Request $request, StudentProfile|StaffProfile $record, array $hub): array
+    private function lifecycle(Request $request, StudentProfile|StaffProfile|GuardianProfile $record, array $hub): array
     {
         if ($record instanceof StaffProfile) {
             return [
@@ -794,6 +849,12 @@ final class PeopleController extends Controller
                 'terminateUrl' => $record->isActive() && Gate::allows('terminate', $record)
                     ? route('console.teachers.terminate', ['profile' => $record->id]) : null,
             ];
+        }
+
+        if ($record instanceof GuardianProfile) {
+            // لا شاشة أرشفة مخصّصة لحساب ولي الأمر في هذا الإصدار؛ يبقى نشطًا
+            // طالما مرتبطًا بأي طالب، وتُدار حالة حسابه من صفحة الهوية.
+            return ['archiveUrl' => null, 'restoreUrl' => null, 'terminateUrl' => null, 'enrollments' => []];
         }
 
         $labels = [];
@@ -838,6 +899,11 @@ final class PeopleController extends Controller
             'employmentTypes' => array_map(fn (EmploymentType $type): array => ['value' => $type->value, 'label' => $type->label()], EmploymentType::cases()),
             'contractBases' => array_map(fn (ContractBasis $basis): array => ['value' => $basis->value, 'label' => $basis->label()], ContractBasis::cases()),
             'currencies' => array_values((array) config('staff.currency.supported')),
+            'contactChannels' => $kind === 'guardians' ? array_map(
+                fn (ContactChannel $channel): array => ['value' => $channel->value, 'label' => $channel->label()],
+                ContactChannel::cases(),
+            ) : [],
+            'relationshipOptions' => $kind === 'guardians' ? $this->choices($this->profiles->guardianRelationshipOptions()) : [],
             'optionsUrl' => route('console.'.$kind.'.options'),
             'usernameUrl' => route('console.'.$kind.'.usernames'),
         ];
@@ -875,15 +941,10 @@ final class PeopleController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function person(StudentProfile|StaffProfile $profile, string $organizationId): array
+    private function person(StudentProfile|StaffProfile|GuardianProfile $profile, string $organizationId): array
     {
         $account = $this->accounts->find($organizationId, (string) $profile->user_id);
         $summary = $this->users->findSummary((string) $profile->user_id);
-        $countryId = (string) ($profile->country_id ?? '');
-        $countries = $this->geography->countries(false);
-        $country = collect($countries)->first(fn ($item): bool => $item->id === $countryId);
-        $region = $countryId === '' ? null : collect($this->geography->regionsOf($countryId, false))
-            ->first(fn ($item): bool => $item->id === (string) $profile->region_id);
         $common = [
             'id' => (string) $profile->id, 'code' => $this->code($profile), 'full_name' => $account?->name,
             'username' => $account?->username, 'email' => $account?->email, 'phone' => $account?->phone,
@@ -891,7 +952,24 @@ final class PeopleController extends Controller
             'status' => $profile->trashed() ? __('console_people.archived')
                 : ($account === null ? __('console_people.account_unavailable') : __('identity::status.'.$account->status)),
             'status_tone' => !$profile->trashed() && $account?->isActive() ? 'active' : 'inactive',
-            'archived' => $profile->trashed(), 'date_of_birth' => $profile->date_of_birth?->toDateString(),
+            'archived' => $profile->trashed(),
+        ];
+
+        if ($profile instanceof GuardianProfile) {
+            return [...$common,
+                'national_id_last4' => $profile->national_id_last4,
+                'occupation' => $profile->occupation,
+                'preferred_contact_channel' => $profile->preferred_contact_channel?->value,
+            ];
+        }
+
+        $countryId = (string) ($profile->country_id ?? '');
+        $countries = $this->geography->countries(false);
+        $country = collect($countries)->first(fn ($item): bool => $item->id === $countryId);
+        $region = $countryId === '' ? null : collect($this->geography->regionsOf($countryId, false))
+            ->first(fn ($item): bool => $item->id === (string) $profile->region_id);
+        $common = [...$common,
+            'date_of_birth' => $profile->date_of_birth?->toDateString(),
             'gender' => $profile->gender?->value, 'country_id' => $profile->country_id,
             'region_id' => $profile->region_id, 'country_name' => $country === null ? null : $this->localized($country->name),
             'region_name' => $region === null ? null : $this->localized($region->name),
@@ -908,19 +986,21 @@ final class PeopleController extends Controller
                 'bio' => $this->localized($profile->bio ?? [])];
     }
 
-    private function record(Request $request, string $kind, string $id): StudentProfile|StaffProfile
+    private function record(Request $request, string $kind, string $id): StudentProfile|StaffProfile|GuardianProfile
     {
         return $this->query($kind, $this->organizationId($request))->withTrashed()->whereKey($id)->firstOrFail();
     }
 
-    /** @return Builder<StudentProfile>|Builder<StaffProfile> */
+    /** @return Builder<StudentProfile>|Builder<StaffProfile>|Builder<GuardianProfile> */
     private function query(string $kind, string $organizationId): Builder
     {
-        abort_unless(in_array($kind, ['students', 'teachers'], true), 404);
+        abort_unless(in_array($kind, ['students', 'teachers', 'guardians'], true), 404);
 
-        return $kind === 'students'
-            ? StudentProfile::query()->forOrganization($organizationId)
-            : StaffProfile::query()->forOrganization($organizationId);
+        return match ($kind) {
+            'students' => StudentProfile::query()->forOrganization($organizationId),
+            'guardians' => GuardianProfile::query()->forOrganization($organizationId),
+            default => StaffProfile::query()->forOrganization($organizationId),
+        };
     }
 
     private function organizationId(Request $request): string
@@ -931,23 +1011,34 @@ final class PeopleController extends Controller
         return $id;
     }
 
-    private function code(StudentProfile|StaffProfile $profile): string
+    private function code(StudentProfile|StaffProfile|GuardianProfile $profile): string
     {
-        return $profile instanceof StudentProfile ? $profile->student_code : $profile->staff_code;
+        return match (true) {
+            $profile instanceof StudentProfile => $profile->student_code,
+            $profile instanceof GuardianProfile => $profile->guardian_code,
+            default => $profile->staff_code,
+        };
     }
 
     private function createPermission(string $kind): string
     {
-        return $kind === 'students' ? 'student.create' : 'staff.contract.update';
+        return match ($kind) {
+            'students' => 'student.create',
+            'guardians' => 'guardian.link',
+            default => 'staff.contract.update',
+        };
     }
 
     /** @return list<array{kind: string, label: string, url: string}> */
     private function personKinds(Request $request): array
     {
         $choices = [];
-        foreach (['students', 'teachers'] as $kind) {
+        foreach (['students', 'teachers', 'guardians'] as $kind) {
             if ($request->user()?->can($this->createPermission($kind))) {
-                $choices[] = ['kind' => $kind, 'label' => __('console_people.'.($kind === 'students' ? 'student' : 'teacher')), 'url' => route('console.'.$kind.'.create')];
+                $label = match ($kind) {
+                    'students' => 'student', 'guardians' => 'guardian', default => 'teacher',
+                };
+                $choices[] = ['kind' => $kind, 'label' => __('console_people.'.$label), 'url' => route('console.'.$kind.'.create')];
             }
         }
 
@@ -956,7 +1047,11 @@ final class PeopleController extends Controller
 
     private function editPermission(string $kind): string
     {
-        return $kind === 'students' ? 'student.update' : 'staff.contract.update';
+        return match ($kind) {
+            'students' => 'student.update',
+            'guardians' => 'guardian.link',
+            default => 'staff.contract.update',
+        };
     }
 
     /**

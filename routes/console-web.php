@@ -55,7 +55,7 @@ Route::middleware('can:notifications.outbox.create')->prefix('messages')->name('
     Route::get('templates', [MessagingController::class, 'templates'])->name('templates');
     Route::post('audience', [MessagingController::class, 'audience'])->name('audience');
     Route::post('{kind}/{profile}', [MessagingController::class, 'person'])
-        ->whereIn('kind', ['students', 'teachers'])->whereUlid('profile')->name('person');
+        ->whereIn('kind', ['students', 'teachers', 'guardians'])->whereUlid('profile')->name('person');
 });
 Route::get('/reports', ReportsController::class)->middleware('can:report.view')->name('reports');
 Route::get('/reports/pdf', ExportOperationalReportPdfController::class)->middleware(['can:report.view', 'can:report.export'])->name('reports.pdf');

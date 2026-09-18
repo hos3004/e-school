@@ -30,6 +30,6 @@ return [
     'recipient_types' => [
         'people' => 'Personnes que je choisis',
         'students_all' => 'Tous les élèves',
-        'teachers_all' => 'Tous les enseignants', 'student' => 'Élève', 'teacher' => 'Enseignant', 'group' => 'Groupe', 'course' => 'Cours', 'schedule' => 'Planning'],
+        'teachers_all' => 'Tous les enseignants', 'student' => 'Élève', 'teacher' => 'Enseignant', 'guardian' => 'Tuteur', 'group' => 'Groupe', 'course' => 'Cours', 'schedule' => 'Planning'],
     'audiences' => ['students' => 'Élèves seulement', 'teacher' => 'Enseignant seulement', 'all' => 'Toute la classe'],
 ];

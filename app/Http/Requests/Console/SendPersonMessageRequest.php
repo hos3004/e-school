@@ -28,8 +28,14 @@ final class SendPersonMessageRequest extends FormRequest
      */
     public function rules(): array
     {
+        // ولي الأمر ليس له جدول حصص شخصي؛ "schedule" هنا يقرأ ملف الطالب لغياب
+        // فرع مخصص، فيُمنع من الخادم لا من الواجهة وحدها.
+        $allowedKinds = $this->route('kind') === 'guardians'
+            ? ['credentials', 'free_text']
+            : ['credentials', 'schedule', 'free_text'];
+
         return [
-            'kind' => ['required', Rule::in(['credentials', 'schedule', 'free_text'])],
+            'kind' => ['required', Rule::in($allowedKinds)],
             'channel' => ['required', Rule::in(Channel::values())],
             'reason' => ['required', 'string', 'min:3', 'max:500'],
             'request_id' => ['required', 'string', 'size:26'],

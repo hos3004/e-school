@@ -358,6 +358,108 @@ final readonly class ProfileAdministrationQueryService
         ];
     }
 
+    /**
+     * صفحة ولي الأمر: أبناؤه المرتبطون وبرنامج كل واحد، وأي صفة أخرى يحملها
+     * الحساب نفسه (طالب و/أو معلم) — حساب واحد قد يجمع أكثر من صفة.
+     *
+     * @return array<string, mixed>
+     */
+    public function guardianHub(string $organizationId, string $guardianProfileId, string $userId): array
+    {
+        $account = $this->accounts->find($organizationId, $userId);
+        $studentLinks = $this->guardians->studentsForGuardian($guardianProfileId);
+        $studentIds = array_values(array_unique(array_map(
+            static fn ($link): string => $link->studentProfileId,
+            $studentLinks,
+        )));
+        $studentDirectory = $this->students->byIds($organizationId, $studentIds);
+
+        $enrollmentsByStudent = [];
+        foreach ($studentIds as $studentId) {
+            $enrollmentsByStudent[$studentId] = $this->enrollments->forStudent($organizationId, $studentId);
+        }
+        $programIds = array_values(array_unique(array_merge(...array_values(array_map(
+            static fn (array $rows): array => array_map(static fn ($item): string => $item->programId, $rows),
+            $enrollmentsByStudent === [] ? [[]] : $enrollmentsByStudent,
+        )))));
+        $programs = $this->academics->programsByIds($organizationId, $programIds);
+
+        $studentUserIds = array_values(array_unique(array_map(
+            static fn ($profile): string => $profile->userId,
+            $studentDirectory,
+        )));
+        $studentAccounts = $this->accounts->findMany($organizationId, $studentUserIds);
+
+        $students = array_map(function ($link) use ($studentDirectory, $enrollmentsByStudent, $programs, $studentAccounts, $guardianProfileId): array {
+            // الطالب قد يكون مؤرشفًا (soft-deleted) فيغيب عن studentDirectory رغم
+            // بقاء الرابط؛ array_key_exists صريح هنا لأن ?? وحدها قد تُخفي هذا الاحتمال.
+            $profile = array_key_exists($link->studentProfileId, $studentDirectory)
+                ? $studentDirectory[$link->studentProfileId]
+                : null;
+            $enrollments = $enrollmentsByStudent[$link->studentProfileId] ?? [];
+            $programNames = array_values(array_filter(array_map(
+                fn ($item): ?string => isset($programs[$item->programId]) ? $this->catalogLabel($programs[$item->programId]) : null,
+                $enrollments,
+            )));
+            $studentAccount = $profile === null ? null : ($studentAccounts[$profile->userId] ?? null);
+            $studentCode = $profile !== null ? $profile->studentCode : null;
+            $archived = $profile !== null && $profile->archived;
+
+            return [
+                'id' => $link->guardianLinkId,
+                'student_profile_id' => $link->studentProfileId,
+                'name' => $studentAccount->name ?? $studentCode ?? $link->studentProfileId,
+                'code' => $studentCode,
+                'relationship' => __('guardians::relationship.'.$link->relationship->value),
+                'is_primary' => $link->isPrimary,
+                'can_act_for' => $link->canActFor,
+                'verified_at' => $link->verifiedAt,
+                'programs' => $programNames,
+                'archived' => $archived,
+                'show_url' => route('console.students.show', ['profile' => $link->studentProfileId]),
+                'unlink_url' => route('console.guardians.links.destroy', [
+                    'profile' => $guardianProfileId, 'link' => $link->guardianLinkId,
+                ]),
+            ];
+        }, $studentLinks);
+
+        // الأدوار الأخرى لنفس الحساب — طالب و/أو معلم في آن، بلا تعارض.
+        $roles = [];
+        $ownStudent = $this->students->forUserIds($organizationId, [$userId]);
+
+        if ($ownStudent !== [] && !$ownStudent[0]->archived) {
+            $roles[] = [
+                'kind' => 'students',
+                'label' => __('console_people.student'),
+                'code' => $ownStudent[0]->studentCode,
+                'show_url' => route('console.students.show', ['profile' => $ownStudent[0]->id]),
+            ];
+        }
+
+        $ownStaff = $this->staff->findActiveProfileForUser($userId);
+
+        if ($ownStaff !== null) {
+            $roles[] = [
+                'kind' => 'teachers',
+                'label' => __('console_people.teacher'),
+                'code' => $ownStaff['staff_code'],
+                'show_url' => route('console.teachers.show', ['profile' => $ownStaff['id']]),
+            ];
+        }
+
+        return [
+            'account' => $account === null ? [] : [[
+                'name' => $account->name,
+                'username' => $account->username,
+                'email' => $account->email,
+                'phone' => $account->phone,
+                'status' => __('identity::status.'.$account->status),
+            ]],
+            'students' => $students,
+            'roles' => $roles,
+        ];
+    }
+
     /** @return array<string, list<array<string, mixed>>> */
     public function groupHub(string $organizationId, string $groupId): array
     {

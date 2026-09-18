@@ -26,6 +26,7 @@ return [
     'prefixes' => [
         'student' => 'E',
         'staff' => 'T',
+        'guardian' => 'W',
         'group' => 'G',
         'course' => 'C',
         'program' => 'P',
@@ -43,6 +44,7 @@ return [
     'entities' => [
         'student' => ['table' => 'student_profiles', 'column' => 'student_code', 'scope' => null],
         'staff' => ['table' => 'staff_profiles', 'column' => 'staff_code', 'scope' => null],
+        'guardian' => ['table' => 'guardian_profiles', 'column' => 'guardian_code', 'scope' => null],
         'group' => ['table' => 'groups', 'column' => 'code', 'scope' => null],
         'course' => ['table' => 'courses', 'column' => 'code', 'scope' => null],
         'program' => ['table' => 'programs', 'column' => 'code', 'scope' => null],
