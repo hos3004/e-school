@@ -9,9 +9,9 @@ return [
         'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
     ],
     'schedule.times_changed' => [
-        'subject' => 'تم تعديل مواعيد الحصص',
-        'body' => 'تم تعديل مواعيد جدول {{target_name}} في كورس {{course_name}} ({{course_code}}) مع المعلم {{teacher_name}}. مدة الحصة {{duration_minutes}} دقيقة، وعدد الحصص {{session_count}}. المواعيد الجديدة: {{schedule_times}}',
-        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
+        'subject' => 'تم تعديل مواعيد الحصص الدائمة',
+        'body' => 'تم تعديل مواعيد الحصص الدائمة لجدول {{target_name}} في كورس {{course_name}} ({{course_code}}) مع المعلم {{teacher_name}} لتكون: {{weekly_pattern}}، اعتبارًا من {{effective_from}}.',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'weekly_pattern', 'effective_from'],
     ],
     'registration.submitted' => [
         'subject' => 'تم استلام طلب التسجيل',

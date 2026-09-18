@@ -20,6 +20,7 @@ final class ScheduleTimesChanged extends DomainEvent
      * @param array<string, string> $courseName
      * @param string|array<string, string> $targetName
      * @param list<string> $scheduleTimes
+     * @param array<string, string> $weeklyPattern
      */
     public function __construct(
         public readonly string $scheduleId,
@@ -37,6 +38,7 @@ final class ScheduleTimesChanged extends DomainEvent
         public readonly int $sessionCount,
         public readonly array $scheduleTimes,
         public readonly string $timezone,
+        public readonly array $weeklyPattern = [],
         public readonly string $effectiveFrom = '',
         ?string $actorId = null,
     ) {
@@ -74,6 +76,7 @@ final class ScheduleTimesChanged extends DomainEvent
             'session_count' => $this->sessionCount,
             'schedule_times' => $this->scheduleTimes,
             'timezone' => $this->timezone,
+            'weekly_pattern' => $this->weeklyPattern,
             'effective_from' => $this->effectiveFrom,
         ];
     }

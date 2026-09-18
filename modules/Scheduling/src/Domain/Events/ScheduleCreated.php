@@ -13,6 +13,8 @@ final class ScheduleCreated extends DomainEvent
      * @param array<string, string> $courseName
      * @param string|array<string, string> $targetName
      * @param list<string> $scheduleTimes
+     * @param array<string, string> $weeklyPattern غير مستخدم في قالب هذا
+     *                                             الحدث؛ موجود لأن forSchedule() مصنع مشترك مع ScheduleTimesChanged.
      */
     public function __construct(
         public readonly string $scheduleId,
@@ -30,6 +32,7 @@ final class ScheduleCreated extends DomainEvent
         public readonly int $sessionCount,
         public readonly array $scheduleTimes,
         public readonly string $timezone,
+        public readonly array $weeklyPattern = [],
         ?string $actorId = null,
     ) {
         parent::__construct($actorId);

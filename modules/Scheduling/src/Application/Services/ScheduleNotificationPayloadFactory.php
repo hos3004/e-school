@@ -20,6 +20,8 @@ final readonly class ScheduleNotificationPayloadFactory
         private StudentDirectoryQueries $students,
         private StaffQueries $staff,
         private SessionAdministrationQueries $sessions,
+        private ScheduleChangeDefinition $definition,
+        private WeeklyScheduleSummary $weeklySummary,
     ) {}
 
     /**
@@ -29,7 +31,8 @@ final readonly class ScheduleNotificationPayloadFactory
      *   teacherUserId: string|null, courseName: array<string, string>,
      *   courseCode: string, targetName: string|array<string, string>,
      *   teacherName: string, durationMinutes: int, sessionCount: int,
-     *   scheduleTimes: list<string>, timezone: string
+     *   scheduleTimes: list<string>, timezone: string,
+     *   weeklyPattern: array<string, string>
      * }
      */
     public function forSchedule(Schedule $schedule): array
@@ -54,6 +57,17 @@ final readonly class ScheduleNotificationPayloadFactory
             max(1, (int) config('scheduling.notification_summary.max_sessions', 200)),
         );
 
+        /*
+         * الجدول المتكرر يُختصر بنمطه الأسبوعي — «الثلاثاء 17:00 والجمعة
+         * 17:30» — لا بتعداد كل موعد مولّد. رسالة تعديل جدول واحد كانت تسرد
+         * حتى 77 تاريخًا فتصل بلا فائدة؛ النمط الأسبوعي هو الخبر الفعلي.
+         * currentSlots() يقرأ نفس مصدر التوليد (weeklySlots أو start_time
+         * الفردي عبر rrule)، فلا يُعاد بناء منطق موازٍ قد ينحرف عنه.
+         */
+        $weeklyPattern = $this->weeklySummary->localized(
+            $this->definition->currentSlots($schedule),
+        );
+
         return [
             'scheduleId' => (string) $schedule->getKey(),
             'organizationId' => $organizationId,
@@ -70,6 +84,7 @@ final readonly class ScheduleNotificationPayloadFactory
             'sessionCount' => count($scheduleTimes),
             'scheduleTimes' => $scheduleTimes,
             'timezone' => (string) $schedule->timezone,
+            'weeklyPattern' => $weeklyPattern,
         ];
     }
 

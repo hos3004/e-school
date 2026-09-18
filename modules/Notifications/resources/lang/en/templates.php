@@ -9,9 +9,9 @@ return [
         'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
     ],
     'schedule.times_changed' => [
-        'subject' => 'Session times updated',
-        'body' => 'The schedule for {{target_name}} in {{course_name}} ({{course_code}}) with {{teacher_name}} has been updated. Session duration: {{duration_minutes}} minutes. Total sessions: {{session_count}}. New times: {{schedule_times}}',
-        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
+        'subject' => 'Recurring session times updated',
+        'body' => 'The recurring schedule for {{target_name}} in {{course_name}} ({{course_code}}) with {{teacher_name}} is now: {{weekly_pattern}}, effective {{effective_from}}.',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'weekly_pattern', 'effective_from'],
     ],
     'registration.submitted' => [
         'subject' => 'Registration request received',

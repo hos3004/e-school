@@ -91,8 +91,10 @@ it('carries a whatsapp template for the new summary so it cannot fall silent', f
         ->where('channel', 'whatsapp')
         ->first();
 
+    // النص المختصر يذكر النمط الأسبوعي لا كل موعد مولّد — 2026-09-18.
     expect($template)->not->toBeNull()
-        ->and((string) $template->body)->toContain('{{schedule_times}}');
+        ->and((string) $template->body)->toContain('{{weekly_pattern}}')
+        ->and((string) $template->body)->not->toContain('{{schedule_times}}');
 });
 
 it('keeps a schedule summary on the whatsapp channel', function (): void {

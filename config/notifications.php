@@ -488,7 +488,7 @@ return [
             'agreed_start',
         ],
         'datetime_list_parameters' => ['schedule_times'],
-        'localized_parameters' => ['course_name', 'target_name', 'current_schedule', 'proposed_schedule'],
+        'localized_parameters' => ['course_name', 'target_name', 'current_schedule', 'proposed_schedule', 'weekly_pattern'],
     ],
 
     /*
