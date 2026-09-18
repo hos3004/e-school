@@ -82,6 +82,24 @@ export default function GroupProfile({
 }: Props) {
   const t = useI18n();
   const [tab, setTab] = useState("overview");
+  const [activating, setActivating] = useState(false);
+  const [activateError, setActivateError] = useState("");
+  const activateGroup = () => {
+    if (activating || !window.confirm(t("console_courses.activate_confirm")))
+      return;
+    setActivating(true);
+    setActivateError("");
+    router.post(
+      "/manage/groups/" + group.id + "/activate",
+      {},
+      {
+        onError: (errors) => {
+          setActivateError(Object.values(errors).flat().join(" · "));
+        },
+        onFinish: () => setActivating(false),
+      },
+    );
+  };
   const days = [
     "sunday",
     "monday",
@@ -452,6 +470,25 @@ export default function GroupProfile({
                   <span className="console-status success">
                     {t("console_group.ready")}
                   </span>
+                )}
+                {abilities.edit && group.status === "planning" && (
+                  <div className="console-panel-inline-action">
+                    <button
+                      type="button"
+                      className="console-button primary"
+                      disabled={!group.can_activate || activating}
+                      onClick={activateGroup}
+                    >
+                      {activating
+                        ? t("console_courses.saving")
+                        : t("console_courses.activate")}
+                    </button>
+                    {activateError && (
+                      <p className="sessions-error" role="alert">
+                        {activateError}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </Panel>

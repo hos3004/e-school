@@ -202,11 +202,16 @@ final class GroupScheduleController extends Controller
         $organizationId = $this->organization($request);
         $options = $this->options($organizationId);
         if ($schedule['group_id'] !== '') {
-            // Existing schedules remain readable when a group later closes; writes still follow the original validator.
+            // مجموعة غير نشطة بعد (قيد التخطيط) أو أُقفلت لاحقًا: تبقى قابلة للقراءة هنا،
+            // بمعلمين معيّنين فعليين لا بقائمة فارغة، وإلا لن تظهر أي خيارات معلم أبدًا.
             $group = $this->groups->groupsByIds($organizationId, [$schedule['group_id']])[$schedule['group_id']] ?? null;
             abort_if($group === null, 404);
             if (!in_array($group->id, array_column($options['groups'], 'id'), true)) {
-                $options['groups'][] = ['id' => $group->id, 'name' => LocalizedJsonColumn::display($group->name), 'code' => $group->code, 'program_ids' => $group->programIds, 'timezone' => $group->timezone, 'assignments' => []];
+                $options['groups'][] = ['id' => $group->id, 'name' => LocalizedJsonColumn::display($group->name), 'code' => $group->code, 'program_ids' => $group->programIds, 'timezone' => $group->timezone,
+                    'assignments' => array_map(static fn ($assignment): array => [
+                        'teacher_id' => $assignment->staffProfileId, 'course_id' => $assignment->courseId,
+                        'from' => $assignment->assignedFrom, 'until' => $assignment->assignedTo,
+                    ], $group->teacherAssignments)];
             }
         }
         if ($schedule['course_id'] !== '') {
