@@ -110,7 +110,9 @@ export default function GroupScheduleEditor({
       group?.assignments.some(
         (assignment) =>
           assignment.teacher_id === item.staff_profile_id &&
-          assignment.course_id === course.id &&
+          // course_id فارغ يعني المعلم معيّن للمجموعة كلها، وليس كورسًا واحدًا فقط.
+          (assignment.course_id === course.id ||
+            assignment.course_id === null) &&
           (!assignment.from || assignment.from <= form.data.starts_on) &&
           (!assignment.until ||
             !form.data.ends_on ||
@@ -152,6 +154,19 @@ export default function GroupScheduleEditor({
   const title = t(
     "console_sessions." + (schedule.id ? "edit_title" : "create_title"),
   );
+  const addAnotherTimeHref = schedule.id
+    ? "/manage/schedules/create?" +
+      new URLSearchParams({
+        group: schedule.group_id,
+        course: schedule.course_id,
+        teacher: schedule.staff_profile_id,
+        duration: String(schedule.duration_minutes),
+        interval: String(schedule.interval_weeks),
+        timezone: schedule.timezone,
+        starts: schedule.starts_on,
+        ...(schedule.ends_on ? { ends: schedule.ends_on } : {}),
+      })
+    : null;
   const back = can.sessions
     ? "/manage/sessions?" +
       new URLSearchParams({
@@ -256,10 +271,18 @@ export default function GroupScheduleEditor({
       section="during"
       description={t("console_sessions.editor_description")}
       actions={
-        <Link className="console-button" href={back}>
-          <ArrowLeft size={16} />
-          {t("console_sessions.return")}
-        </Link>
+        <>
+          {addAnotherTimeHref && (
+            <Link className="console-button" href={addAnotherTimeHref}>
+              <CalendarDays size={16} />
+              {t("console_sessions.add_another_time")}
+            </Link>
+          )}
+          <Link className="console-button" href={back}>
+            <ArrowLeft size={16} />
+            {t("console_sessions.return")}
+          </Link>
+        </>
       }
     >
       <Head title={title} />
@@ -524,6 +547,14 @@ export default function GroupScheduleEditor({
             )}
             <p className="sessions-field-note">
               {t("console_sessions.same_time")}
+              {schedule.id && (
+                <>
+                  {" "}
+                  <Link className="inline-link" href={addAnotherTimeHref!}>
+                    {t("console_sessions.add_another_time")}
+                  </Link>
+                </>
+              )}
             </p>
           </Section>
           <Section title={t("console_sessions.period")} step={3}>

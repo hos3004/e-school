@@ -184,7 +184,8 @@ final readonly class ScheduleDefinitionValidator
 
         $assignment = collect($group->teacherAssignments)->first(
             static fn ($item): bool => $item->staffProfileId === $staffProfileId
-                && $item->courseId === $courseId
+                // courseId فارغ في تعيين المعلم يعني إسناده للمجموعة كلها، لا كورسًا واحدًا فقط.
+                && ($item->courseId === $courseId || $item->courseId === null)
                 && ($item->assignedFrom === null || $item->assignedFrom <= $startsOn->toDateString())
                 && ($item->assignedTo === null || $endsOn === null || $item->assignedTo >= $endsOn->toDateString()),
         );
