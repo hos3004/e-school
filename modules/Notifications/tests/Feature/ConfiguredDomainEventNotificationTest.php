@@ -11,6 +11,7 @@ use Modules\AccessControl\Domain\Models\Role;
 use Modules\Identity\Domain\Models\User;
 use Modules\Notifications\Application\Jobs\SendQueuedNotification;
 use Modules\Notifications\Application\Listeners\QueueConfiguredDomainEventNotification;
+use Modules\Notifications\Application\Services\NotificationRecipientSilencer;
 use Modules\Notifications\Application\Services\PayloadDomainEventRecipientResolver;
 use Modules\Notifications\Database\Seeders\NotificationTemplateSeeder;
 use Modules\Notifications\Domain\Contracts\DomainEventRecipientResolver;
@@ -171,7 +172,7 @@ it('dispatches every matching rule for the same domain event', function (): void
     /** @var NotificationDispatcher&MockInterface $dispatcher */
     $dispatcher->shouldReceive('dispatch')->twice()->andReturn(1);
 
-    (new QueueConfiguredDomainEventNotification($dispatcher, $resolver))
+    (new QueueConfiguredDomainEventNotification($dispatcher, $resolver, new NotificationRecipientSilencer))
         ->handle(new ConditionalNotificationEvent);
 
     sort($eventKeys);

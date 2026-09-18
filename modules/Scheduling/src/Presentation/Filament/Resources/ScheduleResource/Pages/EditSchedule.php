@@ -7,6 +7,7 @@ namespace Modules\Scheduling\Presentation\Filament\Resources\ScheduleResource\Pa
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Notifications\Application\Services\NotificationRecipientSilencer;
 use Modules\Scheduling\Application\Actions\UpdateScheduleAction;
 use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Scheduling\Domain\ValueObjects\WeeklyRecurrence;
@@ -45,6 +46,19 @@ final class EditSchedule extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         abort_unless($record instanceof Schedule, 404);
+
+        /*
+         * إيقاف اختياري لهذه العملية وحدها — يُفحص قبل استدعاء الإجراء لأن
+         * الحدث يُطلَق أثناء تنفيذه، والمستمع المتزامن يقرأ الكتم فورًا.
+         */
+        $silencer = app(NotificationRecipientSilencer::class);
+        if (($data['notify_student'] ?? true) === false) {
+            $silencer->silence('student');
+        }
+        if (($data['notify_teacher'] ?? true) === false) {
+            $silencer->silence('teacher');
+        }
+        unset($data['notify_student'], $data['notify_teacher']);
 
         return app(UpdateScheduleAction::class)->execute(
             $record,

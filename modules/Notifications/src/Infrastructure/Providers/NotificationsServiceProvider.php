@@ -23,6 +23,7 @@ use Modules\Notifications\Application\Queries\NotificationAdministrationQuerySer
 use Modules\Notifications\Application\Services\AccessControlPopupAudienceResolver;
 use Modules\Notifications\Application\Services\EmailDeliverabilityGuard;
 use Modules\Notifications\Application\Services\GreenApiDeliveryStatusRecorder;
+use Modules\Notifications\Application\Services\NotificationRecipientSilencer;
 use Modules\Notifications\Application\Services\OutboxDispatcher;
 use Modules\Notifications\Application\Services\PayloadDomainEventRecipientResolver;
 use Modules\Notifications\Domain\Contracts\DomainEventRecipientResolver;
@@ -112,6 +113,18 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
             PopupQueries::class => EloquentPopupQueryService::class,
             PopupAudienceResolver::class => AccessControlPopupAudienceResolver::class,
             SavePopupCampaignAction::class => SavePopupCampaignAction::class,
+        ];
+    }
+
+    /**
+     * @return array<class-string, class-string>
+     */
+    protected function scopedBindings(): array
+    {
+        return [
+            // قرار كتم مستلم لعملية واحدة — لا يصح أن يعيش أبعد من الطلب
+            // نفسه، فعامل قائمة الانتظار (عملية منفصلة) لا يرثه أبدًا.
+            NotificationRecipientSilencer::class => NotificationRecipientSilencer::class,
         ];
     }
 

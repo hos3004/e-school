@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Notifications\Application\Listeners;
 
+use Modules\Notifications\Application\Services\NotificationRecipientSilencer;
 use Modules\Notifications\Domain\Contracts\DomainEventRecipientResolver;
 use Modules\Notifications\Domain\Contracts\NotificationDispatcher;
 use Shared\Domain\DomainEvent;
@@ -19,6 +20,7 @@ final readonly class QueueConfiguredDomainEventNotification
     public function __construct(
         private NotificationDispatcher $notifications,
         private DomainEventRecipientResolver $recipients,
+        private NotificationRecipientSilencer $silencer,
     ) {}
 
     public function handle(DomainEvent $event): void
@@ -26,14 +28,28 @@ final readonly class QueueConfiguredDomainEventNotification
         $payload = $event->payload();
 
         foreach ($this->settingsFor($event, $payload) as [$eventKey, $settings]) {
+            $audiences = array_values(array_filter(
+                (array) ($settings['audiences'] ?? []),
+                fn (mixed $audience): bool => is_string($audience) && !$this->silencer->isAudienceSilenced($audience),
+            ));
+            $recipientFields = array_values(array_filter(
+                (array) ($settings['recipient_fields'] ?? []),
+                fn (mixed $field): bool => is_string($field) && !$this->silencer->isRecipientFieldSilenced($field),
+            ));
+
             $recipientIds = $this->recipients->resolve(
                 eventKey: $eventKey,
-                audiences: array_values((array) ($settings['audiences'] ?? [])),
-                recipientFields: array_values((array) ($settings['recipient_fields'] ?? [])),
+                audiences: $audiences,
+                recipientFields: $recipientFields,
                 payload: $payload,
             );
 
             if ($recipientIds === []) {
+                if ($this->silencer->silencedRoles() !== []) {
+                    // لا تحذير: غياب المستلمين هنا قرار إداري متعمّد، لا عطل.
+                    continue;
+                }
+
                 logger()->warning('notifications.event_has_no_recipient_user_ids', [
                     'event_key' => $eventKey,
                     'source_event' => $event::class,

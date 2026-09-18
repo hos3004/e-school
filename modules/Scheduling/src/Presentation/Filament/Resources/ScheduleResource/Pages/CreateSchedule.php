@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Notifications\Application\Services\NotificationRecipientSilencer;
 use Modules\Scheduling\Application\Actions\CreateScheduleAction;
 use Modules\Scheduling\Application\Queries\SchedulingAdministrationQueryService;
 use Modules\Scheduling\Application\Services\TeacherAvailabilityPlanner;
@@ -46,6 +47,15 @@ final class CreateSchedule extends CreateRecord
     {
         $organizationId = auth()->user()?->getAttribute('organization_id');
         abort_unless(is_string($organizationId) && $organizationId !== '', 403);
+
+        $silencer = app(NotificationRecipientSilencer::class);
+        if (($data['notify_student'] ?? true) === false) {
+            $silencer->silence('student');
+        }
+        if (($data['notify_teacher'] ?? true) === false) {
+            $silencer->silence('teacher');
+        }
+        unset($data['notify_student'], $data['notify_teacher']);
 
         return app(CreateScheduleAction::class)->execute(
             $organizationId,

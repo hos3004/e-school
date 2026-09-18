@@ -14,6 +14,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -270,6 +271,21 @@ final class ScheduleResource extends Resource
                         ->helperText(__('scheduling::filament.schedule.fields.reason_help'))
                         ->required()
                         ->maxLength(1000)
+                        ->columnSpanFull(),
+                    /*
+                     * إيقاف اختياري لكل طرف — لا لتصميم افتراضي جديد، بل
+                     * لعملية واحدة. الإرسال هو الافتراضي، فتعطيل الحقلين
+                     * سهوًا لا يسكت إشعارًا كان يجب أن يصل.
+                     */
+                    Toggle::make('notify_student')
+                        ->label(__('scheduling::filament.schedule.fields.notify_student'))
+                        ->default(true),
+                    Toggle::make('notify_teacher')
+                        ->label(__('scheduling::filament.schedule.fields.notify_teacher'))
+                        ->default(true),
+                    Placeholder::make('notify_help')
+                        ->label('')
+                        ->content(__('scheduling::filament.schedule.fields.notify_help'))
                         ->columnSpanFull(),
                 ]),
         ]);
