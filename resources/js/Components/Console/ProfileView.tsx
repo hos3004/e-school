@@ -120,6 +120,7 @@ interface Props {
   followupUrl?: string | null;
   duesUrl?: string | null;
   availabilityUrl?: string | null;
+  guardianLinkUrl?: string | null;
 }
 type Tab = "overview" | "study" | "schedule" | "activity";
 function Card({
@@ -239,6 +240,7 @@ export default function ProfileView({
   followupUrl,
   duesUrl,
   availabilityUrl,
+  guardianLinkUrl,
 }: Props) {
   const t = useI18n();
   const base = useId();
@@ -1122,7 +1124,21 @@ export default function ProfileView({
                 </div>
               </Card>
               {hub.guardians && (
-                <Card title={tr("guardian")} icon={<Users size={17} />}>
+                <Card
+                  title={tr("guardian")}
+                  icon={<Users size={17} />}
+                  action={
+                    guardianLinkUrl ? (
+                      <a
+                        href={guardianLinkUrl}
+                        className="pp-small-action pp-no-print"
+                      >
+                        {tr("add_guardian")}
+                        <ArrowLeft size={13} />
+                      </a>
+                    ) : undefined
+                  }
+                >
                   {hub.guardians.length ? (
                     hub.guardians.map((row) => (
                       <div key={String(row.id)}>

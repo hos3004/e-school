@@ -204,6 +204,28 @@ it('refuses to resolve an archived guardian', function (): void {
     recipientResolver()->resolve($organizationId, ManualRecipientType::Guardian, $userId);
 })->throws(BusinessRuleViolation::class);
 
+it('sends to every active guardian in the organization but skips an archived one', function (): void {
+    $organizationId = Fixtures::organizationId();
+    $activeId = insertGuardianProfileId($organizationId);
+    $archivedId = insertGuardianProfileId($organizationId);
+    $activeUserId = (string) DB::table('guardian_profiles')->where('id', $activeId)->value('user_id');
+    $archivedUserId = (string) DB::table('guardian_profiles')->where('id', $archivedId)->value('user_id');
+    DB::table('guardian_profiles')->where('id', $archivedId)->update(['deleted_at' => now()]);
+
+    $resolution = recipientResolver()->resolve(
+        $organizationId,
+        ManualRecipientType::AllGuardians,
+        ManualRecipientType::AllGuardians->value,
+    );
+
+    expect($resolution->userIds)->toContain($activeUserId)
+        ->and($resolution->userIds)->not->toContain($archivedUserId);
+});
+
+it('needs no target for the all-guardians audience', function (): void {
+    expect(ManualRecipientType::AllGuardians->needsSingleTarget())->toBeFalse();
+});
+
 it('includes guardians alongside students and teachers in the people picker', function (): void {
     $organizationId = Fixtures::organizationId();
     insertGuardianProfileId($organizationId);

@@ -67,8 +67,8 @@ final readonly class ManualNotificationRecipientResolver
                 ...$this->teacherOptions($organizationId, $term, $limit),
                 ...$this->guardianOptions($organizationId, $term, $limit),
             ],
-            // جمهورهما المؤسسة كلها، فلا قائمة تُبحث فيها.
-            ManualRecipientType::AllStudents, ManualRecipientType::AllTeachers => [],
+            // جمهورهم المؤسسة كلها، فلا قائمة تُبحث فيها.
+            ManualRecipientType::AllStudents, ManualRecipientType::AllTeachers, ManualRecipientType::AllGuardians => [],
         };
     }
 
@@ -109,6 +109,7 @@ final readonly class ManualNotificationRecipientResolver
             ManualRecipientType::People => $this->resolvePeople($organizationId, $targetId),
             ManualRecipientType::AllStudents => $this->resolveAllStudents($organizationId),
             ManualRecipientType::AllTeachers => $this->resolveAllTeachers($organizationId),
+            ManualRecipientType::AllGuardians => $this->resolveAllGuardians($organizationId),
         };
     }
 
@@ -367,6 +368,25 @@ final readonly class ManualNotificationRecipientResolver
             type: ManualRecipientType::AllStudents,
             targetId: ManualRecipientType::AllStudents->value,
             label: (string) __('notifications::fields.recipient_all_students', ['count' => count($userIds)]),
+            userIds: $userIds,
+        );
+    }
+
+    private function resolveAllGuardians(string $organizationId): ManualRecipientResolution
+    {
+        $userIds = $this->activeAccountsAmong(
+            $organizationId,
+            $this->guardians->activeUserIdsForOrganization($organizationId),
+        );
+
+        if ($userIds === []) {
+            $this->recipientNotFound();
+        }
+
+        return new ManualRecipientResolution(
+            type: ManualRecipientType::AllGuardians,
+            targetId: ManualRecipientType::AllGuardians->value,
+            label: (string) __('notifications::fields.recipient_all_guardians', ['count' => count($userIds)]),
             userIds: $userIds,
         );
     }

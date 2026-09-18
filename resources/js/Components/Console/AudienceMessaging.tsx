@@ -42,21 +42,27 @@ type TargetOption = { value: string; label: string };
 const RECIPIENT_TYPES = [
   "student",
   "teacher",
+  "guardian",
   "people",
   "course",
   "schedule",
   "group",
   "students_all",
   "teachers_all",
+  "guardians_all",
 ] as const;
 
 type RecipientType = (typeof RECIPIENT_TYPES)[number];
 
 /** جمهوره المؤسسة كلها: لا هدف يُختار، وtarget_id هو اسم النوع نفسه. */
-const WHOLE_ORGANIZATION: readonly RecipientType[] = ["students_all", "teachers_all"];
+const WHOLE_ORGANIZATION: readonly RecipientType[] = [
+  "students_all",
+  "teachers_all",
+  "guardians_all",
+];
 
 /** يُختار فيه شخص واحد أو أكثر بالاسم. */
-const PICKS_PEOPLE: readonly RecipientType[] = ["student", "teacher", "people"];
+const PICKS_PEOPLE: readonly RecipientType[] = ["student", "teacher", "guardian", "people"];
 
 type TemplateOption = {
   id: string;

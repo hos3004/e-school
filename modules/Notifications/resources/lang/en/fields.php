@@ -10,6 +10,7 @@ return [
     'recipient_selection' => ':count selected recipients',
     'recipient_all_students' => 'All students (:count)',
     'recipient_all_teachers' => 'All teachers (:count)',
+    'recipient_all_guardians' => 'All guardians (:count)',
 
     'id' => 'ID',
     'organization_id' => 'Organization',
@@ -71,6 +72,7 @@ return [
         'people' => 'People I pick',
         'students_all' => 'All students',
         'teachers_all' => 'All teachers',
+        'guardians_all' => 'All guardians',
         'student' => 'Student',
         'teacher' => 'Teacher',
         'guardian' => 'Guardian',

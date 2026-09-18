@@ -19,11 +19,22 @@ type ActionKey = "freeze" | "archive" | "restore" | "terminate";
 
 export default function LifecycleActions({
   lifecycle,
+  kind,
 }: {
   lifecycle: LifecycleData;
+  kind?: "students" | "teachers" | "guardians";
 }) {
   const t = useI18n();
   const [open, setOpen] = useState<ActionKey | null>(null);
+  // "archive"/"confirm_archive"/"confirm_restore" تذكر الطالب صراحة، والحساب
+  // هنا قد يكون ولي أمر؛ نستخدم نسخة مخصّصة له فقط لهذين المفتاحين.
+  const guardianKeys = new Set(["archive", "confirm_archive", "confirm_restore"]);
+  const translate = (base: string) =>
+    t(
+      "console_people.lifecycle." +
+        base +
+        (kind === "guardians" && guardianKeys.has(base) ? "_guardian" : ""),
+    );
   const form = useForm({
     reason: "",
     enrollment: lifecycle.enrollments[0]?.id ?? "",
@@ -91,7 +102,7 @@ export default function LifecycleActions({
               (open === action.key ? " bg-[var(--surface-2,#f3f4f6)]" : "")
             }
           >
-            {t("console_people.lifecycle." + action.key)}
+            {translate(action.key)}
           </button>
         ))}
       </div>
@@ -104,7 +115,7 @@ export default function LifecycleActions({
           }}
         >
           <p className="text-sm my-2">
-            {t("console_people.lifecycle.confirm_" + open)}
+            {translate("confirm_" + open)}
           </p>
 
           {open === "freeze" && lifecycle.enrollments.length > 1 && (
