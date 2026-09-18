@@ -279,6 +279,8 @@ export default function QuranEditor({
     rate_reason: string;
     apply_immediately: boolean;
     override_reason: string;
+    notify_student: boolean;
+    notify_teacher: boolean;
   }) => void;
   editLockHours: number;
 }) {
@@ -293,6 +295,8 @@ export default function QuranEditor({
   const [rateReason, setRateReason] = useState("");
   const [applyImmediately, setApplyImmediately] = useState(false);
   const [overrideReason, setOverrideReason] = useState("");
+  const [notifyStudent, setNotifyStudent] = useState(true);
+  const [notifyTeacher, setNotifyTeacher] = useState(true);
   const staffProfileId = value.staff_profile_id;
   useEffect(() => {
     if (!staffProfileId) {
@@ -350,6 +354,8 @@ export default function QuranEditor({
           rate_reason: rateReason,
           apply_immediately: student.schedule ? applyImmediately : false,
           override_reason: overrideReason,
+          notify_student: notifyStudent,
+          notify_teacher: notifyTeacher,
         });
       }}
       className="quran-editor"
@@ -400,6 +406,31 @@ export default function QuranEditor({
                 />
               </>
             )}
+          </div>
+          <div className="field quran-notify">
+            <label htmlFor={id + "notify-student"}>
+              <input
+                id={id + "notify-student"}
+                type="checkbox"
+                checked={notifyStudent}
+                disabled={busy}
+                onChange={(event) => setNotifyStudent(event.target.checked)}
+              />
+              {t("console_quran.notify_student")}
+            </label>
+            <label htmlFor={id + "notify-teacher"}>
+              <input
+                id={id + "notify-teacher"}
+                type="checkbox"
+                checked={notifyTeacher}
+                disabled={busy}
+                onChange={(event) => setNotifyTeacher(event.target.checked)}
+              />
+              {t("console_quran.notify_teacher")}
+            </label>
+            <small className="cell-sub">
+              {t("console_quran.notify_help")}
+            </small>
           </div>
         </>
       )}

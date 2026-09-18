@@ -56,6 +56,9 @@ final class SaveQuranPlacementRequest extends FormRequest
             // يحتاج سببًا صريحًا يفسر أثره على الحصص القادمة خلال المهلة.
             $rules['apply_immediately'] = ['sometimes', 'boolean'];
             $rules['override_reason'] = [Rule::requiredIf($this->boolean('apply_immediately')), 'nullable', 'string', 'min:3', 'max:1000'];
+            // إيقاف اختياري لهذا التعديل وحده — الإرسال هو الافتراضي.
+            $rules['notify_student'] = ['sometimes', 'boolean'];
+            $rules['notify_teacher'] = ['sometimes', 'boolean'];
         }
 
         return $this->isMethod('GET') ? [...$rules,

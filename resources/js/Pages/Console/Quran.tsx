@@ -101,6 +101,8 @@ export default function Quran(props: QuranProps) {
       rate_reason: string;
       apply_immediately?: boolean;
       override_reason?: string;
+      notify_student?: boolean;
+      notify_teacher?: boolean;
     },
   ) => {
     const value = draft(student);
@@ -140,6 +142,14 @@ export default function Quran(props: QuranProps) {
                 apply_immediately: true,
                 override_reason: rate.override_reason,
               }
+            : {}),
+          // الإرسال هو الافتراضي؛ الحقل يُرسَل فقط حين يُلغيه المرسِل صراحةً،
+          // فتعديل مصدره كود قديم لا يعرف هذا الحقل يبقى يُشعِر كالمعتاد.
+          ...(student.schedule && rate?.notify_student === false
+            ? { notify_student: false }
+            : {}),
+          ...(student.schedule && rate?.notify_teacher === false
+            ? { notify_teacher: false }
             : {}),
         },
       });

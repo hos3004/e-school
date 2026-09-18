@@ -23,6 +23,7 @@ use Inertia\Response;
 use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Academics\Domain\ValueObjects\AcademicCatalogItemData;
 use Modules\Identity\Domain\Contracts\UserQueryService;
+use Modules\Notifications\Application\Services\NotificationRecipientSilencer;
 use Modules\Scheduling\Application\Services\ConsoleQuranScheduleService;
 use Modules\Scheduling\Application\Services\TeacherAvailabilityPlanner;
 use Modules\Scheduling\Domain\Models\PendingTeachingAssignment;
@@ -233,6 +234,19 @@ final class QuranController extends Controller
         $applyImmediately = (bool) ($data['apply_immediately'] ?? false);
         $overrideReason = $data['override_reason'] ?? null;
         unset($data['apply_immediately'], $data['override_reason']);
+
+        /*
+         * إيقاف اختياري لهذا التعديل وحده. يُفحص قبل استدعاء الإجراء لأن
+         * حدث الجدول يُطلَق أثناء تنفيذه، والمستمع المتزامن يقرأ الكتم فورًا.
+         */
+        if (($data['notify_student'] ?? true) === false) {
+            app(NotificationRecipientSilencer::class)->silence('student');
+        }
+        if (($data['notify_teacher'] ?? true) === false) {
+            app(NotificationRecipientSilencer::class)->silence('teacher');
+        }
+        unset($data['notify_student'], $data['notify_teacher']);
+
         try {
             $saved = DB::transaction(function () use ($organizationId, $student, $schedule, $courseId, $programId, $data, $request, $applyImmediately, $overrideReason): array {
                 $this->recordRate($request, $courseId, $programId, (string) $data['staff_profile_id'], (string) $data['starts_on']);

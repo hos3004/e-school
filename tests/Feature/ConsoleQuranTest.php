@@ -22,6 +22,8 @@ use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Enrollments\Domain\Models\Enrollment;
 use Modules\Identity\Domain\Enums\UserStatus;
 use Modules\Identity\Domain\Models\User;
+use Modules\Notifications\Database\Seeders\NotificationTemplateSeeder;
+use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Organization\Database\Seeders\GeographySeeder;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Organization\Domain\Models\Organization;
@@ -515,6 +517,56 @@ final class ConsoleQuranTest extends TestCase
         ]);
 
         return $student;
+    }
+
+    /**
+     * "أحيانًا أعدّل ولا أحتاج إرسال رسالة" — 18 سبتمبر 2026. مربعا الإشعار في
+     * شاشة القرآن الفردي يوقفان طرفًا بعينه لهذا التعديل وحده، عبر نفس
+     * NotificationRecipientSilencer المركزي — لا آلية موازية هنا.
+     */
+    public function test_edit_notify_teacher_toggle_suppresses_only_the_teacher_message(): void
+    {
+        $this->seed(NotificationTemplateSeeder::class);
+        $this->postJson('/manage/quran/'.$this->student->id, [...$this->payload(), 'ends_on' => '2026-10-28'])->assertOk();
+        $schedule = Schedule::query()->firstOrFail();
+
+        $this->patchJson('/manage/quran/'.$this->student->id.'/schedules/'.$schedule->id, [
+            ...$this->payload(), 'ends_on' => '2026-10-28',
+            'weekly_slots' => [['weekday' => 0, 'start_time' => '14:00'], ['weekday' => 3, 'start_time' => '16:00']],
+            'notify_teacher' => false,
+        ])->assertOk();
+
+        $teacherUserId = $this->teacher->user_id;
+        $studentUserId = $this->student->user_id;
+
+        $this->assertDatabaseMissing('notification_outbox', [
+            'event_name' => 'schedule.times_changed', 'user_id' => $teacherUserId,
+        ]);
+        $this->assertTrue(
+            NotificationOutbox::query()->where('event_name', 'schedule.times_changed')->where('user_id', $studentUserId)->exists(),
+        );
+    }
+
+    public function test_edit_notifies_both_parties_when_neither_toggle_is_turned_off(): void
+    {
+        $this->seed(NotificationTemplateSeeder::class);
+        $this->postJson('/manage/quran/'.$this->student->id, [...$this->payload(), 'ends_on' => '2026-10-28'])->assertOk();
+        $schedule = Schedule::query()->firstOrFail();
+
+        $this->patchJson('/manage/quran/'.$this->student->id.'/schedules/'.$schedule->id, [
+            ...$this->payload(), 'ends_on' => '2026-10-28',
+            'weekly_slots' => [['weekday' => 0, 'start_time' => '14:00'], ['weekday' => 3, 'start_time' => '16:00']],
+        ])->assertOk();
+
+        $teacherUserId = $this->teacher->user_id;
+        $studentUserId = $this->student->user_id;
+
+        $this->assertTrue(
+            NotificationOutbox::query()->where('event_name', 'schedule.times_changed')->where('user_id', $teacherUserId)->exists(),
+        );
+        $this->assertTrue(
+            NotificationOutbox::query()->where('event_name', 'schedule.times_changed')->where('user_id', $studentUserId)->exists(),
+        );
     }
 
     /** @return array<string, mixed> */
