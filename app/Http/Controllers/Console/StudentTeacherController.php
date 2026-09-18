@@ -51,26 +51,44 @@ final class StudentTeacherController extends Controller
     public function store(AssignIndividualTeacherRequest $request, string $profile): RedirectResponse
     {
         $student = $this->student($request, $profile);
+        $slots = $request->weeklySlots();
 
         /*
          * السعر قبل الإسناد: المدة المخصّصة لا يقبلها حارس الجدولة بلا سعر
          * ساري للمعلم. المعاملة تضم الاثنين فلا يبقى سعر لإسناد لم يتم.
          */
-        DB::transaction(function () use ($request, $student): void {
+        DB::transaction(function () use ($request, $student, $slots): void {
+            $startsOn = (string) $request->validated('starts_on');
             $this->recordRate(
                 $request,
                 (string) $student->organization_id,
                 (string) $request->validated('course_id'),
                 (string) $request->validated('staff_profile_id'),
-                (string) $request->validated('starts_on'),
+                $startsOn !== '' ? $startsOn : CarbonImmutable::now('UTC')->toDateString(),
             );
+
+            if ($slots === []) {
+                // موعد مؤجَّل: ربط الطالب بمعلمه بلا جدول بعد — لا حصص ولا
+                // استحقاق مالي حتى يُضاف الموعد لاحقًا من نفس الصفحة.
+                $this->schedules->linkTeacher(
+                    organizationId: (string) $student->organization_id,
+                    studentProfileId: (string) $student->getKey(),
+                    courseId: (string) $request->validated('course_id'),
+                    staffProfileId: (string) $request->validated('staff_profile_id'),
+                    durationMinutes: (int) $request->validated('duration_minutes'),
+                    actorId: (string) $request->user()?->getAuthIdentifier(),
+                    reason: $request->reason(),
+                );
+
+                return;
+            }
 
             $this->schedules->assignTeacher(
                 organizationId: (string) $student->organization_id,
                 studentProfileId: (string) $student->getKey(),
                 courseId: (string) $request->validated('course_id'),
                 staffProfileId: (string) $request->validated('staff_profile_id'),
-                weeklySlots: $request->weeklySlots(),
+                weeklySlots: $slots,
                 durationMinutes: (int) $request->validated('duration_minutes'),
                 intervalWeeks: (int) ($request->validated('interval_weeks') ?? 1),
                 timezone: (string) $request->validated('timezone'),
@@ -80,7 +98,7 @@ final class StudentTeacherController extends Controller
             );
         });
 
-        return back()->with('success', __('console_people.teaching.assigned'));
+        return back()->with('success', __($slots === [] ? 'console_people.teaching.linked' : 'console_people.teaching.assigned'));
     }
 
     public function update(ChangeIndividualTeacherRequest $request, string $profile): RedirectResponse

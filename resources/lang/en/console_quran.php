@@ -50,6 +50,7 @@ return [
     'save' => 'Save placement',
     'saving' => 'Saving…',
     'saved' => 'Student placement and schedule saved.',
+    'linked' => 'Student linked to their teacher; awaiting a session time.',
     'schedule_saved' => 'Schedule saved',
     'edit_schedule' => 'Edit existing schedule',
     'apply_immediately' => 'Apply the new time immediately, including upcoming sessions',

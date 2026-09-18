@@ -114,7 +114,7 @@ export default function Quran(props: QuranProps) {
         (student.schedule ? "/schedules/" + student.schedule.id : "");
       const response = await axios.request<{
         message: string;
-        schedule: NonNullable<Student["schedule"]>;
+        schedule: NonNullable<Student["schedule"]> | null;
       }>({
         method: student.schedule ? "patch" : "post",
         url,
@@ -143,8 +143,11 @@ export default function Quran(props: QuranProps) {
             : {}),
         },
       });
-      setSaved((old) => ({ ...old, [student.id]: response.data.schedule }));
-      setDraft(student, response.data.schedule);
+      const schedule = response.data.schedule;
+      if (schedule) {
+        setSaved((old) => ({ ...old, [student.id]: schedule }));
+        setDraft(student, schedule);
+      }
       setFeedback(response.data.message);
       setEditing(false);
       router.reload({
@@ -619,7 +622,6 @@ export default function Quran(props: QuranProps) {
                                   disabled={
                                     busy[student.id] ||
                                     !value.staff_profile_id ||
-                                    !value.weekly_slots.length ||
                                     value.weekly_slots.some(
                                       (slot) => !slot.start_time,
                                     )

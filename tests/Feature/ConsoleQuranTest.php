@@ -29,9 +29,11 @@ use Modules\Scheduling\Domain\Models\PendingTeachingAssignment;
 use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\SessionParticipant;
+use Modules\Staff\Domain\Enums\ContractBasis;
 use Modules\Staff\Domain\Enums\TeacherAvailabilityApprovalStatus;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Domain\Models\TeacherAvailability;
+use Modules\Staff\Domain\Models\TeacherContract;
 use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Models\RegistrationApplication;
 use Modules\Students\Domain\Models\StudentProfile;
@@ -69,6 +71,38 @@ final class ConsoleQuranTest extends TestCase
                 ->where('students.data.0.pending_teacher_ids', [$this->teacher->id]));
         $this->assertDatabaseCount('schedules', 0);
         $link->delete();
+    }
+
+    public function test_placement_without_a_time_links_the_teacher_only_and_creates_no_schedule(): void
+    {
+        $response = $this->postJson('/manage/quran/'.$this->student->id, [...$this->payload(), 'weekly_slots' => []]);
+
+        $response->assertOk()->assertJsonPath('schedule', null)->assertJsonPath('message', __('console_quran.linked'));
+        $this->assertDatabaseCount('schedules', 0);
+        $this->assertDatabaseHas('pending_teaching_assignments', [
+            'organization_id' => $this->organization->id, 'student_profile_id' => $this->student->id,
+            'staff_profile_id' => $this->teacher->id, 'course_id' => $this->course->id, 'duration_minutes' => 35,
+        ]);
+        $this->get('/manage/quran?teacher='.$this->teacher->id)->assertInertia(
+            fn (Assert $page) => $page->where('students.data.0.schedule', null)
+                ->where('students.data.0.pending_teacher_ids', [$this->teacher->id]),
+        );
+    }
+
+    public function test_placement_without_a_time_still_records_a_teacher_rate_effective_today(): void
+    {
+        TeacherContract::query()->create([
+            'organization_id' => $this->organization->id, 'staff_profile_id' => $this->teacher->id,
+            'basis' => ContractBasis::PerSession, 'effective_from' => CarbonImmutable::now('UTC')->subMonths(2)->toDateString(), 'currency' => 'EGP',
+        ]);
+        $this->postJson('/manage/quran/'.$this->student->id, [
+            ...$this->payload(), 'weekly_slots' => [], 'session_rate_major' => '75.00', 'rate_reason' => 'اتفاق مبدئي مع المعلم',
+        ])->assertOk();
+        $this->assertDatabaseCount('schedules', 0);
+        $this->assertDatabaseHas('pending_teaching_assignments', [
+            'organization_id' => $this->organization->id, 'student_profile_id' => $this->student->id,
+            'staff_profile_id' => $this->teacher->id,
+        ]);
     }
 
     protected function setUp(): void

@@ -12,10 +12,16 @@ final class AssignIndividualTeacherRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        // موعد مؤجَّل: weekly_slots فاضية يعني ربط معلم بلا جدول بعد — نفس
+        // مسار «التسكين الفردي» في مركز التسجيل. الوقت والمدة الأسبوعية
+        // يلزمان فقط حين يُرسَل موعد فعلي.
+        $slots = $this->input('weekly_slots');
+        $hasSchedule = is_array($slots) && $slots !== [];
+
         return [
             'course_id' => ['required', 'ulid'],
             'staff_profile_id' => ['required', 'string', 'size:26'],
-            'weekly_slots' => ['required', 'array', 'min:1', 'max:7'],
+            'weekly_slots' => ['nullable', 'array', 'max:7'],
             'weekly_slots.*.weekday' => ['required', 'integer', 'between:0,6'],
             'weekly_slots.*.start_time' => ['required', 'date_format:H:i'],
             // مدة مخصّصة ضمن حدود المؤسسة؛ تسعير المدة خارج الكتالوج يتحقق منه
@@ -29,8 +35,8 @@ final class AssignIndividualTeacherRequest extends FormRequest
             // ويُقفل سعره السابق عنده، فلا يمس حصة ماضية.
             'session_rate_major' => ['nullable', 'numeric', 'min:0.01', 'decimal:0,2'],
             'interval_weeks' => ['nullable', 'integer', 'min:1', 'max:8'],
-            'timezone' => ['required', 'timezone'],
-            'starts_on' => ['required', 'date_format:Y-m-d'],
+            'timezone' => [$hasSchedule ? 'required' : 'nullable', 'timezone'],
+            'starts_on' => [$hasSchedule ? 'required' : 'nullable', 'date_format:Y-m-d'],
             'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }

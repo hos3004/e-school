@@ -550,7 +550,7 @@ export default function QuranEditor({
         disabled={
           busy ||
           !value.staff_profile_id ||
-          value.weekly_slots.length === 0 ||
+          (!!student.schedule && value.weekly_slots.length === 0) ||
           value.weekly_slots.some((slot) => !slot.start_time)
         }
       >

@@ -446,6 +446,12 @@ export default function StudentPrograms({
               className="mt-3"
               onSubmit={(event) => {
                 event.preventDefault();
+                const hasTime = form.data.weekly_slots[0]?.start_time !== "";
+                form.transform((data) => ({
+                  ...data,
+                  weekly_slots: hasTime ? data.weekly_slots : [],
+                  starts_on: hasTime ? data.starts_on : "",
+                }));
                 form.post(programs.assignUrl as string, {
                   preserveScroll: true,
                   onSuccess: close,
@@ -528,6 +534,7 @@ export default function StudentPrograms({
                 <label className="block my-1">
                   <span className="block mb-2">
                     {t("console_people.programs.time")}
+                    <small> · {t("console_people.programs.time_optional")}</small>
                   </span>
                   <input
                     type="time"
@@ -541,7 +548,6 @@ export default function StudentPrograms({
                         },
                       ])
                     }
-                    required
                   />
                 </label>
                 <label className="block my-1">
@@ -579,7 +585,6 @@ export default function StudentPrograms({
                     onChange={(event) =>
                       form.setData("starts_on", event.target.value)
                     }
-                    required
                   />
                 </label>
               </div>

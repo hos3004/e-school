@@ -129,6 +129,28 @@ final class ConsoleStudentProgramsTest extends TestCase
         ]);
     }
 
+    public function test_a_teacher_can_be_linked_without_a_time_and_creates_no_schedule(): void
+    {
+        $admin = $this->admin();
+        $student = $this->student();
+        $teacher = $this->teacher();
+        $url = '/manage/students/'.$student->id.'/teacher';
+
+        $this->actingAs($admin, 'web')->post($url, [
+            'course_id' => $this->courseId,
+            'staff_profile_id' => $teacher,
+            'weekly_slots' => [],
+            'duration_minutes' => (int) (config('scheduling.individual_session_durations')[0] ?? 25),
+            'reason' => 'ربط المعلم قبل تحديد الموعد',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertDatabaseCount('schedules', 0);
+        $this->assertDatabaseHas('pending_teaching_assignments', [
+            'organization_id' => $this->organizationId, 'student_profile_id' => (string) $student->id,
+            'staff_profile_id' => $teacher, 'course_id' => $this->courseId,
+        ]);
+    }
+
     public function test_a_student_can_be_enrolled_in_another_program_without_a_group(): void
     {
         $admin = $this->admin();

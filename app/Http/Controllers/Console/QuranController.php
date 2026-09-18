@@ -203,7 +203,8 @@ final class QuranController extends Controller
         $data = $request->validated();
         try {
             $id = DB::transaction(function () use ($organizationId, $student, $programId, $courseId, $data, $request): string {
-                $this->recordRate($request, $courseId, $programId, (string) $data['staff_profile_id'], (string) $data['starts_on']);
+                $effectiveFrom = empty($data['starts_on']) ? CarbonImmutable::now('UTC')->toDateString() : (string) $data['starts_on'];
+                $this->recordRate($request, $courseId, $programId, (string) $data['staff_profile_id'], $effectiveFrom);
 
                 return $this->placeStudent->execute($organizationId, $student, $programId, $courseId, $data, (string) $request->user()?->getAuthIdentifier());
             });
@@ -211,9 +212,14 @@ final class QuranController extends Controller
             throw ValidationException::withMessages(['placement' => $exception->getMessage()]);
         }
 
+        $linked = empty($data['weekly_slots']);
+
         return $request->expectsJson()
-            ? response()->json(['message' => __('console_quran.saved'), 'schedule' => [...$data, 'id' => $id]])
-            : back()->with('success', __('console_quran.saved'));
+            ? response()->json([
+                'message' => __($linked ? 'console_quran.linked' : 'console_quran.saved'),
+                'schedule' => $linked ? null : [...$data, 'id' => $id],
+            ])
+            : back()->with('success', __($linked ? 'console_quran.linked' : 'console_quran.saved'));
     }
 
     public function update(SaveQuranPlacementRequest $request, string $student, string $schedule): JsonResponse

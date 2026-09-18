@@ -9,12 +9,13 @@ use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Contracts\ProgramEligibilityEvaluator;
 use Modules\Academics\Domain\ValueObjects\ApplicantFacts;
 use Modules\Enrollments\Domain\Contracts\EnrollmentPlacementGateway;
+use Modules\Scheduling\Application\Services\ConsoleIndividualTeacherService;
 use Modules\Students\Application\Services\ConsoleQuranRegistrationService;
 use Modules\Students\Domain\Contracts\StudentPlacementGateway;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
-/** One transaction for accepted Quran request -> enrollment -> schedule -> selected request. */
+/** One transaction for accepted Quran request -> enrollment -> schedule (or pending teacher link) -> selected request. */
 final readonly class PlaceConsoleQuranStudentAction
 {
     public function __construct(
@@ -24,6 +25,7 @@ final readonly class PlaceConsoleQuranStudentAction
         private StudentPlacementGateway $students,
         private ProgramEligibilityEvaluator $eligibility,
         private Transaction $transaction,
+        private ConsoleIndividualTeacherService $teaching,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -49,9 +51,21 @@ final readonly class PlaceConsoleQuranStudentAction
                 $this->enrollments->activate($organizationId, $studentId, $programId, $reason, $actorId);
             }
 
+            $weeklySlots = (array) ($data['weekly_slots'] ?? []);
+
+            // موعد مؤجَّل: تسجيل معلم فقط بلا جدول — لا حصص ولا استحقاق مالي
+            // حتى يضاف الموعد لاحقًا. الطالب يبقى «بانتظار الجدول» في القائمة.
+            if ($weeklySlots === []) {
+                return $this->teaching->linkTeacher(
+                    organizationId: $organizationId, studentProfileId: $studentId, courseId: $courseId,
+                    staffProfileId: (string) $data['staff_profile_id'], durationMinutes: (int) $data['duration_minutes'],
+                    actorId: $actorId, reason: $reason,
+                );
+            }
+
             return $this->schedules->executeSingle(
                 organizationId: $organizationId, studentProfileId: $studentId, staffProfileId: $data['staff_profile_id'],
-                weeklySlots: $data['weekly_slots'], intervalWeeks: (int) $data['interval_weeks'], durationMinutes: (int) $data['duration_minutes'],
+                weeklySlots: $weeklySlots, intervalWeeks: (int) $data['interval_weeks'], durationMinutes: (int) $data['duration_minutes'],
                 timezone: $data['timezone'], startsOn: $data['starts_on'], endsOn: $data['ends_on'] ?? null,
                 actorId: $actorId, reason: $reason, applicationId: $applicationId,
             );

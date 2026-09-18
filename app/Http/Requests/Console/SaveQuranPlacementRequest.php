@@ -23,6 +23,11 @@ final class SaveQuranPlacementRequest extends FormRequest
         $timezone = $this->input('timezone');
         $validTimezone = is_string($timezone) && in_array($timezone, timezone_identifiers_list(), true);
         $today = CarbonImmutable::now($validTimezone ? $timezone : 'UTC')->toDateString();
+        // القبول المبدئي (POST) يقبل ربط معلم بلا موعد بعد — weekly_slots فاضية
+        // يعني «معلَّق بانتظار الجدول»؛ التعديل (PATCH) يفترض جدولًا قائمًا فعلًا
+        // فيبقى الموعد إلزاميًا فيه كما كان.
+        $slots = $this->input('weekly_slots');
+        $hasSchedule = $this->isMethod('PATCH') || (is_array($slots) && $slots !== []);
         $rules = [
             'organization_id' => ['prohibited'],
             'actor_id' => ['prohibited'],
@@ -40,9 +45,9 @@ final class SaveQuranPlacementRequest extends FormRequest
             // ويُقفل سعره السابق عنده، فلا يمس حصة ماضية.
             'session_rate_major' => ['nullable', 'numeric', 'min:0.01', 'decimal:0,2'],
             'rate_reason' => [$this->isMethod('GET') ? 'nullable' : 'required_with:session_rate_major', 'nullable', 'string', 'min:3', 'max:1000'],
-            'interval_weeks' => ['required', 'integer', 'min:1', 'max:'.config('scheduling.individual_quran.max_interval_weeks')],
+            'interval_weeks' => [$hasSchedule ? 'required' : 'nullable', 'integer', 'min:1', 'max:'.config('scheduling.individual_quran.max_interval_weeks')],
             'timezone' => ['required', 'timezone'],
-            'starts_on' => ['required', 'date_format:Y-m-d', ...($this->isMethod('PATCH') || ($this->isMethod('GET') && $this->filled('schedule_id')) ? [] : ['after_or_equal:'.$today])],
+            'starts_on' => [$hasSchedule ? 'required' : 'nullable', 'date_format:Y-m-d', ...($this->isMethod('PATCH') || ($this->isMethod('GET') && $this->filled('schedule_id')) ? [] : ['after_or_equal:'.$today])],
             'ends_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
         ];
 
@@ -59,7 +64,7 @@ final class SaveQuranPlacementRequest extends FormRequest
             'weekdays' => ['required', 'array', 'min:1', 'max:7'],
             'weekdays.*' => ['required', 'integer', 'between:0,6', 'distinct'],
         ] : [...$rules,
-            'weekly_slots' => ['required', 'array', 'min:1', 'max:7'],
+            'weekly_slots' => [$this->isMethod('PATCH') ? 'required' : 'nullable', 'array', 'max:7'],
             'weekly_slots.*' => ['required', 'array:weekday,start_time'],
             'weekly_slots.*.weekday' => ['required', 'integer', 'between:0,6', 'distinct'],
             'weekly_slots.*.start_time' => ['required', 'date_format:H:i'],
