@@ -85,6 +85,7 @@ type Props = {
   currencies: string[];
   contactChannels: Choice[];
   relationshipOptions: Choice[];
+  presetStudent?: Choice | null;
   optionsUrl: string;
   usernameUrl: string;
   submitUrl: string;
@@ -217,7 +218,9 @@ export default function PeopleForm(props: Props) {
   const [courseMode, setCourseMode] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Choice[]>([]);
   const [accountSearch, setAccountSearch] = useState("");
-  const [studentOptions, setStudentOptions] = useState<Choice[]>([]);
+  const [studentOptions, setStudentOptions] = useState<Choice[]>(
+    props.presetStudent ? [props.presetStudent] : [],
+  );
   const [studentSearch, setStudentSearch] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [suggesting, setSuggesting] = useState(false);

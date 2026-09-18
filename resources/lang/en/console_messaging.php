@@ -43,9 +43,11 @@ return [
     'targets' => [
         'student' => 'One student',
         'teacher' => 'One teacher',
+        'guardian' => 'One guardian',
         'people' => 'People I pick',
         'students_all' => 'All students',
         'teachers_all' => 'All teachers',
+        'guardians_all' => 'All guardians',
         'group' => 'Group',
         'course' => 'Course',
         'schedule' => 'Schedule',

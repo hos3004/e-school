@@ -33,6 +33,9 @@ enum ManualRecipientType: string
     /** كل معلمي المؤسسة النشطين. */
     case AllTeachers = 'teachers_all';
 
+    /** كل أولياء أمور المؤسسة غير المؤرشفين. */
+    case AllGuardians = 'guardians_all';
+
     /** @return array<string, string> */
     public static function options(): array
     {
@@ -57,7 +60,7 @@ enum ManualRecipientType: string
      */
     public function needsSingleTarget(): bool
     {
-        return !in_array($this, [self::People, self::AllStudents, self::AllTeachers], true);
+        return !in_array($this, [self::People, self::AllStudents, self::AllTeachers, self::AllGuardians], true);
     }
 
     /** هل يختار المرسِل أشخاصًا بأسمائهم لهذا النوع؟ */

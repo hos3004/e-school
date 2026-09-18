@@ -45,6 +45,12 @@ final class GuardianProfilePolicy
             && $user->can('guardian.link');
     }
 
+    public function restore(Authenticatable&Authorizable $user, GuardianProfile $profile): bool
+    {
+        return $this->sameOrganization($user, $profile)
+            && $user->can('guardian.link');
+    }
+
     public function linkStudents(Authenticatable&Authorizable $user, GuardianProfile $profile): bool
     {
         return $this->sameOrganization($user, $profile)

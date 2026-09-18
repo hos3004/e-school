@@ -18,4 +18,5 @@ return [
     'link_already_verified' => 'This guardian link is already verified and needs no further verification.',
     'reason_required' => 'Linking or unlinking a guardian requires a written reason.',
     'guardian_not_found' => 'The requested guardian profile does not exist in the current organization.',
+    'not_archived' => 'This guardian account is already active and is not archived.',
 ];

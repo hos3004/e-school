@@ -133,12 +133,29 @@ final class PeopleController extends Controller
         $organizationId = $this->organizationId($request);
         $timezone = (string) (Organization::query()->whereKey($organizationId)->value('default_timezone') ?: config('app.timezone'));
         $consoleTimezone = (string) app(ConsoleContext::class)->forRequest($request)['timezone'];
+        // قادم من "ربط ولي أمر" في صفحة طالب: يملأ الطالب المستهدف مسبقًا في
+        // نموذج إنشاء الوصي، دون الوثوق بالمعرّف قبل التأكد أنه من نفس المؤسسة.
+        $presetStudent = null;
+        if ($kind === 'guardians' && $request->filled('student_profile_id')) {
+            $student = app(StudentDirectoryQueries::class)->find(
+                $organizationId, (string) $request->query('student_profile_id'),
+            );
+            if ($student !== null) {
+                $account = $this->accounts->find($organizationId, $student->userId);
+                $accountName = $account !== null ? $account->name : $student->studentCode;
+                $presetStudent = [
+                    'value' => $student->id,
+                    'label' => trim($accountName.' · '.$student->studentCode),
+                ];
+            }
+        }
 
         return Inertia::render('Console/People/Form', [
             'kind' => $kind,
             'mode' => 'create',
             'canUpdateAccount' => true,
             'personKinds' => $this->personKinds($request),
+            'presetStudent' => $presetStudent,
             'person' => [
                 'account_mode' => 'new', 'locale' => app()->getLocale(), 'timezone' => $timezone,
                 'preferred_language' => app()->getLocale(),
@@ -147,6 +164,7 @@ final class PeopleController extends Controller
                 'contract_effective_from' => now($timezone)->toDateString(),
                 'contract_basis' => ContractBasis::PerSession->value,
                 'currency' => config('staff.currency.default'),
+                'student_profile_id' => $presetStudent['value'] ?? '',
             ],
             ...$this->formProps($organizationId, $kind),
             /*
@@ -415,6 +433,8 @@ final class PeopleController extends Controller
                 ? $this->guardianLinks($request, $record) : null,
             'hub' => $hub,
             'availabilityUrl' => $kind === 'teachers' && $request->user()?->can('staff.view') && $request->user()->can('staff.view.any') ? route('console.availability.index', ['teacher' => $record->id]) : null,
+            'guardianLinkUrl' => $record instanceof StudentProfile && !$record->trashed() && ($request->user()?->can('guardian.link') ?? false)
+                ? route('console.guardians.create', ['student_profile_id' => $record->id]) : null,
             'profileWorkspace' => $record instanceof GuardianProfile ? null
                 : app(PersonProfileData::class)->workspace($request, $organizationId, $kind === 'students' ? 'student' : 'teacher', (string) $record->id, 'admin'),
             'backUrl' => route('console.'.$kind.'.index', $request->only('search', 'archived', 'page')),
@@ -852,9 +872,13 @@ final class PeopleController extends Controller
         }
 
         if ($record instanceof GuardianProfile) {
-            // لا شاشة أرشفة مخصّصة لحساب ولي الأمر في هذا الإصدار؛ يبقى نشطًا
-            // طالما مرتبطًا بأي طالب، وتُدار حالة حسابه من صفحة الهوية.
-            return ['archiveUrl' => null, 'restoreUrl' => null, 'terminateUrl' => null, 'enrollments' => []];
+            return [
+                'terminateUrl' => null, 'enrollments' => [],
+                'archiveUrl' => !$record->trashed() && Gate::allows('delete', $record)
+                    ? route('console.guardians.archive', ['profile' => $record->id]) : null,
+                'restoreUrl' => $record->trashed() && Gate::allows('restore', $record)
+                    ? route('console.guardians.restore', ['profile' => $record->id]) : null,
+            ];
         }
 
         $labels = [];

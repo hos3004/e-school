@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Console\EnrollmentFreezeController;
+use App\Http\Controllers\Console\GuardianLifecycleController;
 use App\Http\Controllers\Console\GuardianLinkController;
 use App\Http\Controllers\Console\PeopleController;
 use App\Http\Controllers\Console\StudentLifecycleController;
@@ -60,6 +61,10 @@ Route::put('students/{profile}/restore', [StudentLifecycleController::class, 're
     ->middleware('can:student.update')->whereUlid('profile')->name('students.restore');
 Route::put('teachers/{profile}/terminate', [TeacherLifecycleController::class, 'terminate'])
     ->middleware('can:staff.contract.update')->whereUlid('profile')->name('teachers.terminate');
+Route::put('guardians/{profile}/archive', [GuardianLifecycleController::class, 'archive'])
+    ->middleware('can:guardian.link')->whereUlid('profile')->name('guardians.archive');
+Route::put('guardians/{profile}/restore', [GuardianLifecycleController::class, 'restore'])
+    ->middleware('can:guardian.link')->whereUlid('profile')->name('guardians.restore');
 Route::put('enrollments/{enrollment}/freeze', EnrollmentFreezeController::class)
     ->middleware('can:enrollment.freeze')->whereUlid('enrollment')->name('enrollments.freeze');
 

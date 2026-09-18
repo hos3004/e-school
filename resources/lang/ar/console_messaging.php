@@ -43,9 +43,11 @@ return [
     'targets' => [
         'student' => 'طالب واحد',
         'teacher' => 'معلم واحد',
+        'guardian' => 'ولي أمر واحد',
         'people' => 'قائمة أشخاص أختارهم',
         'students_all' => 'كل الطلاب',
         'teachers_all' => 'كل المعلمين',
+        'guardians_all' => 'كل أولياء الأمور',
         'group' => 'مجموعة',
         'course' => 'كورس',
         'schedule' => 'جدول',

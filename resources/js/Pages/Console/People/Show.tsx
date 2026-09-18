@@ -59,6 +59,7 @@ interface Props {
   editUrl: string | null;
   displayTimezone: string;
   availabilityUrl: string | null;
+  guardianLinkUrl?: string | null;
   lifecycle: LifecycleData;
   placement?: PlacementData | null;
   programs?: StudentProgramsData | null;
@@ -77,6 +78,7 @@ export default function PeopleShow({
   editUrl,
   displayTimezone,
   availabilityUrl,
+  guardianLinkUrl,
   financialVisibility,
   lifecycle,
   placement,
@@ -203,6 +205,7 @@ export default function PeopleShow({
           backUrl={backUrl}
           editUrl={editUrl}
           availabilityUrl={availabilityUrl}
+          guardianLinkUrl={kind === "students" ? guardianLinkUrl : null}
           followupUrl={
             kind === "students" && followup
               ? followup.href +
@@ -245,7 +248,7 @@ export default function PeopleShow({
         />
       )}
       {placement && <PlacementActions placement={placement} />}
-      <LifecycleActions lifecycle={lifecycle} />
+      <LifecycleActions lifecycle={lifecycle} kind={kind} />
     </ConsoleLayout>
   );
 }

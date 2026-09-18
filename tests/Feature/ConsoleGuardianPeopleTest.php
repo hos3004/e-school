@@ -45,6 +45,8 @@ final class ConsoleGuardianPeopleTest extends TestCase
         foreach ($this->permissions as $ability) {
             Gate::define($ability, fn (): bool => in_array($ability, $this->permissions, true));
         }
+        // GuardianProfileArchived/Restored ليست مزيّفة عمدًا: اختبار الأرشفة
+        // يعتمد على مستمعها الحقيقي DeactivateLinksWhenGuardianArchived.
         Event::fake([
             UserRegistered::class, GuardianProfileCreated::class,
             GuardianLinkedToStudent::class, GuardianUnlinkedFromStudent::class,
@@ -240,6 +242,140 @@ final class ConsoleGuardianPeopleTest extends TestCase
             'kind' => 'schedule', 'channel' => 'in_app', 'reason' => 'محاولة غير صحيحة',
             'request_id' => (string) \Illuminate\Support\Str::ulid(),
         ])->assertSessionHasErrors('kind');
+    }
+
+    /**
+     * إيقاف حساب ولي الأمر تعليق لا حذف، والاسترجاع يعيد الوصول دون إعادة
+     * تفعيل صلاحيات الوساطة على الروابط تلقائيًا (قرار إداري منفصل).
+     */
+    public function test_guardian_account_can_be_archived_and_restored(): void
+    {
+        [$organization, $actor, $student] = $this->context();
+        $account = User::factory()->inOrganization((string) $organization->id)->create();
+        $guardian = GuardianProfile::factory()->create([
+            'organization_id' => $organization->id, 'user_id' => $account->id,
+        ]);
+        GuardianLink::factory()->create([
+            'guardian_profile_id' => $guardian->id, 'student_profile_id' => $student->id,
+            'is_primary' => true, 'can_act_for' => true,
+        ]);
+
+        $this->actingAs($actor)->put('/manage/guardians/'.$guardian->id.'/archive', [
+            'reason' => 'طلب ولي الأمر إيقاف حسابه مؤقتًا',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        self::assertSoftDeleted('guardian_profiles', ['id' => $guardian->id]);
+        self::assertDatabaseHas('guardian_links', [
+            'guardian_profile_id' => $guardian->id, 'is_primary' => false, 'can_act_for' => false,
+        ]);
+
+        // الملف المؤرشف يظل قابلًا للوصول عبر withTrashed، ولا يُحذف نهائيًا.
+        $this->get('/manage/guardians/'.$guardian->id)->assertOk();
+
+        $this->put('/manage/guardians/'.$guardian->id.'/restore', [
+            'reason' => 'تأكد ولي الأمر من هويته وطلب إعادة التفعيل',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        self::assertNull(GuardianProfile::query()->find($guardian->id)?->deleted_at);
+        // الاسترجاع لا يعيد صلاحيات الوساطة تلقائيًا.
+        self::assertDatabaseHas('guardian_links', [
+            'guardian_profile_id' => $guardian->id, 'is_primary' => false, 'can_act_for' => false,
+        ]);
+    }
+
+    public function test_archiving_a_guardian_from_another_organization_is_rejected(): void
+    {
+        [, $actor] = $this->context();
+        $foreignOrganization = Organization::factory()->create();
+        $foreignAccount = User::factory()->inOrganization((string) $foreignOrganization->id)->create();
+        $foreignGuardian = GuardianProfile::factory()->create([
+            'organization_id' => $foreignOrganization->id, 'user_id' => $foreignAccount->id,
+        ]);
+
+        $this->actingAs($actor)->put('/manage/guardians/'.$foreignGuardian->id.'/archive', [
+            'reason' => 'محاولة غير صحيحة',
+        ])->assertNotFound();
+        self::assertNull(GuardianProfile::query()->find($foreignGuardian->id)?->deleted_at);
+    }
+
+    /**
+     * "ربط ولي أمر" من صفحة الطالب: زر التسكين يفتح نموذج إنشاء ولي أمر
+     * بالطالب مُعبَّأً مسبقًا، وحفظه يربطهما مباشرة.
+     */
+    public function test_creating_a_guardian_from_a_students_page_preselects_that_student(): void
+    {
+        [$organization, $actor, $student] = $this->context();
+
+        $this->actingAs($actor)
+            ->get('/manage/students/'.$student->id)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where(
+                    'guardianLinkUrl',
+                    route('console.guardians.create', ['student_profile_id' => $student->id]),
+                ));
+
+        $this->get('/manage/guardians/create?student_profile_id='.$student->id)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('person.student_profile_id', (string) $student->id)
+                ->where('presetStudent.value', (string) $student->id));
+
+        $response = $this->post('/manage/guardians', [
+            'account_mode' => 'new', 'full_name' => 'Guardian From Student Page',
+            'email' => 'guardian.fromstudent@example.test', 'username' => 'guardian.fromstudent',
+            'password' => 'G8!Guardian-FromStudent#2026', 'password_confirmation' => 'G8!Guardian-FromStudent#2026',
+            'locale' => 'ar', 'timezone' => 'Africa/Cairo',
+            'student_profile_id' => (string) $student->id, 'relationship' => 'father', 'is_primary' => true,
+        ]);
+        $response->assertSessionHasNoErrors()->assertRedirect();
+        $user = User::query()->where('username', 'guardian.fromstudent')->firstOrFail();
+        $guardian = GuardianProfile::query()->where('user_id', $user->id)->firstOrFail();
+        self::assertDatabaseHas('guardian_links', [
+            'guardian_profile_id' => $guardian->id, 'student_profile_id' => (string) $student->id,
+        ]);
+    }
+
+    public function test_preset_student_from_another_organization_is_silently_ignored(): void
+    {
+        [, $actor] = $this->context();
+        $foreignOrganization = Organization::factory()->create();
+        $foreignAccount = User::factory()->inOrganization((string) $foreignOrganization->id)->create();
+        $foreignStudent = StudentProfile::factory()->create([
+            'organization_id' => $foreignOrganization->id, 'user_id' => $foreignAccount->id,
+        ]);
+
+        $this->actingAs($actor)
+            ->get('/manage/guardians/create?student_profile_id='.$foreignStudent->id)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('person.student_profile_id', '')
+                ->where('presetStudent', null));
+    }
+
+    /**
+     * "كل أولياء الأمور" و"ولي أمر واحد" يجب أن يصلا فعليًا عبر نقطة نهاية
+     * المراسلة الجماعية التي تغذّي مُركِّب الرسائل في الكونسول، لا الـresolver
+     * وحده — وإلا بقيت الميزة غير قابلة للاختيار من الواجهة رغم عملها خلفيًا.
+     */
+    public function test_bulk_messaging_targets_endpoint_resolves_guardian_types(): void
+    {
+        [$organization, $actor] = $this->context();
+        $guardianAccount = User::factory()->inOrganization((string) $organization->id)->create([
+            'name' => 'Searchable Guardian',
+        ]);
+        GuardianProfile::factory()->create([
+            'organization_id' => $organization->id, 'user_id' => $guardianAccount->id,
+        ]);
+        Gate::define('notifications.outbox.create', static fn (): bool => true);
+
+        $byName = $this->actingAs($actor)
+            ->getJson('/manage/messages/targets?type=guardian&search=Searchable')
+            ->assertOk()->json('targets');
+        self::assertNotEmpty($byName);
+        self::assertSame($guardianAccount->id, $byName[0]['value']);
+
+        $this->getJson('/manage/messages/targets?type=guardians_all')
+            ->assertOk()
+            ->assertJsonStructure(['targets']);
     }
 
     /** @return array{Organization, User, StudentProfile} */

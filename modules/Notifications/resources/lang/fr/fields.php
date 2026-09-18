@@ -6,6 +6,7 @@ return [
     'recipient_selection' => ':count destinataires sélectionnés',
     'recipient_all_students' => 'Tous les élèves (:count)',
     'recipient_all_teachers' => 'Tous les enseignants (:count)',
+    'recipient_all_guardians' => 'Tous les tuteurs (:count)',
     'id' => 'Identifiant', 'organization_id' => 'Organisation', 'user_id' => 'Utilisateur',
     'category' => 'Catégorie', 'channel' => 'Canal', 'locale' => 'Langue du message',
     'event_name' => 'Nom de l’événement', 'event_id' => 'Identifiant de l’événement',
@@ -30,6 +31,6 @@ return [
     'recipient_types' => [
         'people' => 'Personnes que je choisis',
         'students_all' => 'Tous les élèves',
-        'teachers_all' => 'Tous les enseignants', 'student' => 'Élève', 'teacher' => 'Enseignant', 'guardian' => 'Tuteur', 'group' => 'Groupe', 'course' => 'Cours', 'schedule' => 'Planning'],
+        'teachers_all' => 'Tous les enseignants', 'guardians_all' => 'Tous les tuteurs', 'student' => 'Élève', 'teacher' => 'Enseignant', 'guardian' => 'Tuteur', 'group' => 'Groupe', 'course' => 'Cours', 'schedule' => 'Planning'],
     'audiences' => ['students' => 'Élèves seulement', 'teacher' => 'Enseignant seulement', 'all' => 'Toute la classe'],
 ];
