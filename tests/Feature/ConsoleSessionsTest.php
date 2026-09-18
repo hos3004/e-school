@@ -235,6 +235,28 @@ final class ConsoleSessionsTest extends TestCase
             ->where('schedule.start_time', ''));
     }
 
+    public function test_create_form_carries_real_teacher_assignments_for_a_group_still_in_planning_status(): void
+    {
+        // options() المستخدَم لملء القائمة يقتصر على المجموعات النشطة، فيعتمد الكنترولر
+        // على مسار احتياطي لإضافة مجموعة غير نشطة بعد (قيد التخطيط) عند الوصول إليها
+        // برابط مباشر. كان هذا المسار يُدخلها بقائمة تعيينات فارغة دائمًا، فتظهر قائمة
+        // معلمين فارغة رغم وجود معلم معيّن وقادر فعليًا — رغم أن الحفظ الفعلي يبقى
+        // مرفوضًا حتى تُفعَّل المجموعة، وهذا قرار عمل منفصل لم يُمس هنا.
+        $group = Group::query()->create(['organization_id' => $this->organization->id, 'code' => 'GR-PLANNING', 'name' => ['ar' => 'مجموعة قيد التخطيط'], 'capacity' => 12, 'timezone' => 'Europe/Paris', 'status' => GroupStatus::Planning, 'starts_on' => '2026-10-01']);
+        GroupProgram::query()->create(['group_id' => $group->id, 'program_id' => $this->program->id]);
+        GroupTeacher::query()->create(['group_id' => $group->id, 'staff_profile_id' => $this->teacher->id, 'course_id' => $this->course->id, 'role' => GroupTeacherRole::Lead, 'assigned_from' => '2026-10-01']);
+
+        $this->get('/manage/schedules/create?group='.$group->id)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('groups', function ($groups) use ($group): bool {
+                $entry = collect($groups)->firstWhere('id', (string) $group->id);
+
+                return $entry !== null && collect($entry['assignments'])->contains(
+                    fn (array $assignment): bool => $assignment['teacher_id'] === (string) $this->teacher->id
+                        && $assignment['course_id'] === (string) $this->course->id,
+                );
+            }));
+    }
+
     private function createGroup(string $code): Group
     {
         $group = Group::query()->create(['organization_id' => $this->organization->id, 'code' => $code, 'name' => ['ar' => 'مجموعة '.$code], 'capacity' => 12, 'timezone' => 'Europe/Paris', 'status' => GroupStatus::Active, 'starts_on' => '2026-10-01']);

@@ -406,6 +406,9 @@ export default function GroupScheduleEditor({
           <Section title={t("console_sessions.timing")} step={2}>
             <fieldset className="sessions-days">
               <legend>{t("console_sessions.fields.weekdays")}</legend>
+              <p className="sessions-field-note">
+                {t("console_sessions.weekdays_hint")}
+              </p>
               {Array.from({ length: 7 }, (_, day) => (
                 <label key={day}>
                   <input
@@ -641,7 +644,11 @@ export default function GroupScheduleEditor({
                 ? t("console_sessions.generated_until") +
                   " " +
                   schedule.materialized_until
-                : ""}
+                : !form.data.weekdays.length
+                  ? t("console_sessions.save_needs_weekday")
+                  : !form.data.staff_profile_id
+                    ? t("console_sessions.save_needs_teacher")
+                    : ""}
             </span>
             <button
               className="console-button primary"
