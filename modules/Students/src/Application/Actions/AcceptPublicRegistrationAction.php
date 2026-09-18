@@ -57,10 +57,13 @@ final readonly class AcceptPublicRegistrationAction
                     email: $application->email, phone: $application->phone,
                 );
             } else {
+                $phoneOverride = isset($data['phone']) && trim((string) $data['phone']) !== ''
+                    ? trim((string) $data['phone'])
+                    : null;
                 $account = $this->accounts->create(new CreateUserAccountData(
                     organizationId: $organizationId, name: $application->full_name,
                     email: $application->email, username: (string) $data['username'],
-                    phone: $application->phone, password: (string) $data['password'],
+                    phone: $phoneOverride ?? $application->phone, password: (string) $data['password'],
                     locale: 'ar', timezone: (string) $data['timezone'],
                 ));
             }

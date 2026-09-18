@@ -28,6 +28,7 @@ final class RegistrationDecisionRequest extends FormRequest
             'existing_user_id' => [$accepting && !$newAccount ? 'required' : 'nullable', 'ulid'],
             'username' => [$newAccount ? 'required' : 'nullable', 'string', 'min:'.config('admission.username.min_length'), 'max:'.config('admission.username.max_length')],
             'password' => [$newAccount ? 'required' : 'nullable', Password::defaults(), 'confirmed'],
+            'phone' => [$newAccount ? 'nullable' : 'prohibited', 'string', 'max:32'],
             'timezone' => [$accepting ? 'required' : 'nullable', 'timezone:all'],
             'identity_confirmed' => ['sometimes', 'boolean'],
             'rejection_category' => [$this->input('decision') === 'reject' ? 'required' : 'nullable', Rule::in(['eligibility', 'schedule', 'duplicate', 'other'])],
@@ -40,6 +41,7 @@ final class RegistrationDecisionRequest extends FormRequest
     {
         return [
             'username' => __('console_registration.fields.username'), 'password' => __('console_registration.fields.password'),
+            'phone' => __('console_registration.fields.phone'),
             'timezone' => __('console_registration.fields.timezone'), 'existing_user_id' => __('console_registration.fields.account'),
             'note' => __('console_registration.fields.note'), 'rejection_category' => __('console_registration.fields.rejection_category'),
         ];

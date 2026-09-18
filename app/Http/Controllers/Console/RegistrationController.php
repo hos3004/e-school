@@ -168,7 +168,11 @@ final class RegistrationController extends Controller
                     __('console_registration.rejections.'.$data['rejection_category']).(empty($data['note']) ? '' : ' — '.$data['note'])),
             };
         } catch (BusinessRuleViolation $exception) {
-            throw ValidationException::withMessages(['form' => $exception->getMessage()]);
+            $field = match ($exception->rule) {
+                'identity.phone_invalid' => 'phone',
+                default => 'form',
+            };
+            throw ValidationException::withMessages([$field => $exception->getMessage()]);
         }
 
         return redirect()->route('console.registration.applications.show', ['application' => $application])->with('success', __('console_registration.decision_saved'));

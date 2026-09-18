@@ -36,6 +36,11 @@ export default function RegistrationReview({
   placementUrl: string | null;
 }) {
   const t = useI18n();
+  const suggestedPhone = application.phone
+    ? application.phone.startsWith("00")
+      ? "+" + application.phone.slice(2)
+      : application.phone
+    : "";
   const [showPassword, setShowPassword] = useState(false);
   const [search, setSearch] = useState("");
   const [accounts, setAccounts] = useState<Option[]>(
@@ -55,6 +60,7 @@ export default function RegistrationReview({
     username: usernameSuggestions[0] ?? "",
     password: "",
     password_confirmation: "",
+    phone: suggestedPhone,
     timezone,
     identity_confirmed: false,
     rejection_category: "",
@@ -409,6 +415,25 @@ export default function RegistrationReview({
                             {feedback("password")}
                             <small>
                               {t("console_registration.password_help")}
+                            </small>
+                          </div>
+                          <div className="field span2">
+                            <label htmlFor="registration-phone">
+                              {label("phone")}
+                            </label>
+                            <input
+                              id="registration-phone"
+                              className="console-control"
+                              dir="ltr"
+                              autoComplete="off"
+                              value={form.data.phone}
+                              onChange={(event) =>
+                                form.setData("phone", event.target.value)
+                              }
+                            />
+                            {feedback("phone")}
+                            <small>
+                              {t("console_registration.phone_help")}
                             </small>
                           </div>
                         </>
