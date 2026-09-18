@@ -7,6 +7,7 @@ namespace Modules\Students\Application\Actions;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\AccessControl\Domain\Contracts\RoleAssignmentGateway;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Identity\Domain\Contracts\DTOs\CreateUserAccountData;
@@ -31,6 +32,7 @@ final readonly class AcceptPublicRegistrationAction
         private AcceptRegistrationApplicationAction $accept,
         private Transaction $transaction,
         private Dispatcher $events,
+        private AcademicCatalogQueries $catalog,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -47,6 +49,26 @@ final readonly class AcceptPublicRegistrationAction
             }
             if ($application->duplicate_of_application_id !== null && !($data['identity_confirmed'] ?? false)) {
                 throw ValidationException::withMessages(['identity_confirmed' => __('console_registration.review_duplicate')]);
+            }
+            $courseId = isset($data['course_id']) && trim((string) $data['course_id']) !== ''
+                ? trim((string) $data['course_id'])
+                : null;
+            if ($courseId !== null && $courseId !== $application->preferred_course_id) {
+                $matched = $this->catalog->coursesByIds($organizationId, [$courseId]);
+                if (!isset($matched[$courseId])) {
+                    throw ValidationException::withMessages(['course_id' => __('console_registration.invalid_course')]);
+                }
+                $before = ['preferred_course_id' => $application->preferred_course_id, 'preferred_program_id' => $application->preferred_program_id];
+                $application->preferred_course_id = $courseId;
+                $application->preferred_program_id = $matched[$courseId]->programId;
+                $application->save();
+                $this->audit->record(
+                    organizationId: $organizationId, actorId: $actorId, actorType: 'user',
+                    action: 'students.registration_course_changed', auditableType: 'registration_application',
+                    auditableId: (string) $application->id, oldValues: $before,
+                    newValues: ['preferred_course_id' => $courseId, 'preferred_program_id' => $application->preferred_program_id],
+                    reason: __('console_registration.audit.course_changed'),
+                );
             }
             $beforeUserId = $application->user_id;
             if ($beforeUserId !== null || $data['account_mode'] === 'existing') {

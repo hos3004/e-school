@@ -41,6 +41,16 @@ export default function RegistrationReview({
       ? "+" + application.phone.slice(2)
       : application.phone
     : "";
+  const coursesByProgram = catalog.reduce<
+    Record<string, { programName: string; courses: RegistrationCourse[] }>
+  >((groups, item) => {
+    (groups[item.program_id] ??= {
+      programName: item.program_name,
+      courses: [],
+    }).courses.push(item);
+
+    return groups;
+  }, {});
   const [showPassword, setShowPassword] = useState(false);
   const [search, setSearch] = useState("");
   const [accounts, setAccounts] = useState<Option[]>(
@@ -56,6 +66,7 @@ export default function RegistrationReview({
   const form = useForm({
     decision: "accept",
     account_mode: application.user_id ? "existing" : "new",
+    course_id: application.preferred_course_id ?? "",
     existing_user_id: application.user_id ?? "",
     username: usernameSuggestions[0] ?? "",
     password: "",
@@ -260,6 +271,36 @@ export default function RegistrationReview({
                   </div>
                   {form.data.decision === "accept" && (
                     <>
+                      <div className="field span2">
+                        <label htmlFor="registration-course">
+                          {label("course")}
+                        </label>
+                        <select
+                          id="registration-course"
+                          className="console-control"
+                          value={form.data.course_id}
+                          onChange={(event) =>
+                            form.setData("course_id", event.target.value)
+                          }
+                        >
+                          <option value="">
+                            {t("console_registration.general_form")}
+                          </option>
+                          {Object.entries(coursesByProgram).map(
+                            ([programId, group]) => (
+                              <optgroup label={group.programName} key={programId}>
+                                {group.courses.map((item) => (
+                                  <option value={item.id} key={item.id}>
+                                    {item.name}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ),
+                          )}
+                        </select>
+                        {feedback("course_id")}
+                        <small>{t("console_registration.course_help")}</small>
+                      </div>
                       <div className="field span2">
                         <label htmlFor="registration-account-mode">
                           {label("account_mode")}

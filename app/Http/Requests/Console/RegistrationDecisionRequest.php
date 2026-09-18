@@ -25,6 +25,7 @@ final class RegistrationDecisionRequest extends FormRequest
             'organization_id' => ['prohibited'], 'actor_id' => ['prohibited'],
             'decision' => ['required', Rule::in(['accept', 'review', 'reject'])],
             'account_mode' => [$accepting ? 'required' : 'nullable', Rule::in(['new', 'existing'])],
+            'course_id' => [$accepting ? 'nullable' : 'prohibited', 'ulid'],
             'existing_user_id' => [$accepting && !$newAccount ? 'required' : 'nullable', 'ulid'],
             'username' => [$newAccount ? 'required' : 'nullable', 'string', 'min:'.config('admission.username.min_length'), 'max:'.config('admission.username.max_length')],
             'password' => [$newAccount ? 'required' : 'nullable', Password::defaults(), 'confirmed'],
@@ -41,7 +42,7 @@ final class RegistrationDecisionRequest extends FormRequest
     {
         return [
             'username' => __('console_registration.fields.username'), 'password' => __('console_registration.fields.password'),
-            'phone' => __('console_registration.fields.phone'),
+            'phone' => __('console_registration.fields.phone'), 'course_id' => __('console_registration.fields.course'),
             'timezone' => __('console_registration.fields.timezone'), 'existing_user_id' => __('console_registration.fields.account'),
             'note' => __('console_registration.fields.note'), 'rejection_category' => __('console_registration.fields.rejection_category'),
         ];
