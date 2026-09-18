@@ -19,5 +19,5 @@ return [
     'approval_rejected' => 'رفض الموعد الجديد',
 
     'slot' => ':day الساعة :time',
-    'slot_separator' => 'و',
+    'slot_separator' => ' و ',
 ];
