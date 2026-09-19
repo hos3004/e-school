@@ -16,6 +16,7 @@ final readonly class ConsoleContext
         $organization = $user === null ? null : Organization::query()->find((string) data_get($user, 'organization_id'));
         $navigation = [
             ['today', '/manage', 'work', 'admin.panel.access'],
+            ['live', '/manage/live', 'work', ['session.view', 'student.view.any']],
             ['courses', '/manage/courses', 'work', 'course.manage'],
             ['quran', '/manage/quran', 'work', 'student.view.any'],
             ['placement', '/manage/placement', 'work', ['student.view.any', 'enrollment.create', 'group.manage']],

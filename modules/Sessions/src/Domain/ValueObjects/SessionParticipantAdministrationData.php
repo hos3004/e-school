@@ -26,5 +26,7 @@ final readonly class SessionParticipantAdministrationData
         public bool $invitationActive,
         public ?string $excusedAt = null,
         public ?string $scheduleId = null,
+        /** داخل الغرفة الآن — يحدّثها webhook الفصل الافتراضي، وتخص اللحظة لا التاريخ. */
+        public ?string $currentJoinedAt = null,
     ) {}
 }

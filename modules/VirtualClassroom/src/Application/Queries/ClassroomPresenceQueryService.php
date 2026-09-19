@@ -68,6 +68,54 @@ final readonly class ClassroomPresenceQueryService implements ClassroomPresenceQ
             && $this->overlapsOfficialInterval($joinedAt, $scheduledEnd, $scheduledStart, $scheduledEnd);
     }
 
+    public function currentlyPresentUserIds(array $sessionIds): array
+    {
+        if ($sessionIds === []) {
+            return [];
+        }
+
+        $classrooms = Classroom::query()
+            ->whereIn('session_id', $sessionIds)
+            ->pluck('session_id', 'id');
+
+        if ($classrooms->isEmpty()) {
+            return [];
+        }
+
+        /*
+         * آخر حدث لكل (غرفة، مستخدم) هو حالته الحالية: دخول بلا خروج بعده
+         * يعني أنه في الغرفة. نقرأ الأحداث مرتبة ونطوي على آخر حالة بدل
+         * استعلام لكل مستخدم.
+         */
+        $events = ClassroomEvent::query()
+            ->whereIn('classroom_id', $classrooms->keys())
+            ->whereNotNull('user_id')
+            ->whereIn('event_type', [
+                ClassroomEventType::ParticipantJoined->value,
+                ClassroomEventType::ParticipantLeft->value,
+            ])
+            ->orderBy('occurred_at')
+            ->orderBy('id')
+            ->get(['classroom_id', 'user_id', 'event_type']);
+
+        $state = [];
+        foreach ($events as $event) {
+            $sessionId = (string) $classrooms[(string) $event->classroom_id];
+            $state[$sessionId][(string) $event->user_id] =
+                $event->event_type === ClassroomEventType::ParticipantJoined;
+        }
+
+        $present = [];
+        foreach ($state as $sessionId => $users) {
+            $inside = array_keys(array_filter($users));
+            if ($inside !== []) {
+                $present[$sessionId] = $inside;
+            }
+        }
+
+        return $present;
+    }
+
     private function overlapsOfficialInterval(
         CarbonImmutable $joinedAt,
         CarbonImmutable $leftAt,
