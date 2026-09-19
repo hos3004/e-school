@@ -14,3 +14,10 @@ foreach (['approve', 'reject'] as $decision) {
         ->whereUlid('adjustment')->defaults('decision', $decision)
         ->middleware(['can:payroll.view', 'can:'.config('payroll.adjustments.approve_permission')])->name('teacher-dues.'.$decision);
 }
+/*
+ * قرار الحصة من داخل ملف الحسابات. الصلاحية الدقيقة تتبع القرار نفسه وتُفرض في
+ * `TeacherDuesSessionRequest` والـPolicy؛ الـmiddleware هنا يحرس الحد الأدنى
+ * المشترك: قراءة المستحقات ورؤية الحصة.
+ */
+Route::post('/teacher-dues/sessions/{session}/decision', [TeacherDuesWriteController::class, 'decideSession'])
+    ->whereUlid('session')->middleware(['can:payroll.view', 'can:session.view'])->name('teacher-dues.session-decision');

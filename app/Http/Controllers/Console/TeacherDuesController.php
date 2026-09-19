@@ -7,11 +7,14 @@ namespace App\Http\Controllers\Console;
 use App\Http\Controllers\Console\Support\ConsoleContext;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Console\TeacherDuesReadRequest;
+use App\Http\Requests\Console\TeacherDuesSessionRequest;
+use App\Services\Console\SessionRateSuggestion;
 use Carbon\CarbonImmutable;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Payroll\Domain\Contracts\TeacherDuesQueries;
+use Modules\Payroll\Domain\ValueObjects\TeacherDuesMoney;
 use Modules\Reporting\Domain\Contracts\OperationalReportQuery;
 use Modules\Reporting\Domain\ValueObjects\OperationalReportCriteria;
 use Modules\Reporting\Domain\ValueObjects\OperationalReportRow;
@@ -22,7 +25,8 @@ use Modules\Staff\Domain\Contracts\StaffQueries;
 final class TeacherDuesController extends Controller
 {
     public function __invoke(TeacherDuesReadRequest $request, TeacherDuesQueries $dues, StaffQueries $staff,
-        OperationalReportQuery $reports, UserAccountDirectory $accounts, ConsoleContext $context): Response
+        OperationalReportQuery $reports, UserAccountDirectory $accounts, ConsoleContext $context,
+        SessionRateSuggestion $rates): Response
     {
         abort_unless((bool) config('features.payroll'), 404);
         $actor = $request->user();
@@ -48,7 +52,16 @@ final class TeacherDuesController extends Controller
         $base = ['periods' => $periods, 'teacherOptions' => $names, 'timezone' => $timezone,
             'currency' => (string) config('payroll.currency'), 'filters' => [...$filters, 'period' => $periodId],
             'canPropose' => (bool) $actor->can((string) config('payroll.adjustments.propose_permission')),
-            'adjustmentTypes' => array_values((array) config('payroll.adjustments.types'))];
+            'adjustmentTypes' => array_values((array) config('payroll.adjustments.types')),
+            'requiresSecondApprover' => config('payroll.adjustments.requires_different_approver') === true,
+            /*
+             * الصلاحية لكل قرار على حدة: نفس مصفوفة شاشة الاعتماد، فلا يظهر
+             * زر لا تسمح به السياسة ثم يُرفض عند الضغط.
+             */
+            'canDecide' => array_map(
+                static fn (string $ability): bool => (bool) $actor->can($ability),
+                TeacherDuesSessionRequest::ABILITIES,
+            )];
         if ($statement === null) {
             return Inertia::render('Console/TeacherDues', [...$base, 'period' => null, 'teachers' => [],
                 'detail' => null, 'limitExceeded' => false, 'pagination' => null]);
@@ -120,10 +133,21 @@ final class TeacherDuesController extends Controller
                 }
             }
             $lessons = [];
+            /*
+             * الاقتراح يستدعي محلّل الأسعار لكل حصة، فيُحسب للحصص التي تنتظر
+             * قرارًا وحدها وبنفس السقف الذي تستعمله شاشة الاعتماد.
+             */
+            $decidable = array_filter($rowsById, static fn (OperationalReportRow $row): bool => $row->actualTeacherId === $id
+                && (self::neverStarted($row) || $row->status === SessionStatus::AwaitingReview->value));
+            $suggest = $period['canAdjust'] && count($decidable) <= (int) config('console.session_review_rate_check_limit');
             foreach ($rowsById as $row) {
                 if ($row->actualTeacherId !== $id && !isset($entriesBySession[$row->id])) {
                     continue;
                 }
+                $needsDecision = $row->actualTeacherId === $id && $period['canAdjust']
+                    && (self::neverStarted($row) || $row->status === SessionStatus::AwaitingReview->value);
+                $suggestion = $needsDecision && $suggest ? $rates->minorUnitsFor($row->id) : null;
+                $pricingNote = $needsDecision && $suggest ? $rates->pricingNoteFor($row->id) : null;
                 $lessons[] = ['id' => $row->id, 'title' => $row->title, 'startsAt' => $row->scheduledStart,
                     'course' => $row->course, 'study' => $row->group !== '' ? $row->group : ($actor->can('student.view.any') ? $row->studentsDisplay : __('console_dues.individual')),
                     'track' => $row->groupId === '' ? 'individual' : 'group', 'studentCount' => count($row->students),
@@ -131,6 +155,12 @@ final class TeacherDuesController extends Controller
                     'actualDuration' => $row->actualDurationMinutes !== null, 'status' => $row->status,
                     'statusLabel' => $row->statusLabel, 'approved' => $row->status === SessionStatus::Completed->value,
                     'awaitingReview' => $row->status === SessionStatus::AwaitingReview->value,
+                    'neverStarted' => self::neverStarted($row),
+                    'needsDecision' => $needsDecision,
+                    'decisionUrl' => $needsDecision ? route('console.teacher-dues.session-decision', ['session' => $row->id]) : null,
+                    'suggestedAmount' => $suggestion === null ? null : TeacherDuesMoney::display($suggestion),
+                    'rateKnown' => $needsDecision && $suggest && $pricingNote === null ? $suggestion !== null : null,
+                    'pricingNote' => $pricingNote,
                     'actualTeacher' => $row->actualTeacher, 'isActualTeacher' => $row->actualTeacherId === $id,
                     'entries' => $entriesBySession[$row->id] ?? []];
             }
@@ -163,7 +193,7 @@ final class TeacherDuesController extends Controller
     }
 
     /** @param list<OperationalReportRow> $rows
-     * @return array{total: int, delivered: int, approved: int, pending: int, cancelled: int, minutes: int}
+     * @return array{total: int, delivered: int, approved: int, pending: int, cancelled: int, minutes: int, undecided: int}
      */
     private function counts(array $rows): array
     {
@@ -171,6 +201,7 @@ final class TeacherDuesController extends Controller
         $pending = 0;
         $cancelled = 0;
         $minutes = 0;
+        $undecided = 0;
         foreach ($rows as $row) {
             $completed = $row->status === SessionStatus::Completed->value;
             $waiting = $row->status === SessionStatus::AwaitingReview->value;
@@ -180,9 +211,23 @@ final class TeacherDuesController extends Controller
                 $minutes += $row->actualDurationMinutes ?? $row->durationMinutes;
             }
             $cancelled += (int) in_array($row->status, [SessionStatus::CancelledByStudent->value, SessionStatus::CancelledByTeacher->value, SessionStatus::CancelledBySchool->value], true);
+            $undecided += (int) self::neverStarted($row);
         }
 
         return ['total' => count($rows), 'delivered' => $approved + $pending, 'approved' => $approved,
-            'pending' => $pending, 'cancelled' => $cancelled, 'minutes' => $minutes];
+            'pending' => $pending, 'cancelled' => $cancelled, 'minutes' => $minutes, 'undecided' => $undecided];
+    }
+
+    /**
+     * حصة مضى موعدها ولم تتحرك أصلًا — المعلم لم يفتح غرفتها من المنصة.
+     *
+     * `sessions:end-elapsed` لا يلتقط إلا `in_progress`، فهذه لا يحرّكها شيء
+     * آلي أبدًا: تبقى `scheduled` وتساوي صفرًا في كل عدّاد بينما قد يكون العمل
+     * تمّ خارج المنصة. عدّها صراحةً هو الفارق بين «لا مستحقات» و«لم يُسأل أحد».
+     */
+    private static function neverStarted(OperationalReportRow $row): bool
+    {
+        return in_array($row->status, [SessionStatus::Scheduled->value, SessionStatus::Confirmed->value], true)
+            && CarbonImmutable::parse($row->scheduledEnd)->isPast();
     }
 }

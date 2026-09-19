@@ -23,6 +23,7 @@ export type DuesCounts = {
   pending: number;
   cancelled: number;
   minutes: number;
+  undecided: number;
 };
 export type DuesEntry = {
   id: string;
@@ -70,6 +71,12 @@ export type DuesLesson = {
   statusLabel: string;
   approved: boolean;
   awaitingReview: boolean;
+  neverStarted: boolean;
+  needsDecision: boolean;
+  decisionUrl: string | null;
+  suggestedAmount: string | null;
+  rateKnown: boolean | null;
+  pricingNote: "makeup" | "exempt" | null;
   actualTeacher: string;
   isActualTeacher: boolean;
   entries: DuesEntry[];
@@ -102,3 +109,9 @@ export type DuesFilters = {
   track?: string;
   search?: string;
 };
+export type DuesSessionDecision =
+  | "complete"
+  | "no_show"
+  | "excused"
+  | "cancelled_by_school";
+export type DuesCanDecide = Record<DuesSessionDecision, boolean>;

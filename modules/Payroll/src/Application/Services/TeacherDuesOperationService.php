@@ -48,9 +48,10 @@ final readonly class TeacherDuesOperationService implements TeacherDuesOperation
         return $this->identity($result);
     }
 
-    /** @return array{periodId: string, staffProfileId: string, adjustmentId: string} */
+    /** @return array{periodId: string, staffProfileId: string, adjustmentId: string, approved: bool} */
     private function identity(PayrollAdjustment $item): array
     {
-        return ['periodId' => $item->payroll_period_id, 'staffProfileId' => $item->staff_profile_id, 'adjustmentId' => $item->id];
+        return ['periodId' => $item->payroll_period_id, 'staffProfileId' => $item->staff_profile_id,
+            'adjustmentId' => $item->id, 'approved' => $item->approved_at !== null];
     }
 }

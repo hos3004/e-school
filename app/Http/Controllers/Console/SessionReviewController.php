@@ -6,30 +6,23 @@ namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Console\SessionReviewRequest;
+use App\Services\Console\SessionDecisionService;
+use App\Services\Console\SessionRateSuggestion;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\AcademicReports\Domain\Contracts\SessionReportStatusQueries;
 use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
-use Modules\Academics\Domain\Contracts\ProgramRulesQueries;
 use Modules\Attendance\Domain\Contracts\AttendanceAdministrationQueries;
 use Modules\Organization\Domain\Contracts\SchoolClockQueries;
-use Modules\Sessions\Application\Actions\CancelSessionAction;
-use Modules\Sessions\Application\Actions\CompleteSessionAction;
-use Modules\Sessions\Application\Actions\ExcuseAbsenceAction;
-use Modules\Sessions\Application\Actions\MarkNoShowAction;
-use Modules\Sessions\Application\Actions\RecordOffPlatformSessionAction;
 use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
-use Modules\Sessions\Domain\Contracts\SessionFactsQueries;
 use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Staff\Domain\Contracts\StaffQueries;
-use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\LocalizedJsonColumn;
@@ -47,14 +40,12 @@ use Shared\Support\LocalizedJsonColumn;
  *                            من المنصة، أو دُرِّست خارجها). هذه أخطر لأنها
  *                            تُحتسب صفرًا في كل العدادات وهي في الواقع عمل تم.
  *
- * القرار يُنفَّذ عبر Actions موديول Sessions نفسها — لا انتقال حالة يُكتب هنا —
- * ويُشترط سبب مكتوب، ويُحمى بـPolicy مختلفة لكل قرار.
+ * القرار يُنفَّذ عبر `SessionDecisionService` — لا انتقال حالة يُكتب هنا —
+ * ويُشترط سبب مكتوب، ويُحمى بـPolicy مختلفة لكل قرار. نفس الخدمة يستدعيها ملف
+ * حسابات المعلم، فالقرار واحد من أي شاشة جاء.
  */
 final class SessionReviewController extends Controller
 {
-    /** @var array<string, bool> */
-    private array $rateCache = [];
-
     public function __construct(
         private readonly SessionAdministrationQueries $sessions,
         private readonly SessionParticipantAdministrationQueries $participants,
@@ -64,9 +55,7 @@ final class SessionReviewController extends Controller
         private readonly StudentDirectoryQueries $students,
         private readonly AcademicCatalogQueries $catalog,
         private readonly SchoolClockQueries $clock,
-        private readonly SessionFactsQueries $facts,
-        private readonly ProgramRulesQueries $programs,
-        private readonly TeacherRateResolver $rates,
+        private readonly SessionRateSuggestion $rates,
     ) {}
 
     public function index(Request $request): Response
@@ -171,7 +160,7 @@ final class SessionReviewController extends Controller
                 'attendance_recorded' => $recorded,
                 'all_absent' => $sessionParticipants !== [] && $absent === count($sessionParticipants),
                 'report' => ($reportStates[$session->id] ?? null)?->state() ?? 'missing',
-                'rate_ok' => $checkRates ? $this->hasApplicableRate($session->id) : null,
+                'rate_ok' => $checkRates ? $this->rates->hasApplicableRate($session->id) : null,
             ];
         }
 
@@ -189,61 +178,11 @@ final class SessionReviewController extends Controller
         ]);
     }
 
-    /**
-     * هل لهذه الحصة سعر مطبَّق أصلًا؟
-     *
-     * اعتماد حصة بلا سعر يُقفلها بلا أي قيدة مستحقات ويسجّل
-     * `payroll.entry.rate_unresolved` فقط — أي يظهر للمعلم صفر بلا سبب
-     * مفهوم. إظهار النقص **قبل** القرار أرخص من تصحيحه بقيدة تسوية بعده.
-     *
-     * السعر يُحسب من الحصة الأصلية إن كانت هذه تعويضية، تمامًا كما يفعل
-     * `RecordSessionPayrollEntry`، وإلا لأظهرت كل تعويضية نقصًا كاذبًا.
-     */
-    private function hasApplicableRate(string $sessionId): ?bool
-    {
-        $facts = $this->facts->payrollFactsFor($sessionId);
-
-        if ($facts === null) {
-            return null;
-        }
-
-        if ($facts->isMakeup() && $facts->makeupForSessionId !== null) {
-            $facts = $this->facts->payrollFactsFor($facts->makeupForSessionId) ?? $facts;
-        }
-
-        $durationMinutes = (int) round($facts->scheduledStart->diffInMinutes($facts->scheduledEnd));
-
-        /*
-         * الصفوف تتكرر بشدة على نفس (معلم، مقرر، نوع، مدة، يوم) — جدول أسبوعي
-         * واحد يولّد عشرات الحصص المتطابقة في هذه المفاتيح. بلا هذه الذاكرة
-         * كانت الصفحة تعيد نفس بحث السعر لكل صف.
-         */
-        $key = implode('|', [
-            $facts->staffProfileId,
-            $facts->courseId,
-            $facts->sessionType,
-            $durationMinutes,
-            $facts->scheduledStart->toDateString(),
-        ]);
-
-        if (array_key_exists($key, $this->rateCache)) {
-            return $this->rateCache[$key];
-        }
-
-        $programIds = $this->programs->programIdsOfCourse($facts->courseId);
-
-        return $this->rateCache[$key] = $this->rates->resolve(
-            staffProfileId: $facts->staffProfileId,
-            sessionDate: $facts->scheduledStart,
-            programId: $programIds === [] ? null : (string) reset($programIds),
-            courseId: $facts->courseId,
-            sessionType: $facts->sessionType,
-            durationMinutes: $durationMinutes,
-        ) !== null;
-    }
-
-    public function finalize(SessionReviewRequest $request, string $session): RedirectResponse
-    {
+    public function finalize(
+        SessionReviewRequest $request,
+        string $session,
+        SessionDecisionService $decisions,
+    ): RedirectResponse {
         $organizationId = (string) $request->user()?->organization_id;
         $actorId = (string) $request->user()?->getAuthIdentifier();
         $data = $request->validated();
@@ -263,55 +202,15 @@ final class SessionReviewController extends Controller
         }
 
         try {
-            $reason = (string) $data['reason'];
-
-            match ((string) $data['decision']) {
-                'complete' => $this->complete($record, $actorId, $reason),
-                'no_show' => $this->noShow($record, $actorId, $reason),
-                'excused' => $this->excuse($record, $actorId, $reason),
-                'cancelled_by_school' => $this->cancel($record, $actorId, $reason),
-                // غير قابل للوصول: القائمة مقفلة في SessionReviewRequest::DECISIONS.
-                default => throw ValidationException::withMessages([
-                    'decision' => __('console_session_review.stale'),
-                ]),
-            };
+            /*
+             * القرارات الأربعة تعيش في خدمة واحدة يستدعيها ملف حسابات المعلم
+             * أيضًا، فلا يوجد طريقان لإقفال حصة يتباعدان مع أول تعديل.
+             */
+            $decisions->decide($record, (string) $data['decision'], $actorId, (string) $data['reason']);
         } catch (BusinessRuleViolation $violation) {
             throw ValidationException::withMessages(['decision' => $violation->getMessage()]);
         }
 
         return back()->with('success', __('console_session_review.recorded'));
-    }
-
-    private function complete(Session $session, string $actorId, string $reason): void
-    {
-        Gate::authorize('complete', $session);
-
-        /*
-         * `scheduled → completed` ليس انتقالًا مشروعًا، والحصص التي لم تُفتح
-         * من المنصة هي أغلب ما تعرضه هذه الشاشة. تُنقل أولًا عبر مسارها
-         * المشروع إلى `awaiting_review` بموعدها المجدول كوقت تنفيذ، ثم
-         * تُعتمد بنفس إجراء الاعتماد الوحيد.
-         */
-        $session = app(RecordOffPlatformSessionAction::class)->execute($session, $actorId, $reason);
-
-        app(CompleteSessionAction::class)->execute($session, $actorId, $reason);
-    }
-
-    private function noShow(Session $session, string $actorId, string $reason): void
-    {
-        Gate::authorize('markNoShow', $session);
-        app(MarkNoShowAction::class)->execute($session, $reason, $actorId);
-    }
-
-    private function excuse(Session $session, string $actorId, string $reason): void
-    {
-        Gate::authorize('excuse', $session);
-        app(ExcuseAbsenceAction::class)->execute($session, $reason, $actorId);
-    }
-
-    private function cancel(Session $session, string $actorId, string $reason): void
-    {
-        Gate::authorize('cancel', $session);
-        app(CancelSessionAction::class)->execute($session, SessionStatus::CancelledBySchool, $reason, $actorId);
     }
 }

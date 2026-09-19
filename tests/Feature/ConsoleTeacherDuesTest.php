@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Academics\Domain\Models\Course;
@@ -38,6 +39,12 @@ final class ConsoleTeacherDuesTest extends TestCase
         parent::setUp();
         $this->withoutVite();
         config(['console.enabled' => true, 'features.payroll' => true]);
+        /*
+         * الإنتاج يعمل اليوم بمعتمِد واحد. الاختبارات القائمة تغطي حالة
+         * المعتمِد المختلف، فتُثبَّت هنا صراحةً بدل أن ترث قيمة الإعداد —
+         * وتُطفئها الاختبارات التي تقصد الحالة الأخرى.
+         */
+        config(['payroll.adjustments.requires_different_approver' => true]);
         $this->seed(AccessControlSeeder::class);
         app(PermissionGateRegistrar::class)->register();
     }
@@ -279,6 +286,202 @@ final class ConsoleTeacherDuesTest extends TestCase
                 ->where('detail.totals.0.amounts.net', '-50.00'));
         }
         $this->assertDatabaseCount('payroll_entries', 1);
+    }
+
+    public function test_approver_separation_follows_configuration_not_hardcoded_policy(): void
+    {
+        [$org, $staff, $contract, $course, $period] = $this->context();
+        $actor = $this->actor($org, ['admin.panel.access', 'payroll.view', 'payroll.adjustment.propose', 'payroll.adjustment.approve']);
+        $this->actingAs($actor)->post($this->proposalUrl($period), $this->proposal($staff))->assertSessionHasNoErrors();
+        $adjustment = PayrollAdjustment::query()->sole();
+        $url = '/manage/teacher-dues?period='.$period->id.'&teacher='.$staff;
+
+        // الافتراضي: من يقترح لا يعتمد، والواجهة تقول ذلك للمستخدم.
+        $this->get($url)->assertInertia(fn (Assert $page): Assert => $page->where('requiresSecondApprover', true)
+            ->where('detail.adjustments.0.canApprove', false));
+        $this->assertFalse(Gate::forUser($actor)->allows('approve', $adjustment));
+
+        /*
+         * السياسة كانت تثبّت هذا الفصل في الكود بينما الإجراء يقرأه من
+         * الإعدادات، فكان إطفاء الإعداد لا يغيّر شيئًا. الآن الطبقتان تقرآن
+         * المصدر نفسه.
+         */
+        config(['payroll.adjustments.requires_different_approver' => false]);
+        $this->assertTrue(Gate::forUser($actor)->allows('approve', $adjustment));
+        $this->get($url)->assertInertia(fn (Assert $page): Assert => $page->where('requiresSecondApprover', false)
+            ->where('detail.adjustments.0.canApprove', true));
+
+        /*
+         * الاعتماد الفعلي ما زال ممنوعًا على مستوى قاعدة البيانات بقيد
+         * `payroll_adjustments_approval_separation_check`. إطفاء الإعداد وحده
+         * لا يفتح المسار، ورفع القيد قرار مالك لم يُنفَّذ. هذا الاختبار يثبّت
+         * الحقيقة كما هي حتى لا يُظن أن الخطوة الواحدة صارت تعمل.
+         */
+        $this->assertNull($adjustment->fresh()->approved_at);
+        $this->assertDatabaseCount('payroll_adjustments', 1);
+    }
+
+    public function test_past_scheduled_lesson_is_counted_undecided_and_approved_from_the_statement(): void
+    {
+        [$org, $staff, $contract, $course, $period] = $this->context();
+        $actor = $this->decider($org);
+        $lesson = $this->lesson($org, $staff, $course, SessionStatus::Scheduled, 5);
+        $url = '/manage/teacher-dues?period='.$period->id.'&teacher='.$staff;
+        $this->actingAs($actor)->get($url)->assertOk()
+            ->assertInertia(fn (Assert $page): Assert => $page->where('detail.counts.undecided', 1)
+                ->where('detail.counts.delivered', 0)->where('detail.lessons.0.neverStarted', true)
+                ->where('detail.lessons.0.needsDecision', true)->where('detail.lessons.0.rateKnown', true)
+                ->where('detail.lessons.0.suggestedAmount', '50.00')
+                ->where('canDecide.complete', true));
+        $this->post($this->sessionDecisionUrl($lesson), $this->sessionDecision())->assertSessionHasNoErrors();
+        $this->assertSame(SessionStatus::Completed, $lesson->fresh()->status);
+        $entry = PayrollEntry::query()->where('session_id', $lesson->id)->sole();
+        $this->assertSame(5000, $entry->amount);
+        $this->assertNull($lesson->fresh()->payroll_rate_override_minor_units);
+        $this->get($url)->assertInertia(fn (Assert $page): Assert => $page->where('detail.counts.undecided', 0)
+            ->where('detail.counts.approved', 1)->where('detail.lessons.0.needsDecision', false)
+            ->where('detail.totals.0.amounts.entryNet', '50.00'));
+        // المسار واحد: القرار يمر بنفس تاريخ الحالات الذي تكتبه شاشة الاعتماد.
+        $this->assertDatabaseHas('session_status_history', ['session_id' => $lesson->id, 'to_status' => 'awaiting_review']);
+        $this->assertDatabaseHas('audit_log', ['action' => 'sessions.session_recorded_off_platform', 'auditable_id' => $lesson->id]);
+    }
+
+    public function test_manual_amount_prices_one_lesson_without_touching_the_teacher_rate(): void
+    {
+        [$org, $staff, $contract, $course, $period] = $this->context();
+        $actor = $this->decider($org);
+        $lesson = $this->lesson($org, $staff, $course, SessionStatus::Scheduled, 6);
+        $this->actingAs($actor)->post($this->sessionDecisionUrl($lesson), $this->sessionDecision(['amount' => '70.00']))
+            ->assertSessionHasNoErrors();
+        $entry = PayrollEntry::query()->where('session_id', $lesson->id)->sole();
+        $this->assertSame(7000, $entry->amount);
+        $this->assertSame(7000, (int) $lesson->fresh()->payroll_rate_override_minor_units);
+        // سعر المعلم نفسه لم يُمس: الأجر اليدوي يخص هذه الحصة وحدها.
+        $this->assertSame(5000, (int) DB::table('teacher_rates')->where('teacher_contract_id', $contract)->value('amount'));
+        $this->assertDatabaseHas('audit_log', ['action' => 'sessions.payroll_rate_override_set', 'auditable_id' => $lesson->id]);
+        $later = $this->lesson($org, $staff, $course, SessionStatus::Scheduled, 7);
+        $this->post($this->sessionDecisionUrl($later), $this->sessionDecision())->assertSessionHasNoErrors();
+        $this->assertSame(5000, PayrollEntry::query()->where('session_id', $later->id)->sole()->amount);
+    }
+
+    public function test_session_decision_rejects_stale_state_bad_amounts_and_missing_ability(): void
+    {
+        [$org, $staff, $contract, $course, $period] = $this->context();
+        $lesson = $this->lesson($org, $staff, $course, SessionStatus::Scheduled, 8);
+        $reader = $this->actor($org, ['admin.panel.access', 'payroll.view', 'session.view', 'student.view.any']);
+        $this->actingAs($reader)->post($this->sessionDecisionUrl($lesson), $this->sessionDecision())->assertForbidden();
+        $this->actingAs($reader)->get('/manage/teacher-dues?period='.$period->id.'&teacher='.$staff)
+            ->assertInertia(fn (Assert $page): Assert => $page->where('canDecide.complete', false)
+                ->where('detail.lessons.0.needsDecision', true));
+        $actor = $this->decider($org);
+        $this->actingAs($actor)->postJson($this->sessionDecisionUrl($lesson), $this->sessionDecision(['expected_status' => 'awaiting_review']))
+            ->assertUnprocessable()->assertJsonValidationErrors('decision');
+        $this->postJson($this->sessionDecisionUrl($lesson), $this->sessionDecision(['amount' => '-5']))->assertUnprocessable();
+        $this->postJson($this->sessionDecisionUrl($lesson), $this->sessionDecision(['reason_category' => 'other', 'note' => '']))
+            ->assertUnprocessable()->assertJsonValidationErrors('note');
+        // الأجر اليدوي لا معنى له مع قرار غير الاعتماد، فيُرفض بدل أن يُهمل بصمت.
+        $this->postJson($this->sessionDecisionUrl($lesson), $this->sessionDecision([
+            'decision' => 'cancelled_by_school', 'reason_category' => 'not_held', 'amount' => '70.00',
+        ]))->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $this->assertSame(SessionStatus::Scheduled, $lesson->fresh()->status);
+        $this->assertDatabaseCount('payroll_entries', 0);
+        $this->post($this->sessionDecisionUrl($lesson), $this->sessionDecision([
+            'decision' => 'cancelled_by_school', 'reason_category' => 'not_held',
+        ]))->assertSessionHasNoErrors();
+        $this->assertSame(SessionStatus::CancelledBySchool, $lesson->fresh()->status);
+    }
+
+    public function test_a_closed_period_refuses_the_decision_instead_of_closing_a_lesson_with_no_entry(): void
+    {
+        [$org, $staff, $contract, $course, $period] = $this->context();
+        $actor = $this->decider($org);
+        $lesson = $this->lesson($org, $staff, $course, SessionStatus::Scheduled, 9);
+        $period->update(['status' => PayrollPeriodStatus::Paid, 'paid_at' => now()]);
+
+        /*
+         * بلا هذا الحارس كانت الحصة تُقفل نهائيًا بينما يرفض الدفتر قيدتها
+         * ويبتلع المستمع الرفض في السجل — حصة منتهية بلا مستحق لا يعرف بها
+         * أحد، ولا تُصحَّح على دفتر append-only إلا بتسوية يدوية.
+         */
+        $this->actingAs($actor)->postJson($this->sessionDecisionUrl($lesson), $this->sessionDecision())
+            ->assertUnprocessable()->assertJsonValidationErrors(['decision' => __('console_dues.session_period_closed')]);
+        $this->assertSame(SessionStatus::Scheduled, $lesson->fresh()->status);
+        $this->assertDatabaseCount('payroll_entries', 0);
+    }
+
+    public function test_a_failed_decision_never_leaves_a_manual_price_behind(): void
+    {
+        [$org, $staff, $contract, $course, $period] = $this->context();
+        $actor = $this->decider($org);
+        // حصة لم ينتهِ موعدها بعد: الاعتماد يُرفض داخل الإجراء.
+        $future = CarbonImmutable::now('UTC')->addDays(3);
+        $lesson = Session::query()->create(['organization_id' => $org, 'course_id' => $course->id,
+            'staff_profile_id' => $staff, 'original_teacher_id' => $staff, 'session_type' => 'regular',
+            'status' => SessionStatus::Scheduled, 'scheduled_start' => $future, 'scheduled_end' => $future->addHour(),
+            'title' => ['ar' => 'حصة القرآن']]);
+
+        $this->actingAs($actor)->postJson($this->sessionDecisionUrl($lesson), $this->sessionDecision(['amount' => '700.00']))
+            ->assertUnprocessable();
+
+        /*
+         * السعر اليدوي كان يُكتب قبل الانتقال، فيبقى على حصة لم تُعتمد ثم
+         * يُدفع به لاحقًا عند اعتمادها الطبيعي بسعر لم يقصده أحد.
+         */
+        $this->assertNull($lesson->fresh()->payroll_rate_override_minor_units);
+        $this->assertDatabaseMissing('audit_log', ['action' => 'sessions.payroll_rate_override_set', 'auditable_id' => $lesson->id]);
+        $this->assertSame(SessionStatus::Scheduled, $lesson->fresh()->status);
+    }
+
+    public function test_manual_price_is_refused_where_it_would_never_be_read(): void
+    {
+        [$org, $staff, $contract, $course, $period] = $this->context();
+        $actor = $this->decider($org);
+
+        // تعويضية: قيدتها هي قيدة الأصلية المؤجَّلة، فلا تُسعَّر بنفسها.
+        $original = $this->lesson($org, $staff, $course, SessionStatus::Postponed, 10);
+        $makeup = $this->lesson($org, $staff, $course, SessionStatus::Scheduled, 11, ['makeup_for_session_id' => $original->id]);
+        $this->actingAs($actor)->postJson($this->sessionDecisionUrl($makeup), $this->sessionDecision(['amount' => '80.00']))
+            ->assertUnprocessable()->assertJsonValidationErrors(['decision' => __('console_dues.override_on_makeup')]);
+
+        // معفاة من المستحقات: لا قيدة لها أصلًا.
+        $exempt = $this->lesson($org, $staff, $course, SessionStatus::Scheduled, 12, ['payroll_exempt' => true]);
+        $this->postJson($this->sessionDecisionUrl($exempt), $this->sessionDecision(['amount' => '80.00']))
+            ->assertUnprocessable()->assertJsonValidationErrors(['decision' => __('console_dues.override_on_exempt')]);
+
+        // فوق السقف المعرَّف في الإعدادات — خطأ مطبعي لا قيدة بمئة ضعف.
+        $plain = $this->lesson($org, $staff, $course, SessionStatus::Scheduled, 13);
+        $over = (int) config('payroll.session_manual_amount_max_minor_units') / 100 + 1;
+        $this->postJson($this->sessionDecisionUrl($plain), $this->sessionDecision(['amount' => $over.'.00']))
+            ->assertUnprocessable()->assertJsonValidationErrors('decision');
+
+        // بلا عقد سارٍ لا تُنسب القيدة إلى شيء، فيخرج المستمع بصفر صامت.
+        DB::table('teacher_contracts')->where('id', $contract)->update(['effective_to' => '2026-01-02']);
+        $this->postJson($this->sessionDecisionUrl($plain), $this->sessionDecision(['amount' => '60.00']))
+            ->assertUnprocessable()->assertJsonValidationErrors(['decision' => __('console_dues.override_without_contract')]);
+
+        $this->assertDatabaseCount('payroll_entries', 0);
+        $this->assertNull($plain->fresh()->payroll_rate_override_minor_units);
+        $this->assertSame(SessionStatus::Scheduled, $plain->fresh()->status);
+    }
+
+    private function decider(string $org): User
+    {
+        return $this->actor($org, ['admin.panel.access', 'payroll.view', 'session.view', 'session.finalize',
+            'session.cancel', 'attendance.record', 'student.view.any']);
+    }
+
+    /** @param array<string, mixed> $extra
+     * @return array<string, mixed>
+     */
+    private function sessionDecision(array $extra = []): array
+    {
+        return ['decision' => 'complete', 'expected_status' => 'scheduled',
+            'reason_category' => 'off_platform', 'note' => '', ...$extra];
+    }
+
+    private function sessionDecisionUrl(Session $session): string
+    {
+        return '/manage/teacher-dues/sessions/'.$session->id.'/decision';
     }
 
     /** @return array{string, string, string, Course, PayrollPeriod} */

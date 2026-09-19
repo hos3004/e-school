@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import { formatNumber } from "@/lib/console-format";
 import TeacherDuesDetail, { DuesMoney } from "./TeacherDuesDetail";
 import type {
+  DuesCanDecide,
   DuesDetail,
   DuesFilters,
   DuesPeriod,
@@ -22,6 +23,8 @@ type Props = {
   currency: string;
   canPropose: boolean;
   adjustmentTypes: string[];
+  requiresSecondApprover: boolean;
+  canDecide: DuesCanDecide;
   limitExceeded: boolean;
   pagination: {
     current: number;
@@ -42,6 +45,8 @@ export default function TeacherDues({
   currency,
   canPropose,
   adjustmentTypes,
+  requiresSecondApprover,
+  canDecide,
   limitExceeded,
   pagination,
 }: Props) {
@@ -330,6 +335,8 @@ export default function TeacherDues({
           canPropose={canPropose && detail.canPropose}
           types={adjustmentTypes}
           limitExceeded={detail.limitExceeded}
+          canDecide={canDecide}
+          requiresSecondApprover={requiresSecondApprover}
         />
       )}
       <style>{`@media print { .teacher-dues-sheet[open] { position: static!important; width:100%!important; max-width:none!important; height:auto!important; max-height:none!important; overflow:visible!important; padding:0!important; border:0!important; } body:has(.teacher-dues-sheet[open]) .teacher-dues-view { display:none!important; } .teacher-dues-sheet::backdrop { display:none; } .teacher-dues-sheet .console-table-wrap { overflow:visible!important; } .teacher-dues-sheet .teacher-sessions { min-width:0!important; } .teacher-dues-sheet tr { break-inside:avoid; } }`}</style>

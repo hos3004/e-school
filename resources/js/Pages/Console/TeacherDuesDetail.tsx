@@ -2,8 +2,13 @@ import { Link, router } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { formatDate, formatNumber, formatTime } from "@/lib/console-format";
-import { DuesDecision, ProposeDues } from "./TeacherDuesActions";
-import type { DuesDetail, DuesPeriod, DuesTotals } from "./TeacherDuesTypes";
+import { DuesDecision, LessonDecision, ProposeDues } from "./TeacherDuesActions";
+import type {
+  DuesCanDecide,
+  DuesDetail,
+  DuesPeriod,
+  DuesTotals,
+} from "./TeacherDuesTypes";
 
 export function DuesMoney({
   totals,
@@ -35,6 +40,8 @@ export default function TeacherDuesDetail({
   canPropose,
   types,
   limitExceeded,
+  canDecide,
+  requiresSecondApprover,
 }: {
   detail: DuesDetail;
   period: DuesPeriod;
@@ -44,6 +51,8 @@ export default function TeacherDuesDetail({
   canPropose: boolean;
   types: string[];
   limitExceeded: boolean;
+  canDecide: DuesCanDecide;
+  requiresSecondApprover: boolean;
 }) {
   const t = useI18n();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -67,11 +76,12 @@ export default function TeacherDuesDetail({
     return value === key ? t(fallback) : value;
   };
   const close = () => router.visit(detail.closeUrl, { preserveScroll: true });
-  const lessons = detail.lessons.filter(
-    (lesson) =>
-      filter === "all" ||
-      (filter === "approved" ? lesson.approved : lesson.awaitingReview),
-  );
+  const lessons = detail.lessons.filter((lesson) => {
+    if (filter === "all") return true;
+    if (filter === "approved") return lesson.approved;
+    if (filter === "undecided") return lesson.neverStarted;
+    return lesson.awaitingReview;
+  });
   const lessonsById = new Map(
     detail.lessons.map((lesson) => [lesson.id, lesson]),
   );
@@ -121,9 +131,19 @@ export default function TeacherDuesDetail({
       </div>
       {detail.counts && (
         <div className="filters operation-field">
-          {["delivered", "approved", "pending", "cancelled", "minutes"].map(
+          {[
+            "delivered",
+            "approved",
+            "pending",
+            "undecided",
+            "cancelled",
+            "minutes",
+          ].map(
             (key) => (
-              <span className="console-status" key={key}>
+              <span
+                className={`console-status ${key === "undecided" && detail.counts?.undecided ? "warning" : ""}`}
+                key={key}
+              >
                 {t(`console_dues.${key}`)} ·{" "}
                 <bdi>
                   {formatNumber(
@@ -143,7 +163,7 @@ export default function TeacherDuesDetail({
       <section className="detail-block operation-field">
         <h3>{t("console_dues.lesson_details")}</h3>
         <div className="filters print:hidden">
-          {["all", "approved", "pending"].map((key) => (
+          {["all", "approved", "pending", "undecided"].map((key) => (
             <button
               type="button"
               key={key}
@@ -159,7 +179,14 @@ export default function TeacherDuesDetail({
           <table className="console-table teacher-sessions">
             <thead>
               <tr>
-                {["lesson", "duration", "status", "snapshot", "counted"].map(
+                {[
+                  "lesson",
+                  "duration",
+                  "status",
+                  "snapshot",
+                  "counted",
+                  "session_decision",
+                ].map(
                   (key) => (
                     <th key={key} scope="col">
                       {t(`console_dues.${key}`)}
@@ -230,6 +257,17 @@ export default function TeacherDuesDetail({
                         ))
                       : t("console_dues.no_entry")}
                   </td>
+                  <td>
+                    {lesson.needsDecision ? (
+                      <LessonDecision
+                        lesson={lesson}
+                        canDecide={canDecide}
+                        currency={currency}
+                      />
+                    ) : (
+                      <span className="cell-sub">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -241,6 +279,11 @@ export default function TeacherDuesDetail({
         <p className="detail-note operation-field">
           {t("console_dues.lesson_note")}
         </p>
+        {!!detail.counts?.undecided && period.canAdjust && (
+          <p className="detail-note operation-field">
+            {t("console_dues.undecided_help")}
+          </p>
+        )}
       </section>
       <section className="detail-block">
         <h3>{t("console_dues.ledger")}</h3>
@@ -390,6 +433,7 @@ export default function TeacherDuesDetail({
           periods={periods}
           currency={currency}
           types={types}
+          requiresSecondApprover={requiresSecondApprover}
         />
       ) : (
         !period.canAdjust && (

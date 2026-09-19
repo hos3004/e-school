@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Payroll\Application\Queries;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -57,6 +58,20 @@ final readonly class TeacherDuesQueryService implements TeacherDuesQueries
                 'canApprove' => $period->status->acceptsAdjustments() && Gate::forUser($actor)->allows('approve', $item),
                 'canReject' => $period->status->acceptsAdjustments() && Gate::forUser($actor)->allows('reject', $item),
             ])->all(), $this->summaries($period, $entries, $adjustments));
+    }
+
+    public function acceptsEntriesOn(string $organizationId, CarbonImmutable $date): bool
+    {
+        $date = $date->utc();
+
+        $period = PayrollPeriod::query()
+            ->forOrganization($organizationId)
+            ->where('year', (int) $date->year)
+            ->where('month', (int) $date->month)
+            ->first();
+
+        // لا فترة بعد: `PayrollPeriodResolver` يفتحها مفتوحة عند أول قيدة.
+        return $period === null || $period->status->acceptsEntries();
     }
 
     /** @param Collection<int, PayrollEntry> $entries

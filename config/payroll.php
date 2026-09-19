@@ -226,15 +226,33 @@ return [
     /*
      * المكافآت والخصومات.
      *
-     * قرار العميل: الإدراج متاح لمشرفين بصلاحيات معيّنة مع كتابة ملحوظة،
-     * والاعتماد لا يتم إلا من مشرف بصلاحية أعلى.
+     * الإدراج متاح لمن يملك صلاحية الاقتراح مع سبب مكتوب إجباري.
+     *
+     * `requires_different_approver` يفترض وجود مشرفَين. المدرسة تُدار اليوم
+     * بمدير واحد، فأثره الفعلي أن **لا تسوية تُعتمد أبدًا** — لا مكافأة ولا
+     * خصم ولا تصحيح — لأن من يقترح هو الوحيد الذي يملك صلاحية الاعتماد.
+     *
+     * إطفاؤه وحده لا يكفي: جدول `payroll_adjustments` يحمل قيدًا على مستوى
+     * قاعدة البيانات (`payroll_adjustments_approval_separation_check`) يمنع
+     * أن يكون `approved_by` هو `proposed_by`، فيسقط الطلب بخطأ SQL بدل رسالة
+     * مفهومة. تمكين الخطوة الواحدة يحتاج هجرة ترفع ذلك القيد، وهي قرار مالك
+     * لم يُنفَّذ بعد (20 سبتمبر 2026). الكود جاهز: الطبقات الثلاث — الإجراء
+     * والسياسة والواجهة — تقرأ هذا الإعداد وحده.
      */
+    /*
+     * سقف الأجر اليدوي للحصة الواحدة بالوحدات الصغرى.
+     *
+     * الأجر اليدوي يدخل دفترًا append-only لا يُصحَّح إلا بتسوية، وخطأ صفر
+     * زائد يكتب مئة ضعف. السقف يحوّل الخطأ المطبعي إلى رسالة رفض بدل قيدة.
+     */
+    'session_manual_amount_max_minor_units' => 100000,
+
     'adjustments' => [
         'types' => ['bonus', 'deduction', 'correction', 'advance', 'reimbursement'],
         'propose_permission' => 'payroll.adjustment.propose',
         'approve_permission' => 'payroll.adjustment.approve',
         'requires_note' => true,
-        'requires_different_approver' => true, // من يقترح لا يعتمد
+        'requires_different_approver' => true, // مقيَّد أيضًا بقيد قاعدة بيانات — اقرأ الشرح أعلاه
         'max_percent_of_period_without_escalation' => 25,
     ],
 
