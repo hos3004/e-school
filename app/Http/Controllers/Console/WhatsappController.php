@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Console\Support\ConsoleContext;
 use App\Http\Controllers\Console\Support\MessagingChannelOptions;
+use App\Http\Controllers\Console\Support\WhatsappCampaignData;
 use App\Http\Controllers\Controller;
 use BackedEnum;
 use Carbon\CarbonImmutable;
@@ -41,6 +42,7 @@ final class WhatsappController extends Controller
         private readonly GreenApiConnections $connections,
         private readonly ManualNotificationRecipientResolver $recipients,
         private readonly ConsoleContext $context,
+        private readonly WhatsappCampaignData $campaigns,
     ) {}
 
     public function __invoke(Request $request): Response
@@ -67,6 +69,17 @@ final class WhatsappController extends Controller
                 ? app(ConsoleSettingsData::class)->whatsappTemplates($organizationId)
                 : [],
             'messaging' => $canSend ? $this->messaging() : null,
+            /*
+             * الحملات مسار ثانٍ للإرسال، موجَّه لأرقام خارج المنصة. يظهر لمن
+             * يملك إنشاء رسالة صادرة نفسه، لا لصلاحية جديدة.
+             */
+            'campaigns' => $canSend ? [
+                ...$this->campaigns->forOrganization($organizationId),
+                'urls' => [
+                    'preview' => route('console.whatsapp.campaigns.preview'),
+                    'store' => route('console.whatsapp.campaigns.store'),
+                ],
+            ] : null,
             'automaticNotice' => (string) __('integrations::whatsapp.automatic_notice'),
             'abilities' => [
                 'send' => $canSend,

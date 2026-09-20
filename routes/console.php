@@ -22,6 +22,14 @@ Schedule::command('notifications:retry-failed')->everyFifteenMinutes()->withoutO
 // توزيع الإشعارات التي حان موعدها إلى عمال قناة الإرسال
 Schedule::command('notifications:dispatch-due')->everyMinute()->withoutOverlapping();
 
+/*
+ * حملات واتساب: شبكة أمان تلتقط ما فات موعده من رسائل الحملات الجارية، ومنظّف
+ * يتلف مرفقاتها بعد مدة الاحتفاظ. التباعد نفسه لا يعتمد على المجدول — لكل
+ * رسالة مهمة مؤجلة إلى موعدها بالثانية.
+ */
+Schedule::command('whatsapp:campaigns-sweep')->everyMinute()->withoutOverlapping();
+Schedule::command('whatsapp:campaigns-prune-media')->hourly()->withoutOverlapping();
+
 Schedule::command('sessions:dispatch-reminders')->everyMinute()->withoutOverlapping();
 Schedule::command('sessions:search-substitutes')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('sessions:end-elapsed')->everyMinute()->withoutOverlapping();

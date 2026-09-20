@@ -4,6 +4,9 @@ import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import AudienceMessaging, {
   type AudienceMessagingData,
 } from "@/Components/Console/AudienceMessaging";
+import WhatsappCampaigns, {
+  type CampaignsData,
+} from "@/Components/Console/WhatsappCampaigns";
 import { WhatsappTemplateSettings } from "@/Pages/Console/SettingsEditors";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/console-format";
@@ -47,6 +50,7 @@ type Props = {
   recent: LogRow[];
   templates: TemplateRow[];
   messaging: AudienceMessagingData | null;
+  campaigns: CampaignsData | null;
   automaticNotice: string;
   abilities: {
     send: boolean;
@@ -80,6 +84,7 @@ export default function Whatsapp({
   recent,
   templates,
   messaging,
+  campaigns,
   automaticNotice,
   abilities,
   urls,
@@ -87,7 +92,7 @@ export default function Whatsapp({
 }: Props) {
   const t = useI18n();
   const [tab, setTab] = useState<
-    "status" | "templates" | "compose" | "log" | "settings"
+    "status" | "templates" | "compose" | "campaigns" | "log" | "settings"
   >("status");
 
   const toggleForm = useForm({ active: !channelEnabled, reason: "" });
@@ -106,7 +111,14 @@ export default function Whatsapp({
     });
   };
 
-  const tabs = ["status", "compose", "templates", "log", "settings"] as const;
+  const tabs = [
+    "status",
+    "compose",
+    ...(campaigns ? (["campaigns"] as const) : []),
+    "templates",
+    "log",
+    "settings",
+  ] as const;
 
   return (
     <ConsoleLayout
@@ -252,6 +264,14 @@ export default function Whatsapp({
             <p className="my-3">{t("console_whatsapp.log.empty")}</p>
           )}
         </>
+      )}
+
+      {tab === "campaigns" && campaigns && (
+        <WhatsappCampaigns
+          data={campaigns}
+          channelEnabled={channelEnabled}
+          displayTimezone={displayTimezone}
+        />
       )}
 
       {tab === "templates" && (

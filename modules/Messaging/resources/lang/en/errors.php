@@ -22,4 +22,13 @@ return [
     'whatsapp_duplicate_message' => 'This WhatsApp message has already been recorded.',
     'whatsapp_already_handled' => 'This message has already been handled.',
     'invalid_recipient' => 'The recipient is unavailable or outside your organization.',
+
+    // WhatsApp campaigns
+    'campaign_delay_range_invalid' => 'The shortest gap cannot exceed the longest gap.',
+    'campaign_recipients_empty' => 'The list holds no usable number.',
+    'campaign_recipients_exceeded' => 'The list exceeds the limit for one campaign (:max).',
+    'campaign_media_store_failed' => 'The attachment could not be stored on the server.',
+    'campaign_not_startable' => 'The campaign cannot be started from its current state.',
+    'campaign_not_stoppable' => 'The campaign cannot be stopped from its current state.',
+    'campaign_channel_disabled' => 'The WhatsApp channel is off — switch it on before starting a campaign.',
 ];

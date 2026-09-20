@@ -12,6 +12,7 @@ use App\Http\Controllers\Console\SessionPayController;
 use App\Http\Controllers\Console\SettingsController;
 use App\Http\Controllers\Console\SettingsOperationsController;
 use App\Http\Controllers\Console\TeacherFinancialVisibilityController;
+use App\Http\Controllers\Console\WhatsappCampaignController;
 use App\Http\Controllers\Console\WhatsappController;
 use App\Http\Controllers\Console\WorkspaceController;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +44,18 @@ Route::prefix('whatsapp')->name('whatsapp.')->group(function (): void {
         ->middleware('can:integrations.connection.update')->name('toggle');
     Route::post('preview', [WhatsappController::class, 'preview'])
         ->middleware('can:notifications.outbox.create')->name('preview');
+
+    /*
+     * الحملات: إرسال جماعي إلى قائمة أرقام لا تملك حسابات على المنصة. مفتاح
+     * إيقاف القناة أعلاه يسري عليها أيضًا — المهمة تفحصه قبل كل رسالة.
+     */
+    Route::middleware('can:notifications.outbox.create')->prefix('campaigns')->name('campaigns.')->group(function (): void {
+        Route::post('preview', [WhatsappCampaignController::class, 'preview'])->name('preview');
+        Route::post('/', [WhatsappCampaignController::class, 'store'])->name('store');
+        Route::get('{campaign}', [WhatsappCampaignController::class, 'show'])->whereUlid('campaign')->name('show');
+        Route::post('{campaign}/start', [WhatsappCampaignController::class, 'start'])->whereUlid('campaign')->name('start');
+        Route::post('{campaign}/stop', [WhatsappCampaignController::class, 'stop'])->whereUlid('campaign')->name('stop');
+    });
 });
 
 /*
