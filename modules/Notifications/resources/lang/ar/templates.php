@@ -15,15 +15,18 @@ return [
     ],
     'registration.submitted' => [
         'subject' => 'تم استلام طلب التسجيل',
-        'body' => 'تم استلام طلب التسجيل، وسيصلك إشعار عند اكتمال المراجعة.',
+        'body' => 'استلمنا طلب التحاق {{full_name}}. الكورس المطلوب: {{course_name}} — تاريخ التقديم: {{submitted_at}}. الطلب الآن قيد مراجعة الإدارة، وسيصلك إشعار بالقرار فور اكتمالها.',
+        'parameters' => ['full_name', 'course_name', 'submitted_at'],
     ],
     'registration.approved' => [
         'subject' => 'تم اعتماد التسجيل',
-        'body' => 'تم اعتماد طلب التسجيل بنجاح. يمكنك الآن متابعة خطوات البدء.',
+        'body' => 'تم قبول طلب التحاق {{student_name}}. الكورس: {{course_name}} — كود الطالب: {{student_code}}. الخطوة التالية عند الإدارة: تحديد المعلم ومواعيد الحصص، وسيصلك إشعار بالجدول فور اعتماده، ولا يلزمك أي إجراء الآن.',
+        'parameters' => ['student_name', 'course_name', 'student_code'],
     ],
     'registration.rejected' => [
         'subject' => 'تحديث طلب التسجيل',
-        'body' => 'تعذّر اعتماد طلب التسجيل. راجع تفاصيل الطلب أو تواصل مع الإدارة.',
+        'body' => 'تعذّر قبول طلب التحاق {{student_name}}. الكورس: {{course_name}} — السبب: {{reason}}. يمكنك التواصل مع الإدارة لمعرفة التفاصيل أو تقديم طلب جديد.',
+        'parameters' => ['student_name', 'course_name', 'reason'],
     ],
     'teacher.availability.approved' => [
         'subject' => 'تم اعتماد الإتاحة',

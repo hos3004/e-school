@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Students\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Students\Application\Services\RegistrationNotificationDetails;
 use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Events\RegistrationRejected;
 use Modules\Students\Domain\Models\RegistrationApplication;
@@ -16,6 +17,7 @@ final readonly class RejectRegistrationApplicationAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private RegistrationNotificationDetails $details,
     ) {}
 
     public function execute(RegistrationApplication $application, string $reason, string $reviewerUserId): RegistrationApplication
@@ -58,6 +60,11 @@ final readonly class RejectRegistrationApplicationAction
             organizationId: (string) $application->organization_id,
             reason: $reason,
             studentUserId: $application->user_id,
+            studentName: $application->full_name,
+            courseName: $this->details->courseName(
+                (string) $application->organization_id,
+                $application->preferred_course_id,
+            ),
             actorId: $reviewerUserId,
         ));
 

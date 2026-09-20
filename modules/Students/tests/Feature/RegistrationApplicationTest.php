@@ -198,6 +198,42 @@ final class RegistrationApplicationTest extends TestCase
         );
     }
 
+    /*
+     * رسالة القبول تعرض الطالب والكورس وكوده؛ الحدث مصدرها الوحيد. طلب بلا
+     * كورس مفضّل يأخذ النص البديل المترجم — ولا يخرج بقيمة فارغة تُسقط الإشعار.
+     */
+    public function test_acceptance_event_carries_the_message_details(): void
+    {
+        Event::fake([RegistrationAccepted::class]);
+        $application = $this->submittedApplication('accepted-details@example.test');
+
+        app(AcceptRegistrationApplicationAction::class)->execute(
+            $application,
+            Fixtures::userId(),
+            'Meets the configured admission requirements.',
+        );
+
+        Event::assertDispatched(
+            RegistrationAccepted::class,
+            function (RegistrationAccepted $event) use ($application): bool {
+                $this->assertSame($application->full_name, $event->studentName);
+                $this->assertNotSame('', $event->studentCode);
+                $this->assertSame(
+                    (string) StudentProfile::query()->firstOrFail()->student_code,
+                    $event->studentCode,
+                );
+                $this->assertNotSame([], $event->courseName);
+
+                foreach ($event->courseName as $name) {
+                    $this->assertNotSame('', trim($name));
+                    $this->assertStringNotContainsString('students::', $name);
+                }
+
+                return true;
+            },
+        );
+    }
+
     private function draftApplication(string $email): RegistrationApplication
     {
         /** @var GeographyQueries $geography */

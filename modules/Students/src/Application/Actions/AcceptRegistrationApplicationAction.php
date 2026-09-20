@@ -6,6 +6,7 @@ namespace Modules\Students\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Students\Application\Services\RegistrationNotificationDetails;
 use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Events\RegistrationAccepted;
 use Modules\Students\Domain\Models\RegistrationApplication;
@@ -21,6 +22,7 @@ final readonly class AcceptRegistrationApplicationAction
         private Dispatcher $events,
         private AuditRecorder $audit,
         private EntityCodeGenerator $codes,
+        private RegistrationNotificationDetails $details,
     ) {}
 
     public function execute(
@@ -38,7 +40,7 @@ final readonly class AcceptRegistrationApplicationAction
             );
         }
 
-        /** @var array{0: RegistrationApplication, 1: bool} $result */
+        /** @var array{0: RegistrationApplication, 1: bool, 2: string|null} $result */
         $result = $this->transaction->run(function () use ($application, $reviewerUserId, $reason): array {
             /** @var RegistrationApplication $locked */
             $locked = RegistrationApplication::query()
@@ -46,7 +48,7 @@ final readonly class AcceptRegistrationApplicationAction
                 ->findOrFail($application->getKey());
 
             if ($locked->status === RegistrationStatus::WaitingAssignment && $locked->student_profile_id !== null) {
-                return [$locked, false];
+                return [$locked, false, null];
             }
 
             if ($locked->status !== RegistrationStatus::Accepted
@@ -112,10 +114,10 @@ final readonly class AcceptRegistrationApplicationAction
                 reason: $reason,
             );
 
-            return [$locked, true];
+            return [$locked, true, (string) $profile->student_code];
         });
 
-        [$application, $created] = $result;
+        [$application, $created, $studentCode] = $result;
 
         if ($created) {
             $this->events->dispatch(new RegistrationAccepted(
@@ -123,6 +125,12 @@ final readonly class AcceptRegistrationApplicationAction
                 organizationId: (string) $application->organization_id,
                 studentProfileId: (string) $application->student_profile_id,
                 studentUserId: (string) $application->user_id,
+                studentName: $application->full_name,
+                courseName: $this->details->courseName(
+                    (string) $application->organization_id,
+                    $application->preferred_course_id,
+                ),
+                studentCode: (string) $studentCode,
                 actorId: $reviewerUserId,
             ));
         }

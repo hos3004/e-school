@@ -6,6 +6,7 @@ namespace Modules\Students\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Students\Application\Services\RegistrationNotificationDetails;
 use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Events\RegistrationSubmitted;
 use Modules\Students\Domain\Models\RegistrationApplication;
@@ -17,6 +18,7 @@ final readonly class SubmitRegistrationApplicationAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private RegistrationNotificationDetails $details,
     ) {}
 
     /**
@@ -62,6 +64,12 @@ final readonly class SubmitRegistrationApplicationAction
             organizationId: (string) $application->organization_id,
             fullName: $application->full_name,
             studentUserId: $application->user_id,
+            courseName: $this->details->courseName(
+                (string) $application->organization_id,
+                $application->preferred_course_id,
+            ),
+            // الحدث ينشر UTC؛ محرّك الإشعارات يحوّله إلى توقيت كل مستلم ولغته.
+            submittedAt: ($application->submitted_at ?? now()->utc())->toIso8601String(),
         ));
 
         return $application;

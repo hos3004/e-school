@@ -50,4 +50,13 @@ return [
     'duplicate' => 'Doublon potentiel',
     'duplicate_yes' => 'Oui',
     'duplicate_no' => 'Non',
+
+    /*
+     * Textes injectés dans les notifications comme valeurs de paramètres. Un
+     * paramètre manquant supprime toute la notification : une demande sans
+     * cours souhaité utilise donc ce texte de repli.
+     */
+    'notifications' => [
+        'course_unspecified' => 'Non encore choisi',
+    ],
 ];

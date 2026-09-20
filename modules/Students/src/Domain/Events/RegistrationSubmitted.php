@@ -12,14 +12,23 @@ use Shared\Domain\DomainEvent;
  *
  * التقديم **ليس قبولًا**: لا يوجد بعدُ ملف طالب ولا قيد ولا عضوية مجموعة
  * (docs/client-answers.md §أ). الحدث إخطاري ليصل الطلب إلى مراجعة الإدارة.
+ *
+ * الكورس المطلوب وتاريخ التقديم جزء من الحدث لأن الإشعار يعرضهما: بدونهما
+ * تصل رسالة واحدة لا تفرّق بين طلبين لنفس الطالب. اسم الكورس خريطة لغات،
+ * وتاريخ التقديم UTC يحوّله المحرّك إلى توقيت المستلم ولغته.
  */
 final class RegistrationSubmitted extends DomainEvent implements ShouldDispatchAfterCommit
 {
+    /**
+     * @param array<string, string> $courseName
+     */
     public function __construct(
         public readonly string $applicationId,
         public readonly string $organizationId,
         public readonly string $fullName,
         public readonly ?string $studentUserId,
+        public readonly array $courseName,
+        public readonly string $submittedAt,
         ?string $actorId = null,
         ?string $correlationId = null,
     ) {
@@ -46,6 +55,8 @@ final class RegistrationSubmitted extends DomainEvent implements ShouldDispatchA
             'organization_id' => $this->organizationId,
             'full_name' => $this->fullName,
             'student_user_id' => $this->studentUserId,
+            'course_name' => $this->courseName,
+            'submitted_at' => $this->submittedAt,
         ];
     }
 }
