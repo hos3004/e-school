@@ -6,6 +6,7 @@ namespace Modules\Messaging\Application\Actions;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Messaging\Application\Services\CampaignRecipientListBuilder;
 use Modules\Messaging\Domain\Enums\WhatsappCampaignRecipientStatus;
 use Modules\Messaging\Domain\Enums\WhatsappCampaignStatus;
@@ -25,6 +26,7 @@ final readonly class CreateWhatsappCampaignAction
 {
     public function __construct(
         private CampaignRecipientListBuilder $listBuilder,
+        private AuditRecorder $audit,
         private Transaction $transaction,
     ) {}
 
@@ -76,7 +78,7 @@ final readonly class CreateWhatsappCampaignAction
          */
         $stored = $this->storeMedia($organizationId, $media);
 
-        return $this->transaction->run(function () use (
+        $campaign = $this->transaction->run(function () use (
             $organizationId,
             $actorId,
             $name,
@@ -150,6 +152,32 @@ final readonly class CreateWhatsappCampaignAction
 
             return $campaign;
         });
+
+        /*
+         * إرسال جماعي إلى أرقام خارج المنصة تغييرٌ حسّاس له سببٌ مكتوب، فيدخل
+         * سجل التدقيق كما يدخله نظيره في صندوق الصادر.
+         */
+        $this->audit->record(
+            organizationId: $organizationId,
+            actorId: $actorId,
+            actorType: 'user',
+            action: 'messaging.whatsapp_campaign_created',
+            auditableType: 'whatsapp_campaign',
+            auditableId: (string) $campaign->getKey(),
+            oldValues: null,
+            newValues: [
+                'name' => $name,
+                'accepted_count' => count($list['accepted']),
+                'rejected_count' => count($list['rejected']),
+                'duplicate_count' => $list['duplicates'],
+                'media_count' => count($stored),
+                'delay_min_seconds' => $delayMinSeconds,
+                'delay_max_seconds' => $delayMaxSeconds,
+            ],
+            reason: $reason,
+        );
+
+        return $campaign;
     }
 
     /**

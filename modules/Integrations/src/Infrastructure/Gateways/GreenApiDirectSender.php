@@ -58,7 +58,7 @@ final readonly class GreenApiDirectSender implements WhatsAppDirectSender
     public function sendFile(
         string $organizationId,
         string $phone,
-        string $absolutePath,
+        $contents,
         string $fileName,
         ?string $caption = null,
     ): GatewayResult {
@@ -68,13 +68,7 @@ final readonly class GreenApiDirectSender implements WhatsAppDirectSender
             return $this->permanentFailure('whatsapp_configuration_invalid');
         }
 
-        if (!is_readable($absolutePath)) {
-            return $this->permanentFailure('whatsapp_media_missing');
-        }
-
-        $handle = @fopen($absolutePath, 'rb');
-
-        if ($handle === false) {
+        if (!is_resource($contents)) {
             return $this->permanentFailure('whatsapp_media_unreadable');
         }
 
@@ -88,19 +82,13 @@ final readonly class GreenApiDirectSender implements WhatsAppDirectSender
             $fields[] = ['name' => 'caption', 'contents' => mb_substr(trim($caption), 0, 1000)];
         }
 
-        try {
-            return $this->dispatch(
-                fn (PendingRequest $request, string $base): Response => $request
-                    ->attach('file', $handle, $fileName)
-                    ->post($this->endpoint($base, $configuration, 'sendFileByUpload'), $fields),
-                $configuration,
-                $configuration['media_url'],
-            );
-        } finally {
-            if (is_resource($handle)) {
-                fclose($handle);
-            }
-        }
+        return $this->dispatch(
+            fn (PendingRequest $request, string $base): Response => $request
+                ->attach('file', $contents, $fileName)
+                ->post($this->endpoint($base, $configuration, 'sendFileByUpload'), $fields),
+            $configuration,
+            $configuration['media_url'],
+        );
     }
 
     /**

@@ -57,12 +57,33 @@ type Props = {
   displayTimezone: string;
 };
 
+/*
+ * أسباب الفشل ليست قائمة مغلقة: المزوّد يردّ بنصّه هو، فأي سبب بلا ترجمة كان
+ * سيظهر للمرسِل مفتاحًا خامًا مثل console_whatsapp.campaigns.reasons.Bad request.
+ * النص الأصلي أنفع له من اسم مفتاح.
+ */
+function useReasonText(): (reason: string | null) => string {
+  const t = useI18n();
+
+  return (reason) => {
+    if (reason === null || reason.trim() === "") {
+      return "";
+    }
+
+    const key = "console_whatsapp.campaigns.reasons." + reason;
+    const translated = t(key);
+
+    return translated === key ? reason : translated;
+  };
+}
+
 export default function WhatsappCampaigns({
   data,
   channelEnabled,
   displayTimezone,
 }: Props) {
   const t = useI18n();
+  const reasonText = useReasonText();
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [previewFailed, setPreviewFailed] = useState(false);
@@ -401,7 +422,7 @@ export default function WhatsappCampaigns({
                     <li key={index} className="text-sm">
                       <span dir="ltr">{row.phone_input}</span>
                       {row.name ? ` — ${row.name}` : ""} —{" "}
-                      {t("console_whatsapp.campaigns.reasons." + row.reason)}
+                      {reasonText(row.reason)}
                     </li>
                   ))}
                 </ul>
@@ -543,6 +564,7 @@ type ProblemRow = {
 
 function CampaignProblems({ campaignId }: { campaignId: string }) {
   const t = useI18n();
+  const reasonText = useReasonText();
   const [rows, setRows] = useState<ProblemRow[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -607,7 +629,7 @@ function CampaignProblems({ campaignId }: { campaignId: string }) {
             <span dir="ltr">{row.phone_input}</span>
             {row.name ? ` — ${row.name}` : ""}
             {row.reason
-              ? ` — ${t("console_whatsapp.campaigns.reasons." + row.reason)}`
+              ? ` — ${reasonText(row.reason)}`
               : ""}
           </li>
         ))}

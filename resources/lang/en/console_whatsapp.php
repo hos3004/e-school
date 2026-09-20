@@ -182,6 +182,12 @@ return [
             'channel_disabled' => 'The WhatsApp channel was switched off before their turn came',
             'interrupted' => 'Sending broke off before the result was known — check before sending again',
             'whatsapp_media_missing' => 'The attachment is no longer on the server',
+            'whatsapp_media_unreadable' => 'The attachment could not be read',
+            'whatsapp_network_error' => 'The provider could not be reached',
+            'whatsapp_provider_error' => 'The provider rejected the message',
+            'whatsapp_provider_response_invalid' => 'The provider replied with something unreadable',
+            'whatsapp_configuration_invalid' => 'The provider connection settings are incomplete',
+            'whatsapp_body_empty' => 'The message text is empty once the name is filled in',
         ],
 
         'errors' => [

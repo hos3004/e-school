@@ -185,6 +185,12 @@ return [
             'channel_disabled' => 'أُوقفت قناة واتساب قبل أن يأتي دوره',
             'interrupted' => 'انقطع الإرسال قبل تأكيد النتيجة — تحقّق قبل إعادة الإرسال',
             'whatsapp_media_missing' => 'المرفق لم يعد موجودًا على الخادم',
+            'whatsapp_media_unreadable' => 'تعذّرت قراءة المرفق',
+            'whatsapp_network_error' => 'تعذّر الوصول إلى المزوّد',
+            'whatsapp_provider_error' => 'المزوّد رفض الرسالة',
+            'whatsapp_provider_response_invalid' => 'ردّ المزوّد غير مفهوم',
+            'whatsapp_configuration_invalid' => 'إعداد الاتصال بالمزوّد ناقص',
+            'whatsapp_body_empty' => 'نص الرسالة فارغ بعد استبدال الاسم',
         ],
 
         'errors' => [

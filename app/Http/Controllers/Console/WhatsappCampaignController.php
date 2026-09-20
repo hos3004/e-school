@@ -108,7 +108,7 @@ final class WhatsappCampaignController extends Controller
         $this->authorizeCampaign($request, 'start', $campaign);
 
         try {
-            $start->execute($campaign);
+            $start->execute($campaign, (string) $request->user()?->getAuthIdentifier());
         } catch (BusinessRuleViolation $error) {
             return back()->withErrors(['campaign' => $error->getMessage()]);
         }
@@ -128,7 +128,11 @@ final class WhatsappCampaignController extends Controller
         ]);
 
         try {
-            $campaign = $stop->execute($campaign, (string) $input['reason']);
+            $campaign = $stop->execute(
+                $campaign,
+                (string) $input['reason'],
+                (string) $request->user()?->getAuthIdentifier(),
+            );
         } catch (BusinessRuleViolation $error) {
             return back()->withErrors(['campaign' => $error->getMessage()]);
         }

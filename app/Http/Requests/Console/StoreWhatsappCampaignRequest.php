@@ -30,6 +30,12 @@ final class StoreWhatsappCampaignRequest extends FormRequest
         $floor = (int) ($delay['floor_seconds'] ?? 3);
         $ceiling = (int) ($delay['ceiling_seconds'] ?? 3600);
 
+        /** @var list<string> $allowedMimeTypes */
+        $allowedMimeTypes = array_values(array_filter(
+            (array) ($media['allowed_mime_types'] ?? []),
+            static fn (mixed $type): bool => is_string($type) && $type !== '',
+        ));
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:20000'],
@@ -55,7 +61,10 @@ final class StoreWhatsappCampaignRequest extends FormRequest
             'media.*' => [
                 'file',
                 'max:'.(int) ($media['max_size_kilobytes'] ?? 16384),
-                'mimetypes:'.implode(',', (array) ($media['allowed_mime_types'] ?? [])),
+                // قائمة فارغة في الإعداد تعني «لا نوع مسموح»، لا «كل نوع مسموح».
+                $allowedMimeTypes === []
+                    ? 'mimetypes:application/x-nothing-allowed'
+                    : 'mimetypes:'.implode(',', $allowedMimeTypes),
             ],
         ];
     }

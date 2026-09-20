@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Messaging\Application\Actions;
 
 use Carbon\CarbonImmutable;
+use Modules\Messaging\Domain\Enums\WhatsappCampaignRecipientStatus;
 use Modules\Messaging\Domain\Enums\WhatsappCampaignStatus;
 use Modules\Messaging\Domain\Models\WhatsappCampaign;
 use Modules\Messaging\Domain\Models\WhatsappCampaignRecipient;
@@ -20,12 +21,16 @@ final class SettleWhatsappCampaignAction
 {
     public function execute(string $campaignId): bool
     {
-        $stillPending = WhatsappCampaignRecipient::query()
+        // المحجوز في sending يشغل الحملة كما يشغلها المنتظِر: محاولته لم تُحسم بعد.
+        $stillOpen = WhatsappCampaignRecipient::query()
             ->where('campaign_id', $campaignId)
-            ->pending()
+            ->whereIn('status', [
+                WhatsappCampaignRecipientStatus::Pending,
+                WhatsappCampaignRecipientStatus::Sending,
+            ])
             ->exists();
 
-        if ($stillPending) {
+        if ($stillOpen) {
             return false;
         }
 

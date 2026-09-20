@@ -6,15 +6,21 @@ namespace Modules\Messaging\Application\Console;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
+use Modules\Messaging\Domain\Enums\WhatsappCampaignStatus;
 use Modules\Messaging\Domain\Models\WhatsappCampaign;
 use Modules\Messaging\Domain\Models\WhatsappCampaignMedia;
 
 /**
- * إتلاف مرفقات الحملات المنتهية بعد مدة الاحتفاظ.
+ * إتلاف مرفقات الحملات بعد مدة الاحتفاظ.
  *
  * الملف يُحذف ويبقى سطره في الجدول موسومًا بموعد حذفه: سجلّ الحملة يظل يقول
  * ماذا أُرسل مع الرسالة وإن لم تعد نسخته محفوظة. المدة إعداد لا رقم في الكود.
+ *
+ * تشمل المسودّة المهجورة أيضًا: حملة أُنشئت بمرفقاتها ولم تُبدأ قط ليس لها
+ * موعد انتهاء، فلو عُلّق الإتلاف على انتهائها وحده لبقيت ملفاتها على الخادم
+ * إلى الأبد — ووعدُ «تُحذف بعد أسبوع» لا يستثني ما لم يُرسَل.
  */
 final class PruneWhatsappCampaignMedia extends Command
 {
@@ -26,10 +32,24 @@ final class PruneWhatsappCampaignMedia extends Command
     {
         $now = CarbonImmutable::now('UTC');
 
+        $abandonedBefore = $now->subDays(max(1, (int) config('messaging.campaigns.media.retention_days', 7)));
+
         $campaignIds = WhatsappCampaign::query()
-            ->whereNotNull('media_expires_at')
-            ->where('media_expires_at', '<=', $now)
             ->whereNull('media_pruned_at')
+            ->where(function (Builder $query) use ($now, $abandonedBefore): void {
+                $query
+                    ->where(function (Builder $expired) use ($now): void {
+                        $expired
+                            ->whereNotNull('media_expires_at')
+                            ->where('media_expires_at', '<=', $now);
+                    })
+                    ->orWhere(function (Builder $abandoned) use ($abandonedBefore): void {
+                        $abandoned
+                            ->whereNull('media_expires_at')
+                            ->where('status', WhatsappCampaignStatus::Draft)
+                            ->where('created_at', '<=', $abandonedBefore);
+                    });
+            })
             ->pluck('id')
             ->all();
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Messaging\Application\Actions;
 
 use Carbon\CarbonImmutable;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Integrations\Domain\Contracts\GreenApiConnections;
 use Modules\Messaging\Application\Jobs\SendWhatsappCampaignMessage;
 use Modules\Messaging\Domain\Enums\WhatsappCampaignStatus;
@@ -25,10 +26,11 @@ final readonly class StartWhatsappCampaignAction
 {
     public function __construct(
         private GreenApiConnections $connections,
+        private AuditRecorder $audit,
         private Transaction $transaction,
     ) {}
 
-    public function execute(WhatsappCampaign $campaign): WhatsappCampaign
+    public function execute(WhatsappCampaign $campaign, ?string $actorId = null): WhatsappCampaign
     {
         if (!$campaign->status->canTransitionTo(WhatsappCampaignStatus::Running)) {
             throw BusinessRuleViolation::make(
@@ -90,6 +92,22 @@ final readonly class StartWhatsappCampaignAction
                 ->onQueue($queue)
                 ->delay($start->addSeconds($offsetSeconds));
         }
+
+        $this->audit->record(
+            organizationId: $campaign->organization_id,
+            actorId: $actorId,
+            actorType: 'user',
+            action: 'messaging.whatsapp_campaign_started',
+            auditableType: 'whatsapp_campaign',
+            auditableId: (string) $campaign->getKey(),
+            oldValues: ['status' => WhatsappCampaignStatus::Draft->value],
+            newValues: [
+                'status' => WhatsappCampaignStatus::Running->value,
+                'recipient_count' => count($schedule),
+                'span_seconds' => $offsetSeconds,
+            ],
+            reason: $campaign->reason,
+        );
 
         return $campaign->refresh();
     }

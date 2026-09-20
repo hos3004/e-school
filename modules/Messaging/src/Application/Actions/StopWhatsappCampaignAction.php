@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Messaging\Application\Actions;
 
 use Carbon\CarbonImmutable;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Messaging\Domain\Enums\WhatsappCampaignRecipientStatus;
 use Modules\Messaging\Domain\Enums\WhatsappCampaignStatus;
 use Modules\Messaging\Domain\Models\WhatsappCampaign;
@@ -21,10 +22,11 @@ use Shared\Support\Transaction;
 final readonly class StopWhatsappCampaignAction
 {
     public function __construct(
+        private AuditRecorder $audit,
         private Transaction $transaction,
     ) {}
 
-    public function execute(WhatsappCampaign $campaign, string $reason): WhatsappCampaign
+    public function execute(WhatsappCampaign $campaign, string $reason, ?string $actorId = null): WhatsappCampaign
     {
         if (!$campaign->status->canTransitionTo(WhatsappCampaignStatus::Stopped)) {
             throw BusinessRuleViolation::make(
@@ -33,8 +35,15 @@ final readonly class StopWhatsappCampaignAction
             );
         }
 
-        $this->transaction->run(function () use ($campaign, $reason): void {
-            WhatsappCampaignRecipient::query()
+        $previousStatus = $campaign->status;
+        $cancelled = 0;
+
+        $this->transaction->run(function () use ($campaign, $reason, &$cancelled): void {
+            /*
+             * المحجوز في sending لا يُلغى: مهمته تنادي المزوّد الآن، وقد قبل
+             * رسالته بالفعل. تكتب هي نتيجتها، والزر يضمن ما لم يخرج بعد.
+             */
+            $cancelled = WhatsappCampaignRecipient::query()
                 ->where('campaign_id', $campaign->getKey())
                 ->pending()
                 ->update([
@@ -49,6 +58,21 @@ final readonly class StopWhatsappCampaignAction
                 ->addDays((int) config('messaging.campaigns.media.retention_days', 7));
             $campaign->save();
         });
+
+        $this->audit->record(
+            organizationId: $campaign->organization_id,
+            actorId: $actorId,
+            actorType: 'user',
+            action: 'messaging.whatsapp_campaign_stopped',
+            auditableType: 'whatsapp_campaign',
+            auditableId: (string) $campaign->getKey(),
+            oldValues: ['status' => $previousStatus->value],
+            newValues: [
+                'status' => WhatsappCampaignStatus::Stopped->value,
+                'cancelled_count' => $cancelled,
+            ],
+            reason: $reason,
+        );
 
         return $campaign->refresh();
     }

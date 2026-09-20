@@ -182,6 +182,12 @@ return [
             'channel_disabled' => 'Le canal WhatsApp a été coupé avant son tour',
             'interrupted' => 'L\'envoi s\'est interrompu avant d\'en connaître l\'issue — vérifiez avant de renvoyer',
             'whatsapp_media_missing' => 'La pièce jointe n\'est plus sur le serveur',
+            'whatsapp_media_unreadable' => 'La pièce jointe n\'a pas pu être lue',
+            'whatsapp_network_error' => 'Le fournisseur est injoignable',
+            'whatsapp_provider_error' => 'Le fournisseur a rejeté le message',
+            'whatsapp_provider_response_invalid' => 'Réponse illisible du fournisseur',
+            'whatsapp_configuration_invalid' => 'Les paramètres de connexion au fournisseur sont incomplets',
+            'whatsapp_body_empty' => 'Le texte du message est vide une fois le nom inséré',
         ],
 
         'errors' => [

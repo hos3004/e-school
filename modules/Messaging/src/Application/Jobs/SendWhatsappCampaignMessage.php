@@ -27,9 +27,9 @@ use Throwable;
 /**
  * إرسال رسالة حملة إلى مستلم واحد.
  *
- * المهمة تحجز سطر المستلم بشرطٍ ذرّي قبل أي نداء للمزوّد: تكرار توزيع نفس
- * المستلم — من شبكة الأمان مع مهمته المؤجلة الأصلية مثلًا — يجب ألا يعني
- * رسالتين لنفس الشخص. من يخسر السباق على السطر ينصرف بلا إرسال.
+ * المهمة تحجز السطر بنقله إلى sending قبل أي نداء للمزوّد. الحجز تحديثٌ مشروط
+ * على الحالة، فمن يخسر السباق ينصرف بلا إرسال: توزيع المستلم نفسه مرتين — من
+ * شبكة الأمان مع مهمته الأصلية مثلًا — لا يعني رسالتين لنفس الشخص.
  */
 final class SendWhatsappCampaignMessage implements ShouldQueue
 {
@@ -66,13 +66,15 @@ final class SendWhatsappCampaignMessage implements ShouldQueue
             return;
         }
 
+        $campaignId = (string) $campaign->getKey();
+
         /*
          * مفتاح إيقاف القناة يجب أن يصدق على الحملات كما يصدق على صندوق
          * الصادر: من ضغط «أوقف واتساب» لا يقبل أن تكمل حملة الخروج بعده.
          */
         if (!$connections->isChannelEnabled($campaign->organization_id)) {
-            $this->claim($recipient, WhatsappCampaignRecipientStatus::Cancelled, 'channel_disabled');
-            $settle->execute((string) $campaign->getKey());
+            $this->close($recipient, WhatsappCampaignRecipientStatus::Cancelled, 'channel_disabled');
+            $settle->execute($campaignId);
 
             return;
         }
@@ -80,39 +82,47 @@ final class SendWhatsappCampaignMessage implements ShouldQueue
         $phone = $recipient->phone;
 
         if ($phone === null) {
-            $this->claim($recipient, WhatsappCampaignRecipientStatus::Failed, 'phone_missing');
-            $settle->execute((string) $campaign->getKey());
+            $this->close($recipient, WhatsappCampaignRecipientStatus::Failed, 'phone_missing');
+            $settle->execute($campaignId);
 
             return;
         }
 
-        if (!$this->claim($recipient, WhatsappCampaignRecipientStatus::Pending, null)) {
+        if (!$this->claim($recipient)) {
             return;
         }
 
         $result = $this->deliver($sender, $composer, $campaign, $recipient, $phone);
 
-        if ($result['accepted']) {
-            WhatsappCampaignRecipient::query()->whereKey($recipient->getKey())->update([
-                'status' => WhatsappCampaignRecipientStatus::Sent,
-                'external_message_id' => $result['external_message_id'],
-                'failure_reason' => null,
-                'sent_at' => CarbonImmutable::now('UTC'),
-                'updated_at' => CarbonImmutable::now('UTC'),
-            ]);
+        /*
+         * الكتابة النهائية مشروطة ببقاء السطر محجوزًا لهذه المهمة: إن كانت شبكة
+         * الأمان قد أغلقته interrupted أثناء نداء المزوّد، فلا يُبعث حيًّا ولا
+         * يُزاد عدّاد على حسابه — وإلا تجاوز مجموعُ العدّادات عددَ المستلمين.
+         */
+        $closed = WhatsappCampaignRecipient::query()
+            ->whereKey($recipient->getKey())
+            ->where('status', WhatsappCampaignRecipientStatus::Sending)
+            ->update($result['accepted']
+                ? [
+                    'status' => WhatsappCampaignRecipientStatus::Sent->value,
+                    'external_message_id' => $result['external_message_id'],
+                    'failure_reason' => null,
+                    'sent_at' => CarbonImmutable::now('UTC'),
+                    'updated_at' => CarbonImmutable::now('UTC'),
+                ]
+                : [
+                    'status' => WhatsappCampaignRecipientStatus::Failed->value,
+                    'failure_reason' => mb_substr((string) $result['error'], 0, 255),
+                    'updated_at' => CarbonImmutable::now('UTC'),
+                ]) === 1;
 
-            WhatsappCampaign::query()->whereKey($campaign->getKey())->increment('sent_count');
-        } else {
-            WhatsappCampaignRecipient::query()->whereKey($recipient->getKey())->update([
-                'status' => WhatsappCampaignRecipientStatus::Failed,
-                'failure_reason' => mb_substr((string) $result['error'], 0, 255),
-                'updated_at' => CarbonImmutable::now('UTC'),
-            ]);
-
-            WhatsappCampaign::query()->whereKey($campaign->getKey())->increment('failed_count');
+        if ($closed) {
+            WhatsappCampaign::query()
+                ->whereKey($campaignId)
+                ->increment($result['accepted'] ? 'sent_count' : 'failed_count');
         }
 
-        $settle->execute((string) $campaign->getKey());
+        $settle->execute($campaignId);
     }
 
     /**
@@ -139,9 +149,28 @@ final class SendWhatsappCampaignMessage implements ShouldQueue
              * أقصر من نص الحملة، وإلحاق النص بأول مرفق كان يقصّه بلا إنذار.
              */
             foreach ($media as $file) {
-                $path = Storage::disk($file->disk)->path($file->path);
+                $disk = Storage::disk($file->disk);
 
-                $result = $sender->sendFile($campaign->organization_id, $phone, $path, $file->original_name);
+                if (!$disk->exists($file->path)) {
+                    return ['accepted' => false, 'error' => 'whatsapp_media_missing', 'external_message_id' => null];
+                }
+
+                $stream = $disk->readStream($file->path);
+
+                if (!is_resource($stream)) {
+                    return ['accepted' => false, 'error' => 'whatsapp_media_unreadable', 'external_message_id' => null];
+                }
+
+                try {
+                    $result = $sender->sendFile(
+                        $campaign->organization_id,
+                        $phone,
+                        $stream,
+                        $file->original_name,
+                    );
+                } finally {
+                    fclose($stream);
+                }
 
                 if (!$result->isAccepted()) {
                     return $this->failure($result);
@@ -179,29 +208,35 @@ final class SendWhatsappCampaignMessage implements ShouldQueue
     }
 
     /**
-     * حجز السطر: التحديث المشروط على الحالة الحالية هو ما يمنع إرسالين.
-     *
-     * حجز بحالة Pending يعني «أنا من يعالجه الآن» ويُثبت ذلك بزيادة المحاولات.
+     * حجز السطر: pending → sending. التحديث المشروط هو ما يمنع إرسالين.
      */
-    private function claim(
-        WhatsappCampaignRecipient $recipient,
-        WhatsappCampaignRecipientStatus $status,
-        ?string $failureReason,
-    ): bool {
-        $values = [
-            'attempts' => DB::raw('attempts + 1'),
-            'updated_at' => CarbonImmutable::now('UTC'),
-        ];
-
-        if ($status !== WhatsappCampaignRecipientStatus::Pending) {
-            $values['status'] = $status->value;
-            $values['failure_reason'] = $failureReason;
-        }
-
+    private function claim(WhatsappCampaignRecipient $recipient): bool
+    {
         return WhatsappCampaignRecipient::query()
             ->whereKey($recipient->getKey())
             ->where('status', WhatsappCampaignRecipientStatus::Pending)
-            ->where('attempts', $recipient->attempts)
-            ->update($values) === 1;
+            ->update([
+                'status' => WhatsappCampaignRecipientStatus::Sending->value,
+                'attempts' => DB::raw('attempts + 1'),
+                'updated_at' => CarbonImmutable::now('UTC'),
+            ]) === 1;
+    }
+
+    /**
+     * إغلاق سطر لم يصل إلى المزوّد أصلًا — بشرط أنه ما زال منتظرًا.
+     */
+    private function close(
+        WhatsappCampaignRecipient $recipient,
+        WhatsappCampaignRecipientStatus $status,
+        string $failureReason,
+    ): void {
+        WhatsappCampaignRecipient::query()
+            ->whereKey($recipient->getKey())
+            ->where('status', WhatsappCampaignRecipientStatus::Pending)
+            ->update([
+                'status' => $status->value,
+                'failure_reason' => $failureReason,
+                'updated_at' => CarbonImmutable::now('UTC'),
+            ]);
     }
 }

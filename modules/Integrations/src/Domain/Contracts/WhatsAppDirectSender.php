@@ -20,11 +20,17 @@ interface WhatsAppDirectSender
 
     /**
      * يرفع الملف إلى المزوّد رفعًا مباشرًا — لا رابطًا عامًّا للملف.
+     *
+     * المحتوى يصل مجرىً لا مسارًا على القرص: مسارُ ملفٍ يفترض قرصًا محليًا،
+     * وقرص التخزين إعداد قابل للتغيير إلى S3 أو R2. المجرى يفتحه المستدعي
+     * ويغلقه هو نفسه.
+     *
+     * @param resource $contents
      */
     public function sendFile(
         string $organizationId,
         string $phone,
-        string $absolutePath,
+        $contents,
         string $fileName,
         ?string $caption = null,
     ): GatewayResult;
