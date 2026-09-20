@@ -7,6 +7,7 @@ namespace Modules\Students\Application\Actions;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Identity\Domain\Contracts\UserQueryService;
+use Modules\Students\Application\Services\RegistrationNotificationDetails;
 use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Events\RegistrationAccepted;
 use Modules\Students\Domain\Models\RegistrationApplication;
@@ -27,6 +28,7 @@ final readonly class EnrollExistingStudentInWaitlistAction
         private Dispatcher $events,
         private AuditRecorder $audit,
         private UserQueryService $users,
+        private RegistrationNotificationDetails $details,
     ) {}
 
     public function execute(
@@ -46,7 +48,7 @@ final readonly class EnrollExistingStudentInWaitlistAction
             );
         }
 
-        /** @var array{0: RegistrationApplication, 1: bool} $result */
+        /** @var array{0: RegistrationApplication, 1: bool, 2: string|null} $result */
         $result = $this->transaction->run(function () use (
             $organizationId,
             $studentProfileId,
@@ -89,7 +91,7 @@ final readonly class EnrollExistingStudentInWaitlistAction
                 ->first();
 
             if ($existing !== null && $existing->status->isClearedForAssignment()) {
-                return [$existing, false];
+                return [$existing, false, null];
             }
 
             if ($existing !== null) {
@@ -134,10 +136,10 @@ final readonly class EnrollExistingStudentInWaitlistAction
                 reason: $reason,
             );
 
-            return [$application, true];
+            return [$application, true, (string) $profile->student_code];
         });
 
-        [$application, $created] = $result;
+        [$application, $created, $studentCode] = $result;
 
         if ($created) {
             $this->events->dispatch(new RegistrationAccepted(
@@ -145,6 +147,12 @@ final readonly class EnrollExistingStudentInWaitlistAction
                 organizationId: (string) $application->organization_id,
                 studentProfileId: (string) $application->student_profile_id,
                 studentUserId: (string) $application->user_id,
+                studentName: $application->full_name,
+                courseName: $this->details->courseName(
+                    (string) $application->organization_id,
+                    $application->preferred_course_id,
+                ),
+                studentCode: (string) $studentCode,
                 actorId: $actorId,
             ));
         }

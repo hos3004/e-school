@@ -50,4 +50,13 @@ return [
     'duplicate' => 'Potential duplicate',
     'duplicate_yes' => 'Yes',
     'duplicate_no' => 'No',
+
+    /*
+     * Texts injected into notification messages as parameter values. A missing
+     * parameter drops the whole notification, so a request without a preferred
+     * course falls back to this instead of going silent.
+     */
+    'notifications' => [
+        'course_unspecified' => 'Not selected yet',
+    ],
 ];

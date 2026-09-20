@@ -489,6 +489,7 @@ return [
             'makeup_end',
             'expires_at',
             'due_at',
+            'submitted_at',
             'effective_from',
             'proposed_start',
             'agreed_start',

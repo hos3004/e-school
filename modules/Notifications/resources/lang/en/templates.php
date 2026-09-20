@@ -15,15 +15,18 @@ return [
     ],
     'registration.submitted' => [
         'subject' => 'Registration request received',
-        'body' => 'Your registration request was received. You will be notified when the review is complete.',
+        'body' => 'We received the registration request for {{full_name}}. Requested course: {{course_name}} — submitted on {{submitted_at}}. The request is now under review, and you will be notified as soon as a decision is made.',
+        'parameters' => ['full_name', 'course_name', 'submitted_at'],
     ],
     'registration.approved' => [
         'subject' => 'Registration approved',
-        'body' => 'Your registration request was approved. You can now continue with the onboarding steps.',
+        'body' => 'The registration request for {{student_name}} was approved. Course: {{course_name}} — student code: {{student_code}}. Next, the administration assigns a teacher and the session times, and you will be notified once the schedule is confirmed. Nothing is required from you now.',
+        'parameters' => ['student_name', 'course_name', 'student_code'],
     ],
     'registration.rejected' => [
         'subject' => 'Registration request update',
-        'body' => 'Your registration request could not be approved. Review the request details or contact the administration.',
+        'body' => 'The registration request for {{student_name}} could not be approved. Course: {{course_name}} — reason: {{reason}}. Contact the administration for details, or submit a new request.',
+        'parameters' => ['student_name', 'course_name', 'reason'],
     ],
     'teacher.availability.approved' => [
         'subject' => 'Availability approved',

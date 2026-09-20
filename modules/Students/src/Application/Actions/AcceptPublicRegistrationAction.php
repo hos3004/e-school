@@ -14,6 +14,7 @@ use Modules\Identity\Domain\Contracts\DTOs\CreateUserAccountData;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Identity\Domain\Contracts\UserAccountProvisioner;
 use Modules\Identity\Domain\Contracts\UserQueryService;
+use Modules\Students\Application\Services\RegistrationNotificationDetails;
 use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Events\RegistrationAccepted;
 use Modules\Students\Domain\Models\RegistrationApplication;
@@ -33,6 +34,7 @@ final readonly class AcceptPublicRegistrationAction
         private Transaction $transaction,
         private Dispatcher $events,
         private AcademicCatalogQueries $catalog,
+        private RegistrationNotificationDetails $details,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -145,6 +147,18 @@ final readonly class AcceptPublicRegistrationAction
             newValues: ['status' => RegistrationStatus::WaitingAssignment->value, 'student_profile_id' => $profile->id, 'reused_profile' => true],
             reason: $reason,
         );
-        $this->events->dispatch(new RegistrationAccepted($application->id, $application->organization_id, $profile->id, $profile->user_id, $actorId));
+        $this->events->dispatch(new RegistrationAccepted(
+            applicationId: (string) $application->id,
+            organizationId: (string) $application->organization_id,
+            studentProfileId: (string) $profile->id,
+            studentUserId: (string) $profile->user_id,
+            studentName: $application->full_name,
+            courseName: $this->details->courseName(
+                (string) $application->organization_id,
+                $application->preferred_course_id,
+            ),
+            studentCode: (string) $profile->student_code,
+            actorId: $actorId,
+        ));
     }
 }
