@@ -1,0 +1,112 @@
+/*
+ * اللوحة.
+ *
+ * البطاقة التي لا فعل لها لا تُعرض أصلًا، فلا يوجد هنا «مربع أخضر مطمئن»:
+ * شاشة مليئة بالأخضر تُقرأ مرتين ثم يُكفّ عن قراءتها، فتضيع البطاقة الحمراء
+ * يوم تظهر. اللون هنا استثناء لا خلفية.
+ */
+.board-hero {
+  font-size: 15px;
+  color: var(--console-ink);
+  margin: 0 0 18px;
+  line-height: 1.9;
+}
+.board-clear {
+  color: #176448;
+}
+.board-card {
+  border: 1px solid #e3e8ea;
+  border-inline-start: 5px solid #c9d3d6;
+  border-radius: 12px;
+  background: #fff;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.board-card.is-alert {
+  border-inline-start-color: #c0392b;
+  background: #fdf6f5;
+}
+.board-card.is-warn {
+  border-inline-start-color: #c98a16;
+  background: #fffaf1;
+}
+.board-card h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  color: var(--console-ink);
+}
+.board-card p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.85;
+}
+.board-rule {
+  color: var(--console-muted);
+}
+.board-figure {
+  font-size: 15px;
+  color: var(--console-ink);
+}
+.board-figure.is-gap {
+  font-weight: 600;
+  color: #9c2f2f;
+}
+.board-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.board-chip {
+  font-size: 12px;
+  padding: 5px 11px;
+  border-radius: 20px;
+}
+.board-chip.is-work {
+  background: #d9f0e5;
+  color: #14604a;
+}
+.board-chip.is-ask {
+  background: #f7dedb;
+  color: #8f2b20;
+}
+.board-people {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  background: #eef2f3;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.board-people li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.board-people b {
+  font-weight: 500;
+}
+.board-people bdi {
+  font-variant-numeric: tabular-nums;
+  color: var(--console-muted);
+}
+.board-meta {
+  font-size: 12px;
+  color: var(--console-muted);
+}
+.board-meta.is-warn {
+  color: #8a5a12;
+}
+.board-footnote {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid #eef2f3;
+  font-size: 12px;
+  color: var(--console-muted);
+  line-height: 1.9;
+}

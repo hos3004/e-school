@@ -12,8 +12,10 @@ use Modules\VirtualClassroom\Application\Console\ProvisionUpcomingClassrooms;
 use Modules\VirtualClassroom\Application\Console\SmokeTestClassroom;
 use Modules\VirtualClassroom\Application\Queries\ClassroomAdministrationQueryService;
 use Modules\VirtualClassroom\Application\Queries\ClassroomPresenceQueryService;
+use Modules\VirtualClassroom\Application\Queries\ClassroomStartedFlagQueryService;
 use Modules\VirtualClassroom\Domain\Contracts\ClassroomAdministrationQueries;
 use Modules\VirtualClassroom\Domain\Contracts\ClassroomPresenceQueries;
+use Modules\VirtualClassroom\Domain\Contracts\ClassroomStartedFlagQuery;
 use Modules\VirtualClassroom\Domain\Contracts\VirtualClassroomProvider;
 use Modules\VirtualClassroom\Domain\Exceptions\ClassroomProviderException;
 use Shared\Module\BaseModuleServiceProvider;
@@ -60,6 +62,7 @@ final class VirtualClassroomServiceProvider extends BaseModuleServiceProvider
         return [
             ClassroomAdministrationQueries::class => ClassroomAdministrationQueryService::class,
             ClassroomPresenceQueries::class => ClassroomPresenceQueryService::class,
+            ClassroomStartedFlagQuery::class => ClassroomStartedFlagQueryService::class,
         ];
     }
 

@@ -13,6 +13,7 @@ use Modules\Sessions\Application\Policies\SessionParticipantPolicy;
 use Modules\Sessions\Application\Policies\SessionPolicy;
 use Modules\Sessions\Application\Policies\SessionStatusHistoryPolicy;
 use Modules\Sessions\Application\Queries\SessionAdministrationQueryService;
+use Modules\Sessions\Application\Queries\SessionClosureBacklogQueryService;
 use Modules\Sessions\Application\Queries\SessionFactsQueryService;
 use Modules\Sessions\Application\Queries\SessionOperationsQueryService;
 use Modules\Sessions\Application\Queries\SessionParticipantAdministrationQueryService;
@@ -20,6 +21,7 @@ use Modules\Sessions\Application\Queries\SessionSchedulingQueryService;
 use Modules\Sessions\Application\Services\SessionParticipantAttendanceService;
 use Modules\Sessions\Application\Services\SessionSchedulingService;
 use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
+use Modules\Sessions\Domain\Contracts\SessionClosureBacklogQuery;
 use Modules\Sessions\Domain\Contracts\SessionFactsQueries;
 use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
 use Modules\Sessions\Domain\Contracts\SessionParticipantAttendanceGateway;
@@ -50,6 +52,7 @@ final class SessionsServiceProvider extends BaseModuleServiceProvider
     {
         return [
             SessionAdministrationQueries::class => SessionAdministrationQueryService::class,
+            SessionClosureBacklogQuery::class => SessionClosureBacklogQueryService::class,
             SessionFactsQueries::class => SessionFactsQueryService::class,
             SessionSchedulingQueries::class => SessionSchedulingQueryService::class,
             SessionSchedulingGateway::class => SessionSchedulingService::class,

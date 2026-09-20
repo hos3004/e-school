@@ -2,12 +2,19 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Console\BoardController;
 use App\Http\Controllers\Console\GroupScheduleController;
 use App\Http\Controllers\Console\LiveBoardController;
 use App\Http\Controllers\Console\SessionReportController;
 use App\Http\Controllers\Console\SessionReviewController;
 use App\Http\Controllers\Console\SessionsController;
 use Illuminate\Support\Facades\Route;
+
+/*
+ * اللوحة: أول ما يفتحه المالك. مسار ثابت قبل أي مسار يلتقط {session}.
+ */
+Route::get('/board', BoardController::class)
+    ->middleware(['can:session.view', 'can:student.view.any'])->name('board');
 
 /*
  * شاشة المتابعة: مسار ثابت قبل أي مسار يلتقط {session}.

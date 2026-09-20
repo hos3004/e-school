@@ -28,4 +28,18 @@ interface TeacherDuesQueries
      * تسجيل أول قيدة.
      */
     public function acceptsEntriesOn(string $organizationId, CarbonImmutable $date): bool;
+
+    /**
+     * أيٌّ من هذه الحصص له قيدة في الدفتر فعلًا.
+     *
+     * يجيب عن السؤال المعكوس الذي تحتاجه أي شاشة تسأل «هل الدفتر كامل؟»:
+     * الحصة التي مضت ولا قيدة لها مالٌ خارج الدفتر، سواء بقيت في الطابور أم
+     * انتهت بحالة نهائية لا تعود منها. المستهلك يمرّر معرّفات الحصص التي
+     * يملكها موديول Sessions ويحصل على من دخل الدفتر منها، فيحسب الفرق —
+     * ولا يقرأ أي طرف جدول الطرف الآخر.
+     *
+     * @param list<string> $sessionIds
+     * @return list<string>
+     */
+    public function sessionIdsWithEntries(string $organizationId, array $sessionIds): array;
 }

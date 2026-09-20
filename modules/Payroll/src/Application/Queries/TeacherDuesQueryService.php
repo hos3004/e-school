@@ -74,6 +74,21 @@ final readonly class TeacherDuesQueryService implements TeacherDuesQueries
         return $period === null || $period->status->acceptsEntries();
     }
 
+    public function sessionIdsWithEntries(string $organizationId, array $sessionIds): array
+    {
+        if ($sessionIds === []) {
+            return [];
+        }
+
+        return PayrollEntry::query()
+            ->forOrganization($organizationId)
+            ->whereIn('session_id', $sessionIds)
+            ->distinct()
+            ->pluck('session_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+    }
+
     /** @param Collection<int, PayrollEntry> $entries
      * @param Collection<int, PayrollAdjustment> $adjustments
      * @return list<array<string, mixed>>
