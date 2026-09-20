@@ -75,6 +75,12 @@ return [
 
             'green_api' => [
                 'api_url' => env('GREEN_API_URL', 'https://api.green-api.com'),
+                /*
+                 * رفع الوسائط عند Green API له مضيف مستقل عن مضيف الـAPI في
+                 * سحابتهم العامة. تركه فارغًا يستنتجه من api_url؛ والنشر الخاص
+                 * الذي يوحّد المضيفين يضبطه صراحةً.
+                 */
+                'media_url' => env('GREEN_API_MEDIA_URL'),
                 'instance_id' => env('GREEN_API_INSTANCE_ID'),
                 'token' => env('GREEN_API_TOKEN'),
                 'timeout_seconds' => (int) env('GREEN_API_TIMEOUT_SECONDS', 15),

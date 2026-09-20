@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Modules\Messaging\Infrastructure\Providers;
 
+use Modules\Messaging\Application\Console\PruneWhatsappCampaignMedia;
+use Modules\Messaging\Application\Console\SweepWhatsappCampaignDispatches;
 use Modules\Messaging\Application\Policies\ClassWallCommentPolicy;
 use Modules\Messaging\Application\Policies\ClassWallPostPolicy;
 use Modules\Messaging\Application\Policies\ConversationPolicy;
 use Modules\Messaging\Application\Policies\MessagePolicy;
+use Modules\Messaging\Application\Policies\WhatsappCampaignPolicy;
 use Modules\Messaging\Application\Policies\WhatsappInboundPolicy;
 use Modules\Messaging\Domain\Models\ClassWallComment;
 use Modules\Messaging\Domain\Models\ClassWallPost;
 use Modules\Messaging\Domain\Models\Conversation;
 use Modules\Messaging\Domain\Models\Message;
+use Modules\Messaging\Domain\Models\WhatsappCampaign;
 use Modules\Messaging\Domain\Models\WhatsappInbound;
 use Shared\Module\BaseModuleServiceProvider;
 use Shared\Support\DatabaseTransaction;
@@ -40,6 +44,7 @@ final class MessagingServiceProvider extends BaseModuleServiceProvider
             ClassWallPost::class => ClassWallPostPolicy::class,
             ClassWallComment::class => ClassWallCommentPolicy::class,
             WhatsappInbound::class => WhatsappInboundPolicy::class,
+            WhatsappCampaign::class => WhatsappCampaignPolicy::class,
         ];
     }
 
@@ -48,5 +53,15 @@ final class MessagingServiceProvider extends BaseModuleServiceProvider
         return [
             Transaction::class => DatabaseTransaction::class,
         ];
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->commands([
+            SweepWhatsappCampaignDispatches::class,
+            PruneWhatsappCampaignMedia::class,
+        ]);
     }
 }

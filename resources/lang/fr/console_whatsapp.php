@@ -10,6 +10,7 @@ return [
         'status' => 'État et contrôle',
         'templates' => 'Modèles',
         'compose' => 'Envoyer et simuler',
+        'campaigns' => 'Campagnes de numéros',
         'log' => 'Journal',
         'settings' => 'Paramètres de connexion',
     ],
@@ -101,6 +102,101 @@ return [
         'hint' => 'Changez le jeton ou l’identifiant d’instance quand vous voulez. Le jeton est vérifié auprès du fournisseur avant enregistrement et n’est plus jamais affiché ensuite.',
         'open' => 'Ouvrir les paramètres de connexion',
         'token_hint' => 'Laissez vide pour conserver le jeton actuel.',
+    ],
+
+    'campaigns' => [
+        'title' => 'Campagnes de numéros',
+        'hint' => 'Envoi vers une liste de numéros sans compte sur la plateforme — les inscrits d\'un cours ou des personnes intéressées. Les messages partent un à un, avec un délai entre eux, jamais tous en même temps.',
+        'new' => 'Nouvelle campagne',
+        'created' => 'Campagne enregistrée en brouillon avec :count numéros exploitables. Vérifiez-la, puis lancez l\'envoi.',
+        'started' => 'L\'envoi a commencé. Les messages partent l\'un après l\'autre selon le délai choisi.',
+        'stopped' => 'Campagne arrêtée. :count destinataires ont été annulés avant tout envoi.',
+        'confirm_start' => 'L\'envoi réel vers les numéros de la liste va commencer. Confirmer ?',
+        'confirm_stop' => 'Ce qui n\'est pas encore parti s\'arrêtera. Les messages déjà envoyés ne peuvent pas être rappelés. Confirmer ?',
+        'start' => 'Lancer l\'envoi',
+        'stop' => 'Arrêter la campagne',
+        'refresh' => 'Actualiser l\'état',
+
+        'fields' => [
+            'name' => 'Nom de la campagne',
+            'name_hint' => 'Pour votre suivi seulement — les destinataires ne le voient pas.',
+            'body' => 'Texte du message',
+            'reason' => 'Motif de l\'envoi',
+            'reason_hint' => 'Conservé dans le dossier de la campagne.',
+            'recipients_text' => 'Numéros saisis',
+            'recipients_text_hint' => 'Un numéro par ligne ; le nom peut précéder, séparé par une virgule : Ahmed, +201012345678',
+            'recipients_file' => 'Fichier de numéros',
+            'recipients_file_hint' => 'Excel ou CSV à deux colonnes : nom et numéro. La ligne d\'en-tête est ignorée automatiquement.',
+            'delay_min' => 'Délai minimal (secondes)',
+            'delay_max' => 'Délai maximal (secondes)',
+            'delay_hint' => 'Un délai aléatoire entre les deux est pris avant chaque message — un rythme parfaitement régulier est la marque la plus visible d\'une machine.',
+            'media' => 'Pièces jointes',
+            'media_hint' => 'Images, vidéos ou fichiers qui arrivent avant le texte. Supprimées du serveur :days jours après la fin de la campagne.',
+        ],
+
+        'placeholders' => [
+            'title' => 'Le nom du destinataire dans le texte',
+            'hint' => 'Écrivez :tokens dans le message : il est remplacé par le nom de chaque destinataire tel qu\'il figure dans la liste. Sans nom, le message part sans le jeton.',
+        ],
+
+        'preview' => [
+            'run' => 'Vérifier la liste',
+            'accepted' => 'Numéros exploitables',
+            'rejected' => 'Numéros à revoir',
+            'duplicates' => 'Doublons retirés',
+            'sample' => 'Le message tel que le premier destinataire le lira',
+            'empty' => 'La liste n\'a pas encore été vérifiée.',
+            'failed' => 'La liste n\'a pas pu être vérifiée. Réessayez.',
+        ],
+
+        'status' => [
+            'draft' => 'Brouillon',
+            'running' => 'En cours',
+            'completed' => 'Terminée',
+            'stopped' => 'Arrêtée',
+        ],
+
+        'counts' => [
+            'pending' => 'En attente',
+            'sent' => 'Remis au fournisseur',
+            'failed' => 'Échecs',
+            'cancelled' => 'Annulés',
+            'invalid' => 'Numéros rejetés',
+            'progress' => ':sent sur :total',
+        ],
+
+        'problems' => [
+            'title' => 'Numéros qui n\'ont rien reçu',
+            'hint' => 'Corrigez le numéro chez vous et ajoutez-le à une nouvelle campagne — la liste d\'une campagne enregistrée ne se modifie pas.',
+            'name' => 'Nom',
+            'input' => 'Tel que saisi',
+            'reason' => 'Motif',
+            'empty' => 'Tous les numéros sont corrects.',
+        ],
+
+        'reasons' => [
+            'phone_empty' => 'Aucun numéro',
+            'phone_invalid_characters' => 'Le numéro contient des lettres ou des symboles illisibles',
+            'phone_missing_country_code' => 'Numéro local sans indicatif — écrivez-le au format international, avec + ou 00',
+            'phone_invalid_format' => 'La longueur ou la forme du numéro est invalide',
+            'channel_disabled' => 'Le canal WhatsApp a été coupé avant son tour',
+            'interrupted' => 'L\'envoi s\'est interrompu avant d\'en connaître l\'issue — vérifiez avant de renvoyer',
+            'whatsapp_media_missing' => 'La pièce jointe n\'est plus sur le serveur',
+            'whatsapp_media_unreadable' => 'La pièce jointe n\'a pas pu être lue',
+            'whatsapp_network_error' => 'Le fournisseur est injoignable',
+            'whatsapp_provider_error' => 'Le fournisseur a rejeté le message',
+            'whatsapp_provider_response_invalid' => 'Réponse illisible du fournisseur',
+            'whatsapp_configuration_invalid' => 'Les paramètres de connexion au fournisseur sont incomplets',
+            'whatsapp_body_empty' => 'Le texte du message est vide une fois le nom inséré',
+        ],
+
+        'errors' => [
+            'recipients_required' => 'Saisissez des numéros ou déposez un fichier.',
+        ],
+
+        'empty' => 'Aucune campagne pour l\'instant.',
+        'channel_off_warning' => 'Le canal WhatsApp est arrêté — vous pouvez préparer une campagne, mais l\'envoi ne démarrera pas tant qu\'il n\'est pas réactivé.',
+        'media_expires' => 'Les pièces jointes seront supprimées le :date',
     ],
 
     'other_entries' => [

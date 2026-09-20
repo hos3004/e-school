@@ -17,4 +17,6 @@ return [
     'wall_comment_added' => 'تمت إضافة التعليق.',
     'whatsapp_recorded' => 'تم تسجيل رسالة الواتساب الواردة.',
     'whatsapp_handled' => 'تم تعامل الموظف مع رسالة الواتساب.',
+    'campaign_sweep_done' => 'أُعيد توزيع :redispatched رسالة، وأُغلق :closed مستلمًا انقطع إرساله.',
+    'campaign_media_pruned' => 'حُذف :count مرفقًا انقضت مدة الاحتفاظ به.',
 ];

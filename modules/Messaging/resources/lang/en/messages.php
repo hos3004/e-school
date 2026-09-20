@@ -17,4 +17,6 @@ return [
     'wall_comment_added' => 'The comment has been added.',
     'whatsapp_recorded' => 'The inbound WhatsApp message has been recorded.',
     'whatsapp_handled' => 'A staff member has handled the WhatsApp message.',
+    'campaign_sweep_done' => 'Re-dispatched :redispatched messages and closed :closed interrupted recipients.',
+    'campaign_media_pruned' => 'Deleted :count attachments past their retention period.',
 ];
