@@ -287,6 +287,7 @@ Route::middleware([EnsureConsoleEnabled::class, 'auth', 'auth.session'])
                 require __DIR__.'/console-followup.php';
                 require __DIR__.'/console-dues.php';
                 require __DIR__.'/console-reports.php';
+                require __DIR__.'/console-archive.php';
             });
         require __DIR__.'/learning.php';
     });

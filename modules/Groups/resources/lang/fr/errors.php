@@ -29,4 +29,10 @@ return [
     'activation_data_incomplete' => 'Le groupe ne peut pas être activé avant de compléter : :missing.',
     'capacity_below_members' => 'La capacité saisie (:capacity) est inférieure au nombre d’élèves déjà placés (:members).',
     'invalid_membership_transition' => 'Une adhésion ne peut pas passer de « :from » à « :to ».',
+    'closure_reason_required' => 'Un groupe ne peut pas etre cloture ou rouvert sans motif ecrit.',
+    'group_already_closed' => 'Le groupe :code est deja cloture.',
+    'group_not_closed' => 'Le groupe :code n\'est pas cloture, il n\'y a donc rien a rouvrir.',
+    'group_closure_blocked' => 'Le groupe :code ne peut pas encore etre cloture car il contient :blockers. Deplacez les eleves ou terminez les seances restantes, puis reessayez. La cloture ne supprime rien et peut etre annulee par une reouverture.',
+    'closure_blocker_members_active' => ':count eleve(s) encore inscrit(s)',
+    'closure_blocker_sessions_open' => ':count seance(s) pas encore dans un etat final',
 ];

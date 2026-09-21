@@ -7,8 +7,10 @@ namespace Modules\Groups\Application\Queries;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\Enums\GroupStatus;
+use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupMembership;
+use Modules\Groups\Domain\Models\GroupProgram;
 use Modules\Groups\Domain\Models\GroupTeacher;
 use Modules\Groups\Domain\ValueObjects\GroupMemberData;
 use Modules\Groups\Domain\ValueObjects\PlacementGroupData;
@@ -46,6 +48,7 @@ final readonly class GroupAdministrationQueryService implements GroupAdministrat
 
         return Group::query()
             ->forOrganization($organizationId)
+            ->open()
             ->withStatus(GroupStatus::Active)
             ->with([
                 'programs',
@@ -69,6 +72,7 @@ final readonly class GroupAdministrationQueryService implements GroupAdministrat
     ): array {
         $groups = Group::query()
             ->forOrganization($organizationId)
+            ->open()
             ->withStatus(GroupStatus::Active)
             ->whereHas('programs', static fn (Builder $query): Builder => $query->where('program_id', $programId))
             ->whereHas('teachers', static fn (Builder $query): Builder => $query
@@ -96,6 +100,7 @@ final readonly class GroupAdministrationQueryService implements GroupAdministrat
     ): array {
         $groups = Group::query()
             ->forOrganization($organizationId)
+            ->open()
             ->whereIn('status', [GroupStatus::Planning, GroupStatus::Active])
             ->whereHas('programs', static fn (Builder $query): Builder => $query->where('program_id', $programId))
             /*
@@ -342,5 +347,40 @@ final readonly class GroupAdministrationQueryService implements GroupAdministrat
                 ->values()
                 ->all(),
         );
+    }
+
+    public function closureFactsForGroup(string $organizationId, string $groupId): array
+    {
+        $group = Group::query()
+            ->forOrganization($organizationId)
+            ->whereKey($groupId)
+            ->first();
+
+        if ($group === null) {
+            return [
+                'members_total' => 0,
+                'members_active' => 0,
+                'teachers_total' => 0,
+                'programs_total' => 0,
+                'capacity' => null,
+                'status' => '',
+                'starts_on' => null,
+                'ends_on' => null,
+            ];
+        }
+
+        return [
+            'members_total' => GroupMembership::query()->where('group_id', $groupId)->count(),
+            'members_active' => GroupMembership::query()
+                ->where('group_id', $groupId)
+                ->whereIn('status', [MembershipStatus::Active->value, MembershipStatus::Pending->value])
+                ->count(),
+            'teachers_total' => GroupTeacher::query()->where('group_id', $groupId)->count(),
+            'programs_total' => GroupProgram::query()->where('group_id', $groupId)->count(),
+            'capacity' => $group->capacity,
+            'status' => $group->status->value,
+            'starts_on' => $group->starts_on?->toDateString(),
+            'ends_on' => $group->ends_on?->toDateString(),
+        ];
     }
 }

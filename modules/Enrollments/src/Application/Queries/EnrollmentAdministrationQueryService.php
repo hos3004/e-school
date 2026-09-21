@@ -60,4 +60,27 @@ final readonly class EnrollmentAdministrationQueryService implements EnrollmentA
             ])
             ->all();
     }
+
+    public function closureFactsForProgram(string $organizationId, string $programId): array
+    {
+        $base = Enrollment::query()
+            ->forOrganization($organizationId)
+            ->where('program_id', $programId);
+
+        $liveStatuses = array_values(array_map(
+            static fn (EnrollmentStatus $status): string => $status->value,
+            array_filter(
+                EnrollmentStatus::cases(),
+                static fn (EnrollmentStatus $status): bool => !$status->isTerminal(),
+            ),
+        ));
+
+        return [
+            'enrollments_total' => (clone $base)->count(),
+            'enrollments_live' => (clone $base)->whereIn('status', $liveStatuses)->count(),
+            'enrollments_completed' => (clone $base)->where('status', EnrollmentStatus::Completed->value)->count(),
+            'enrollments_withdrawn' => (clone $base)->where('status', EnrollmentStatus::Withdrawn->value)->count(),
+            'students_distinct' => (clone $base)->distinct()->count('student_profile_id'),
+        ];
+    }
 }

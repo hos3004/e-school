@@ -32,6 +32,7 @@ return [
         'tools' => 'Administration',
     ],
     'nav' => [
+        'archive' => 'Archives',
         'whatsapp' => 'Centre WhatsApp',
         'today' => 'Aujourd’hui',
         'courses' => 'Cours et groupes',

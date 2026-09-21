@@ -14,10 +14,12 @@ use Modules\Reporting\Application\Policies\ProgramDigestRecipientSettingPolicy;
 use Modules\Reporting\Application\Policies\ReportEventLogPolicy;
 use Modules\Reporting\Application\Policies\StudentDashboardPolicy;
 use Modules\Reporting\Application\Policies\TeacherDashboardPolicy;
+use Modules\Reporting\Application\Queries\ClosureSnapshotQueryService;
 use Modules\Reporting\Application\Queries\DashboardQueryService;
 use Modules\Reporting\Application\Queries\OperationalReportQueryService;
 use Modules\Reporting\Application\Queries\ProgramSessionReportDigestQueryService;
 use Modules\Reporting\Application\Services\ProgramDigestRecipientSettingsManager;
+use Modules\Reporting\Domain\Contracts\ClosureSnapshotQueries;
 use Modules\Reporting\Domain\Contracts\DashboardQuery;
 use Modules\Reporting\Domain\Contracts\OperationalReportQuery;
 use Modules\Reporting\Domain\Contracts\ProgramDigestRecipientSettings;
@@ -93,6 +95,7 @@ final class ReportingServiceProvider extends BaseModuleServiceProvider
     protected function bindings(): array
     {
         return [
+            ClosureSnapshotQueries::class => ClosureSnapshotQueryService::class,
             DashboardQuery::class => DashboardQueryService::class,
             OperationalReportQuery::class => OperationalReportQueryService::class,
             ReportPdfRenderer::class => MpdfReportPdfRenderer::class,

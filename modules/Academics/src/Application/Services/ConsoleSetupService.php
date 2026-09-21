@@ -31,8 +31,17 @@ final readonly class ConsoleSetupService
     /** @return array{programs: list<array<string, mixed>>, levels: list<array<string, mixed>>, courses: list<array<string, mixed>>} */
     public function catalog(string $organizationId): array
     {
+        /*
+         * المُقفل خارج هذه القائمة: الإقفال معناه «أخرِجه من أمامي»، ولو ظل هنا
+         * لما فعل شيئًا. ويبقى مقروءًا عبر الاستعلام بالمعرّف وفي صفحة الأرشيف.
+         */
         $programs = Program::query()->forOrganization($organizationId)
-            ->with(['levels' => fn ($query) => $query->orderBy('sort_order'), 'levels.courses.level'])
+            ->open()
+            ->with([
+                'levels' => fn ($query) => $query->orderBy('sort_order'),
+                'levels.courses' => fn ($query) => $query->open(),
+                'levels.courses.level',
+            ])
             ->orderBy('sort_order')->orderBy('code')->get();
         $levels = $programs->flatMap(fn (Program $program) => $program->levels);
         $courses = $levels->flatMap(fn (Level $level) => $level->courses);
