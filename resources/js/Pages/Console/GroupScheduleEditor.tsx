@@ -115,6 +115,38 @@ export default function GroupScheduleEditor({
     currency: string;
     requires_rate: boolean;
   } | null>(null);
+  useEffect(() => {
+    // Inertia keeps this component mounted across navigations between
+    // /schedules/create and /schedules/{id}/edit (same component name), so
+    // useForm's one-time initial state otherwise keeps stale values from
+    // whichever schedule/group this page last showed. Resync on every fresh
+    // schedule prop so a submission targets what is actually on screen.
+    form.setData({
+      group_id: schedule.group_id,
+      course_id: schedule.course_id,
+      staff_profile_id: schedule.staff_profile_id,
+      weekdays: schedule.weekdays,
+      start_time: schedule.start_time,
+      weekly_slots: sortSlots(
+        schedule.weekly_slots.length > 0
+          ? schedule.weekly_slots
+          : schedule.weekdays.map((day) => ({
+              weekday: day,
+              start_time: schedule.start_time,
+            })),
+      ),
+      duration_minutes: schedule.duration_minutes,
+      session_rate_major: "",
+      rate_reason: "",
+      interval_weeks: schedule.interval_weeks,
+      timezone: schedule.timezone,
+      starts_on: schedule.starts_on,
+      ends_on: schedule.ends_on ?? "",
+    });
+    setDayChecks({});
+    setTeacherRate(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedule]);
   const group = groups.find((item) => item.id === form.data.group_id);
   const availableCourses = courses.filter((item) =>
     group?.program_ids.includes(item.program_id),
