@@ -48,25 +48,202 @@ final class ConsoleSessionReviewTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_the_screen_lists_both_pending_review_and_sessions_that_never_started(): void
+    public function test_the_screen_lists_both_pending_review_and_sessions_that_never_started_newest_first(): void
     {
         $context = $this->context();
         $awaiting = $this->makeSession($context, SessionStatus::AwaitingReview, CarbonImmutable::now('UTC')->subHours(3));
         $stuck = $this->makeSession($context, SessionStatus::Scheduled, CarbonImmutable::now('UTC')->subDay());
         $future = $this->makeSession($context, SessionStatus::Scheduled, CarbonImmutable::now('UTC')->addDay());
 
+        /*
+         * الأحدث أولًا: حصة الأمس تتصدّر القائمة كل يوم لو رُتّبت تصاعديًا،
+         * بينما القرار يُتخذ على ما جرى للتوّ وهو ما زال في ذهن من يقرّره.
+         */
         $this->actingAs($context['actor'])
             ->get('/manage/sessions/review')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Console/SessionReview')
                 ->has('rows', 2)
-                ->where('rows.0.id', $stuck)
-                ->where('rows.0.never_started', true)
-                ->where('rows.1.id', $awaiting)
-                ->where('rows.1.never_started', false));
+                ->where('rows.0.id', $awaiting)
+                ->where('rows.0.never_started', false)
+                ->where('rows.1.id', $stuck)
+                ->where('rows.1.never_started', true));
 
         self::assertNotSame($future, $stuck);
+    }
+
+    public function test_only_a_session_with_teacher_evidence_and_a_rate_is_offered_one_click_approval(): void
+    {
+        $context = $this->context();
+        $this->rate($context);
+
+        $held = $this->makeSession($context, SessionStatus::AwaitingReview, CarbonImmutable::now('UTC')->subHours(3));
+        $this->participant($context, $held, 'present');
+        $this->joined($held);
+
+        $claimed = $this->makeSession($context, SessionStatus::Scheduled, CarbonImmutable::now('UTC')->subHours(4));
+        $this->participant($context, $claimed, 'present');
+        $this->report($context, $claimed);
+
+        $silent = $this->makeSession($context, SessionStatus::Scheduled, CarbonImmutable::now('UTC')->subHours(5));
+        $this->participant($context, $silent, 'present');
+
+        $this->actingAs($context['actor'])
+            ->get('/manage/sessions/review')
+            ->assertOk()
+            ->assertInertia(function (Assert $page) use ($held, $claimed, $silent): void {
+                $rows = collect($page->toArray()['props']['rows'])->keyBy('id');
+
+                // دخل المعلم الغرفة: الدليل من المنصة نفسها.
+                self::assertTrue($rows[$held]['due']);
+                self::assertTrue($rows[$held]['ready']);
+
+                // لم تُفتح من المنصة، لكن المعلم أقرّ بأدائها في تقرير.
+                self::assertTrue($rows[$claimed]['due']);
+                self::assertTrue($rows[$claimed]['ready']);
+                self::assertNotNull($rows[$claimed]['report_detail']);
+
+                /*
+                 * لا دخول ولا تقرير: لا يُعرف إن كانت دُرِّست خارج المنصة أم لم
+                 * تُقَم أصلًا. اعتمادها بضغطة يعني توقيعًا على فراغ.
+                 */
+                self::assertFalse($rows[$silent]['due']);
+                self::assertFalse($rows[$silent]['ready']);
+                self::assertNull($rows[$silent]['report_detail']);
+            });
+    }
+
+    public function test_one_click_approval_completes_the_session_and_records_the_evidence_as_its_reason(): void
+    {
+        $context = $this->context();
+        $this->rate($context);
+        $sessionId = $this->makeSession($context, SessionStatus::Scheduled, CarbonImmutable::now('UTC')->subHours(3));
+        $this->participant($context, $sessionId, 'present');
+        $this->report($context, $sessionId);
+
+        $this->actingAs($context['actor'])
+            ->from('/manage/sessions/review')
+            ->post("/manage/sessions/{$sessionId}/approve", [
+                'expected_status' => SessionStatus::Scheduled->value,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/manage/sessions/review');
+
+        self::assertSame(
+            SessionStatus::Completed->value,
+            DB::table('sessions')->where('id', $sessionId)->value('status'),
+        );
+
+        /*
+         * السبب ليس نصًّا مجاملًا: هو ما سيقرأه من يراجع القيدة بعد شهور، وقد
+         * أُنشئت القيدة ولا تُعدَّل. فيجب أن يقول بالضبط على أي دليل وُقِّع.
+         */
+        $reason = (string) DB::table('session_status_history')
+            ->where('session_id', $sessionId)
+            ->where('to_status', SessionStatus::Completed->value)
+            ->value('reason');
+
+        self::assertSame(__('console_session_review.quick.reason_report_off_platform'), $reason);
+        self::assertSame(
+            1,
+            DB::table('audit_log')->where('action', 'sessions.session_recorded_off_platform')
+                ->where('auditable_id', $sessionId)->count(),
+        );
+        self::assertSame(
+            1,
+            DB::table('payroll_entries')->where('session_id', $sessionId)->count(),
+            'اعتماد بضغطة أقفل الحصة بلا قيدة مستحقات، فظهر للمعلم صفر بلا سبب.',
+        );
+    }
+
+    public function test_one_click_approval_is_refused_when_the_evidence_or_the_rate_is_missing(): void
+    {
+        $context = $this->context();
+        $silent = $this->makeSession($context, SessionStatus::Scheduled, CarbonImmutable::now('UTC')->subHours(3));
+        $this->participant($context, $silent, 'present');
+
+        // لا دخول ولا تقرير: لا شيء يُوقَّع عليه.
+        $this->actingAs($context['actor'])
+            ->from('/manage/sessions/review')
+            ->post("/manage/sessions/{$silent}/approve", ['expected_status' => SessionStatus::Scheduled->value])
+            ->assertSessionHasErrors('decision');
+
+        self::assertSame(
+            SessionStatus::Scheduled->value,
+            DB::table('sessions')->where('id', $silent)->value('status'),
+        );
+
+        /*
+         * دليل مكتمل وسعر غائب: الاعتماد هنا يُقفل الحصة بلا قيدة، ولا يُصحَّح
+         * إلا بقيدة تسوية. يُرفض بدل أن يمر صامتًا — وهذا الفرق بين حارس ونافذة.
+         */
+        $unpriced = $this->makeSession($context, SessionStatus::AwaitingReview, CarbonImmutable::now('UTC')->subHours(4));
+        $this->participant($context, $unpriced, 'present');
+        $this->joined($unpriced);
+
+        $this->post("/manage/sessions/{$unpriced}/approve", ['expected_status' => SessionStatus::AwaitingReview->value])
+            ->assertSessionHasErrors('decision');
+
+        self::assertSame(
+            SessionStatus::AwaitingReview->value,
+            DB::table('sessions')->where('id', $unpriced)->value('status'),
+        );
+        self::assertSame(0, DB::table('payroll_entries')->count());
+    }
+
+    public function test_one_click_approval_refuses_an_all_absent_session_and_a_stale_screen(): void
+    {
+        $context = $this->context();
+        $this->rate($context);
+
+        // كل الطلاب متغيّبون: «اعتماد» يزعم حضورًا لم يحدث، والقرار الصادق «تغيّب».
+        $absent = $this->makeSession($context, SessionStatus::AwaitingReview, CarbonImmutable::now('UTC')->subHours(3));
+        $this->participant($context, $absent, 'no_show');
+        $this->joined($absent);
+
+        $this->actingAs($context['actor'])
+            ->from('/manage/sessions/review')
+            ->post("/manage/sessions/{$absent}/approve", ['expected_status' => SessionStatus::AwaitingReview->value])
+            ->assertSessionHasErrors('decision');
+
+        self::assertSame(
+            SessionStatus::AwaitingReview->value,
+            DB::table('sessions')->where('id', $absent)->value('status'),
+        );
+
+        // شاشة قديمة: زميل اعتمدها بالفعل بين العرض والضغط.
+        $stale = $this->makeSession($context, SessionStatus::AwaitingReview, CarbonImmutable::now('UTC')->subHours(4));
+        $this->participant($context, $stale, 'present');
+        $this->joined($stale);
+
+        $this->post("/manage/sessions/{$stale}/approve", ['expected_status' => SessionStatus::Scheduled->value])
+            ->assertSessionHasErrors('decision');
+
+        self::assertSame(
+            SessionStatus::AwaitingReview->value,
+            DB::table('sessions')->where('id', $stale)->value('status'),
+        );
+    }
+
+    public function test_one_click_approval_is_refused_without_the_finalize_permission(): void
+    {
+        $context = $this->context();
+        $this->rate($context);
+        $sessionId = $this->makeSession($context, SessionStatus::AwaitingReview, CarbonImmutable::now('UTC')->subHours(3));
+        $this->participant($context, $sessionId, 'present');
+        $this->joined($sessionId);
+        Gate::define('session.finalize', fn (): bool => false);
+
+        $this->actingAs($context['actor'])
+            ->from('/manage/sessions/review')
+            ->post("/manage/sessions/{$sessionId}/approve", ['expected_status' => SessionStatus::AwaitingReview->value])
+            ->assertForbidden();
+
+        self::assertSame(
+            SessionStatus::AwaitingReview->value,
+            DB::table('sessions')->where('id', $sessionId)->value('status'),
+        );
     }
 
     public function test_a_decision_needs_a_reason_and_moves_the_session_to_a_terminal_state(): void
@@ -282,6 +459,45 @@ final class ConsoleSessionReviewTest extends TestCase
         ]);
 
         return $id;
+    }
+
+    /**
+     * سعر ساري للمعلم. بدونه يُقفل الاعتماد الحصة بلا قيدة مستحقات، فالاعتماد
+     * السريع يرفضها — وهو ما يُثبته أحد الاختبارات أعلاه.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function rate(array $context): void
+    {
+        $contract = (string) Str::ulid();
+        DB::table('teacher_contracts')->insert([
+            'id' => $contract,
+            'organization_id' => $context['organization_id'],
+            'staff_profile_id' => $context['staff_profile_id'],
+            'basis' => 'per_session',
+            'currency' => 'EGP',
+            'effective_from' => '2026-01-01',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('teacher_rates')->insert([
+            'id' => (string) Str::ulid(),
+            'teacher_contract_id' => $contract,
+            'scope' => 'default',
+            'amount' => 5000,
+            'currency' => 'EGP',
+            'effective_from' => '2026-01-01',
+            'created_at' => now(),
+        ]);
+    }
+
+    /** المعلم فتح غرفة الحصة من المنصة — أقوى دليل على أنها أُدّيت. */
+    private function joined(string $sessionId): void
+    {
+        $session = DB::table('sessions')->where('id', $sessionId)->first();
+        DB::table('sessions')->where('id', $sessionId)->update([
+            'actual_start' => $session->scheduled_start,
+            'updated_at' => now(),
+        ]);
     }
 
     /** @param array<string, mixed> $context */

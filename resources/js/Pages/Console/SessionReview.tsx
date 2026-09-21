@@ -1,4 +1,4 @@
-import { useForm } from "@inertiajs/react";
+import { router, useForm } from "@inertiajs/react";
 import { useMemo, useState, type FormEvent } from "react";
 import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import { useI18n } from "@/lib/i18n";
@@ -11,11 +11,34 @@ type Student = {
   joined: boolean;
 };
 
+type ReportStudent = {
+  id: string;
+  name: string;
+  participation: number | null;
+  performance: number | null;
+  commitment: number | null;
+  note: string | null;
+};
+
+type ReportDetail = {
+  topics: string | null;
+  homework: string | null;
+  notes: string | null;
+  next_plan: string | null;
+  is_late: boolean;
+  students: ReportStudent[];
+};
+
 type Row = {
   id: string;
   status: string;
   status_label: string;
   never_started: boolean;
+  due: boolean;
+  teacher_joined: boolean;
+  ready: boolean;
+  approve_url: string;
+  report_detail: ReportDetail | null;
   date: string;
   start: string;
   end: string;
@@ -50,9 +73,12 @@ export default function SessionReview({
 }) {
   const t = useI18n();
   const [filter, setFilter] = useState<
-    "all" | "awaiting_review" | "never_started"
+    "all" | "due" | "awaiting_review" | "never_started"
   >("all");
   const [open, setOpen] = useState<string | null>(null);
+  const [openReport, setOpenReport] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [quickError, setQuickError] = useState<string | null>(null);
 
   const form = useForm({
     decision: "complete" as Decision,
@@ -65,9 +91,11 @@ export default function SessionReview({
       rows.filter((row) =>
         filter === "all"
           ? true
-          : filter === "never_started"
-            ? row.never_started
-            : !row.never_started,
+          : filter === "due"
+            ? row.due
+            : filter === "never_started"
+              ? row.never_started
+              : !row.never_started,
       ),
     [rows, filter],
   );
@@ -75,6 +103,7 @@ export default function SessionReview({
   const counts = useMemo(
     () => ({
       total: rows.length,
+      due: rows.filter((row) => row.due).length,
       awaiting_review: rows.filter((row) => !row.never_started).length,
       never_started: rows.filter((row) => row.never_started).length,
     }),
@@ -105,6 +134,25 @@ export default function SessionReview({
     });
   };
 
+  /*
+   * الاعتماد السريع لا يرسل سببًا: الخادم يولّده من الدليل ويعيد فحص الأهلية
+   * بنفسه، فلا يُبنى قرار مالي على ما عرضته شاشة قد تكون قديمة.
+   */
+  const approve = (row: Row) => {
+    setQuickError(null);
+    setBusy(row.id);
+    router.post(
+      row.approve_url,
+      { expected_status: row.status },
+      {
+        preserveScroll: true,
+        onError: (errors) =>
+          setQuickError(errors.decision ?? errors.expected_status ?? null),
+        onFinish: () => setBusy(null),
+      },
+    );
+  };
+
   return (
     <ConsoleLayout
       title={t("console_session_review.title")}
@@ -112,28 +160,41 @@ export default function SessionReview({
       description={t("console_session_review.description")}
     >
       <div className="console-metrics">
-        {(["total", "awaiting_review", "never_started"] as const).map((key) => (
-          <p className="console-metric" key={key}>
-            <span>{t("console_session_review.counts." + key)}</span>
-            <strong>{formatNumber(counts[key])}</strong>
-          </p>
-        ))}
+        {(["total", "due", "awaiting_review", "never_started"] as const).map(
+          (key) => (
+            <p
+              className={"console-metric" + (key === "due" ? " is-due" : "")}
+              key={key}
+            >
+              <span>{t("console_session_review.counts." + key)}</span>
+              <strong>{formatNumber(counts[key])}</strong>
+            </p>
+          ),
+        )}
       </div>
 
       <div className="console-actions">
-        {(["all", "awaiting_review", "never_started"] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            className={"console-button" + (filter === key ? " primary" : "")}
-            aria-pressed={filter === key}
-            onClick={() => setFilter(key)}
-          >
-            {t("console_session_review.filters." + key)}
-          </button>
-        ))}
+        {(["all", "due", "awaiting_review", "never_started"] as const).map(
+          (key) => (
+            <button
+              key={key}
+              type="button"
+              className={"console-button" + (filter === key ? " primary" : "")}
+              aria-pressed={filter === key}
+              onClick={() => setFilter(key)}
+            >
+              {t("console_session_review.filters." + key)}
+            </button>
+          ),
+        )}
         <small>{timezone}</small>
       </div>
+
+      {quickError && (
+        <p className="console-feedback is-error" role="alert">
+          {quickError}
+        </p>
+      )}
 
       {visible.length === 0 ? (
         <p className="console-empty">{t("console_session_review.empty")}</p>
@@ -159,7 +220,7 @@ export default function SessionReview({
             </thead>
             <tbody>
               {visible.map((row) => (
-                <tr key={row.id}>
+                <tr key={row.id} className={row.due ? "is-due" : undefined}>
                   <td>
                     {formatDate(row.date, timezone)}
                     <small>
@@ -188,6 +249,14 @@ export default function SessionReview({
                     ))}
                   </td>
                   <td>
+                    {row.due && (
+                      <small
+                        className="console-due-badge"
+                        title={t("console_session_review.due_hint")}
+                      >
+                        {t("console_session_review.due_badge")}
+                      </small>
+                    )}
                     <small>
                       {t("console_session_review.evidence.report_" + row.report)}
                     </small>
@@ -218,6 +287,73 @@ export default function SessionReview({
                       >
                         {t("console_session_review.evidence.no_rate")}
                       </small>
+                    )}
+                    {row.report_detail && (
+                      <>
+                        <button
+                          type="button"
+                          className="inline-link"
+                          onClick={() =>
+                            setOpenReport(openReport === row.id ? null : row.id)
+                          }
+                        >
+                          {t(
+                            openReport === row.id
+                              ? "console_session_review.report.hide"
+                              : "console_session_review.report.show",
+                          )}
+                        </button>
+                        {openReport === row.id && (
+                          <div className="console-report-detail">
+                            {row.report_detail.topics && (
+                              <p>
+                                <b>
+                                  {t("console_session_review.report.topics")}
+                                </b>
+                                {row.report_detail.topics}
+                              </p>
+                            )}
+                            {row.report_detail.homework && (
+                              <p>
+                                <b>
+                                  {t("console_session_review.report.homework")}
+                                </b>
+                                {row.report_detail.homework}
+                              </p>
+                            )}
+                            {row.report_detail.notes && (
+                              <p>
+                                <b>
+                                  {t("console_session_review.report.notes")}
+                                </b>
+                                {row.report_detail.notes}
+                              </p>
+                            )}
+                            {row.report_detail.next_plan && (
+                              <p>
+                                <b>
+                                  {t("console_session_review.report.next_plan")}
+                                </b>
+                                {row.report_detail.next_plan}
+                              </p>
+                            )}
+                            {row.report_detail.students.map((student) => (
+                              <p key={student.id}>
+                                <b>{student.name}</b>
+                                <bdi>
+                                  {formatNumber(student.participation ?? 0)} /{" "}
+                                  {formatNumber(student.performance ?? 0)} /{" "}
+                                  {formatNumber(student.commitment ?? 0)}
+                                </bdi>{" "}
+                                <small>
+                                  {t("console_session_review.report.scores")}
+                                </small>
+                                {student.note ? ` — ${student.note}` : ""}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </td>
                   <td>
@@ -308,13 +444,28 @@ export default function SessionReview({
                         </div>
                       </form>
                     ) : (
-                      <button
-                        type="button"
-                        className="console-button"
-                        onClick={() => start(row)}
-                      >
-                        {t("console_session_review.columns.decision")}
-                      </button>
+                      <div className="console-actions">
+                        {row.ready && can.complete && (
+                          <button
+                            type="button"
+                            className="console-button primary"
+                            title={t("console_session_review.quick.hint")}
+                            disabled={busy === row.id}
+                            onClick={() => approve(row)}
+                          >
+                            {busy === row.id
+                              ? t("console_session_review.quick.approving")
+                              : t("console_session_review.quick.approve")}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="console-button"
+                          onClick={() => start(row)}
+                        >
+                          {t("console_session_review.columns.decision")}
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>

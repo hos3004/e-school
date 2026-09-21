@@ -164,7 +164,8 @@ final class TeacherDuesController extends Controller
                     'actualTeacher' => $row->actualTeacher, 'isActualTeacher' => $row->actualTeacherId === $id,
                     'entries' => $entriesBySession[$row->id] ?? []];
             }
-            usort($lessons, static fn (array $a, array $b): int => strcmp($a['startsAt'], $b['startsAt']));
+            // الأحدث أولًا، كما في شاشة الاعتماد: ما جرى للتوّ هو محل القرار.
+            usort($lessons, static fn (array $a, array $b): int => strcmp($b['startsAt'], $a['startsAt']));
             $detail = ['limitExceeded' => $detailLimitExceeded, 'canPropose' => $staff->userIdForProfile($org, $id) !== null, 'id' => $id, 'name' => $names[$id] ?? __('console_dues.archived_teacher'),
                 'counts' => $report->limitExceeded ? null : $this->counts($rowsByTeacher[$id] ?? []),
                 'totals' => $moneyByTeacher[$id] ?? [], 'lessons' => $lessons, 'entries' => $entries,

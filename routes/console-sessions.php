@@ -35,6 +35,16 @@ Route::post('/sessions/{session}/review', [SessionReviewController::class, 'fina
     ->whereUlid('session')
     ->middleware('can:session.view')
     ->name('sessions.review.decide');
+
+/*
+ * الاعتماد السريع: نفس قرار «اعتماد» ونفس الخدمة، بلا سبب مكتوب لأن الدليل
+ * مرصود في البيانات فيُولَّد منه. صلاحيته هي صلاحية الاعتماد نفسها، والأهلية
+ * تُفحص في الكنترولر لا في الواجهة.
+ */
+Route::post('/sessions/{session}/approve', [SessionReviewController::class, 'approve'])
+    ->whereUlid('session')
+    ->middleware(['can:session.view', 'can:session.finalize'])
+    ->name('sessions.review.approve');
 Route::get('/sessions/{session}/report', SessionReportController::class)
     ->whereUlid('session')
     ->middleware(['can:session.view', 'can:report.view'])

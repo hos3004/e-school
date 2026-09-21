@@ -1127,8 +1127,16 @@ final readonly class PortalData
         string $locale,
         string $organizationId,
     ): array {
+        /*
+         * `scheduled` و`confirmed` جزء من هذه القائمة عمدًا: الحصة التي مضى
+         * موعدها ولم يفتح المعلم غرفتها من المنصة لا يحرّكها شيء آلي، فكانت
+         * تختفي من كل شاشات المعلم بينما هي أكبر مصدر لحصص بلا مستحق. إظهارها
+         * هنا هو الطريق الوحيد ليعرف أن عليه تقريرًا عنها.
+         */
         $rows = $this->teacherSessionsQuery($staffProfileId, $organizationId)
             ->whereIn('sessions.status', [
+                SessionStatus::Scheduled->value,
+                SessionStatus::Confirmed->value,
                 SessionStatus::AwaitingReview->value,
                 SessionStatus::Completed->value,
             ])

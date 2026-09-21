@@ -125,6 +125,40 @@ final class ConsoleLiveBoardTest extends TestCase
                 ->where('rows.0.teacherIn', false)->where('counts.running_no_teacher', 1));
     }
 
+    public function test_a_finished_session_separates_what_the_teacher_delivered_from_what_nobody_knows(): void
+    {
+        [$org, $staff, $teacherUser, $course] = $this->context();
+
+        // فتح المعلم الغرفة: دليل من المنصة نفسها على أن الحصة أُدّيت.
+        $opened = $this->lesson($org, $staff, $course, -300, -240);
+        DB::table('sessions')->where('id', $opened->id)
+            ->update(['actual_start' => $opened->scheduled_start]);
+
+        // لم تُفتح من المنصة، لكن المعلم أقرّ بأدائها في تقرير.
+        $reported = $this->lesson($org, $staff, $course, -230, -180);
+        DB::table('session_reports')->insert(['id' => (string) Str::ulid(), 'session_id' => $reported->id,
+            'staff_profile_id' => $staff, 'topics_covered' => 'مراجعة.', 'submitted_at' => now(),
+            'is_late' => false, 'created_at' => now(), 'updated_at' => now()]);
+
+        // لا دخول ولا تقرير: لا يُعرف إن كانت دُرِّست خارج المنصة أم لم تُقَم.
+        $silent = $this->lesson($org, $staff, $course, -170, -120);
+
+        // قرار موثَّق بعذر مقبول: حالة نهائية، فلا تُعرض كأنها تنتظر قرارًا.
+        $excused = $this->lesson($org, $staff, $course, -110, -60, SessionStatus::Excused);
+
+        $this->actingAs($this->watcher($org))->get('/manage/live')->assertOk()
+            ->assertInertia(function (Assert $page) use ($opened, $reported, $silent, $excused): void {
+                $states = collect($page->toArray()['props']['rows'])->pluck('state', 'id');
+
+                expect($states[$opened->id])->toBe('due')
+                    ->and($states[$reported->id])->toBe('due')
+                    ->and($states[$silent->id])->toBe('ended_unresolved')
+                    ->and($states[$excused->id])->toBe('ended');
+
+                $page->where('counts.due', 2)->where('counts.ended_unresolved', 1);
+            });
+    }
+
     public function test_the_board_shows_only_today_and_only_this_organization(): void
     {
         [$org, $staff, $teacherUser, $course] = $this->context();

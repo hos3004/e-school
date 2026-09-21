@@ -95,11 +95,30 @@ final class TeacherSessionController extends Controller
             'canRequestPostponement' => (bool) $request->user()?->can('session.postpone.request')
                 && in_array((string) $session['status'], [SessionStatus::Scheduled->value, SessionStatus::Confirmed->value], true),
             'canSubmitReport' => (bool) $request->user()?->can('session_report.create')
-                && in_array((string) $session['status'], [
-                    SessionStatus::InProgress->value,
-                    SessionStatus::AwaitingReview->value,
-                    SessionStatus::Completed->value,
-                ], true),
+                && $this->reportableState((string) $session['status'], (string) $session['endsAt']),
         ]);
+    }
+
+    /*
+     * الحصة التي مضى موعدها ولم يفتح المعلم غرفتها تبقى `scheduled` إلى الأبد،
+     * وقد تكون دُرِّست على وسيط خارجي. فتح التقرير لها يمنح المعلم مكانًا يثبت
+     * فيه ما جرى؛ حالة الحصة لا تتغير بالتقرير، فيبقى اعتماد الإدارة وحده هو
+     * ما يفتح قيدة المستحقات. الحارس الحقيقي في `SubmitSessionReportAction`،
+     * وهذا انعكاسه في الواجهة فقط.
+     */
+    private function reportableState(string $status, string $endsAt): bool
+    {
+        if (in_array($status, [
+            SessionStatus::InProgress->value,
+            SessionStatus::AwaitingReview->value,
+            SessionStatus::Completed->value,
+        ], true)) {
+            return true;
+        }
+
+        return in_array($status, [
+            SessionStatus::Scheduled->value,
+            SessionStatus::Confirmed->value,
+        ], true) && CarbonImmutable::parse($endsAt, 'UTC')->isPast();
     }
 }

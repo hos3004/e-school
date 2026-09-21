@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Console\Support\ConsoleContext;
 use App\Http\Controllers\Controller;
+use App\Services\Console\SessionRateSuggestion;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -42,6 +43,7 @@ final class LiveBoardController extends Controller
         StaffQueries $staff,
         StudentDirectoryQueries $students,
         AcademicCatalogQueries $catalog,
+        SessionRateSuggestion $rates,
         ConsoleContext $context,
     ): Response {
         $user = $request->user();
@@ -131,9 +133,52 @@ final class LiveBoardController extends Controller
             }
             $expected = count($studentRows);
 
+            /*
+             * «مستحقة» تُفصل عن «منتهية بلا قرار» بدليل واحد: هل يوجد ما يثبت
+             * أن المعلم أدّى الحصة؟ فتحه للغرفة من المنصة (`actual_start`) أو
+             * تقريره عنها. الأولى تنتظر توقيع الإدارة فقط، والثانية لا يُعرف
+             * عنها شيء بعد. خلطهما في عدّاد واحد هو ما جعل الحصص المؤدَّاة
+             * تضيع بين الحصص المشكوك فيها.
+             */
+            $reportSubmitted = (($reportStates[$session->id] ?? null)?->state() ?? 'missing') !== 'missing';
+            $state = $this->state(
+                $status,
+                $start,
+                $end,
+                $now,
+                $teacherIn,
+                $studentsIn,
+                $session->actualStart !== null || $reportSubmitted,
+            );
+
+            /*
+             * السعر يُفحص للمستحقة وحدها: اعتماد حصة بلا سعر يقفلها بلا أي
+             * قيدة ويُظهر للمعلم صفرًا بلا سبب، فالزر السريع لا يُعرض لها.
+             */
+            $rateOk = $state === 'due' ? $rates->hasApplicableRate((string) $session->id) : null;
+
+            /*
+             * الحصة التي ما زالت `in_progress` مستحقة فعلًا، لكن لا يقبلها
+             * الاعتماد بعد: مسار الإقفال يبدأ من `scheduled`/`confirmed` أو من
+             * `awaiting_review`، وهي بينهما حتى يلتقطها `sessions:end-elapsed`.
+             * عرض الزر لها كان يَعِد بما يرفضه الخادم، فيُخفى وحده وتبقى الحصة
+             * في عدّاد «مستحقة» حيث هي.
+             */
+            $approvable = $state === 'due' && in_array($status, [
+                SessionStatus::Scheduled,
+                SessionStatus::Confirmed,
+                SessionStatus::AwaitingReview,
+            ], true);
+
             $rows[] = [
                 'id' => (string) $session->id,
-                'state' => $this->state($status, $start, $end, $now, $teacherIn, $studentsIn),
+                'state' => $state,
+                'rateOk' => $rateOk,
+                'canApprove' => $approvable && $rateOk === true,
+                'needsRate' => $approvable && $rateOk === false,
+                'reportSubmitted' => $reportSubmitted,
+                'teacherJoined' => $session->actualStart !== null,
+                'approveUrl' => route('console.sessions.review.approve', ['session' => $session->id]),
                 'status' => (string) $session->status,
                 'statusLabel' => $status?->label() ?? (string) $session->status,
                 'start' => $start->setTimezone($timezone)->format('H:i'),
@@ -150,7 +195,7 @@ final class LiveBoardController extends Controller
                 'students' => $studentRows,
                 'studentsIn' => $studentsIn,
                 'studentsExpected' => $expected,
-                'reportMissing' => (($reportStates[$session->id] ?? null)?->state() ?? 'missing') === 'missing',
+                'reportMissing' => !$reportSubmitted,
                 'reviewUrl' => route('console.sessions.review'),
             ];
         }
@@ -180,9 +225,10 @@ final class LiveBoardController extends Controller
         'running_no_teacher' => 1,
         'running_no_student' => 2,
         'running_ok' => 3,
-        'upcoming' => 4,
-        'ended_unresolved' => 5,
-        'ended' => 6,
+        'due' => 4,
+        'upcoming' => 5,
+        'ended_unresolved' => 6,
+        'ended' => 7,
     ];
 
     private function state(
@@ -192,10 +238,12 @@ final class LiveBoardController extends Controller
         CarbonImmutable $now,
         bool $teacherIn,
         int $studentsIn,
+        bool $teacherEvidence,
     ): string {
         $closed = in_array($status, [
             SessionStatus::Completed,
             SessionStatus::NoShow,
+            SessionStatus::Excused,
             SessionStatus::CancelledByStudent,
             SessionStatus::CancelledByTeacher,
             SessionStatus::CancelledBySchool,
@@ -217,7 +265,7 @@ final class LiveBoardController extends Controller
          * منفصلة لأنها الوحيدة التي تتحول إلى مال ضائع إن تُركت.
          */
         if ($now->greaterThanOrEqualTo($end)) {
-            return 'ended_unresolved';
+            return $teacherEvidence ? 'due' : 'ended_unresolved';
         }
 
         return match (true) {

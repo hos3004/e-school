@@ -67,6 +67,20 @@
   color: #176448;
 }
 
+/*
+ * «مستحقة»: حصة أُدّيت ولم يبقَ إلا توقيع الإدارة. ليست إنذارًا ولا اطمئنانًا،
+ * فلا تصلح لها نبرة الأحمر ولا الأخضر — لها لونها ووزنها الخاص لأنها الحالة
+ * الوحيدة في هذه الشاشة التي تتحول إلى مال بمجرد الضغط عليها.
+ */
+.live-count.is-due {
+  border-color: #9fd4de;
+  background: #f0fafc;
+  box-shadow: inset 0 0 0 1px #cfeaf0;
+}
+.live-count.is-due b {
+  color: #0b6070;
+}
+
 .live-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -91,6 +105,12 @@
 .live-card.state-running_ok {
   border-inline-start-color: #1d9e75;
   background: #f5fbf8;
+}
+.live-card.state-due {
+  border-inline-start-width: 6px;
+  border-inline-start-color: #0e7490;
+  border-color: #b9dfe8;
+  background: #f4fbfd;
 }
 .live-card.state-ended_unresolved {
   border-inline-start-color: #8a5cd0;
@@ -136,6 +156,11 @@
   background: #d9f0e5;
   color: #14604a;
 }
+.live-card.state-due .live-state {
+  background: #d3edf4;
+  color: #0b5a69;
+  font-weight: 600;
+}
 .live-card.state-ended_unresolved .live-state {
   background: #ece2fa;
   color: #5a3a95;
@@ -176,6 +201,30 @@
   margin-top: 8px;
   font-size: 11px;
   color: #7d5210;
+}
+.live-flag.is-due {
+  color: #0b5a69;
+  font-weight: 600;
+}
+.live-due {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #d7ecf2;
+}
+.live-due small {
+  font-size: 11px;
+  color: var(--console-muted);
+  line-height: 1.6;
+}
+.live-due .console-button {
+  align-self: stretch;
+}
+.live-blocked {
+  color: #8a5a12;
 }
 @media (max-width: 640px) {
   .live-grid {

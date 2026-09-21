@@ -365,6 +365,51 @@
   font-variant-numeric: tabular-nums;
   margin-top: 5px;
 }
+/*
+ * «مستحقة» — حصة أُدّيت ولم يبقَ إلا اعتمادها. تُميَّز في العدّاد وفي الصف معًا
+ * لأنها الفئة الوحيدة هنا التي تتحول إلى مستحق بضغطة، وخلطها ببقية المعلّق هو
+ * ما جعل الحصص المؤدَّاة تضيع بين الحصص التي لا يُعرف عنها شيء.
+ */
+.console-metric.is-due {
+  background: #f0fafc;
+}
+.console-metric.is-due strong {
+  color: #0b6070;
+}
+.console-table tr.is-due td {
+  background: #f7fcfd;
+  box-shadow: inset 3px 0 0 #0e7490;
+}
+.console-due-badge {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #d3edf4;
+  color: #0b5a69;
+  font-weight: 600;
+}
+.console-report-detail {
+  margin-top: 8px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: #f7f9fa;
+  border: 1px solid var(--console-line);
+  max-width: 340px;
+}
+.console-report-detail p {
+  margin: 0 0 7px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.console-report-detail p:last-child {
+  margin-bottom: 0;
+}
+.console-report-detail b {
+  display: block;
+  font-weight: 600;
+  color: var(--console-ink);
+}
 .console-table-wrap {
   width: 100%;
   overflow: auto;

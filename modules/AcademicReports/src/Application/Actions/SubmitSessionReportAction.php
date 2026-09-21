@@ -65,7 +65,36 @@ final readonly class SubmitSessionReportAction
             );
         }
 
-        if (!in_array($session->status, [
+        /*
+         * الحالات التي تقبل تقريرًا ثلاث مجموعات لا واحدة:
+         *
+         *   in_progress / awaiting_review / completed
+         *       المسار الطبيعي — الحصة فُتحت من المنصة.
+         *
+         *   scheduled / confirmed بعد انتهاء موعدها
+         *       الحصة التي لم يفتح المعلم غرفتها من المنصة تبقى `scheduled`
+         *       إلى الأبد ولا يحركها شيء آلي، بينما قد تكون دُرِّست على وسيط
+         *       خارجي. منع التقرير عنها كان يعني أن الدليل الوحيد الذي يملكه
+         *       المعلم لا مكان له في النظام. التقرير هنا إقرار لا قرار: حالة
+         *       الحصة لا تتغير، فيبقى اعتماد الإدارة الطريق الوحيد إلى قيدة
+         *       المستحقات.
+         *
+         *   ما عدا ذلك (مؤجلة، معتذر عنها، ملغاة، متجاوَزة)
+         *       قرار موثَّق بأن الحصة لم تُقَم كما جُدولت، فالتقرير عنها يناقضه.
+         */
+        $awaitingDecision = in_array($session->status, [
+            SessionStatus::Scheduled->value,
+            SessionStatus::Confirmed->value,
+        ], true);
+
+        if ($awaitingDecision) {
+            if (CarbonImmutable::parse($session->scheduledEnd, 'UTC')->isFuture()) {
+                throw BusinessRuleViolation::make(
+                    'academicreports.session_report.session_not_ended',
+                    'academicreports::errors.session_report_session_not_ended',
+                );
+            }
+        } elseif (!in_array($session->status, [
             SessionStatus::InProgress->value,
             SessionStatus::AwaitingReview->value,
             SessionStatus::Completed->value,

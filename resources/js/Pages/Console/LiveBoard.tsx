@@ -17,6 +17,12 @@ type LiveRow = {
   state: string;
   status: string;
   statusLabel: string;
+  rateOk: boolean | null;
+  canApprove: boolean;
+  needsRate: boolean;
+  reportSubmitted: boolean;
+  teacherJoined: boolean;
+  approveUrl: string;
   start: string;
   end: string;
   startsAt: string;
@@ -47,6 +53,7 @@ const TONE: Record<string, string> = {
   running_no_teacher: "is-alert",
   running_no_student: "is-warn",
   running_ok: "is-ok",
+  due: "is-due",
   upcoming: "",
   ended_unresolved: "is-warn",
   ended: "",
@@ -56,10 +63,25 @@ const ORDER = [
   "running_no_teacher",
   "running_no_student",
   "running_ok",
+  "due",
   "upcoming",
   "ended_unresolved",
   "ended",
 ];
+
+/*
+ * الدليل الذي جعل الحصة «مستحقة» يُقال صراحةً على البطاقة: من يعتمد بضغطة
+ * واحدة يحتاج أن يرى على أي شيء يوقّع، لا أن يثق بتصنيف صامت.
+ */
+function evidenceKey(row: LiveRow): string {
+  if (row.teacherJoined && row.reportSubmitted) {
+    return "console_live.due_evidence_joined_with_report";
+  }
+
+  return row.teacherJoined
+    ? "console_live.due_evidence_joined"
+    : "console_live.due_evidence_report";
+}
 
 export default function LiveBoard({
   rows,
@@ -70,6 +92,8 @@ export default function LiveBoard({
 }: Props) {
   const t = useI18n();
   const [filter, setFilter] = useState("all");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (refreshSeconds <= 0) return;
@@ -82,6 +106,26 @@ export default function LiveBoard({
   const visible = rows.filter(
     (row) => filter === "all" || row.state === filter,
   );
+
+  /*
+   * `expected_status` تُرسل كما عُرضت: لو تغيّرت الحصة بين اللقطة والضغط —
+   * اعتمدها زميل أو أقفلها الأمر المجدول — يرفض الخادم القرار بدل أن يبنيه
+   * على شاشة قديمة.
+   */
+  const approve = (row: LiveRow) => {
+    setError(null);
+    setBusy(row.id);
+    router.post(
+      row.approveUrl,
+      { expected_status: row.status },
+      {
+        preserveScroll: true,
+        onError: (errors) =>
+          setError(errors.decision ?? errors.expected_status ?? null),
+        onFinish: () => setBusy(null),
+      },
+    );
+  };
 
   return (
     <ConsoleLayout
@@ -108,6 +152,12 @@ export default function LiveBoard({
           </button>
         ))}
       </div>
+
+      {error && (
+        <p className="console-feedback is-error" role="alert">
+          {error}
+        </p>
+      )}
 
       {filter !== "all" && (
         <p className="console-feedback" role="status">
@@ -174,6 +224,35 @@ export default function LiveBoard({
                 <bdi>{formatNumber(row.minutes)}</bdi>{" "}
                 {t("console_live.minute")} · {row.statusLabel}
               </p>
+
+              {row.state === "due" && (
+                <div className="live-due">
+                  <span className="live-flag is-due">
+                    {t("console_live.due_flag")}
+                  </span>
+                  <small>{t(evidenceKey(row))}</small>
+                  {canReview && row.canApprove && (
+                    <button
+                      type="button"
+                      className="console-button primary"
+                      disabled={busy === row.id}
+                      onClick={() => approve(row)}
+                    >
+                      {busy === row.id
+                        ? t("console_live.approving")
+                        : t("console_live.approve")}
+                    </button>
+                  )}
+                  {canReview && row.needsRate && (
+                    <small className="live-blocked">
+                      {t("console_live.due_no_rate")}{" "}
+                      <Link className="inline-link" href={row.reviewUrl}>
+                        {t("console_live.go_review")}
+                      </Link>
+                    </small>
+                  )}
+                </div>
+              )}
 
               {row.state === "ended_unresolved" && (
                 <span className="live-flag">
