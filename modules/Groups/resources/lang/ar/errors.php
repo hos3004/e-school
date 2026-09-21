@@ -34,4 +34,10 @@ return [
     'activation_data_incomplete' => 'لا يمكن تفعيل المجموعة قبل استكمال: :missing.',
     'capacity_below_members' => 'السعة المدخلة (:capacity) أقل من عدد الطلاب المسكَّنين بالفعل (:members).',
     'invalid_membership_transition' => 'لا يمكن نقل الانتساب من حالة «:from» إلى «:to».',
+    'closure_reason_required' => 'لا يمكن إقفال مجموعة أو إعادة فتحها دون كتابة السبب.',
+    'group_already_closed' => 'المجموعة «:code» مُقفلة بالفعل.',
+    'group_not_closed' => 'المجموعة «:code» غير مُقفلة، فلا شيء يُعاد فتحه.',
+    'group_closure_blocked' => 'لا يمكن إقفال المجموعة «:code» الآن لأن فيها :blockers. انقل الطلاب أو أنهِ الحصص المتبقية ثم أعد المحاولة. الإقفال لا يحذف شيئًا ويمكن التراجع عنه بإعادة الفتح.',
+    'closure_blocker_members_active' => ':count طالب ما زال منتسبًا',
+    'closure_blocker_sessions_open' => ':count حصة لم تصل حالة نهائية',
 ];

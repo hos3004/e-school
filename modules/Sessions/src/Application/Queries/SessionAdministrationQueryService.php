@@ -422,4 +422,118 @@ final readonly class SessionAdministrationQueryService implements SessionAdminis
             makeupForSessionId: $session->makeup_for_session_id === null ? null : (string) $session->makeup_for_session_id,
         );
     }
+
+    public function closureFactsForCourses(string $organizationId, array $courseIds): array
+    {
+        $courseIds = array_values(array_unique(array_filter($courseIds)));
+
+        if ($courseIds === []) {
+            return self::emptyClosureFacts();
+        }
+
+        return $this->closureFacts(
+            Session::query()->forOrganization($organizationId)->whereIn('course_id', $courseIds),
+        );
+    }
+
+    public function closureFactsForGroup(string $organizationId, string $groupId): array
+    {
+        return $this->closureFacts(
+            Session::query()->forOrganization($organizationId)->where('group_id', $groupId),
+        );
+    }
+
+    /**
+     * يجمع الحقائق من استعلام أساس واحد.
+     *
+     * الحصص المحذوفة ناعمًا خارج الحساب تلقائيًا عبر SoftDeletes، وهو المطلوب:
+     * حصة في سلة المهملات ليست حصة انعقدت.
+     *
+     * الفرق بين  و مقصود: المانع هو ما بقي على
+     * التقويم أمامنا، لا كل ما لم يصل حالة نهائية. حصة مضى موعدها ولم يفتحها
+     * أحد ليست شغلًا قائمًا بل مخلَّفات؛ لو منعت الأرشفة لما أمكن أرشفة شيء.
+     * تُسجَّل مع ذلك في الحصيلة كي تقول البطاقة الحقيقة عمّا لم يُغلق.
+     *
+     * و`sessions_other` تجمع ما ليس منعقدًا ولا ملغيًا ولا مفتوحًا — الغياب
+     * والعذر والتأجيل والمستبدَل — كي تُطابق البنود مجموعها ولا تبدو البطاقة
+     * كأن شيئًا لم يحدث في كورس معظم حصصه استُبدلت.
+     *
+     * @param Builder<Session> $base
+     * @return array{sessions_total: int, sessions_completed: int, sessions_cancelled: int, sessions_open: int, sessions_stale: int, sessions_other: int, students_distinct: int, teachers_distinct: int, first_session_at: string|null, last_session_at: string|null}
+     */
+    private function closureFacts(Builder $base): array
+    {
+        $openStatuses = array_values(array_map(
+            static fn (SessionStatus $status): string => $status->value,
+            array_filter(SessionStatus::cases(), static fn (SessionStatus $status): bool => !$status->isTerminal()),
+        ));
+
+        $cancelledStatuses = [
+            SessionStatus::CancelledByStudent->value,
+            SessionStatus::CancelledByTeacher->value,
+            SessionStatus::CancelledBySchool->value,
+        ];
+
+        // المنعقد هو المكتمل وحده؛ حصة تنتظر المراجعة لم تُغلق بعد فلا تُحسب معه.
+        $completedStatuses = [SessionStatus::Completed->value];
+
+        $now = CarbonImmutable::now('UTC');
+
+        /** @var object{total: int, teachers: int, first_at: string|null, last_at: string|null}|null $totals */
+        $totals = (clone $base)
+            ->selectRaw('count(*) as total')
+            ->selectRaw('count(distinct staff_profile_id) as teachers')
+            ->selectRaw('min(scheduled_start) as first_at')
+            ->selectRaw('max(scheduled_start) as last_at')
+            ->first();
+
+        $students = SessionParticipant::query()
+            ->whereIn('session_id', (clone $base)->select('id'))
+            ->distinct()
+            ->count('student_profile_id');
+
+        return [
+            'sessions_total' => (int) ($totals->total ?? 0),
+            'sessions_completed' => (clone $base)->whereIn('status', $completedStatuses)->count(),
+            'sessions_cancelled' => (clone $base)->whereIn('status', $cancelledStatuses)->count(),
+            'sessions_open' => (clone $base)->whereIn('status', $openStatuses)
+                ->where('scheduled_start', '>=', $now)->count(),
+            'sessions_stale' => (clone $base)->whereIn('status', $openStatuses)
+                ->where('scheduled_start', '<', $now)->count(),
+            'sessions_other' => (clone $base)->whereNotIn(
+                'status',
+                [...$completedStatuses, ...$cancelledStatuses, ...$openStatuses],
+            )->count(),
+            'students_distinct' => $students,
+            'teachers_distinct' => (int) ($totals->teachers ?? 0),
+            'first_session_at' => self::asIso($totals->first_at ?? null),
+            'last_session_at' => self::asIso($totals->last_at ?? null),
+        ];
+    }
+
+    /**
+     * @return array{sessions_total: int, sessions_completed: int, sessions_cancelled: int, sessions_open: int, sessions_stale: int, sessions_other: int, students_distinct: int, teachers_distinct: int, first_session_at: string|null, last_session_at: string|null}
+     */
+    private static function emptyClosureFacts(): array
+    {
+        return [
+            'sessions_total' => 0,
+            'sessions_completed' => 0,
+            'sessions_cancelled' => 0,
+            'sessions_open' => 0,
+            'sessions_stale' => 0,
+            'sessions_other' => 0,
+            'students_distinct' => 0,
+            'teachers_distinct' => 0,
+            'first_session_at' => null,
+            'last_session_at' => null,
+        ];
+    }
+
+    private static function asIso(?string $value): ?string
+    {
+        return $value === null || $value === ''
+            ? null
+            : CarbonImmutable::parse($value, 'UTC')->toIso8601String();
+    }
 }

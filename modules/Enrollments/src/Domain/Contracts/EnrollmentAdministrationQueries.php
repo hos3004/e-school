@@ -22,4 +22,14 @@ interface EnrollmentAdministrationQueries
         string $programId,
         array $studentProfileIds = [],
     ): array;
+
+    /**
+     * حقائق القيود اللازمة لحصيلة إقفال برنامج.
+     *
+     * `enrollments_live` مانع: قيد لم يصل حالة نهائية يعني طالبًا ما زال في
+     * البرنامج، وأرشفة البرنامج تحته تخفي دراسة جارية.
+     *
+     * @return array{enrollments_total: int, enrollments_live: int, enrollments_completed: int, enrollments_withdrawn: int, students_distinct: int}
+     */
+    public function closureFactsForProgram(string $organizationId, string $programId): array;
 }

@@ -77,6 +77,17 @@ function attemptApiAllowCourseEnrollment(string $studentProfileId): void
                 ? [$this->studentProfileId => 'test-active-enrollment']
                 : [];
         }
+
+        public function closureFactsForProgram(string $organizationId, string $programId): array
+        {
+            return [
+                'enrollments_total' => 0,
+                'enrollments_live' => 0,
+                'enrollments_completed' => 0,
+                'enrollments_withdrawn' => 0,
+                'students_distinct' => 0,
+            ];
+        }
     });
 }
 

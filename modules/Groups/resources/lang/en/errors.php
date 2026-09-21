@@ -34,4 +34,10 @@ return [
     'activation_data_incomplete' => 'The group cannot be activated before completing: :missing.',
     'capacity_below_members' => 'The capacity entered (:capacity) is lower than the number of students already placed (:members).',
     'invalid_membership_transition' => 'A membership cannot move from “:from” to “:to”.',
+    'closure_reason_required' => 'A group cannot be closed or reopened without a written reason.',
+    'group_already_closed' => 'Group :code is already closed.',
+    'group_not_closed' => 'Group :code is not closed, so there is nothing to reopen.',
+    'group_closure_blocked' => 'Group :code cannot be closed yet because it still holds :blockers. Move the students or finish the remaining sessions, then try again. Closing deletes nothing and can be undone by reopening.',
+    'closure_blocker_members_active' => ':count student(s) still enrolled',
+    'closure_blocker_sessions_open' => ':count session(s) not yet in a final state',
 ];

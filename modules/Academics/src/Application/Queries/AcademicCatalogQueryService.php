@@ -16,6 +16,7 @@ final readonly class AcademicCatalogQueryService implements AcademicCatalogQueri
     {
         return Program::query()
             ->forOrganization($organizationId)
+            ->open()
             ->active()
             ->orderBy('sort_order')
             ->orderBy('code')
@@ -29,6 +30,7 @@ final readonly class AcademicCatalogQueryService implements AcademicCatalogQueri
     {
         return Course::query()
             ->forOrganization($organizationId)
+            ->open()
             ->active()
             ->whereHas('level', static fn ($query) => $query->where('program_id', $programId))
             ->with('level')
@@ -150,5 +152,56 @@ final readonly class AcademicCatalogQueryService implements AcademicCatalogQueri
             $ids,
             static fn (mixed $id): bool => is_string($id) && $id !== '',
         )));
+    }
+
+    public function closureFactsForProgram(string $organizationId, string $programId): array
+    {
+        $levelIds = Level::query()->where('program_id', $programId)->pluck('id')->all();
+
+        $courses = Course::query()
+            ->forOrganization($organizationId)
+            ->whereIn('level_id', $levelIds);
+
+        return [
+            'levels_total' => count($levelIds),
+            'courses_total' => (clone $courses)->count(),
+            'courses_open' => (clone $courses)->whereNull('closed_at')->count(),
+            'courses_active' => (clone $courses)->where('is_active', true)->whereNull('closed_at')->count(),
+            'courses_closed' => (clone $courses)->whereNotNull('closed_at')->count(),
+        ];
+    }
+
+    public function courseIdsForProgram(string $organizationId, string $programId): array
+    {
+        $levelIds = Level::query()->where('program_id', $programId)->pluck('id')->all();
+
+        return Course::query()
+            ->forOrganization($organizationId)
+            ->whereIn('level_id', $levelIds)
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
+    public function closureFactsForCourse(string $organizationId, string $courseId): array
+    {
+        $course = Course::query()
+            ->forOrganization($organizationId)
+            ->whereKey($courseId)
+            ->first();
+
+        if ($course === null) {
+            return ['level_id' => null, 'program_id' => null, 'planned_sessions' => null, 'is_active' => false];
+        }
+
+        $programId = Level::query()->whereKey($course->level_id)->value('program_id');
+
+        return [
+            'level_id' => (string) $course->level_id,
+            'program_id' => $programId === null ? null : (string) $programId,
+            'planned_sessions' => $course->total_sessions,
+            'is_active' => (bool) $course->is_active,
+        ];
     }
 }

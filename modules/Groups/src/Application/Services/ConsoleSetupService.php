@@ -37,6 +37,7 @@ final readonly class ConsoleSetupService
     {
         Gate::authorize('viewAny', Group::class);
         $groups = Group::query()->forOrganization($organizationId)
+            ->open()
             ->with(['programs', 'teachers' => fn ($query) => $query->whereNull('assigned_to')])
             ->withCount(['memberships as occupied_seats' => fn ($query) => $query->whereNull('left_at')])
             ->orderByDesc('created_at')->get();

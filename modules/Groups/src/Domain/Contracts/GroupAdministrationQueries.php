@@ -78,4 +78,14 @@ interface GroupAdministrationQueries
      * @return array<string, int> مفتوحة بمعرّف ملف الموظف
      */
     public function activeAssignmentCountsForTeachers(string $organizationId, array $staffProfileIds): array;
+
+    /**
+     * حقائق المجموعة اللازمة لحصيلة إقفالها.
+     *
+     * `members_active` هو المانع: مجموعة ما زال فيها طلاب نشطون شغلٌ قائم،
+     * وإخفاؤها من الواجهة يخفي عن الإدارة ما تحتاج رؤيته.
+     *
+     * @return array{members_total: int, members_active: int, teachers_total: int, programs_total: int, capacity: int|null, status: string, starts_on: string|null, ends_on: string|null}
+     */
+    public function closureFactsForGroup(string $organizationId, string $groupId): array;
 }

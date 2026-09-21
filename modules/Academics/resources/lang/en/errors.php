@@ -26,4 +26,13 @@ return [
     'category_parent_invalid' => 'The parent category is invalid or belongs to another organization.',
     'category_outside_course_program' => 'A category does not belong to the course organization or program.',
     'organization_required' => 'An organization is required for this academic operation.',
+    'program_already_closed' => 'Program :code is already closed.',
+    'program_not_closed' => 'Program :code is not closed, so there is nothing to reopen.',
+    'program_closure_blocked' => 'Program :code cannot be closed yet because it still holds :blockers. Finish or close what is under it first, then try again. Closing deletes nothing and can be undone by reopening.',
+    'course_already_closed' => 'Course :code is already closed.',
+    'course_not_closed' => 'Course :code is not closed, so there is nothing to reopen.',
+    'course_closure_blocked' => 'Course :code cannot be closed yet because it still holds :blockers. Finish or cancel the remaining sessions, then try again. Closing deletes nothing and can be undone by reopening.',
+    'closure_blocker_courses_active' => ':count active course(s)',
+    'closure_blocker_enrollments_live' => ':count enrollment(s) still open',
+    'closure_blocker_sessions_open' => ':count session(s) not yet in a final state',
 ];

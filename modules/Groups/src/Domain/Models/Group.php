@@ -29,6 +29,10 @@ use Shared\Concerns\HasUlid;
  * @property CarbonImmutable|null $updated_at
  * @property int $active_members_count
  * @property int $occupied_seats_count المقاعد المشغولة (نشط + معلّق) — من withCount
+ * @property CarbonImmutable|null $closed_at
+ * @property string|null $closed_by
+ * @property string|null $closure_reason
+ * @property array<string, mixed>|null $closure_summary
  * @property-read Collection<int, GroupTeacher> $teachers
  */
 final class Group extends Model
@@ -53,6 +57,8 @@ final class Group extends Model
     protected function casts(): array
     {
         return [
+            'closed_at' => 'immutable_datetime',
+            'closure_summary' => 'array',
             'name' => 'array',
             'capacity' => 'integer',
             'timezone' => 'string',
@@ -114,5 +120,36 @@ final class Group extends Model
     public function scopeWithStatus(Builder $query, GroupStatus $status): Builder
     {
         return $query->where('status', $status);
+    }
+
+    /**
+     * المفتوح — ما يظهر في الواجهة اليومية.
+     *
+     * الإقفال يخفي من العرض ولا يحذف؛ لذلك الفلترة هنا صريحة في الاستعلام بدل
+     * global scope: الحصيلة والتقارير تحتاج المُقفل، ولو أُخفي عالميًا لعادت
+     * أرقامها أصفارًا من حيث لا يشعر المستدعي.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
+    public function scopeOpen(Builder $query): Builder
+    {
+        return $query->whereNull('closed_at');
+    }
+
+    /**
+     * المُقفل — محتوى الأرشيف.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
+     */
+    public function scopeClosed(Builder $query): Builder
+    {
+        return $query->whereNotNull('closed_at');
+    }
+
+    public function isClosed(): bool
+    {
+        return $this->closed_at !== null;
     }
 }

@@ -107,4 +107,25 @@ interface SessionAdministrationQueries
         int $beforeMinutes,
         int $afterMinutes,
     ): ?SessionAdministrationData;
+
+    /**
+     * حقائق الحصص اللازمة لحصيلة إقفال كورس أو برنامج.
+     *
+     * تُجمع على قائمة كورسات دفعةً واحدة: حصيلة البرنامج هي مجموع كورساته،
+     * وجمعها في استعلام واحد يمنع N+1 على برنامج بعشرات الكورسات.
+     *
+     * `sessions_open` هو المانع: حصة لم تصل حالة نهائية بعد تعني شغلًا قائمًا،
+     * وأرشفة ما تحته شغل قائم تُخفي عن الإدارة ما تحتاج رؤيته.
+     *
+     * @param list<string> $courseIds
+     * @return array{sessions_total: int, sessions_completed: int, sessions_cancelled: int, sessions_open: int, sessions_stale: int, sessions_other: int, students_distinct: int, teachers_distinct: int, first_session_at: string|null, last_session_at: string|null}
+     */
+    public function closureFactsForCourses(string $organizationId, array $courseIds): array;
+
+    /**
+     * حقائق الحصص اللازمة لحصيلة إقفال مجموعة.
+     *
+     * @return array{sessions_total: int, sessions_completed: int, sessions_cancelled: int, sessions_open: int, sessions_stale: int, sessions_other: int, students_distinct: int, teachers_distinct: int, first_session_at: string|null, last_session_at: string|null}
+     */
+    public function closureFactsForGroup(string $organizationId, string $groupId): array;
 }

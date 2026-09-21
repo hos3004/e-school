@@ -33,6 +33,7 @@ final readonly class ConsoleContext
             ['session_reports', '/manage/reports/session-reports', 'work', 'report.view'],
             ['whatsapp', '/manage/whatsapp', 'tools', 'admin.panel.access'],
             ['settings', '/manage/settings', 'tools', 'organizations.view'],
+            ['archive', '/manage/archive', 'tools', 'admin.panel.access'],
             ['directory', '/manage/directory', 'tools', 'admin.panel.access'],
             ['portal', '/learn/entry', 'tools', 'admin.panel.access'],
         ];

@@ -21,4 +21,13 @@ return [
     'category_parent_invalid' => 'La catégorie parente est invalide.',
     'category_outside_course_program' => 'Une catégorie ne correspond pas au programme ou à l’organisation du cours.',
     'organization_required' => 'Une organisation est obligatoire pour cette opération académique.',
+    'program_already_closed' => 'Le programme :code est deja cloture.',
+    'program_not_closed' => 'Le programme :code n\'est pas cloture, il n\'y a donc rien a rouvrir.',
+    'program_closure_blocked' => 'Le programme :code ne peut pas encore etre cloture car il contient :blockers. Terminez ou cloturez ce qui s\'y trouve, puis reessayez. La cloture ne supprime rien et peut etre annulee par une reouverture.',
+    'course_already_closed' => 'Le cours :code est deja cloture.',
+    'course_not_closed' => 'Le cours :code n\'est pas cloture, il n\'y a donc rien a rouvrir.',
+    'course_closure_blocked' => 'Le cours :code ne peut pas encore etre cloture car il contient :blockers. Terminez ou annulez les seances restantes, puis reessayez. La cloture ne supprime rien et peut etre annulee par une reouverture.',
+    'closure_blocker_courses_active' => ':count cours actif(s)',
+    'closure_blocker_enrollments_live' => ':count inscription(s) encore ouverte(s)',
+    'closure_blocker_sessions_open' => ':count seance(s) pas encore dans un etat final',
 ];
