@@ -54,7 +54,7 @@ final class GroupScheduleController extends Controller
 
         return $this->editor($request, [
             'id' => null, 'group_id' => $filters['group'] ?? '', 'course_id' => $filters['course'] ?? '', 'staff_profile_id' => $filters['teacher'] ?? '',
-            'weekdays' => [], 'start_time' => '',
+            'weekdays' => [], 'start_time' => '', 'weekly_slots' => [],
             'duration_minutes' => isset($filters['duration']) ? (int) $filters['duration'] : (int) config('scheduling.default_duration_minutes'),
             'interval_weeks' => isset($filters['interval']) ? (int) $filters['interval'] : 1,
             'timezone' => $filters['timezone'] ?? $clock['timezone'],

@@ -20,11 +20,16 @@ final class GroupScheduleRequest extends FormRequest
         $today = now(is_string($timezone) && in_array($timezone, timezone_identifiers_list(), true) ? $timezone : config('app.timezone'))->toDateString();
 
         return [
-            'organization_id' => ['prohibited'], 'actor_id' => ['prohibited'], 'student_profile_id' => ['prohibited'], 'weekly_slots' => ['prohibited'],
+            'organization_id' => ['prohibited'], 'actor_id' => ['prohibited'], 'student_profile_id' => ['prohibited'],
             'target_type' => ['prohibited'], 'rrule' => ['prohibited'], 'is_active' => ['prohibited'],
             'group_id' => ['required', 'ulid'], 'course_id' => ['required', 'ulid'], 'staff_profile_id' => ['required', 'ulid'],
             'weekdays' => ['required', 'array', 'min:1', 'max:7'], 'weekdays.*' => ['required', 'integer', 'between:0,6', 'distinct'],
             'start_time' => ['required', 'date_format:H:i'],
+            // أوقات مختلفة لكل يوم — اختياري. لو أُرسلت، أيامها يجب أن تطابق weekdays
+            // بالضبط (نفس الأيام، بلا نقص أو زيادة)؛ تحقق التطابق في ScheduleDefinitionValidator.
+            'weekly_slots' => ['nullable', 'array', 'max:7'],
+            'weekly_slots.*.weekday' => ['required', 'integer', 'between:0,6', 'distinct'],
+            'weekly_slots.*.start_time' => ['required', 'date_format:H:i'],
             // مدة مخصّصة ضمن حدود المؤسسة؛ تسعير المدة خارج كتالوج المجموعات
             // يتحقق منه ScheduleDefinitionValidator على سعر عقد المعلم بهذا الكورس.
             'duration_minutes' => [

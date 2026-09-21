@@ -13,6 +13,7 @@ import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import { useI18n } from "@/lib/i18n";
 import "../../../css/console-sessions.css";
 
+type WeeklySlot = { weekday: number; start_time: string };
 type Schedule = {
   id: string | null;
   group_id: string;
@@ -20,6 +21,7 @@ type Schedule = {
   staff_profile_id: string;
   weekdays: number[];
   start_time: string;
+  weekly_slots: WeeklySlot[];
   duration_minutes: number;
   interval_weeks: number;
   timezone: string;
@@ -61,6 +63,10 @@ type Props = {
   can: { group: boolean; sessions: boolean };
 };
 
+function sortSlots(slots: WeeklySlot[]): WeeklySlot[] {
+  return [...slots].sort((a, b) => a.weekday - b.weekday);
+}
+
 export default function GroupScheduleEditor({
   schedule,
   groups,
@@ -75,12 +81,21 @@ export default function GroupScheduleEditor({
   can,
 }: Props) {
   const t = useI18n();
+  const initialWeeklySlots = sortSlots(
+    schedule.weekly_slots.length > 0
+      ? schedule.weekly_slots
+      : schedule.weekdays.map((day) => ({
+          weekday: day,
+          start_time: schedule.start_time,
+        })),
+  );
   const form = useForm({
     group_id: schedule.group_id,
     course_id: schedule.course_id,
     staff_profile_id: schedule.staff_profile_id,
     weekdays: schedule.weekdays,
     start_time: schedule.start_time,
+    weekly_slots: initialWeeklySlots,
     duration_minutes: schedule.duration_minutes,
     session_rate_major: "",
     rate_reason: "",
@@ -89,9 +104,12 @@ export default function GroupScheduleEditor({
     starts_on: schedule.starts_on,
     ends_on: schedule.ends_on ?? "",
   });
-  const [checking, setChecking] = useState(false);
-  const [availability, setAvailability] = useState<string[] | null>(null);
-  const [availabilityError, setAvailabilityError] = useState("");
+  const [dayChecks, setDayChecks] = useState<
+    Record<
+      number,
+      { checking: boolean; times: string[] | null; error: string }
+    >
+  >({});
   const [teacherRate, setTeacherRate] = useState<{
     rate_major: string | null;
     currency: string;
@@ -182,8 +200,38 @@ export default function GroupScheduleEditor({
     value: (typeof form.data)[K],
   ) => {
     form.setData((data) => ({ ...data, [key]: value }));
-    setAvailability(null);
-    setAvailabilityError("");
+  };
+  const toggleDay = (day: number, checked: boolean) => {
+    form.setData((data) => {
+      const nextSlots = sortSlots(
+        checked
+          ? [...data.weekly_slots, { weekday: day, start_time: "" }]
+          : data.weekly_slots.filter((slot) => slot.weekday !== day),
+      );
+      return {
+        ...data,
+        weekdays: checked
+          ? [...data.weekdays, day].sort((a, b) => a - b)
+          : data.weekdays.filter((item) => item !== day),
+        weekly_slots: nextSlots,
+        start_time: nextSlots[0]?.start_time ?? "",
+      };
+    });
+    setDayChecks((prev) => {
+      const next = { ...prev };
+      delete next[day];
+      return next;
+    });
+  };
+  const setDaySlot = (day: number, time: string) => {
+    form.setData((data) => {
+      const nextSlots = sortSlots(
+        data.weekly_slots.map((slot) =>
+          slot.weekday === day ? { ...slot, start_time: time } : slot,
+        ),
+      );
+      return { ...data, weekly_slots: nextSlots, start_time: nextSlots[0]?.start_time ?? "" };
+    });
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -191,32 +239,51 @@ export default function GroupScheduleEditor({
       form.patch("/manage/schedules/" + schedule.id, { preserveScroll: true });
     else form.post("/manage/schedules", { preserveScroll: true });
   };
-  const checkAvailability = async () => {
-    setChecking(true);
-    setAvailability(null);
-    setAvailabilityError("");
+  const checkDayAvailability = async (day: number) => {
+    setDayChecks((prev) => ({
+      ...prev,
+      [day]: { checking: true, times: null, error: "" },
+    }));
+    const slotTime =
+      form.data.weekly_slots.find((slot) => slot.weekday === day)
+        ?.start_time || "00:00";
     try {
       const result = await axios.get<{ available_start_times: string[] }>(
         "/manage/schedules/availability",
         {
           params: {
-            ...form.data,
+            group_id: form.data.group_id,
+            course_id: form.data.course_id,
+            staff_profile_id: form.data.staff_profile_id,
+            weekdays: [day],
+            start_time: slotTime,
+            duration_minutes: form.data.duration_minutes,
+            interval_weeks: form.data.interval_weeks,
+            timezone: form.data.timezone,
+            starts_on: form.data.starts_on,
+            ...(form.data.ends_on ? { ends_on: form.data.ends_on } : {}),
             ...(schedule.id ? { schedule_id: schedule.id } : {}),
           },
         },
       );
-      setAvailability(result.data.available_start_times);
+      setDayChecks((prev) => ({
+        ...prev,
+        [day]: { checking: false, times: result.data.available_start_times, error: "" },
+      }));
     } catch (error) {
       const errors = axios.isAxiosError(error)
         ? error.response?.data?.errors
         : null;
-      setAvailabilityError(
-        errors
-          ? String(Object.values(errors).flat()[0])
-          : t("console_sessions.availability_failed"),
-      );
-    } finally {
-      setChecking(false);
+      setDayChecks((prev) => ({
+        ...prev,
+        [day]: {
+          checking: false,
+          times: null,
+          error: errors
+            ? String(Object.values(errors).flat()[0])
+            : t("console_sessions.availability_failed"),
+        },
+      }));
     }
   };
   const field = (name: keyof typeof form.data, children: ReactNode) => (
@@ -230,6 +297,9 @@ export default function GroupScheduleEditor({
       )}
     </label>
   );
+  const missingDayTimes = form.data.weekly_slots.some(
+    (slot) => !slot.start_time,
+  );
   const summary = [
     [t("console_sessions.group"), group?.name ?? t("console_sessions.select")],
     [
@@ -241,12 +311,18 @@ export default function GroupScheduleEditor({
       selectedTeacher?.name ?? t("console_sessions.select"),
     ],
     [
-      t("console_sessions.fields.weekdays"),
-      form.data.weekdays
-        .map((day) => t("console_sessions.weekdays." + day))
-        .join("، ") || "—",
+      t("console_sessions.fields.weekly_slots"),
+      form.data.weekly_slots.length
+        ? form.data.weekly_slots
+            .map(
+              (slot) =>
+                t("console_sessions.weekdays." + slot.weekday) +
+                " " +
+                (slot.start_time || "—"),
+            )
+            .join("، ")
+        : "—",
     ],
-    [t("console_sessions.time"), form.data.start_time || "—"],
     [
       t("console_sessions.fields.duration_minutes"),
       String(form.data.duration_minutes) + " " + t("console_sessions.minutes"),
@@ -322,7 +398,6 @@ export default function GroupScheduleEditor({
                     staff_profile_id: "",
                     timezone: selected?.timezone ?? data.timezone,
                   }));
-                  setAvailability(null);
                 }}
               >
                 <option value="">{t("console_sessions.select")}</option>
@@ -346,7 +421,6 @@ export default function GroupScheduleEditor({
                     course_id: event.target.value,
                     staff_profile_id: "",
                   }));
-                  setAvailability(null);
                 }}
               >
                 <option value="">{t("console_sessions.select")}</option>
@@ -409,35 +483,105 @@ export default function GroupScheduleEditor({
               <p className="sessions-field-note">
                 {t("console_sessions.weekdays_hint")}
               </p>
-              {Array.from({ length: 7 }, (_, day) => (
-                <label key={day}>
-                  <input
-                    type="checkbox"
-                    checked={form.data.weekdays.includes(day)}
-                    onChange={(event) =>
-                      set(
-                        "weekdays",
-                        event.target.checked
-                          ? [...form.data.weekdays, day].sort((a, b) => a - b)
-                          : form.data.weekdays.filter((item) => item !== day),
-                      )
-                    }
-                  />
-                  <span>{t("console_sessions.weekdays." + day)}</span>
-                </label>
-              ))}
+              {(form.errors.weekdays ||
+                form.errors.start_time ||
+                form.errors.weekly_slots) && (
+                <small className="sessions-error" role="alert">
+                  {form.errors.weekdays ||
+                    form.errors.weekly_slots ||
+                    form.errors.start_time}
+                </small>
+              )}
+              {Array.from({ length: 7 }, (_, day) => {
+                const checked = form.data.weekdays.includes(day);
+                const slotTime =
+                  form.data.weekly_slots.find((slot) => slot.weekday === day)
+                    ?.start_time ?? "";
+                const check = dayChecks[day];
+                return (
+                  <div className="sessions-day-row" key={day}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) =>
+                          toggleDay(day, event.target.checked)
+                        }
+                      />
+                      <span>{t("console_sessions.weekdays." + day)}</span>
+                    </label>
+                    {checked && (
+                      <div className="sessions-day-time">
+                        <input
+                          className="console-control"
+                          type="time"
+                          required
+                          dir="ltr"
+                          value={slotTime}
+                          aria-label={t("console_sessions.weekdays." + day)}
+                          onChange={(event) =>
+                            setDaySlot(day, event.target.value)
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="console-button"
+                          disabled={
+                            !form.data.staff_profile_id || check?.checking
+                          }
+                          onClick={() => void checkDayAvailability(day)}
+                        >
+                          <CalendarDays size={16} />
+                          {t(
+                            "console_sessions." +
+                              (check?.checking
+                                ? "checking_day"
+                                : "check_day_availability"),
+                          )}
+                        </button>
+                        {!slotTime && (
+                          <small className="sessions-error">
+                            {t("console_sessions.day_time_missing")}
+                          </small>
+                        )}
+                        {check?.error && (
+                          <small className="sessions-error" role="alert">
+                            {check.error}
+                          </small>
+                        )}
+                        {check?.times && (
+                          <div className="sessions-times">
+                            {check.times.length === 0 && (
+                              <span>{t("console_sessions.no_day_times")}</span>
+                            )}
+                            {check.times.map((time) => (
+                              <button
+                                type="button"
+                                className="console-button"
+                                key={time}
+                                onClick={() => {
+                                  setDaySlot(day, time);
+                                  setDayChecks((prev) => ({
+                                    ...prev,
+                                    [day]: {
+                                      checking: false,
+                                      times: null,
+                                      error: "",
+                                    },
+                                  }));
+                                }}
+                              >
+                                {time}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </fieldset>
-            {field(
-              "start_time",
-              <input
-                className="console-control"
-                type="time"
-                required
-                dir="ltr"
-                value={form.data.start_time}
-                onChange={(event) => set("start_time", event.target.value)}
-              />,
-            )}
             {field(
               "duration_minutes",
               <input
@@ -581,62 +725,11 @@ export default function GroupScheduleEditor({
                 onChange={(event) => set("ends_on", event.target.value)}
               />,
             )}
-            <div className="sessions-availability">
-              <button
-                className="console-button"
-                type="button"
-                disabled={
-                  checking ||
-                  !form.data.staff_profile_id ||
-                  !form.data.start_time ||
-                  !form.data.weekdays.length
-                }
-                onClick={() => void checkAvailability()}
-              >
-                <CalendarDays size={16} />
-                {t(
-                  "console_sessions." +
-                    (checking ? "checking" : "availability"),
-                )}
-              </button>
-              <p>
-                {t("console_sessions.availability_notice")} ·{" "}
-                {t("console_sessions.outside_availability")}:{" "}
-                {t("console_sessions." + outsideAvailability)}
-              </p>
-              {availabilityError && (
-                <p className="sessions-error" role="alert">
-                  {availabilityError}
-                </p>
-              )}
-              {availability !== null && (
-                <div role="status">
-                  <p>
-                    {t(
-                      "console_sessions." +
-                        (availability.length
-                          ? "available"
-                          : "availability_empty"),
-                    )}
-                  </p>
-                  <div className="sessions-times">
-                    {availability.map((time) => (
-                      <button
-                        type="button"
-                        className="console-button"
-                        key={time}
-                        onClick={() => {
-                          form.setData("start_time", time);
-                          setAvailability(null);
-                        }}
-                      >
-                        {time}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <p className="sessions-field-note">
+              {t("console_sessions.availability_notice")} ·{" "}
+              {t("console_sessions.outside_availability")}:{" "}
+              {t("console_sessions." + outsideAvailability)}
+            </p>
           </Section>
           <footer className="panel-foot">
             <span>
@@ -648,14 +741,17 @@ export default function GroupScheduleEditor({
                   ? t("console_sessions.save_needs_weekday")
                   : !form.data.staff_profile_id
                     ? t("console_sessions.save_needs_teacher")
-                    : ""}
+                    : missingDayTimes
+                      ? t("console_sessions.save_needs_times")
+                      : ""}
             </span>
             <button
               className="console-button primary"
               disabled={
                 form.processing ||
                 !form.data.weekdays.length ||
-                !form.data.staff_profile_id
+                !form.data.staff_profile_id ||
+                missingDayTimes
               }
             >
               <Check size={16} />
@@ -676,9 +772,6 @@ export default function GroupScheduleEditor({
                 </div>
               ))}
             </dl>
-            <div className="summary-note">
-              {t("console_sessions.same_time")}
-            </div>
           </div>
         </aside>
       </div>

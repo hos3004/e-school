@@ -65,7 +65,7 @@ final readonly class ScheduleDefinitionValidator
             throw BusinessRuleViolation::make('scheduling.timezone_invalid', 'scheduling::errors.timezone_invalid');
         }
 
-        $this->validateWeeklySlots($data['weekly_slots'] ?? [], $studentId !== null);
+        $this->validateWeeklySlots($data['weekly_slots'] ?? []);
 
         if ($groupId !== null) {
             $this->validateGroup(
@@ -136,12 +136,16 @@ final readonly class ScheduleDefinitionValidator
         }
     }
 
-    private function validateWeeklySlots(mixed $slots, bool $individual): void
+    /**
+     * مواعيد أسبوعية مختلفة لكل يوم — متاحة للمجموعات والفردي معًا. rrule
+     * الموحّد يبقى مصدر أيام التكرار؛ هذه القائمة تحمل وقت كل يوم منها فقط.
+     */
+    private function validateWeeklySlots(mixed $slots): void
     {
         if ($slots === []) {
             return;
         }
-        if (!$individual || !is_array($slots)) {
+        if (!is_array($slots)) {
             throw BusinessRuleViolation::make('scheduling.weekly_slots_invalid', 'scheduling::errors.weekly_slots_invalid');
         }
 

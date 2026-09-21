@@ -219,10 +219,27 @@
 .console-shell .sessions-days {
   grid-column: 1/-1;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
   border: 0;
   padding: 0;
+}
+.console-shell .sessions-day-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.console-shell .sessions-day-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-inline-start: 8px;
+  border-inline-start: 2px solid #dfe9e6;
+}
+.console-shell .sessions-day-time input[type='time'] {
+  min-height: 40px;
 }
 .console-shell .sessions-days legend {
   font-size: 13px;

@@ -68,12 +68,15 @@ final readonly class ConsoleGroupScheduleService
     private function summary(Schedule $schedule): array
     {
         $rule = WeeklyRecurrence::fromRRule($schedule->rrule);
+        $slots = $schedule->weeklySlots()->get(['weekday', 'start_time'])
+            ->map(static fn ($slot): array => ['weekday' => $slot->weekday, 'start_time' => substr((string) $slot->start_time, 0, 5)])
+            ->sortBy('weekday')->values()->all();
 
         return [
             'id' => (string) $schedule->id, 'group_id' => (string) $schedule->group_id, 'course_id' => (string) $schedule->course_id,
             'staff_profile_id' => (string) $schedule->staff_profile_id, 'weekdays' => $rule->weekdays,
             'start_time' => substr($schedule->start_time, 0, 5), 'duration_minutes' => $schedule->duration_minutes,
-            'interval_weeks' => $rule->intervalWeeks, 'timezone' => $schedule->timezone,
+            'interval_weeks' => $rule->intervalWeeks, 'timezone' => $schedule->timezone, 'weekly_slots' => $slots,
             'starts_on' => $schedule->starts_on->toDateString(), 'ends_on' => $schedule->ends_on?->toDateString(),
             'is_active' => $schedule->is_active, 'materialized_until' => $schedule->materialized_until->toDateString(),
         ];

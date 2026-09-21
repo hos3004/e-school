@@ -154,7 +154,8 @@ final class ConsoleSessionsTest extends TestCase
         $this->get('/manage/sessions?teacher='.(string) Str::ulid())->assertNotFound();
         $this->get('/manage/schedules/'.(string) Str::ulid().'/edit')->assertNotFound();
         $this->patch('/manage/schedules/'.$schedule->id, [...$this->payload(), 'course_id' => (string) Str::ulid()])->assertSessionHasErrors('form');
-        $this->post('/manage/schedules', [...$this->payload(), 'organization_id' => (string) Str::ulid(), 'student_profile_id' => $this->student->id, 'weekly_slots' => [['weekday' => 0, 'start_time' => '12:00']]])->assertSessionHasErrors(['organization_id', 'student_profile_id', 'weekly_slots']);
+        $this->post('/manage/schedules', [...$this->payload(), 'organization_id' => (string) Str::ulid(), 'student_profile_id' => $this->student->id])->assertSessionHasErrors(['organization_id', 'student_profile_id']);
+        $this->post('/manage/schedules', [...$this->payload(), 'weekly_slots' => [['weekday' => 0, 'start_time' => '12:00'], ['weekday' => 0, 'start_time' => '13:00']]])->assertSessionHasErrors(['weekly_slots.1.weekday']);
         $this->post('/manage/schedules', [...$this->payload(), 'weekdays' => [0, 0], 'ends_on' => '2026-01-01'])->assertSessionHasErrors(['weekdays.0', 'ends_on']);
         $foreignOrg = Organization::factory()->create();
         $foreign = User::factory()->inOrganization($foreignOrg->id)->create();
@@ -267,6 +268,28 @@ final class ConsoleSessionsTest extends TestCase
     }
 
     /** @return array<string, mixed> */
+    public function test_group_schedule_supports_a_different_start_time_per_weekday(): void
+    {
+        $data = [...$this->payload(), 'weekdays' => [0, 3], 'weekly_slots' => [
+            ['weekday' => 0, 'start_time' => '09:00'],
+            ['weekday' => 3, 'start_time' => '15:00'],
+        ]];
+        $this->post('/manage/schedules', $data)->assertSessionHasNoErrors()->assertRedirect();
+        $schedule = Schedule::query()->sole();
+        $this->assertSame('09:00:00', $schedule->start_time, 'legacy start_time falls back to the earliest weekday slot');
+
+        $sunday = Session::query()->whereDate('scheduled_start', '2026-10-18')->sole();
+        $wednesday = Session::query()->whereDate('scheduled_start', '2026-10-21')->sole();
+        $this->assertSame('07:00', $sunday->scheduled_start->format('H:i'));
+        $this->assertSame('13:00', $wednesday->scheduled_start->format('H:i'));
+
+        $this->get('/manage/schedules/'.$schedule->id.'/edit')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('schedule.weekly_slots', [
+                ['weekday' => 0, 'start_time' => '09:00'],
+                ['weekday' => 3, 'start_time' => '15:00'],
+            ]));
+    }
+
     private function payload(): array
     {
         return ['group_id' => $this->group->id, 'course_id' => $this->course->id, 'staff_profile_id' => $this->teacher->id, 'weekdays' => [0], 'interval_weeks' => 1, 'start_time' => '09:00', 'duration_minutes' => 60, 'timezone' => 'Europe/Paris', 'starts_on' => '2026-10-18', 'ends_on' => '2026-11-15'];
