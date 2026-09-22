@@ -221,6 +221,71 @@ final class ConsoleArchiveTest extends TestCase
         );
     }
 
+    public function test_a_closed_level_leaves_the_courses_screen_and_takes_its_courses_with_it(): void
+    {
+        [$organization, $actor] = $this->context();
+        $program = Program::factory()->create(['organization_id' => $organization->id]);
+        $level = Level::factory()->for($program, 'program')->create();
+        $course = Course::factory()->create([
+            'organization_id' => $organization->id, 'level_id' => $level->id, 'is_active' => false,
+        ]);
+
+        $this->actingAs($actor)->get('/manage/courses')->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('levels.0.id', (string) $level->id)
+                ->where('courses.0.id', (string) $course->id));
+
+        $this->actingAs($actor)
+            ->post('/manage/archive/level/'.$level->id.'/close', ['reason' => 'المستوى التمهيدي انتهى'])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->actingAs($actor)->get('/manage/courses')->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('levels', [])
+                // الكورس تحت مستوى مُقفل يختفي معه، ولا يبقى معلّقًا بلا مستوى.
+                ->where('courses', []));
+
+        self::assertTrue(Level::query()->whereKey($level->id)->exists());
+        self::assertTrue(Course::query()->whereKey($course->id)->exists());
+    }
+
+    public function test_a_closed_level_is_listed_in_the_archive_and_can_be_reopened(): void
+    {
+        [$organization, $actor] = $this->context();
+        $program = Program::factory()->create(['organization_id' => $organization->id]);
+        $level = Level::factory()->for($program, 'program')->create();
+
+        $this->actingAs($actor)
+            ->post('/manage/archive/level/'.$level->id.'/close', ['reason' => 'انتهى'])
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($actor)->get('/manage/archive')->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('sections.levels.0.id', (string) $level->id)
+                ->where('sections.levels.0.summary.kind', 'level'));
+
+        $this->actingAs($actor)
+            ->post('/manage/archive/level/'.$level->id.'/reopen', ['reason' => 'دفعة جديدة'])
+            ->assertSessionHasNoErrors();
+
+        self::assertNull(Level::query()->whereKey($level->id)->value('closed_at'));
+    }
+
+    public function test_a_level_of_another_organization_cannot_be_reached(): void
+    {
+        [, $actor] = $this->context();
+        $stranger = Organization::factory()->create();
+        $program = Program::factory()->create(['organization_id' => $stranger->id]);
+        $level = Level::factory()->for($program, 'program')->create();
+
+        $this->actingAs($actor)
+            ->post('/manage/archive/level/'.$level->id.'/close', ['reason' => 'محاولة عابرة'])
+            ->assertNotFound();
+
+        self::assertNull(Level::query()->whereKey($level->id)->value('closed_at'));
+    }
+
     /** @param list<string> $permissions */
     private function grant(array $permissions): void
     {

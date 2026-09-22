@@ -30,4 +30,9 @@ return [
     'closure_blocker_courses_active' => ':count cours actif(s)',
     'closure_blocker_enrollments_live' => ':count inscription(s) encore ouverte(s)',
     'closure_blocker_sessions_open' => ':count seance(s) pas encore dans un etat final',
+    'level_already_closed' => 'Le niveau :code est deja cloture.',
+    'level_not_closed' => 'Le niveau :code n\'est pas cloture, il n\'y a donc rien a rouvrir.',
+    'level_closure_blocked' => 'Le niveau :code ne peut pas encore etre cloture car il contient :blockers. Terminez ou cloturez ses cours, puis reessayez. La cloture ne supprime rien et peut etre annulee par une reouverture.',
+    'level_closed_parent' => 'Le niveau :code est archive : il n\'accepte ni nouveau cours ni cours deplace vers lui. Rouvrez-le depuis les archives.',
+    'program_closed_parent' => 'Le programme :code est archive : il n\'accepte pas de nouveau niveau. Rouvrez-le depuis les archives.',
 ];

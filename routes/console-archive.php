@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('archive')->name('archive.')->group(function (): void {
     Route::get('/', [ArchiveController::class, 'index'])->name('index');
 
-    Route::whereIn('kind', ['program', 'course', 'group'])->group(function (): void {
+    Route::whereIn('kind', ['program', 'level', 'course', 'group'])->group(function (): void {
         Route::get('{kind}/{id}/preview', [ArchiveController::class, 'preview'])->whereUlid('id')->name('preview');
         Route::post('{kind}/{id}/close', [ArchiveController::class, 'close'])->whereUlid('id')->name('close');
         Route::post('{kind}/{id}/reopen', [ArchiveController::class, 'reopen'])->whereUlid('id')->name('reopen');

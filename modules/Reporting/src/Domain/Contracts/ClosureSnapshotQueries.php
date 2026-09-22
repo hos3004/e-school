@@ -19,6 +19,8 @@ interface ClosureSnapshotQueries
 {
     public function forProgram(string $organizationId, string $programId): ClosureSnapshot;
 
+    public function forLevel(string $organizationId, string $levelId): ClosureSnapshot;
+
     public function forCourse(string $organizationId, string $courseId): ClosureSnapshot;
 
     public function forGroup(string $organizationId, string $groupId): ClosureSnapshot;
