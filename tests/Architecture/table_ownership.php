@@ -165,4 +165,12 @@ return [
 
     // Reporting — Read Models فقط
     'report_*' => 'Reporting',
+
+    // SupportBot
+    'support_bot_entries' => 'SupportBot',
+    'support_bot_rules' => 'SupportBot',
+    'support_bot_conversations' => 'SupportBot',
+    'support_bot_messages' => 'SupportBot',
+    'support_bot_account_access' => 'SupportBot',
+    'support_bot_usage' => 'SupportBot',
 ];
