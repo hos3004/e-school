@@ -71,9 +71,15 @@ final readonly class ConversationStore
             return [];
         }
 
+        /*
+         * الترتيب بـid إلى جانب الوقت: رسالتا الدور الواحد تُكتبان في اللحظة
+         * نفسها، فالوقت وحده لا يفصل بينهما وقد يعود السجلّ مقلوبًا — أي أن
+         * النموذج يقرأ ردّه قبل سؤال المستخدم. وULID مرتّب زمنيًا فيحسمها.
+         */
         return BotMessage::query()
             ->where('conversation_id', $conversation->id)
             ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->limit($limit)
             ->get()
             ->reverse()
@@ -96,6 +102,7 @@ final readonly class ConversationStore
             ->where('conversation_id', $conversation->id)
             ->where('role', MessageRole::User->value)
             ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->limit(max(1, $limit))
             ->get()
             ->reverse()

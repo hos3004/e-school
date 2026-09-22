@@ -12,6 +12,8 @@ use App\Listeners\SyncClassroomRecordings;
 use App\Listeners\TrackClassroomParticipantAttendance;
 use App\Support\QueryPerformance;
 use Carbon\CarbonImmutable;
+use App\Support\SupportBot\PlatformDataSource;
+use Modules\SupportBot\Domain\Contracts\SupportBotDataSource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\Date;
@@ -34,6 +36,13 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->scoped(QueryPerformance::class);
         $this->app->bind(Transaction::class, DatabaseTransaction::class);
         $this->app->bind(OrganizationUsernamePrefixProvider::class, OrganizationUsernamePrefixAdapter::class);
+
+        /*
+         * مصدر بيانات البوت. يعيش في app/ لأنه يركّب قراءات من موديولات عدة
+         * ولا يجوز لموديول أن يعتمد على app/. الموديول يربط بديلًا لا يعيد
+         * شيئًا، وهذا السطر هو ما يستبدله بالقراءة الحقيقية.
+         */
+        $this->app->bind(SupportBotDataSource::class, PlatformDataSource::class);
     }
 
     public function boot(): void

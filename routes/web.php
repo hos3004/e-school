@@ -290,6 +290,7 @@ Route::middleware([EnsureConsoleEnabled::class, 'auth', 'auth.session'])
                 require __DIR__.'/console-archive.php';
             });
         require __DIR__.'/learning.php';
+        require __DIR__.'/support-bot.php';
     });
 
 require __DIR__.'/console-primary.php';

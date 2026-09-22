@@ -190,6 +190,16 @@ final class AccessControlSeeder extends Seeder
             'accesscontrol.permissions.grant_direct',
             'accesscontrol.assignments.assign_role', 'accesscontrol.assignments.revoke_role',
         ],
+
+        /*
+         * بوت الدعم. إدارته وقراءة أرشيفه صلاحيتان منفصلتان عمدًا: الأرشيف يحمل
+         * ما كتبه المستخدمون بأنفسهم، ومن يضبط نصوص البوت ليس بالضرورة من يجوز
+         * له قراءة محادثات الناس.
+         */
+        'SupportBot' => [
+            'support_bot.manage',
+            'support_bot.archive.view',
+        ],
     ];
 
     /**
