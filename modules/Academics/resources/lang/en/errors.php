@@ -35,4 +35,9 @@ return [
     'closure_blocker_courses_active' => ':count active course(s)',
     'closure_blocker_enrollments_live' => ':count enrollment(s) still open',
     'closure_blocker_sessions_open' => ':count session(s) not yet in a final state',
+    'level_already_closed' => 'Level :code is already closed.',
+    'level_not_closed' => 'Level :code is not closed, so there is nothing to reopen.',
+    'level_closure_blocked' => 'Level :code cannot be closed yet because it still holds :blockers. Finish or close its courses first, then try again. Closing deletes nothing and can be undone by reopening.',
+    'level_closed_parent' => 'Level :code is archived, so it accepts no new course and no course moved into it. Reopen it from the archive first.',
+    'program_closed_parent' => 'Program :code is archived, so it accepts no new level. Reopen it from the archive first.',
 ];

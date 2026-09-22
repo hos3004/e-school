@@ -4,8 +4,8 @@ import ConsoleLayout from "@/Layouts/ConsoleLayout";
 import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/console-format";
 
-type Kind = "program" | "course" | "group";
-type SectionKey = "programs" | "courses" | "groups";
+type Kind = "program" | "level" | "course" | "group";
+type SectionKey = "programs" | "levels" | "courses" | "groups";
 
 type Summary = Record<string, string | number | null>;
 
@@ -41,7 +41,7 @@ export interface Props {
   abilities: Record<SectionKey, boolean>;
 }
 
-const SECTIONS: SectionKey[] = ["programs", "courses", "groups"];
+const SECTIONS: SectionKey[] = ["programs", "levels", "courses", "groups"];
 
 /**
  * ترتيب حقول الحصيلة معروض لا أبجدي: الأعداد التي يسأل عنها المستخدم أولًا،

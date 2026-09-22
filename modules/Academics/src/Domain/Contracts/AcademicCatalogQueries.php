@@ -60,4 +60,20 @@ interface AcademicCatalogQueries
      * @return array{level_id: string|null, program_id: string|null, planned_sessions: int|null, is_active: bool}
      */
     public function closureFactsForCourse(string $organizationId, string $courseId): array;
+
+    /**
+     * حقائق المستوى لحصيلة إقفاله.
+     *
+     * `courses_active` وحده مانع؛ `courses_open` يُذكر في الحصيلة ولا يمنع.
+     *
+     * @return array{program_id: string|null, courses_total: int, courses_open: int, courses_active: int, courses_closed: int}
+     */
+    public function closureFactsForLevel(string $organizationId, string $levelId): array;
+
+    /**
+     * معرّفات كورسات المستوى — تُمرَّر إلى موديول الحصص لتجميع حصيلته.
+     *
+     * @return list<string>
+     */
+    public function courseIdsForLevel(string $organizationId, string $levelId): array;
 }

@@ -35,4 +35,9 @@ return [
     'closure_blocker_courses_active' => ':count كورس نشط',
     'closure_blocker_enrollments_live' => ':count قيد طالب لم يُغلق بعد',
     'closure_blocker_sessions_open' => ':count حصة لم تصل حالة نهائية',
+    'level_already_closed' => 'المستوى «:code» مُقفل بالفعل.',
+    'level_not_closed' => 'المستوى «:code» غير مُقفل، فلا شيء يُعاد فتحه.',
+    'level_closure_blocked' => 'لا يمكن إقفال المستوى «:code» الآن لأن تحته :blockers. أنهِ ما سبق أو أقفل كورساته أولًا ثم أعد المحاولة. الإقفال لا يحذف شيئًا ويمكن التراجع عنه بإعادة الفتح.',
+    'level_closed_parent' => 'المستوى «:code» مؤرشَف، فلا يقبل كورسًا جديدًا ولا نقل كورس إليه. أعد فتحه من الأرشيف أولًا.',
+    'program_closed_parent' => 'البرنامج «:code» مؤرشَف، فلا يقبل مستوى جديدًا. أعد فتحه من الأرشيف أولًا.',
 ];

@@ -16,10 +16,13 @@ use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Academics\Application\Actions\CloseCourseAction;
+use Modules\Academics\Application\Actions\CloseLevelAction;
 use Modules\Academics\Application\Actions\CloseProgramAction;
 use Modules\Academics\Application\Actions\ReopenCourseAction;
+use Modules\Academics\Application\Actions\ReopenLevelAction;
 use Modules\Academics\Application\Actions\ReopenProgramAction;
 use Modules\Academics\Domain\Models\Course;
+use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
 use Modules\Groups\Application\Actions\CloseGroupAction;
 use Modules\Groups\Application\Actions\ReopenGroupAction;
@@ -47,12 +50,14 @@ final class ArchiveController extends Controller
 
         $sections = [
             'programs' => $this->closedRows(Program::query()->forOrganization($organizationId)->closed(), 'program', $request),
+            'levels' => $this->closedRows($this->levelsOf($organizationId)->closed(), 'level', $request),
             'courses' => $this->closedRows(Course::query()->forOrganization($organizationId)->closed(), 'course', $request),
             'groups' => $this->closedRows(Group::query()->forOrganization($organizationId)->closed(), 'group', $request),
         ];
 
         $candidates = [
             'programs' => $this->openRows(Program::query()->forOrganization($organizationId)->open(), 'program', $request),
+            'levels' => $this->openRows($this->levelsOf($organizationId)->open(), 'level', $request),
             'courses' => $this->openRows(Course::query()->forOrganization($organizationId)->open(), 'course', $request),
             'groups' => $this->openRows(Group::query()->forOrganization($organizationId)->open(), 'group', $request),
         ];
@@ -63,6 +68,7 @@ final class ArchiveController extends Controller
             'timezone' => $context->forRequest($request)['timezone'],
             'abilities' => [
                 'programs' => $request->user()?->can('program.manage') ?? false,
+                'levels' => $request->user()?->can('program.manage') ?? false,
                 'courses' => $request->user()?->can('course.manage') ?? false,
                 'groups' => $request->user()?->can('group.manage') ?? false,
             ],
@@ -104,6 +110,7 @@ final class ArchiveController extends Controller
 
         match ($kind) {
             'program' => app(CloseProgramAction::class)->execute($subject, $request->reason(), $snapshot, $actorId),
+            'level' => app(CloseLevelAction::class)->execute($subject, $request->reason(), $snapshot, $actorId),
             'course' => app(CloseCourseAction::class)->execute($subject, $request->reason(), $snapshot, $actorId),
             default => app(CloseGroupAction::class)->execute($subject, $request->reason(), $snapshot, $actorId),
         };
@@ -120,6 +127,7 @@ final class ArchiveController extends Controller
 
         match ($kind) {
             'program' => app(ReopenProgramAction::class)->execute($subject, $request->reason(), $actorId),
+            'level' => app(ReopenLevelAction::class)->execute($subject, $request->reason(), $actorId),
             'course' => app(ReopenCourseAction::class)->execute($subject, $request->reason(), $actorId),
             default => app(ReopenGroupAction::class)->execute($subject, $request->reason(), $actorId),
         };
@@ -130,12 +138,13 @@ final class ArchiveController extends Controller
     /**
      * السجل المطلوب داخل مؤسسة المستخدم — 404 خارجها، فلا يكشف المسار وجودها.
      */
-    private function subject(Request $request, string $kind, string $id): Program|Course|Group
+    private function subject(Request $request, string $kind, string $id): Program|Level|Course|Group
     {
         $organizationId = $this->organizationId($request);
 
         $subject = match ($kind) {
             'program' => Program::query()->forOrganization($organizationId)->whereKey($id)->first(),
+            'level' => $this->levelsOf($organizationId)->whereKey($id)->first(),
             'course' => Course::query()->forOrganization($organizationId)->whereKey($id)->first(),
             'group' => Group::query()->forOrganization($organizationId)->whereKey($id)->first(),
             default => null,
@@ -154,6 +163,7 @@ final class ArchiveController extends Controller
     ): ClosureSnapshot {
         return match ($kind) {
             'program' => $snapshots->forProgram($organizationId, $id),
+            'level' => $snapshots->forLevel($organizationId, $id),
             'course' => $snapshots->forCourse($organizationId, $id),
             default => $snapshots->forGroup($organizationId, $id),
         };
@@ -168,7 +178,7 @@ final class ArchiveController extends Controller
     private function closedRows(mixed $query, string $kind, Request $request): array
     {
         $permission = match ($kind) {
-            'program' => 'program.manage',
+            'program', 'level' => 'program.manage',
             'course' => 'course.manage',
             default => 'group.view',
         };
@@ -245,7 +255,7 @@ final class ArchiveController extends Controller
     private function openRows(mixed $query, string $kind, Request $request): array
     {
         $permission = match ($kind) {
-            'program' => 'program.manage',
+            'program', 'level' => 'program.manage',
             'course' => 'course.manage',
             default => 'group.manage',
         };
@@ -265,5 +275,21 @@ final class ArchiveController extends Controller
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * مستويات المؤسسة.
+     *
+     * `levels` بلا `organization_id` — المستوى يرث مؤسسته من برنامجه — فالعزل
+     * يمر عبر البرنامج. تجاهل ذلك يعني كشف مستويات مؤسسة أخرى.
+     *
+     * @return Builder<Level>
+     */
+    private function levelsOf(string $organizationId): mixed
+    {
+        return Level::query()->whereHas(
+            'program',
+            static fn ($query) => $query->where('organization_id', $organizationId),
+        );
     }
 }

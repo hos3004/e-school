@@ -17,6 +17,7 @@ return [
         'archived' => 'المؤرشَف',
         'candidates' => 'جاهز للأرشفة',
         'programs' => 'البرامج',
+        'levels' => 'المستويات',
         'courses' => 'الكورسات',
         'groups' => 'المجموعات',
     ],

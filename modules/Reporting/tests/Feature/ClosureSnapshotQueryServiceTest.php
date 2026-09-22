@@ -209,3 +209,41 @@ it('records past sessions that were never closed without letting them block the 
         ->and($snapshot->blockers)->not->toHaveKey('sessions_open')
         ->and($snapshot->isBlocked())->toBeFalse();
 });
+
+it('measures a level by the courses under it and their sessions', function (): void {
+    [$program, $level, $course] = closureProgramFixture();
+    $course->update(['is_active' => false]);
+
+    closureSession($program, $course, SessionStatus::Completed, 9);
+    closureSession($program, $course, SessionStatus::Completed, 4);
+
+    $snapshot = app(ClosureSnapshotQueries::class)
+        ->forLevel((string) $program->organization_id, (string) $level->getKey());
+
+    expect($snapshot->summary['kind'])->toBe('level')
+        ->and($snapshot->summary['program_id'])->toBe((string) $program->getKey())
+        ->and($snapshot->summary['courses_total'])->toBe(1)
+        ->and($snapshot->summary['sessions_total'])->toBe(2)
+        ->and($snapshot->summary['sessions_completed'])->toBe(2)
+        ->and($snapshot->isBlocked())->toBeFalse();
+});
+
+it('blocks a level whose course is still active', function (): void {
+    [$program, $level] = closureProgramFixture();
+
+    $snapshot = app(ClosureSnapshotQueries::class)
+        ->forLevel((string) $program->organization_id, (string) $level->getKey());
+
+    expect($snapshot->blockers)->toHaveKey('courses_active')
+        ->and($snapshot->blockers['courses_active'])->toBe(1);
+});
+
+it('keeps another organization out of a level snapshot', function (): void {
+    [, $level] = closureProgramFixture();
+
+    $snapshot = app(ClosureSnapshotQueries::class)
+        ->forLevel((string) Str::ulid(), (string) $level->getKey());
+
+    expect($snapshot->summary['program_id'])->toBeNull()
+        ->and($snapshot->summary['courses_total'])->toBe(0);
+});

@@ -50,6 +50,14 @@ final readonly class UpdateCourseAction
             throw BusinessRuleViolation::make('academics.level_not_found', 'academics::errors.level_not_found', ['level_id' => $levelId]);
         }
 
+        if ($level->closed_at !== null) {
+            throw BusinessRuleViolation::make(
+                'academics.level_closed_parent',
+                'academics::errors.level_closed_parent',
+                ['code' => (string) $level->code],
+            );
+        }
+
         $categoryIds = $this->validatedCategoryIds(
             $data,
             (string) $course->organization_id,

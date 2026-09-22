@@ -62,6 +62,22 @@ function registrationCatalogStub(array $courses): AcademicCatalogQueries
         {
             return ['level_id' => null, 'program_id' => null, 'planned_sessions' => null, 'is_active' => false];
         }
+
+        public function closureFactsForLevel(string $organizationId, string $levelId): array
+        {
+            return [
+                'program_id' => null,
+                'courses_total' => 0,
+                'courses_open' => 0,
+                'courses_active' => 0,
+                'courses_closed' => 0,
+            ];
+        }
+
+        public function courseIdsForLevel(string $organizationId, string $levelId): array
+        {
+            return [];
+        }
     };
 }
 

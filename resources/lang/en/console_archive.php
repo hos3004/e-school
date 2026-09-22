@@ -18,6 +18,7 @@ return [
         'archived' => 'Archived',
         'candidates' => 'Ready to archive',
         'programs' => 'Programs',
+        'levels' => 'Levels',
         'courses' => 'Courses',
         'groups' => 'Groups',
     ],

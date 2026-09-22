@@ -35,6 +35,18 @@ final class LevelPolicy
         return $user->can('program.manage') && $this->belongsToOrganization($user, $level);
     }
 
+    /** إقفال مستوى — إجراء حسّاس يقتضي سببًا موثّقًا. */
+    public function delete(Authenticatable&Authorizable $user, Level $level): bool
+    {
+        return $user->can('program.manage') && $this->belongsToOrganization($user, $level);
+    }
+
+    /** إعادة فتح مستوى مُقفل. */
+    public function restore(Authenticatable&Authorizable $user, Level $level): bool
+    {
+        return $user->can('program.manage') && $this->belongsToOrganization($user, $level);
+    }
+
     /** إعادة ترتيب مستويات برنامج. */
     public function reorder(Authenticatable&Authorizable $user): bool
     {

@@ -38,7 +38,7 @@ final readonly class ConsoleSetupService
         $programs = Program::query()->forOrganization($organizationId)
             ->open()
             ->with([
-                'levels' => fn ($query) => $query->orderBy('sort_order'),
+                'levels' => fn ($query) => $query->open()->orderBy('sort_order'),
                 'levels.courses' => fn ($query) => $query->open(),
                 'levels.courses.level',
             ])

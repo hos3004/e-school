@@ -97,6 +97,14 @@ final readonly class CreateCourseAction
             );
         }
 
+        if ($level->closed_at !== null) {
+            throw BusinessRuleViolation::make(
+                'academics.level_closed_parent',
+                'academics::errors.level_closed_parent',
+                ['code' => (string) $level->code],
+            );
+        }
+
         return $level;
     }
 

@@ -63,6 +63,37 @@ final readonly class ClosureSnapshotQueryService implements ClosureSnapshotQueri
         );
     }
 
+    public function forLevel(string $organizationId, string $levelId): ClosureSnapshot
+    {
+        $level = $this->academics->closureFactsForLevel($organizationId, $levelId);
+        $courseIds = $this->academics->courseIdsForLevel($organizationId, $levelId);
+        $sessions = $this->sessions->closureFactsForCourses($organizationId, $courseIds);
+
+        return new ClosureSnapshot(
+            summary: [
+                'kind' => 'level',
+                'captured_at' => self::now(),
+                'program_id' => $level['program_id'],
+                'courses_total' => $level['courses_total'],
+                'courses_open' => $level['courses_open'],
+                'courses_closed' => $level['courses_closed'],
+                'sessions_total' => $sessions['sessions_total'],
+                'sessions_completed' => $sessions['sessions_completed'],
+                'sessions_cancelled' => $sessions['sessions_cancelled'],
+                'sessions_stale' => $sessions['sessions_stale'],
+                'sessions_other' => $sessions['sessions_other'],
+                'students_distinct' => $sessions['students_distinct'],
+                'teachers_distinct' => $sessions['teachers_distinct'],
+                'first_session_at' => $sessions['first_session_at'],
+                'last_session_at' => $sessions['last_session_at'],
+            ],
+            blockers: self::blockers([
+                'courses_active' => $level['courses_active'],
+                'sessions_open' => $sessions['sessions_open'],
+            ]),
+        );
+    }
+
     public function forCourse(string $organizationId, string $courseId): ClosureSnapshot
     {
         $course = $this->academics->closureFactsForCourse($organizationId, $courseId);

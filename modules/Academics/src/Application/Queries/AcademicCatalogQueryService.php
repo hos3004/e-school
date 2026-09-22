@@ -32,7 +32,9 @@ final readonly class AcademicCatalogQueryService implements AcademicCatalogQueri
             ->forOrganization($organizationId)
             ->open()
             ->active()
-            ->whereHas('level', static fn ($query) => $query->where('program_id', $programId))
+            ->whereHas('level', static fn ($query) => $query
+                ->where('program_id', $programId)
+                ->whereNull('closed_at'))
             ->with('level')
             ->orderBy('code')
             ->get()
@@ -44,6 +46,7 @@ final readonly class AcademicCatalogQueryService implements AcademicCatalogQueri
     public function levels(string $organizationId, string $programId): array
     {
         return Level::query()
+            ->open()
             ->where('program_id', $programId)
             ->whereHas('program', static fn ($query) => $query->where('organization_id', $organizationId))
             ->orderBy('sort_order')
@@ -203,5 +206,48 @@ final readonly class AcademicCatalogQueryService implements AcademicCatalogQueri
             'planned_sessions' => $course->total_sessions,
             'is_active' => (bool) $course->is_active,
         ];
+    }
+
+    public function closureFactsForLevel(string $organizationId, string $levelId): array
+    {
+        $level = Level::query()
+            ->whereKey($levelId)
+            ->whereHas('program', static fn ($query) => $query->where('organization_id', $organizationId))
+            ->first();
+
+        if ($level === null) {
+            return [
+                'program_id' => null,
+                'courses_total' => 0,
+                'courses_open' => 0,
+                'courses_active' => 0,
+                'courses_closed' => 0,
+            ];
+        }
+
+        $courses = Course::query()
+            ->forOrganization($organizationId)
+            ->where('level_id', $levelId);
+
+        return [
+            'program_id' => (string) $level->program_id,
+            'courses_total' => (clone $courses)->count(),
+            'courses_open' => (clone $courses)->whereNull('closed_at')->count(),
+            'courses_active' => (clone $courses)->where('is_active', true)->whereNull('closed_at')->count(),
+            'courses_closed' => (clone $courses)->whereNotNull('closed_at')->count(),
+        ];
+    }
+
+    public function courseIdsForLevel(string $organizationId, string $levelId): array
+    {
+        return Course::query()
+            ->forOrganization($organizationId)
+            ->where('level_id', $levelId)
+            ->whereHas('level', static fn ($query) => $query
+                ->whereHas('program', static fn ($inner) => $inner->where('organization_id', $organizationId)))
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
     }
 }
