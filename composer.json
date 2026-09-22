@@ -73,6 +73,7 @@
             "Modules\\Billing\\": "modules/Billing/src/",
             "Modules\\Payroll\\": "modules/Payroll/src/",
             "Modules\\Reporting\\": "modules/Reporting/src/",
+            "Modules\\SupportBot\\": "modules/SupportBot/src/",
             "Modules\\Identity\\Database\\": "modules/Identity/database/",
             "Modules\\AccessControl\\Database\\": "modules/AccessControl/database/",
             "Modules\\Organization\\Database\\": "modules/Organization/database/",
@@ -99,7 +100,8 @@
             "Modules\\Messaging\\Database\\": "modules/Messaging/database/",
             "Modules\\Billing\\Database\\": "modules/Billing/database/",
             "Modules\\Payroll\\Database\\": "modules/Payroll/database/",
-            "Modules\\Reporting\\Database\\": "modules/Reporting/database/"
+            "Modules\\Reporting\\Database\\": "modules/Reporting/database/",
+            "Modules\\SupportBot\\Database\\": "modules/SupportBot/database/"
         }
     },
     "autoload-dev": {
@@ -132,7 +134,8 @@
             "Modules\\Messaging\\Tests\\": "modules/Messaging/tests/",
             "Modules\\Billing\\Tests\\": "modules/Billing/tests/",
             "Modules\\Payroll\\Tests\\": "modules/Payroll/tests/",
-            "Modules\\Reporting\\Tests\\": "modules/Reporting/tests/"
+            "Modules\\Reporting\\Tests\\": "modules/Reporting/tests/",
+            "Modules\\SupportBot\\Tests\\": "modules/SupportBot/tests/"
         },
         "files": [
             "tests/Helpers.php"

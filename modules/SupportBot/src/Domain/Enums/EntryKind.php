@@ -34,6 +34,6 @@ enum EntryKind: string
 
     public function label(): string
     {
-        return __('support_bot::entry_kinds.'.$this->value);
+        return __('supportbot::entry_kinds.'.$this->value);
     }
 }

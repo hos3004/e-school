@@ -36,6 +36,6 @@ enum TopicMode: string
 
     public function label(): string
     {
-        return __('support_bot::modes.'.$this->value);
+        return __('supportbot::modes.'.$this->value);
     }
 }

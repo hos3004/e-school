@@ -109,6 +109,6 @@ enum BotTopic: string
 
     public function label(): string
     {
-        return __('support_bot::topics.'.$this->value);
+        return __('supportbot::topics.'.$this->value);
     }
 }

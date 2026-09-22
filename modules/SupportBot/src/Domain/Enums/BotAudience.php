@@ -102,6 +102,6 @@ enum BotAudience: string
 
     public function label(): string
     {
-        return __('support_bot::audiences.'.$this->value);
+        return __('supportbot::audiences.'.$this->value);
     }
 }
