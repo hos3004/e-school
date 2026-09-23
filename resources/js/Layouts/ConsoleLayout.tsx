@@ -7,6 +7,7 @@ import "../../css/console.css";
 import "../../css/console-filters.css";
 import NotificationBell from "@/Components/NotificationBell";
 import ConsoleIcon from "@/Components/Console/ConsoleIcon";
+import SupportBotLauncher from "@/Components/SupportBot/SupportBotLauncher";
 
 type NavigationItem = {
   key: string;
@@ -266,6 +267,7 @@ export default function ConsoleLayout({
           {children}
         </main>
       </div>
+      <SupportBotLauncher />
     </div>
   );
 }

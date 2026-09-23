@@ -33,6 +33,7 @@ return [
     ],
     'nav' => [
         'archive' => 'Archive',
+        'bot' => 'AI assistant',
         'whatsapp' => 'WhatsApp centre',
         'today' => 'Today',
         'courses' => 'Courses & groups',

@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import type { AppPageProps } from "@/types";
 import Icon from "@/Pages/Learning/Icon";
 import "../../css/learning.css";
+import SupportBotLauncher from "@/Components/SupportBot/SupportBotLauncher";
 import "../../css/console-filters.css";
 export type LearningKind = "student" | "teacher";
 export default function LearningLayout({
@@ -109,6 +110,7 @@ export default function LearningLayout({
         <span>{t("learning.brand")}</span>
         <span>{t("learning.footer")}</span>
       </footer>
+      <SupportBotLauncher />
     </div>
   );
 }

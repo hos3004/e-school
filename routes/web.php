@@ -288,8 +288,15 @@ Route::middleware([EnsureConsoleEnabled::class, 'auth', 'auth.session'])
                 require __DIR__.'/console-dues.php';
                 require __DIR__.'/console-reports.php';
                 require __DIR__.'/console-archive.php';
+                // مسارات البوت تتبع تفعيل موديوله: إطفاؤه يعني غياب المسار لا 429 أو مفاتيح ترجمة خام.
+                if (\Shared\Module\ModuleRegistry::isEnabled('SupportBot')) {
+                    require __DIR__.'/console-bot.php';
+                }
             });
         require __DIR__.'/learning.php';
+        if (\Shared\Module\ModuleRegistry::isEnabled('SupportBot')) {
+            require __DIR__.'/support-bot.php';
+        }
     });
 
 require __DIR__.'/console-primary.php';

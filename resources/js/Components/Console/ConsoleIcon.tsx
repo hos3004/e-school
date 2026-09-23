@@ -12,6 +12,14 @@ const paths: Record<string, ReactNode> = {
       <path d="M9 9.5c0 3 2.5 5.5 5.5 5.5" />
     </>
   ),
+  bot: (
+    <>
+      <rect x="4" y="7" width="16" height="12" rx="3" />
+      <path d="M12 3v4" />
+      <path d="M9 12h.01M15 12h.01" />
+      <path d="M9.5 16h5" />
+    </>
+  ),
   check: (
     <>
       <path d="m3 12 5 5L20 5" />

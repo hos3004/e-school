@@ -55,12 +55,12 @@ final class PageTranslations implements ProvidesInertiaProperties
                 : [];
         }
 
-        $shared = ['profile_completion', 'session_pay', 'teacher_visibility'];
+        $shared = ['profile_completion', 'session_pay', 'teacher_visibility', 'support_bot'];
         if (str_starts_with($component, 'Console/')) {
             return [...$shared, 'learning', 'console', 'console_dashboard', 'console_sessions', 'console_group',
                 'console_directory', 'console_profiles', 'console_people', 'console_courses', 'console_messaging',
                 'console_quran', 'console_settings', 'console_whatsapp', 'console_registration', 'console_followup', 'console_dues',
-                'console_session_review', 'console_reports', 'console_live', 'console_board', 'console_archive'];
+                'console_session_review', 'console_reports', 'console_live', 'console_board', 'console_archive', 'console_bot'];
         }
 
         if (str_starts_with($component, 'Learning/')) {

@@ -32,6 +32,7 @@ final readonly class ConsoleContext
             ['reports', '/manage/reports', 'work', 'report.view'],
             ['session_reports', '/manage/reports/session-reports', 'work', 'report.view'],
             ['whatsapp', '/manage/whatsapp', 'tools', 'admin.panel.access'],
+            ['bot', '/manage/bot', 'tools', 'support_bot.manage'],
             ['settings', '/manage/settings', 'tools', 'organizations.view'],
             ['archive', '/manage/archive', 'tools', 'admin.panel.access'],
             ['directory', '/manage/directory', 'tools', 'admin.panel.access'],

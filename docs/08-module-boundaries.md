@@ -8,7 +8,7 @@ Modular Monolith يفشل بطريقة واحدة: أن يصبح Monolith فيه
 ## 1. الطبقات وقاعدة الاتجاه
 
 ```
-الطبقة 7   Reporting                          ← يقرأ من الجميع، لا أحد يقرأ منه
+الطبقة 7   Reporting · SupportBot             ← يقرأ من الجميع، لا أحد يقرأ منه
 الطبقة 6   Payroll · Billing
 الطبقة 5   Discipline · Messaging
 الطبقة 4   Assignments · Assessments · AcademicReports · Certificates
@@ -132,6 +132,7 @@ interface StudentDirectory
 | Payroll | `payroll_periods` · `payroll_entries` · `payroll_adjustments` · `staff_obligations` |
 | Billing | `invoices` · `payments` · `student_packages` · `coupons` · `refunds` |
 | Reporting | `report_*` (Read Models فقط) |
+| SupportBot | `support_bot_entries` · `support_bot_rules` · `support_bot_conversations` · `support_bot_messages` · `support_bot_account_access` · `support_bot_usage` |
 
 ---
 
