@@ -7,8 +7,6 @@ namespace Modules\SupportBot\Domain\Models;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Modules\SupportBot\Domain\Enums\BotAudience;
-use Modules\SupportBot\Domain\Enums\BotTopic;
 use Modules\SupportBot\Domain\Enums\TopicMode;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
@@ -76,15 +74,5 @@ final class BotRule extends Model
             $scoped->where('organization_id', $organizationId)
                 ->orWhereNull('organization_id');
         });
-    }
-
-    public function topicEnum(): ?BotTopic
-    {
-        return BotTopic::tryFrom($this->topic);
-    }
-
-    public function audienceEnum(): ?BotAudience
-    {
-        return BotAudience::tryFrom($this->audience);
     }
 }

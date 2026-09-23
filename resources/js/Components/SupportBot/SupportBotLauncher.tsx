@@ -64,6 +64,16 @@ function readPosition(): Position | null {
   return null;
 }
 
+/** موضع محفوظ من شاشة أكبر قد يقع خارج الشاشة الحالية؛ نعيده إلى داخلها. */
+function clampToViewport(position: Position, size: number): Position {
+  return {
+    x: clamp(position.x, EDGE_MARGIN, Math.max(EDGE_MARGIN, window.innerWidth - size - EDGE_MARGIN)),
+    y: clamp(position.y, EDGE_MARGIN, Math.max(EDGE_MARGIN, window.innerHeight - size - EDGE_MARGIN)),
+  };
+}
+
+const BALL_SIZE = 56;
+
 function writePosition(position: Position): void {
   try {
     window.localStorage.setItem(POSITION_KEY, JSON.stringify(position));
@@ -89,7 +99,16 @@ export default function SupportBotLauncher() {
   });
 
   useEffect(() => {
-    setPosition(readPosition());
+    const stored = readPosition();
+    setPosition(stored === null ? null : clampToViewport(stored, BALL_SIZE));
+
+    const onResize = (): void => {
+      setPosition((current) => (current === null ? null : clampToViewport(current, BALL_SIZE)));
+    };
+
+    window.addEventListener("resize", onResize);
+
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   /*
@@ -202,15 +221,25 @@ export default function SupportBotLauncher() {
 
           return current;
         });
-
-        return;
       }
-
-      // سحبٌ لم يتجاوز العتبة = نقرة.
-      setOpen((current) => !current);
     },
     [],
   );
+
+  /*
+   * الفتح والطي على click لا على رفع المؤشر: click يصل من لوحة المفاتيح أيضًا
+   * (Enter وSpace)، فلا تبقى الكرة حكرًا على من يملك فأرة. والسحب يبتلع النقرة
+   * التي تليه حتى لا ينفتح البوت كلما حُرّكت الكرة.
+   */
+  const onClick = useCallback((): void => {
+    if (moved.current) {
+      moved.current = false;
+
+      return;
+    }
+
+    setOpen((current) => !current);
+  }, []);
 
   if (!available) {
     return null;
@@ -243,6 +272,7 @@ export default function SupportBotLauncher() {
         className="support-bot__ball"
         aria-label={open ? t("support_bot.collapse") : t("support_bot.open")}
         aria-expanded={open}
+        onClick={onClick}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

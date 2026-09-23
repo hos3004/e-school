@@ -55,9 +55,11 @@ return [
         'max_message_characters' => (int) Env::get('SUPPORT_BOT_MAX_MESSAGE_CHARS', 2000),
 
         /*
-        | مدة الاحتفاظ بالأرشيف قبل التقليم. صفر = بلا تقليم.
+        | مدة الاحتفاظ بالأرشيف بالأيام، ينفّذها الأمر support-bot:prune يوميًا.
+        | صفر = احتفاظ بلا حد، وهو الافتراضي: الأرشيف مصدر التقارير الدورية، ومدة
+        | حذف محادثات الناس قرار لصاحب المنصة لا رقم يختاره مطوّر.
         */
-        'retention_days' => (int) Env::get('SUPPORT_BOT_RETENTION_DAYS', 90),
+        'retention_days' => (int) Env::get('SUPPORT_BOT_RETENTION_DAYS', 0),
     ],
 
     'limits' => [
@@ -74,7 +76,18 @@ return [
         | آخر الشهر.
         */
         'daily_cost_cap_micro_usd' => (int) Env::get('SUPPORT_BOT_DAILY_COST_CAP_MICRO', 5_000_000),
+
+        /*
+        | التوقيت الذي يبدأ فيه «اليوم» للسقف والعدّاد. توقيت التطبيق UTC، فبدون
+        | هذا كان السقف يتجدد الثالثة فجرًا بتوقيت القاهرة لا منتصف الليل.
+        */
+        'accounting_timezone' => (string) Env::get('SUPPORT_BOT_ACCOUNTING_TIMEZONE', 'Africa/Cairo'),
     ],
+
+    /*
+    | عدد المحادثات في صفحة الأرشيف باللوحة.
+    */
+    'archive_per_page' => (int) Env::get('SUPPORT_BOT_ARCHIVE_PER_PAGE', 30),
 
     /*
     | الوضع الافتراضي لموضوع لا توجد له قاعدة في الجدول.
@@ -106,7 +119,7 @@ return [
         /*
         | رموز وكلمات العملة التي يعني ظهورها بجوار رقم أن الرد ذكر مبلغًا.
         */
-        'currency_markers' => ['جنيه', 'جنيهًا', 'ج.م', 'دولار', 'ريال', 'درهم', 'EGP', 'USD', 'SAR', '$', '£'],
+        'currency_markers' => ['جنيه', 'جنيهًا', 'ج.م', 'ج م', 'جم', 'دولار', 'ريال', 'درهم', 'دينار', 'يورو', 'EGP', 'USD', 'SAR', 'EUR', '$', '£', '€'],
     ],
 
 ];

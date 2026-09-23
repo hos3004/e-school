@@ -53,7 +53,12 @@ final readonly class TopicClassifier
         ));
 
         if (!$result->isAccepted()) {
-            return ClassificationResult::failed($result->error() ?? 'classifier_failed');
+            return ClassificationResult::failed(
+                $result->error() ?? 'classifier_failed',
+                $result->inputTokens,
+                $result->outputTokens,
+                $result->model !== '' ? $result->model : $model,
+            );
         }
 
         /*
@@ -65,6 +70,7 @@ final readonly class TopicClassifier
             BotTopic::fromModelOutput($result->text()),
             $result->inputTokens,
             $result->outputTokens,
+            $result->model,
         );
     }
 
@@ -103,8 +109,13 @@ final readonly class TopicClassifier
         $context = '';
 
         if ($recentUserMessages !== []) {
+            /*
+             * كل رسالة سابقة تُطوى في سطر واحد قصير. رسالة مخزّنة بأسطر متعددة
+             * كانت تستطيع أن تزوّر عنوان «الرسالة المطلوب تصنيفها» نفسه، فتزرع
+             * في دور سابق ما يوجّه تصنيف الدور التالي.
+             */
             $previous = implode("\n", array_map(
-                static fn (string $line): string => '- '.$line,
+                static fn (string $line): string => '- '.self::flatten($line),
                 array_slice($recentUserMessages, -3),
             ));
 
@@ -112,6 +123,13 @@ final readonly class TopicClassifier
         }
 
         return $context."الرسالة المطلوب تصنيفها:\n{$message}";
+    }
+
+    private static function flatten(string $line): string
+    {
+        $single = trim((string) preg_replace('/\s+/u', ' ', $line));
+
+        return mb_strlen($single) > 200 ? mb_substr($single, 0, 200).'…' : $single;
     }
 
     private function model(): string

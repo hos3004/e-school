@@ -58,7 +58,7 @@ final readonly class AnthropicGateway implements LlmGateway
             return LlmResult::rejected('llm_configuration_invalid', false);
         }
 
-        if ($this->circuitIsOpen()) {
+        if ($this->circuitIsOpen($request->organizationId)) {
             return LlmResult::rejected('llm_circuit_open', true);
         }
 
@@ -82,7 +82,7 @@ final readonly class AnthropicGateway implements LlmGateway
                 )
                 ->post(rtrim($credentials['base_url'], '/').'/v1/messages', $this->payload($request));
         } catch (ConnectionException) {
-            $this->recordTransientFailure();
+            $this->recordTransientFailure($request->organizationId);
 
             return LlmResult::rejected('llm_network_error', true, $request->model, 0, 0, $this->elapsed($startedAt));
         }
@@ -93,7 +93,7 @@ final readonly class AnthropicGateway implements LlmGateway
             return $this->failedResponse($response, $request->organizationId, $request->model, $latency);
         }
 
-        $this->recordSuccess();
+        $this->recordSuccess($request->organizationId);
 
         return $this->acceptedResponse($response, $request->model, $latency);
     }
@@ -188,7 +188,7 @@ final readonly class AnthropicGateway implements LlmGateway
         $retryable = $status === 429 || $status === 529 || $response->serverError();
 
         if ($retryable) {
-            $this->recordTransientFailure();
+            $this->recordTransientFailure($organizationId);
         }
 
         /*
@@ -270,12 +270,12 @@ final readonly class AnthropicGateway implements LlmGateway
         ];
     }
 
-    private function circuitIsOpen(): bool
+    private function circuitIsOpen(string $organizationId): bool
     {
-        return $this->cache->get($this->circuitKey('open_until')) !== null;
+        return $this->cache->get($this->circuitKey($organizationId, 'open_until')) !== null;
     }
 
-    private function recordTransientFailure(): void
+    private function recordTransientFailure(string $organizationId): void
     {
         $settings = $this->settings();
 
@@ -283,24 +283,28 @@ final readonly class AnthropicGateway implements LlmGateway
             return;
         }
 
-        $key = $this->circuitKey('failures');
+        $key = $this->circuitKey($organizationId, 'failures');
         $failures = (int) $this->cache->get($key, 0) + 1;
 
         $this->cache->put($key, $failures, $settings['circuit_open_seconds']);
 
         if ($failures >= $settings['circuit_failure_threshold']) {
-            $this->cache->put($this->circuitKey('open_until'), true, $settings['circuit_open_seconds']);
+            $this->cache->put($this->circuitKey($organizationId, 'open_until'), true, $settings['circuit_open_seconds']);
         }
     }
 
-    private function recordSuccess(): void
+    private function recordSuccess(string $organizationId): void
     {
-        $this->cache->forget($this->circuitKey('failures'));
-        $this->cache->forget($this->circuitKey('open_until'));
+        $this->cache->forget($this->circuitKey($organizationId, 'failures'));
+        $this->cache->forget($this->circuitKey($organizationId, 'open_until'));
     }
 
-    private function circuitKey(string $suffix): string
+    /**
+     * القاطع لكل مؤسسة: تعثّر مسار مؤسسة لا يجوز أن يوقف بوت مؤسسة أخرى سليمة،
+     * ولا أن يمسح نجاحُ الأخرى عدّاد إخفاقات الأولى.
+     */
+    private function circuitKey(string $organizationId, string $suffix): string
     {
-        return 'llm:anthropic:'.$suffix;
+        return 'llm:anthropic:'.$organizationId.':'.$suffix;
     }
 }

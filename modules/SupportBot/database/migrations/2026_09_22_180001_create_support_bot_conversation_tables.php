@@ -88,6 +88,12 @@ return new class extends Migration
 
         // ترتيب العرض والتقليم: الأحدث أولًا داخل المحادثة.
         DB::statement('CREATE INDEX support_bot_messages_thread_idx ON support_bot_messages (conversation_id, created_at DESC)');
+
+        /*
+         * جلسة مفتوحة واحدة لكل مستخدم. بدونه يُنشئ طلبان متزامنان جلستين،
+         * فتنقسم ذاكرة الجلسة الواحدة بينهما ويختفي السجلّ من الودجت.
+         */
+        DB::statement('CREATE UNIQUE INDEX support_bot_conversations_one_open ON support_bot_conversations (organization_id, user_id) WHERE closed_at IS NULL');
     }
 
     public function down(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Services\VirtualClassroom\RecordingSynchronizer;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Shared\Module\ModuleRegistry;
 use Modules\Recordings\Application\Actions\ExpireRecordingsAction;
 use Symfony\Component\Console\Command\Command;
 
@@ -61,3 +62,8 @@ Schedule::command('reporting:send-monthly-program-digests')
     ->lastDayOfMonth('23:50')
     ->timezone((string) config('academic.default_timezone'))
     ->withoutOverlapping();
+
+// تقليم أرشيف بوت الدعم حسب support_bot.conversation.retention_days (صفر = بلا حذف).
+if (ModuleRegistry::isEnabled('SupportBot')) {
+    Schedule::command('support-bot:prune')->dailyAt('02:30')->withoutOverlapping();
+}

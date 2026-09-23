@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Modules\SupportBot\Domain\Enums\BotAudience;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
@@ -86,11 +85,6 @@ final class BotConversation extends Model
     public function scopeOpen(Builder $query): Builder
     {
         return $query->whereNull('closed_at');
-    }
-
-    public function audienceEnum(): ?BotAudience
-    {
-        return BotAudience::tryFrom($this->audience);
     }
 
     public function isClosed(): bool

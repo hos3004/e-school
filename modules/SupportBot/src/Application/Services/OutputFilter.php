@@ -8,57 +8,102 @@ namespace Modules\SupportBot\Application\Services;
  * الفحص الأخير قبل أن يرى المستخدم الرد.
  *
  * الطبقتان قبله (التصنيف ثم القواعد) تفترضان تصنيفًا صحيحًا. هذا الفحص لا
- * يفترض شيئًا: يقرأ النص الناتج ويسأل سؤالًا واحدًا — هل ذكر مبلغًا؟
+ * يفترض شيئًا: يقرأ النص الناتج ويسأل هل ذكر مبلغًا أو عددًا يخص الأجر.
  *
  * **معايرة الحساسية هي كل شيء هنا.** فلتر يرفض كل رقم يجعل البوت عديم الفائدة:
- * «حصتك الساعة ٧» و«لديك ٣ حصص هذا الأسبوع» كلاهما مشروع تمامًا. لذلك الشرط
- * ليس وجود رقم، بل **قرب رقم من علامة عملة**. هكذا يمر الوقت والعدد، ويُلتقط
- * «٣١٢٥ جنيه».
+ * «حصتك الساعة ٧» و«لديك ٣ حصص هذا الأسبوع» مشروعان تمامًا. لذلك الشرط ليس
+ * وجود رقم، بل قرب رقم من علامة عملة أو من كلمة تربطه بالأجر.
  *
- * عند الالتقاط يُستبدل الرد كاملًا بالنص المعدّ. الحذف الجزئي كان سينتج جملة
- * مبتورة تكشف للمستخدم أن شيئًا أُخفي، وتدعوه للسؤال مجددًا بصيغة أخرى.
+ * كل المسافات هنا **بالمحارف لا بالبايت**: الحرف العربي بايتان في UTF-8، فنافذة
+ * مقيسة بالبايت تنكمش إلى نصف حجمها المقصود ويفلت منها «٣١٢٥ وهو بالجنيه».
+ *
+ * عند الالتقاط يُستبدل الرد كاملًا بالنص المعدّ؛ الحذف الجزئي كان سينتج جملة
+ * مبتورة تكشف أن شيئًا أُخفي وتدعو إلى السؤال مجددًا بصيغة أخرى.
  */
 final readonly class OutputFilter
 {
+    /** أقصى مسافة بالمحارف بين الرقم وعلامة العملة ليُعدّا مبلغًا واحدًا. */
+    private const int CURRENCY_PROXIMITY = 16;
+
     /**
-     * أقصى مسافة بالمحارف بين الرقم وعلامة العملة ليُعتبرا مبلغًا واحدًا.
-     * تكفي لـ«3125 جنيهًا» و«مبلغ 3125 ج.م» ولا تصل إلى رقم في جملة أخرى.
+     * كلمة الأجر تسبق الرقم عادةً بجملة كاملة لا بكلمة: «الحصص المحتسبة لك هذا
+     * الشهر ١٢». نافذة العملة القصيرة كانت تفوّتها، فلهذه نافذتها الأوسع.
      */
-    private const int PROXIMITY_CHARACTERS = 12;
+    private const int PAY_CONTEXT_PROXIMITY = 32;
+
+    /**
+     * رقم بالأرقام، أو كلمة مرتبة عددية مكتوبة بالحروف. الثانية لأن نموذجًا
+     * طُلب منه «اكتب المبلغ بالحروف» سيكتب «ثلاثة آلاف جنيه» بلا رقم واحد.
+     */
+    private const string NUMBER_PATTERN =
+        '/\d[\d,.\x{060C}\x{066B}\x{066C}]*|آلاف|ألفين|ألفان|ألف|مئتين|مئتان|مائة|مئة|ملايين|مليون/u';
+
+    /**
+     * كلمات تجعل أي عدد بجوارها عددًا يخص الأجر، ولو بلا عملة: «الحصص
+     * المحتسبة لك ١٢» لا تحمل عملة وهي بالضبط ما طلب صاحب المنصة ألّا يُذكر.
+     *
+     * «أجر» وحدها مستبعدة عمدًا: في سياق القرآن تعني الثواب، و«ما أجر حفظ
+     * سورة» سؤال مشروع لا علاقة له بالمال.
+     */
+    private const array PAY_CONTEXT = [
+        'مستحق', 'محتسب', 'راتب', 'أجرة', 'أجرتك', 'أجرتي', 'الأجر الشهري',
+        'مبلغ', 'رصيد', 'مكافأة', 'خصم', 'salary', 'payout', 'dues', 'balance',
+    ];
+
+    /**
+     * علامات عملة احتياطية. الإعداد المفقود أو الفارغ لا يجوز أن يعطّل الفلتر
+     * صامتًا — الإنتاج يعمل بإعداد مخبوء، وصفّ ناقص فيه كان سيمرّر كل مبلغ.
+     */
+    private const array DEFAULT_CURRENCY_MARKERS = [
+        'جنيه', 'ج.م', 'ج م', 'جم', 'دولار', 'ريال', 'درهم', 'دينار', 'يورو',
+        'egp', 'usd', 'sar', 'aed', 'eur', '$', '£', '€',
+    ];
 
     public function passes(string $text): bool
     {
-        if (!$this->enabled()) {
+        if (!(bool) config('support_bot.output_filter.enabled', true)) {
             return true;
         }
 
-        return !$this->mentionsAmount($text);
+        return !$this->mentionsWithheldFigure($text);
     }
 
-    private function mentionsAmount(string $text): bool
+    private function mentionsWithheldFigure(string $text): bool
     {
-        $markers = $this->currencyMarkers();
+        $normalized = mb_strtolower($this->normalizeDigits($text));
 
-        if ($markers === []) {
-            return false;
+        if (preg_match_all(self::NUMBER_PATTERN, $normalized, $matches, PREG_OFFSET_CAPTURE) === false) {
+            // تعذّر الفحص = لا نعرف، والمجهول هنا يُحجب ولا يُنشر.
+            return true;
         }
 
-        // توحيد الأرقام العربية‑الهندية حتى لا يفلت «٣١٢٥ جنيه» من فحص ASCII.
-        $normalized = $this->normalizeDigits($text);
-
-        if (preg_match_all('/\d[\d,.\s]*/u', $normalized, $matches, PREG_OFFSET_CAPTURE) === false) {
-            return false;
-        }
+        $currency = $this->currencyMarkers();
 
         foreach ($matches[0] as [$number, $byteOffset]) {
-            $start = max(0, $byteOffset - self::PROXIMITY_CHARACTERS);
-            $length = strlen((string) $number) + (self::PROXIMITY_CHARACTERS * 2);
-            $window = substr($normalized, $start, $length);
+            // الإزاحة من preg بالبايت؛ نحوّلها إلى محارف قبل أي قص.
+            $start = mb_strlen(substr($normalized, 0, $byteOffset));
+            $length = mb_strlen((string) $number);
 
-            foreach ($markers as $marker) {
-                if ($marker !== '' && str_contains($window, $marker)) {
-                    return true;
-                }
+            if ($this->windowContains($normalized, $start, $length, self::CURRENCY_PROXIMITY, $currency)
+                || $this->windowContains($normalized, $start, $length, self::PAY_CONTEXT_PROXIMITY, self::PAY_CONTEXT)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<string> $markers
+     */
+    private function windowContains(string $text, int $start, int $length, int $radius, array $markers): bool
+    {
+        $windowStart = max(0, $start - $radius);
+        $window = mb_substr($text, $windowStart, ($start - $windowStart) + $length + $radius);
+
+        foreach ($markers as $marker) {
+            if ($marker !== '' && str_contains($window, $marker)) {
+                return true;
             }
         }
 
@@ -81,24 +126,16 @@ final readonly class OutputFilter
     private function currencyMarkers(): array
     {
         $configured = config('support_bot.output_filter.currency_markers');
-
-        if (!is_array($configured)) {
-            return [];
-        }
-
         $markers = [];
 
-        foreach ($configured as $marker) {
-            if (is_string($marker) && trim($marker) !== '') {
-                $markers[] = trim($marker);
+        if (is_array($configured)) {
+            foreach ($configured as $marker) {
+                if (is_string($marker) && trim($marker) !== '') {
+                    $markers[] = mb_strtolower(trim($marker));
+                }
             }
         }
 
-        return $markers;
-    }
-
-    private function enabled(): bool
-    {
-        return (bool) config('support_bot.output_filter.enabled', true);
+        return array_values(array_unique([...$markers, ...self::DEFAULT_CURRENCY_MARKERS]));
     }
 }

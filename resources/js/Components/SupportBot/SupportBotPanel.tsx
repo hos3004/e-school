@@ -37,6 +37,21 @@ export default function SupportBotPanel({
   const [expired, setExpired] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const inFlight = useRef<AbortController | null>(null);
+  const mounted = useRef(true);
+
+  /*
+   * طيّ اللوحة أثناء انتظار الرد يلغي الطلب ولا يكتب حالة في مكوّن غادر
+   * الشاشة. الرد إن وصل الخادم يبقى في الأرشيف ويظهر عند الفتح التالي.
+   */
+  useEffect(() => {
+    mounted.current = true;
+
+    return () => {
+      mounted.current = false;
+      inFlight.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
@@ -58,6 +73,7 @@ export default function SupportBotPanel({
     setSending(true);
 
     const controller = new AbortController();
+    inFlight.current = controller;
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
     try {
@@ -72,6 +88,10 @@ export default function SupportBotPanel({
         body: JSON.stringify({ message }),
         signal: controller.signal,
       });
+
+      if (!mounted.current) {
+        return;
+      }
 
       if (
         response.status === 401 ||
@@ -101,6 +121,11 @@ export default function SupportBotPanel({
       }
 
       const payload = (await response.json()) as { reply?: unknown };
+
+      if (!mounted.current) {
+        return;
+      }
+
       const reply =
         typeof payload.reply === "string" && payload.reply.trim() !== ""
           ? payload.reply
@@ -108,13 +133,19 @@ export default function SupportBotPanel({
 
       setMessages((current) => [...current, { role: "bot", body: reply }]);
     } catch {
-      setMessages((current) => [
-        ...current,
-        { role: "bot", body: t("support_bot.failed") },
-      ]);
+      if (mounted.current) {
+        setMessages((current) => [
+          ...current,
+          { role: "bot", body: t("support_bot.failed") },
+        ]);
+      }
     } finally {
       clearTimeout(timer);
-      setSending(false);
+      inFlight.current = null;
+
+      if (mounted.current) {
+        setSending(false);
+      }
     }
   }, [draft, sending, t]);
 

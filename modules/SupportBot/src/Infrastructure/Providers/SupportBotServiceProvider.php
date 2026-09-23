@@ -7,6 +7,8 @@ namespace Modules\SupportBot\Infrastructure\Providers;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\SupportBot\Application\Console\ConnectSupportBotProvider;
+use Modules\SupportBot\Application\Console\PruneSupportBotArchive;
 use Modules\SupportBot\Domain\Contracts\SupportBotDataSource;
 use Modules\SupportBot\Infrastructure\Persistence\NullDataSource;
 use Shared\Module\BaseModuleServiceProvider;
@@ -39,6 +41,13 @@ final class SupportBotServiceProvider extends BaseModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                ConnectSupportBotProvider::class,
+                PruneSupportBotArchive::class,
+            ]);
+        }
 
         /*
          * لا يوجد throttle عام في هذا المشروع، وكل رسالة هنا تكلّف مالًا. الحد

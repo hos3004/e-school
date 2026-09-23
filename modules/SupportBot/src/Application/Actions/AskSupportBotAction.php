@@ -11,6 +11,7 @@ use Modules\SupportBot\Application\Services\AnswerComposer;
 use Modules\SupportBot\Application\Services\ConversationStore;
 use Modules\SupportBot\Application\Services\GuardrailResolver;
 use Modules\SupportBot\Application\Services\KnowledgeResolver;
+use Modules\SupportBot\Application\Services\MoneyIntentDetector;
 use Modules\SupportBot\Application\Services\OutputFilter;
 use Modules\SupportBot\Application\Services\TopicClassifier;
 use Modules\SupportBot\Application\Services\UsageAccountant;
@@ -27,20 +28,25 @@ use Modules\SupportBot\Domain\ValueObjects\GuardrailDecision;
  *
  * ترتيب الخطوات هو الأمان نفسه، ولا يجوز تبديله:
  *
- *   الوصول ← الطول ← الحدود ← الجلسة ← **التصنيف** ← **الحارس**
- *   ← (إن سمح) الصياغة ← **الفلتر البعدي** ← الأرشفة
+ *   الوصول ← الطول ← الحدود ← الجلسة ← **التصنيف** ← **الكاشف المالي**
+ *   ← **الحارس** ← (إن سمح) الصياغة ← **الفلتر البعدي** ← الأرشفة
  *
- * ثلاث نقاط تستحق التوضيح:
+ *  - **الكاشف المالي يقرأ نص السؤال لا تصنيفه.** سياج BotTopic يحرس أسماء
+ *    مواضيع؛ لو أُقنع المصنِّف أن سؤال المستحقات «مساعدة في المنصة» لما رأى
+ *    السياج شيئًا. الكاشف يطابق كلمات ولا يمكن إقناعه، فيعيد السؤال إلى موضوعه
+ *    المالي قبل أن يقرر الحارس.
  *
- *  - **مفتاح الإيقاف يُفحَص مرتين**: مرة عند الوصول ومرة قبل الصياغة. الدرس
- *    مأخوذ من حملات الواتساب التي تفحص المفتاح قبل كل رسالة لا مرة واحدة عند
- *    الإطلاق؛ الأدمن الذي يضغط «إيقاف» يتوقع أن يتوقف كل شيء الآن.
+ *  - **الوضع غير Allow لا ينادي نموذج الصياغة إطلاقًا.** ما دام لم يُستدعَ فلا
+ *    احتمال لأن يذكر رقمًا، مهما تكرر السؤال.
  *
- *  - **الوضع غير Allow لا ينادي النموذج إطلاقًا.** ليس توفيرًا: ما دام النموذج
- *    لم يُستدعَ فلا يوجد احتمال أن يذكر رقمًا، مهما كان السؤال أو تكراره.
+ *  - **مفتاح الإيقاف يُفحَص مرتين**: عند الوصول وقبل الصياغة، فالإيقاف أثناء
+ *    الدور نفسه يوقفه.
  *
- *  - **كل مسار فشل يُنهي برد معدّ.** لا استثناء يصعد إلى المستخدم، ولا فقاعة
- *    فارغة. عطل المزوّد ينتهي باعتذار وإحالة إلى الواتساب الرسمي.
+ *  - **كل مسار فشل ينتهي برد معدّ**: لا استثناء يصعد إلى المستخدم ولا فقاعة
+ *    فارغة.
+ *
+ * ملاحظة للمالك: رسالة المستخدم تصل مزوّد النموذج في مرحلة التصنيف دائمًا —
+ * «بلا نداء» في وضعَي الإرشاد والاعتذار تعني بلا نداء *صياغة*.
  */
 final readonly class AskSupportBotAction
 {
@@ -48,6 +54,7 @@ final readonly class AskSupportBotAction
         private AccessResolver $access,
         private ConversationStore $conversations,
         private TopicClassifier $classifier,
+        private MoneyIntentDetector $moneyIntent,
         private GuardrailResolver $guardrail,
         private AnswerComposer $composer,
         private OutputFilter $filter,
@@ -92,15 +99,26 @@ final readonly class AskSupportBotAction
             return $this->canned($conversation, 'rate_limited', $correlationId, null, $limit);
         }
 
+        /*
+         * السياق يُقرأ قبل تسجيل الرسالة الحالية. لو قُرئ بعدها لظهر السؤال
+         * للنموذج مرتين — وهي بالضبط العلامة التي يعاملها توجيه «الإلحاح»
+         * كتكرار من المستخدم.
+         */
+        $recent = $this->conversations->recentUserMessages($conversation);
+        $history = $this->conversations->history($conversation);
+
         $this->conversations->recordUserMessage($conversation, $message, $correlationId);
 
-        $classification = $this->classifier->classify(
-            $organizationId,
-            $message,
-            $this->conversations->recentUserMessages($conversation),
-        );
+        $classification = $this->classifier->classify($organizationId, $message, $recent);
 
-        $this->usage->record($organizationId, $userId, $classification->inputTokens, $classification->outputTokens);
+        $this->usage->record(
+            $organizationId,
+            $userId,
+            $classification->model,
+            $classification->inputTokens,
+            $classification->outputTokens,
+            opensTurn: true,
+        );
 
         if (!$classification->succeeded()) {
             return $this->canned(
@@ -112,14 +130,21 @@ final readonly class AskSupportBotAction
             );
         }
 
-        $topic = $classification->topic ?? BotTopic::Unknown;
+        $classified = $classification->topic ?? BotTopic::Unknown;
+        $topic = $this->effectiveTopic($classified, $message);
         $decision = $this->guardrail->resolve($organizationId, $topic, $audience);
 
         if (!$decision->allowsGeneration()) {
-            return $this->canned($conversation, $decision->replyKey, $correlationId, $decision);
+            return $this->canned(
+                $conversation,
+                $decision->replyKey,
+                $correlationId,
+                $decision,
+                $this->withholdingReason($decision, $classified, $topic),
+                withheld: true,
+            );
         }
 
-        // الفحص الثاني للمفتاح: قد يكون الأدمن أوقفه أثناء هذا الدور نفسه.
         if (!$this->connections->isEnabled($organizationId)) {
             return $this->canned($conversation, 'provider_unavailable', $correlationId, $decision, 'bot_disabled');
         }
@@ -131,27 +156,34 @@ final readonly class AskSupportBotAction
             $topic,
             $locale,
             $message,
-            $this->conversations->history($conversation),
+            $history,
         );
 
-        $this->usage->record($organizationId, $userId, $result->inputTokens, $result->outputTokens);
+        $this->usage->record(
+            $organizationId,
+            $userId,
+            $result->model,
+            $result->inputTokens,
+            $result->outputTokens,
+            opensTurn: false,
+        );
 
         if (!$result->isAccepted()) {
             return $this->canned($conversation, 'provider_unavailable', $correlationId, $decision, $result->error());
         }
 
-        $text = $result->text();
-
         /*
-         * ردّ مبتور لبلوغ سقف التوكِن يصل كنصف جملة. الرد المعدّ أوضح من نص
-         * ينقطع في منتصفه ويترك المستخدم يخمّن البقية.
+         * ردّ مبتور لبلوغ سقف التوكِن يصل كنصف جملة؛ والرد الذي التقطه الفلتر
+         * ذكر ما لا يُذكر. كلاهما يُستبدل كاملًا بالرد المعدّ.
          */
         if ($result->wasTruncated()) {
-            return $this->canned($conversation, $decision->replyKey, $correlationId, $decision, 'answer_truncated');
+            return $this->canned($conversation, $decision->replyKey, $correlationId, $decision, 'answer_truncated', withheld: true);
         }
 
+        $text = $result->text();
+
         if (!$this->filter->passes($text)) {
-            return $this->canned($conversation, $decision->replyKey, $correlationId, $decision, 'output_filtered');
+            return $this->canned($conversation, $decision->replyKey, $correlationId, $decision, 'output_filtered', withheld: true);
         }
 
         $this->conversations->recordBotMessage(
@@ -166,25 +198,44 @@ final readonly class AskSupportBotAction
             latencyMilliseconds: $result->latencyMilliseconds,
         );
 
-        return new BotReply(
-            $text,
-            $topic,
-            $decision->mode,
-            true,
-            (string) $conversation->id,
-            $correlationId,
-        );
+        return new BotReply($text, $topic, $decision->mode, true, (string) $conversation->id, $correlationId);
     }
 
     /**
-     * رد معدّ: يُسجَّل في الأرشيف كأي رد، ويحمل سبب اللجوء إليه.
+     * التصنيف يُحترم ما لم يكشف النص نية مالية لم يلتقطها المصنِّف.
+     *
+     * الاتجاه واحد فقط: الكاشف يستطيع أن يجعل السؤال ماليًّا، ولا يستطيع أن يجعل
+     * سؤالًا صنّفه النموذج ماليًّا سؤالًا عاديًّا.
      */
+    private function effectiveTopic(BotTopic $classified, string $message): BotTopic
+    {
+        if ($classified->disclosesFigures()) {
+            return $classified;
+        }
+
+        return $this->moneyIntent->detect($message) ?? $classified;
+    }
+
+    /**
+     * سبب يُحفظ في الأرشيف حين يحجب طرفٌ غير القاعدة نفسها: ليعرف من يراجع أن
+     * الكود — لا جدول الحدود — هو ما أوقف الإجابة.
+     */
+    private function withholdingReason(GuardrailDecision $decision, BotTopic $classified, BotTopic $effective): ?string
+    {
+        if ($classified !== $effective) {
+            return 'money_intent_detected';
+        }
+
+        return $decision->clampedByCode ? 'clamped_by_code' : null;
+    }
+
     private function canned(
         BotConversation $conversation,
         string $replyKey,
         string $correlationId,
         ?GuardrailDecision $decision,
         ?string $failureReason = null,
+        bool $withheld = false,
     ): BotReply {
         $body = $this->replyBody((string) $conversation->organization_id, $replyKey, $conversation->locale);
 
@@ -194,6 +245,7 @@ final readonly class AskSupportBotAction
             $correlationId,
             $decision,
             wasGenerated: false,
+            withheld: $withheld,
             failureReason: $failureReason,
         );
 
@@ -228,9 +280,6 @@ final readonly class AskSupportBotAction
         );
     }
 
-    /**
-     * نص الرد المعدّ، مع تدرّج احتياطي حتى لا يخرج رد فارغ أبدًا.
-     */
     private function replyBody(string $organizationId, string $replyKey, string $locale): string
     {
         $body = $this->knowledge->reply($organizationId, $replyKey, $locale);
@@ -249,7 +298,6 @@ final readonly class AskSupportBotAction
             }
         }
 
-        // آخر ملاذ: قاعدة البيانات خالية أو معطّلة بالكامل.
         return __('supportbot::replies.last_resort', [], $locale);
     }
 

@@ -89,11 +89,11 @@ final readonly class LlmConnectionManager implements LlmConnections
     public function save(string $organizationId, string $apiKey, string $baseUrl, string $actorId, string $reason): void
     {
         if (trim($apiKey) === '') {
-            throw ValidationException::withMessages(['api_key' => __('supportbot::errors.api_key_required')]);
+            throw ValidationException::withMessages(['api_key' => __('integrations::errors.llm_api_key_required')]);
         }
 
         if (!$this->validUrl($baseUrl)) {
-            throw ValidationException::withMessages(['base_url' => __('supportbot::errors.base_url_invalid')]);
+            throw ValidationException::withMessages(['base_url' => __('integrations::errors.llm_base_url_invalid')]);
         }
 
         DB::transaction(function () use ($organizationId, $apiKey, $baseUrl, $actorId, $reason): void {
@@ -200,7 +200,7 @@ final readonly class LlmConnectionManager implements LlmConnections
 
             if (!$connection->status->canTransitionTo($target)) {
                 throw ValidationException::withMessages([
-                    'active' => __('supportbot::errors.toggle_blocked'),
+                    'active' => __('integrations::errors.llm_toggle_blocked'),
                 ]);
             }
 
@@ -214,7 +214,7 @@ final readonly class LlmConnectionManager implements LlmConnections
 
                 if (trim($apiKey) === '') {
                     throw ValidationException::withMessages([
-                        'active' => __('supportbot::errors.api_key_required'),
+                        'active' => __('integrations::errors.llm_api_key_required'),
                     ]);
                 }
             }

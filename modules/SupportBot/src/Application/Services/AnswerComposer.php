@@ -78,7 +78,7 @@ final readonly class AnswerComposer
         $knowledge = $this->knowledge->knowledge($organizationId, $topic, $audience, $locale);
 
         if ($knowledge !== []) {
-            $sections[] = "معلومات عن الأكاديمية والمنصة تستند إليها في إجابتك:\n\n".implode("\n\n", $knowledge);
+            $sections[] = __('supportbot::prompts.knowledge_heading', [], $locale)."\n\n".implode("\n\n", $knowledge);
         }
 
         $facts = $this->facts($organizationId, $userId, $topic, $locale);
@@ -119,8 +119,7 @@ final readonly class AnswerComposer
             return '';
         }
 
-        return "بيانات هذا المستخدم كما هي مسجّلة في المنصة الآن — استعملها عند الحاجة "
-            ."وقل «حسب المسجّل عندنا الآن»:\n\n".implode("\n", $lines);
+        return __('supportbot::prompts.facts_heading', [], $locale)."\n\n".implode("\n", $lines);
     }
 
     /**

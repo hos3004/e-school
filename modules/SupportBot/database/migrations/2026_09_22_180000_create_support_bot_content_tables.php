@@ -57,7 +57,13 @@ return new class extends Migration
             $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
             $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
 
-            $table->unique(['organization_id', 'kind', 'key', 'locale'], 'support_bot_entries_scope_unique');
+            /*
+             * NULLS NOT DISTINCT: في PostgreSQL تُعدّ القيم الفارغة مختلفة داخل
+             * الفهرس الفريد، فلولا هذا لما منع الفهرس صفّين عامّين للمفتاح نفسه،
+             * ولصار الفائز بينهما رهين ترتيب الصفوف على القرص.
+             */
+            $table->unique(['organization_id', 'kind', 'key', 'locale'], 'support_bot_entries_scope_unique')
+                ->nullsNotDistinct();
             $table->index(['kind', 'locale', 'is_active', 'priority'], 'support_bot_entries_lookup_idx');
         });
 
@@ -86,7 +92,8 @@ return new class extends Migration
             $table->foreign('organization_id')->references('id')->on('organizations')->restrictOnDelete();
             $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
 
-            $table->unique(['organization_id', 'topic', 'audience'], 'support_bot_rules_scope_unique');
+            $table->unique(['organization_id', 'topic', 'audience'], 'support_bot_rules_scope_unique')
+                ->nullsNotDistinct();
             $table->index(['topic', 'audience', 'is_active'], 'support_bot_rules_lookup_idx');
         });
     }

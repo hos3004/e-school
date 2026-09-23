@@ -13,10 +13,11 @@ use Illuminate\Support\Env;
 return [
 
     /*
-    | المشغّل الفعّال. الافتراضي null عمدًا: الميزة تعمل كاملة بلا شبكة ولا
-    | تكلفة حتى يُدخَل المفتاح ويُبدَّل المشغّل صراحةً.
+    | المشغّل الفعّال. anthropic افتراضيًا وهو آمن: بلا صف اتصال مُفعَّل يرفض
+    | المشغّل كل نداء قبل أي شبكة (llm_disabled)، فلا تكلفة قبل أن يُدخِل الأدمن
+    | المفتاح ويشغّل البوت. المشغّل null للاختبارات وحدها وتضبطه بنفسها.
     */
-    'driver' => (string) Env::get('LLM_DRIVER', 'null'),
+    'driver' => (string) Env::get('LLM_DRIVER', 'anthropic'),
 
     'providers' => [
 
@@ -64,16 +65,6 @@ return [
             'circuit_failure_threshold' => (int) Env::get('LLM_CIRCUIT_FAILURE_THRESHOLD', 4),
             'circuit_open_seconds' => (int) Env::get('LLM_CIRCUIT_OPEN_SECONDS', 60),
 
-            /*
-            | التسعير بوحدات صغرى صحيحة (ميكرو-دولار لكل مليون توكِن). لا float
-            | في أي حساب مال في هذا المشروع. تُحدَّث يدويًا عند تغيّر أسعار
-            | المزوّد — الرقم هنا لا يؤثر في الفوترة، بل في عدّاد الاستهلاك
-            | وسقف الإنفاق اليومي فقط.
-            */
-            'pricing' => [
-                'input_micro_usd_per_million' => (int) Env::get('LLM_PRICE_INPUT_MICRO', 1_000_000),
-                'output_micro_usd_per_million' => (int) Env::get('LLM_PRICE_OUTPUT_MICRO', 5_000_000),
-            ],
         ],
 
         /*
@@ -81,9 +72,24 @@ return [
         */
         'null' => [
             'classify' => (string) Env::get('LLM_NULL_CLASSIFY', 'platform_help'),
-            'answer' => (string) Env::get('LLM_NULL_ANSWER', 'هذه إجابة تجريبية من المشغّل المحلي.'),
+            'answer' => (string) Env::get('LLM_NULL_ANSWER', ''),
         ],
 
+    ],
+
+    /*
+    | التسعير لكل نموذج بوحدات صغرى صحيحة: ميكرو-دولار لكل مليون توكِن.
+    |
+    | لا يؤثر في أي فوترة؛ يغذّي عدّاد الاستهلاك والسقف اليومي فقط. عند تغيير
+    | نموذج في الإعداد أعلاه يجب إضافة سعره هنا من صفحة أسعار المزوّد، وإلا حُسب
+    | بسعر unpriced_model المتشائم عمدًا — فيبلغ السقف مبكرًا بدل أن يتجاوزه
+    | بصمت.
+    */
+    'pricing' => [
+        'models' => [
+            'claude-haiku-4-5-20251001' => ['input' => 1_000_000, 'output' => 5_000_000],
+        ],
+        'unpriced_model' => ['input' => 15_000_000, 'output' => 75_000_000],
     ],
 
 ];

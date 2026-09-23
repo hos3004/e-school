@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\SupportBot\Application\Services;
 
+use Illuminate\Database\UniqueConstraintViolationException;
 use Modules\SupportBot\Domain\Enums\BotAudience;
 use Modules\SupportBot\Domain\Enums\MessageRole;
-use Modules\SupportBot\Domain\Enums\TopicMode;
 use Modules\SupportBot\Domain\Models\BotConversation;
 use Modules\SupportBot\Domain\Models\BotMessage;
 use Modules\SupportBot\Domain\ValueObjects\GuardrailDecision;
@@ -16,28 +16,31 @@ use Modules\SupportBot\Domain\ValueObjects\GuardrailDecision;
  *
  * **«الذاكرة تتصفّر بانتهاء الجلسة» منفَّذة هنا، لا في النموذج.** الجلسة تُقفَل
  * بعد خمول تحدّده الإعدادات، وسجلّها لا يدخل سياق أي جلسة بعدها إطلاقًا. البوت
- * إذن لا يتذكّر، بينما يبقى الأرشيف كاملًا للمراجعة والتقارير — وهما مطلبان
- * مختلفان لا يتعارضان.
+ * إذن لا يتذكّر، بينما يبقى الأرشيف للمراجعة والتقارير.
  *
- * كل رسالة تُحفظ بقرار الحارس الذي أنتجها وقتها، لا محسوبًا لاحقًا: القواعد
- * قابلة للتحرير، وإعادة حسابها بعد شهر تعطي تفسيرًا مختلفًا لما جرى فعلًا.
+ * الجلسة تُنشأ مع أول رسالة فقط، لا عند فتح صفحة: الودجت يسأل عن السجلّ في كل
+ * تحميل، ولو أنشأ ذلك جلسة لامتلأ الأرشيف بجلسات فارغة تدفن المحادثات الحقيقية.
  */
 final readonly class ConversationStore
 {
-    /** الجلسة المفتوحة غير الخاملة، أو جلسة جديدة. */
+    /**
+     * الجلسة المفتوحة غير الخاملة إن وُجدت. قراءة فقط — لا تنشئ ولا تُقفل.
+     */
+    public function open(string $organizationId, string $userId): ?BotConversation
+    {
+        $open = $this->latestOpen($organizationId, $userId);
+
+        return $open instanceof BotConversation && !$this->isIdle($open) ? $open : null;
+    }
+
+    /** الجلسة المفتوحة غير الخاملة، أو جلسة جديدة. يُستدعى عند إرسال رسالة. */
     public function current(
         string $organizationId,
         string $userId,
         BotAudience $audience,
         string $locale,
     ): BotConversation {
-        $open = BotConversation::query()
-            ->forOrganization($organizationId)
-            ->where('user_id', $userId)
-            ->open()
-            ->orderByDesc('last_message_at')
-            ->orderByDesc('started_at')
-            ->first();
+        $open = $this->latestOpen($organizationId, $userId);
 
         if ($open instanceof BotConversation) {
             if (!$this->isIdle($open)) {
@@ -47,15 +50,29 @@ final readonly class ConversationStore
             $this->close($open);
         }
 
-        return BotConversation::query()->create([
-            'organization_id' => $organizationId,
-            'user_id' => $userId,
-            'audience' => $audience->value,
-            'locale' => $locale,
-            'started_at' => now('UTC'),
-            'message_count' => 0,
-            'blocked_count' => 0,
-        ]);
+        try {
+            return BotConversation::query()->create([
+                'organization_id' => $organizationId,
+                'user_id' => $userId,
+                'audience' => $audience->value,
+                'locale' => $locale,
+                'started_at' => now('UTC'),
+                'message_count' => 0,
+                'blocked_count' => 0,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            /*
+             * طلب متزامن من المستخدم نفسه سبقنا إلى إنشاء الجلسة، والفهرس الجزئي
+             * منع جلسة ثانية. نعود إلى جلسته بدل أن ننشئ نسخة تقسم ذاكرتها.
+             */
+            $winner = $this->latestOpen($organizationId, $userId);
+
+            if ($winner instanceof BotConversation) {
+                return $winner;
+            }
+
+            throw new \RuntimeException('support_bot.conversation_race_unresolved');
+        }
     }
 
     /**
@@ -73,8 +90,7 @@ final readonly class ConversationStore
 
         /*
          * الترتيب بـid إلى جانب الوقت: رسالتا الدور الواحد تُكتبان في اللحظة
-         * نفسها، فالوقت وحده لا يفصل بينهما وقد يعود السجلّ مقلوبًا — أي أن
-         * النموذج يقرأ ردّه قبل سؤال المستخدم. وULID مرتّب زمنيًا فيحسمها.
+         * نفسها، فالوقت وحده لا يفصل بينهما. وULID مرتّب زمنيًا فيحسمها.
          */
         return BotMessage::query()
             ->where('conversation_id', $conversation->id)
@@ -120,12 +136,18 @@ final readonly class ConversationStore
         ]);
     }
 
+    /**
+     * @param bool $withheld صحيح متى وصل المستخدمَ ردٌّ معدّ بدل إجابة مصوغة —
+     *                       سواء قرره الحارس أو التقطه الفلتر بعد التوليد. هذا
+     *                       ما يعدّه blocked_count، لا وضع القاعدة وحده.
+     */
     public function recordBotMessage(
         BotConversation $conversation,
         string $body,
         string $correlationId,
         ?GuardrailDecision $decision = null,
         bool $wasGenerated = false,
+        bool $withheld = false,
         ?string $model = null,
         ?int $inputTokens = null,
         ?int $outputTokens = null,
@@ -146,8 +168,8 @@ final readonly class ConversationStore
             'correlation_id' => $correlationId,
         ]);
 
-        if ($decision !== null && $decision->mode !== TopicMode::Allow) {
-            $conversation->forceFill(['blocked_count' => $conversation->blocked_count + 1])->save();
+        if ($withheld) {
+            $conversation->increment('blocked_count');
         }
 
         return $message;
@@ -162,6 +184,19 @@ final readonly class ConversationStore
         $conversation->forceFill(['closed_at' => now('UTC')])->save();
     }
 
+    private function latestOpen(string $organizationId, string $userId): ?BotConversation
+    {
+        return BotConversation::query()
+            ->forOrganization($organizationId)
+            ->where('user_id', $userId)
+            ->open()
+            // جلسة لم تُكتب فيها رسالة بعد تحمل last_message_at فارغًا، وPostgreSQL
+            // يضع الفارغ أولًا في الترتيب التنازلي — فنرتّب بأحدث نشاط فعلي.
+            ->orderByRaw('COALESCE(last_message_at, started_at) DESC')
+            ->orderByDesc('id')
+            ->first();
+    }
+
     /**
      * @param array<string, mixed> $attributes
      */
@@ -174,10 +209,7 @@ final readonly class ConversationStore
             ...$attributes,
         ]);
 
-        $conversation->forceFill([
-            'message_count' => $conversation->message_count + 1,
-            'last_message_at' => now('UTC'),
-        ])->save();
+        $conversation->increment('message_count', 1, ['last_message_at' => now('UTC')]);
 
         return $message;
     }

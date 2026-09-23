@@ -64,7 +64,7 @@ final readonly class PlatformDataSource implements SupportBotDataSource
         try {
             return match ($topic) {
                 BotTopic::Schedule, BotTopic::SessionJoin => $this->scheduleFacts($user, $organizationId, $userId, $locale),
-                BotTopic::Attendance => $this->attendanceFacts($user, $organizationId, $userId),
+                BotTopic::Attendance => $this->attendanceFacts($user, $organizationId, $userId, $locale),
                 BotTopic::MyStudents => $this->teachingFacts($user, $organizationId, $userId, $locale),
                 default => [],
             };
@@ -100,18 +100,16 @@ final readonly class PlatformDataSource implements SupportBotDataSource
             return [];
         }
 
-        $studentProfileId = $this->portal->studentProfileId($userId, $organizationId);
+        $sessions = $this->upcomingSessions($organizationId, $userId, $locale);
 
-        if ($studentProfileId === null) {
+        if ($sessions === null) {
             return [];
         }
 
-        $sessions = $this->portal->upcomingStudentSessions($studentProfileId, $locale, $organizationId);
-
         if ($sessions === []) {
             return [[
-                'label' => (string) __('supportbot::facts.upcoming_sessions'),
-                'value' => (string) __('supportbot::facts.no_upcoming_sessions'),
+                'label' => (string) __('supportbot::facts.upcoming_sessions', [], $locale),
+                'value' => (string) __('supportbot::facts.no_upcoming_sessions', [], $locale),
             ]];
         }
 
@@ -119,19 +117,65 @@ final readonly class PlatformDataSource implements SupportBotDataSource
 
         foreach (array_slice($sessions, 0, self::MAX_SESSIONS) as $index => $session) {
             $facts[] = [
-                'label' => (string) __('supportbot::facts.session_number', ['number' => $index + 1]),
+                'label' => (string) __('supportbot::facts.session_number', ['number' => $index + 1], $locale),
                 'value' => $this->describeSession($session, $locale),
             ];
         }
 
         if (count($sessions) > self::MAX_SESSIONS) {
             $facts[] = [
-                'label' => (string) __('supportbot::facts.total_upcoming'),
+                'label' => (string) __('supportbot::facts.total_upcoming', [], $locale),
                 'value' => (string) count($sessions),
             ];
         }
 
         return $facts;
+    }
+
+    /**
+     * الحصص القادمة لصاحب الحساب: طالبًا كان أو معلمًا.
+     *
+     * المعلم ومشرف الجودة لا يملكان ملف طالب، فالقراءة من جهة الطالب وحدها
+     * كانت تعطي الفئة التي افتُتح بها البوت فراغًا في كل سؤال عن الجدول. جهة
+     * المعلم تُقرأ للأسبوع الجاري، ويُستبعد منها ما انتهى.
+     *
+     * @return list<array<string, mixed>>|null null حين لا ملف طالب ولا ملف معلم
+     */
+    private function upcomingSessions(string $organizationId, string $userId, string $locale): ?array
+    {
+        $studentProfileId = $this->portal->studentProfileId($userId, $organizationId);
+
+        if ($studentProfileId !== null) {
+            return $this->portal->upcomingStudentSessions($studentProfileId, $locale, $organizationId);
+        }
+
+        $staffProfileId = $this->portal->staffProfileId($userId, $organizationId);
+
+        if ($staffProfileId === null) {
+            return null;
+        }
+
+        $now = CarbonImmutable::now('UTC');
+
+        return array_values(array_filter(
+            $this->portal->teacherWeekSessions(
+                $staffProfileId,
+                $locale,
+                (string) config('support_bot.limits.accounting_timezone', 'UTC'),
+                $organizationId,
+            ),
+            static fn (array $session): bool => is_string($session['endsAt'] ?? null)
+                && CarbonImmutable::parse($session['endsAt'])->greaterThanOrEqualTo($now),
+        ));
+    }
+
+    /**
+     * نسبة كسرية (0.8571) إلى نص مئوي («86%»). علنية لأن الخطأ فيها — التقريب قبل
+     * الضرب في مئة — كان يقول لكل طالب إن حضوره 0% أو 1%.
+     */
+    public static function percent(float $fraction): string
+    {
+        return (int) round($fraction * 100).'%';
     }
 
     /**
@@ -154,7 +198,7 @@ final readonly class PlatformDataSource implements SupportBotDataSource
     /**
      * @return list<array{label: string, value: string}>
      */
-    private function attendanceFacts(Authorizable $user, string $organizationId, string $userId): array
+    private function attendanceFacts(Authorizable $user, string $organizationId, string $userId, string $locale): array
     {
         if (!$user->can('attendance.view')) {
             return [];
@@ -172,9 +216,13 @@ final readonly class PlatformDataSource implements SupportBotDataSource
             return [];
         }
 
+        /*
+         * attendanceRate يعيد نسبة كسرية (0.8571) لا مئوية. تقريبها مباشرة كان
+         * يعطي كل طالب 0% أو 1% — ويقولها البوت بثقة «حسب المسجّل عندنا الآن».
+         */
         return [[
-            'label' => (string) __('supportbot::facts.attendance_rate'),
-            'value' => round($rate).'%',
+            'label' => (string) __('supportbot::facts.attendance_rate', [], $locale),
+            'value' => self::percent($rate),
         ]];
     }
 
@@ -210,14 +258,17 @@ final readonly class PlatformDataSource implements SupportBotDataSource
         }
 
         $facts = [[
-            'label' => (string) __('supportbot::facts.active_students'),
+            'label' => (string) __('supportbot::facts.active_students', [], $locale),
             'value' => (string) count($roster),
         ]];
 
         if ($tracks !== []) {
             $facts[] = [
-                'label' => (string) __('supportbot::facts.tracks'),
-                'value' => implode('، ', array_slice(array_keys($tracks), 0, 8)),
+                'label' => (string) __('supportbot::facts.tracks', [], $locale),
+                'value' => implode(
+                    (string) __('supportbot::prompts.list_separator', [], $locale),
+                    array_slice(array_keys($tracks), 0, 8),
+                ),
             ];
         }
 

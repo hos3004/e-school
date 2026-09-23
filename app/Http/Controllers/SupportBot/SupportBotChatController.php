@@ -89,12 +89,15 @@ final class SupportBotChatController extends Controller
             return response()->json(['available' => false, 'messages' => []]);
         }
 
-        $conversation = $conversations->current(
-            $organizationId,
-            (string) $user->getAuthIdentifier(),
-            $decision->audience,
-            app()->getLocale(),
-        );
+        /*
+         * قراءة فقط: الودجت يسأل هنا في كل تحميل صفحة، فإنشاء جلسة من هنا كان
+         * يملأ الأرشيف بجلسات فارغة. الجلسة تُنشأ مع أول رسالة لا مع أول نظرة.
+         */
+        $conversation = $conversations->open($organizationId, (string) $user->getAuthIdentifier());
+
+        if ($conversation === null) {
+            return response()->json(['available' => true, 'conversationId' => null, 'messages' => []]);
+        }
 
         $messages = BotMessage::query()
             ->where('conversation_id', $conversation->id)

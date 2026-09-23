@@ -20,16 +20,21 @@ final readonly class ClassificationResult
         public ?string $failureReason,
         public int $inputTokens,
         public int $outputTokens,
+        public string $model,
     ) {}
 
-    public static function classified(BotTopic $topic, int $inputTokens, int $outputTokens): self
+    public static function classified(BotTopic $topic, int $inputTokens, int $outputTokens, string $model): self
     {
-        return new self($topic, null, $inputTokens, $outputTokens);
+        return new self($topic, null, $inputTokens, $outputTokens, $model);
     }
 
-    public static function failed(string $reason): self
+    /**
+     * الفشل يحمل عدّادات التوكِن أيضًا: المزوّد قد يقبل النداء ويحاسب عليه ثم
+     * يعيد ردًّا فارغًا، وإسقاط العدّاد هنا كان يجعل السقف يتسرّب في العطل.
+     */
+    public static function failed(string $reason, int $inputTokens = 0, int $outputTokens = 0, string $model = ''): self
     {
-        return new self(null, $reason, 0, 0);
+        return new self(null, $reason, $inputTokens, $outputTokens, $model);
     }
 
     public function succeeded(): bool

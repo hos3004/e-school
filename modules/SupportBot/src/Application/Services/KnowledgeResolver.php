@@ -93,6 +93,7 @@ final class KnowledgeResolver
             ->forOrganizationOrGlobal($organizationId)
             ->where('kind', $kind->value)
             ->whereIn('locale', $this->localeChain($locale))
+            ->orderBy('id')
             ->get();
 
         $byKey = [];
@@ -129,6 +130,7 @@ final class KnowledgeResolver
             ->where('kind', $kind->value)
             ->where('key', $key)
             ->whereIn('locale', $this->localeChain($locale))
+            ->orderBy('id')
             ->get()
             ->all();
 

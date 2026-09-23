@@ -11,12 +11,16 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Integrations\Domain\Contracts\LlmConnections;
+use Modules\Organization\Application\Actions\UpsertOrganizationSetting;
 use Modules\Organization\Domain\Contracts\OrganizationSettingQueries;
+use Modules\Organization\Domain\Models\Organization;
+use Modules\Organization\Domain\Models\OrganizationSetting;
 use Modules\SupportBot\Application\Services\UsageAccountant;
 use Modules\SupportBot\Domain\Enums\BotAudience;
 use Modules\SupportBot\Domain\Enums\BotTopic;
@@ -135,6 +139,7 @@ final class SupportBotConsoleController extends Controller
     public function audiences(
         SupportBotWriteRequest $request,
         OrganizationSettingQueries $settings,
+        UpsertOrganizationSetting $upsert,
         AuditRecorder $audit,
     ): RedirectResponse {
         Gate::authorize('support_bot.manage');
@@ -150,17 +155,16 @@ final class SupportBotConsoleController extends Controller
         $key = (string) config('support_bot.audiences_setting_key');
         $before = $settings->value($organizationId, $key);
 
-        DB::table('organization_settings')->updateOrInsert(
-            ['organization_id' => $organizationId, 'key' => $key],
-            [
-                'value' => json_encode($selected, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-                'updated_by' => (string) $request->user()->getAuthIdentifier(),
-                'updated_at' => now('UTC'),
-            ],
-        );
+        /*
+         * مسار الكتابة الرسمي لموديول المؤسسة لا كتابة يدوية في جدوله: الأخيرة
+         * تتجاوز توليد المعرّف (فتنهار أول مرة على قيد NOT NULL) وتتجاوز حدث
+         * OrganizationSettingUpdated الذي يستمع إليه غيرنا.
+         */
+        $organization = Organization::query()->findOrFail($organizationId);
+        $setting = $upsert->execute($organization, $key, $selected);
 
         $audit->record($organizationId, (string) $request->user()->getAuthIdentifier(), 'user',
-            'support_bot.audiences_changed', 'organization_settings', $key,
+            'support_bot.audiences_changed', OrganizationSetting::class, (string) $setting->getKey(),
             ['audiences' => $before], ['audiences' => $selected], $request->reason());
 
         return back()->with('success', __('console_bot.flash.audiences_saved'));
@@ -180,14 +184,16 @@ final class SupportBotConsoleController extends Controller
         $actorId = (string) $request->user()->getAuthIdentifier();
 
         $validated = $request->validate([
-            'kind' => ['required', 'string', 'in:instruction,knowledge,reply'],
+            'kind' => ['required', 'string', Rule::in(array_column(EntryKind::cases(), 'value'))],
             'key' => ['required', 'string', 'max:128'],
-            'locale' => ['required', 'string', 'max:16'],
+            'locale' => ['required', 'string', Rule::in((array) config('app.supported_locales', ['ar']))],
             'title' => ['nullable', 'string', 'max:200'],
             'body' => ['required', 'string', 'max:8000'],
-            'topic' => ['nullable', 'string', 'max:64'],
+            // موضوع مكتوب خطأً كان يُحفظ ولا يُضمّ إلى أي سياق أبدًا، بلا أي تنبيه.
+            'topic' => ['nullable', 'string', Rule::in(array_column(BotTopic::cases(), 'value'))],
             'audiences' => ['array'],
-            'audiences.*' => ['string'],
+            // فئة مجهولة كانت تُسقط صامتة فتصير القائمة فارغة = «للجميع».
+            'audiences.*' => ['string', Rule::in(array_column(BotAudience::cases(), 'value'))],
             'is_active' => ['boolean'],
         ]);
 
@@ -211,10 +217,7 @@ final class SupportBotConsoleController extends Controller
                 'title' => $validated['title'] ?? null,
                 'body' => $validated['body'],
                 'topic' => $validated['topic'] ?? null,
-                'audiences' => array_values(array_filter(
-                    $validated['audiences'] ?? [],
-                    static fn (string $value): bool => BotAudience::tryFrom($value) instanceof BotAudience,
-                )),
+                'audiences' => array_values(array_unique($validated['audiences'] ?? [])),
                 'is_active' => (bool) ($validated['is_active'] ?? true),
                 'created_by' => $existing === null ? $actorId : $existing->created_by,
                 'updated_by' => $actorId,
@@ -237,9 +240,9 @@ final class SupportBotConsoleController extends Controller
         $actorId = (string) $request->user()->getAuthIdentifier();
 
         $validated = $request->validate([
-            'topic' => ['required', 'string', 'max:64'],
-            'audience' => ['required', 'string', 'max:32'],
-            'mode' => ['required', 'string', 'in:allow,guide,deny'],
+            'topic' => ['required', 'string', Rule::in(array_column(BotTopic::cases(), 'value'))],
+            'audience' => ['required', 'string', Rule::in(array_column(BotAudience::cases(), 'value'))],
+            'mode' => ['required', 'string', Rule::in(array_column(TopicMode::cases(), 'value'))],
             'reply_key' => ['nullable', 'string', 'max:128'],
         ]);
 
@@ -468,8 +471,11 @@ final class SupportBotConsoleController extends Controller
         return BotConversation::query()
             ->where('support_bot_conversations.organization_id', $organizationId)
             ->join('users', 'users.id', '=', 'support_bot_conversations.user_id')
-            ->orderByDesc('support_bot_conversations.last_message_at')
-            ->limit((int) config('console.per_page', 25))
+            // جلسة بلا رسائل لا تستحق مكانًا في الأرشيف، والفارغ يتصدّر ترتيب
+            // PostgreSQL التنازلي فكان يدفن المحادثات الحقيقية.
+            ->where('support_bot_conversations.message_count', '>', 0)
+            ->orderByRaw('COALESCE(support_bot_conversations.last_message_at, support_bot_conversations.started_at) DESC')
+            ->limit(max(1, (int) config('support_bot.archive_per_page', 30)))
             ->get([
                 'support_bot_conversations.id',
                 'support_bot_conversations.audience',

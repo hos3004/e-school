@@ -57,6 +57,7 @@ final readonly class GuardrailResolver
             ->forOrganizationOrGlobal($organizationId)
             ->where('topic', $topic->value)
             ->where('audience', $audience->value)
+            ->orderBy('id')
             ->get();
 
         // صف المؤسسة يغطّي الصف العام.
