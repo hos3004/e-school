@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Console\BoardController;
 use App\Http\Controllers\Console\GroupScheduleController;
 use App\Http\Controllers\Console\LiveBoardController;
+use App\Http\Controllers\Console\SessionObserveController;
 use App\Http\Controllers\Console\SessionReportController;
 use App\Http\Controllers\Console\SessionReviewController;
 use App\Http\Controllers\Console\SessionsController;
@@ -49,6 +50,17 @@ Route::get('/sessions/{session}/report', SessionReportController::class)
     ->whereUlid('session')
     ->middleware(['can:session.view', 'can:report.view'])
     ->name('sessions.report');
+
+/*
+ * دخول الأدمن بصفة رقابية — منفصل تمامًا عن بوابة المعلم/الطالب
+ * (ClassroomJoinController). لا تحقّق من ملكية الحصة هنا، فقط صلاحية
+ * classroom.observe. كل دخول يُسجَّل في سجل التدقيق داخل الكنترولر نفسه.
+ */
+Route::get('/sessions/{session}/observe', SessionObserveController::class)
+    ->whereUlid('session')
+    ->middleware('can:classroom.observe')
+    ->name('sessions.observe');
+
 Route::middleware('can:schedule.manage')->group(function (): void {
     Route::get('/schedules/create', [GroupScheduleController::class, 'create'])->name('schedules.create');
     Route::get('/schedules/availability', [GroupScheduleController::class, 'availability'])->name('schedules.availability');

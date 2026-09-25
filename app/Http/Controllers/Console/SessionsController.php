@@ -140,7 +140,7 @@ final class SessionsController extends Controller
             'can' => [
                 'manage' => $user?->can('schedule.manage') ?? false, 'schedules' => $user?->can('schedule.view') ?? false,
                 'group' => $user?->can('group.view') ?? false, 'teacher' => $user?->can('staff.view.any') ?? false,
-                'quran' => $user?->can('student.view.any') ?? false,
+                'quran' => $user?->can('student.view.any') ?? false, 'observe' => $user?->can('classroom.observe') ?? false,
             ],
         ]);
     }

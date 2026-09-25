@@ -32,6 +32,8 @@ return [
     'webhook_removed' => 'Webhook subscription :hook was removed.',
     'webhook_hook_required' => 'The --hook option is required to remove a subscription.',
     'default_participant_name' => 'Participant',
+    'admin_observer_name' => 'Admin observer',
+    'admin_observer_suffix' => 'Admin',
     'default_classroom_title' => 'Live session',
     'student_link_audit_reason' => 'Student entered through the manual link sent by the teacher.',
     'recordings_synced' => ':count ready recordings synchronized.',

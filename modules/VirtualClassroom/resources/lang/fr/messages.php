@@ -27,6 +27,8 @@ return [
     'webhook_removed' => 'Webhook :hook supprimé.',
     'webhook_hook_required' => 'L’option --hook est requise.',
     'default_participant_name' => 'Participant',
+    'admin_observer_name' => 'Observateur administrateur',
+    'admin_observer_suffix' => 'Administration',
     'default_classroom_title' => 'Séance en direct',
     'student_link_audit_reason' => 'L’élève est entré via le lien manuel envoyé par l’enseignant.',
     'recordings_synced' => ':count enregistrements synchronisés.',
