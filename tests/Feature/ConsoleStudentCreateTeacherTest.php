@@ -237,6 +237,29 @@ final class ConsoleStudentCreateTeacherTest extends TestCase
         ]);
     }
 
+    public function test_a_leftover_default_appointment_date_does_not_block_group_placement(): void
+    {
+        // الواجهة كانت تبعث تاريخ اليوم في teaching_starts_on تلقائيًا حتى بلا
+        // نية جدولة فردية، فيرفض الخادم القيد ظلمًا لعدم اختيار معلم. تسكين
+        // المجموعة والمعلم متضادّان بالتصميم؛ حقل تاريخ منفرد لا يجب أن يفرض معلمًا.
+        $this->groupCourse();
+        $group = $this->group();
+
+        $this->actingAs($this->admin(), 'web')->post('/manage/students', [
+            ...$this->studentData(),
+            'placement_mode' => 'existing',
+            'placement_group_id' => (string) $group->getKey(),
+            'teaching_starts_on' => CarbonImmutable::now('UTC')->toDateString(),
+        ])->assertSessionHasNoErrors()->assertSessionMissing('error')->assertRedirect();
+
+        $student = $this->createdStudent();
+        $this->assertDatabaseHas('group_memberships', [
+            'group_id' => (string) $group->getKey(),
+            'student_profile_id' => (string) $student->getKey(),
+            'left_at' => null,
+        ]);
+    }
+
     public function test_a_new_group_is_created_inside_the_program_and_the_student_placed_in_it(): void
     {
         $this->groupCourse();

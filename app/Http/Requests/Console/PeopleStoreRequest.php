@@ -95,7 +95,7 @@ final class PeopleStoreRequest extends FormRequest
             'city' => ['nullable', 'string', 'max:120'],
             'preferred_language' => ['nullable', Rule::in(Locales::supported())],
             'notes' => ['nullable', 'string', 'max:5000'],
-            'teaching_staff_profile_id' => [$teaching, 'string', 'size:26', 'required_with:teaching_weekday,teaching_start_time,teaching_starts_on'],
+            'teaching_staff_profile_id' => [$teaching, 'string', 'size:26', 'required_with:teaching_weekday,teaching_start_time'],
             'teaching_duration_minutes' => [
                 $teaching, 'integer',
                 'min:'.config('session_pay.min_duration'),
