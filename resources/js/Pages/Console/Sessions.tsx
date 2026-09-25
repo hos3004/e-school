@@ -90,8 +90,11 @@ type Props = {
     group: boolean;
     teacher: boolean;
     quran: boolean;
+    observe: boolean;
   };
 };
+
+const OBSERVABLE_STATUSES = ["scheduled", "confirmed", "in_progress"];
 
 export default function Sessions(props: Props) {
   const {
@@ -676,6 +679,26 @@ function SessionDetails({
               <CalendarDays size={16} />
               {t("console_sessions.schedules")}
             </Link>
+          )}
+          {can.observe && OBSERVABLE_STATUSES.includes(session.status) && (
+            <>
+              <a
+                className="console-button"
+                href={`/manage/sessions/${session.id}/observe?mode=announced`}
+                target="_blank"
+                rel="noopener"
+              >
+                {t("console_sessions.observe_announced")}
+              </a>
+              <a
+                className="console-button"
+                href={`/manage/sessions/${session.id}/observe?mode=pseudonymous`}
+                target="_blank"
+                rel="noopener"
+              >
+                {t("console_sessions.observe_pseudonymous")}
+              </a>
+            </>
           )}
         </div>
       </div>

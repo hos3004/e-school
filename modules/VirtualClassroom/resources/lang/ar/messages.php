@@ -32,6 +32,8 @@ return [
     'webhook_removed' => 'تم حذف اشتراك webhook :hook.',
     'webhook_hook_required' => 'يلزم تمرير خيار --hook لحذف الاشتراك.',
     'default_participant_name' => 'مشارك',
+    'admin_observer_name' => 'مراقبة الإدارة',
+    'admin_observer_suffix' => 'الإدارة',
     'default_classroom_title' => 'حصة مباشرة',
     'student_link_audit_reason' => 'دخول الطالب عبر الرابط اليدوي الذي أرسله المعلم.',
     'recordings_synced' => 'تمت مزامنة :count تسجيلات جاهزة.',
