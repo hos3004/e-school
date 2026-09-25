@@ -180,7 +180,7 @@ export default function PeopleForm(props: Props) {
     teaching_duration_minutes: String(props.teaching?.durations[0] ?? ""),
     teaching_weekday: "",
     teaching_start_time: "",
-    teaching_starts_on: props.teaching?.startsOn ?? "",
+    teaching_starts_on: "",
     placement_mode: "",
     placement_group_id: "",
     placement_group_code: "",
