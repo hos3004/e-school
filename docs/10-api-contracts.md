@@ -142,7 +142,13 @@ POST   /api/v1/sessions/{id}/finalize
 GET    /api/v1/sessions/{id}/join            → رابط دخول الفصل
 ```
 
-**`GET /sessions` — المُصفّيات القياسية:**
+> **حالة فعلية (2026-09-27):** المسار الحقيقي `GET /api/sessions` (بلا `v1/`)،
+> وفلاتره المطبَّقة فعلًا حاليًا هي `date` و`from`/`to` فقط
+> (`modules/Sessions/src/Presentation/Http/Requests/ListSessionsRequest.php`).
+> باقي الفلاتر والمسارات في هذا القسم توثّق التصميم المستهدف ولم تُبنَ بعد —
+> تحقّق من `modules/Sessions/routes/api.php` قبل الاعتماد على أي منها.
+
+**`GET /sessions` — المُصفّيات القياسية (تصميم مستهدف، جزء منها منفَّذ):**
 
 ```
 ?from=2026-08-01&to=2026-08-31
