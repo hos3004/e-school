@@ -28,6 +28,7 @@ return [
     'user_devices' => 'Identity',
     'password_reset_tokens' => 'Identity',
     'phone_password_reset_tokens' => 'Identity',
+    'personal_access_tokens' => 'Identity',
 
     // AccessControl
     'roles' => 'AccessControl',

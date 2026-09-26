@@ -91,6 +91,33 @@ it('rejects revoking an already revoked device', function (): void {
     app(RevokeDevice::class)->execute($device);
 })->throws(BusinessRuleViolation::class);
 
+it('updates the same row instead of duplicating it when the same user re-registers the same push token', function (): void {
+    /** @var IdentityPestContext $this */
+    Event::fake([DeviceRegistered::class]);
+
+    /** @var User $user */
+    $user = User::factory()->inOrganization($this->organizationId)->create();
+    $pushToken = str_repeat('e', 64);
+
+    $first = app(RegisterDevice::class)->execute($user->id, [
+        'device_name' => 'Pixel 9',
+        'platform' => 'android',
+        'push_token' => $pushToken,
+    ]);
+
+    $second = app(RegisterDevice::class)->execute($user->id, [
+        'device_name' => 'Pixel 9 Pro',
+        'platform' => 'android',
+        'push_token' => $pushToken,
+    ]);
+
+    expect($second->id)->toBe($first->id)
+        ->and($second->device_name)->toBe('Pixel 9 Pro')
+        ->and(UserDevice::query()->forUser($user->id)->where('push_token', $pushToken)->count())->toBe(1);
+
+    Event::assertDispatchedTimes(DeviceRegistered::class, 1);
+});
+
 it('allows the same push token after it was revoked elsewhere', function (): void {
     /** @var IdentityPestContext $this */
     /** @var User $owner */

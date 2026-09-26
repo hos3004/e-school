@@ -17,6 +17,7 @@ use Modules\Identity\Presentation\Http\Controllers\ChangeUserStatusController;
 use Modules\Identity\Presentation\Http\Controllers\ForgotPasswordController;
 use Modules\Identity\Presentation\Http\Controllers\ForgotPasswordPhoneController;
 use Modules\Identity\Presentation\Http\Controllers\MeController;
+use Modules\Identity\Presentation\Http\Controllers\MobileLoginController;
 use Modules\Identity\Presentation\Http\Controllers\RegisterDeviceController;
 use Modules\Identity\Presentation\Http\Controllers\RegisterUserController;
 use Modules\Identity\Presentation\Http\Controllers\ResetPasswordController;
@@ -37,6 +38,10 @@ Route::prefix('identity')->group(function (): void {
         Route::post('reset-password/phone', ResetPasswordPhoneController::class)
             ->middleware('throttle:identity-phone-reset-verify')
             ->name('identity.password.phone.reset');
+
+        Route::post('login', MobileLoginController::class)
+            ->middleware('throttle:mobile-login')
+            ->name('identity.login');
     });
 
     // ── مصادَق عليه ──────────────────────────────────────────────

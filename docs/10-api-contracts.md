@@ -10,7 +10,7 @@
 | المبدأ | التطبيق |
 |--------|---------|
 | البادئة | `/api/v1/` — الإصدار في المسار لا في الترويسة |
-| المصادقة | Sanctum — كوكي للجلسة على الويب · توكن للموبايل لاحقًا |
+| المصادقة | Sanctum — كوكي للجلسة على الويب · توكن `POST /api/identity/login` للموبايل |
 | الصيغة | JSON فقط · `Accept: application/json` إلزامية |
 | التسمية | جمع بحروف صغيرة وشرطة: `/session-participants` |
 | التوقيتات | ISO 8601 بـ UTC دائمًا: `2026-08-21T15:00:00Z` |
@@ -23,6 +23,39 @@
 
 كل موديول يعرّف مساراته في `modules/<Name>/routes/api.php`، وتُحمَّل
 تلقائيًا ببادئة `api` من `ModuleRegistry`. لا مسار موديول في `routes/api.php` الجذري.
+
+### تسجيل دخول الموبايل
+
+```http
+POST /api/identity/login
+```
+
+```json
+{
+  "identifier": "teacher@example.com",
+  "password": "•••••••",
+  "device_name": "Pixel 9",
+  "platform": "android",
+  "push_token": "..."
+}
+```
+- `identifier` اسم مستخدم أو بريد أو هاتف E.164 — نفس منطق تحديد الهوية المستخدم في دخول الويب.
+- `device_name` / `platform` / `push_token` اختيارية؛ إن أُرسلت يُسجَّل الجهاز في نفس الطلب
+  (`modules/Identity/src/Application/Actions/RegisterDevice.php`).
+- الحد: ٥ محاولات لكل ١٥ دقيقة لكل (identifier + IP)، مطابق لحد دخول الويب.
+
+رد النجاح (201):
+```json
+{
+  "token": "1|abcdef...",
+  "token_type": "Bearer",
+  "user": { "id": "01J...", "name": "...", "email": "...", "...": "..." }
+}
+```
+استخدم التوكن لاحقًا بترويسة `Authorization: Bearer <token>` على أي مسار `auth:sanctum`.
+
+- 422 `auth.failed` (حقل `identifier`) — بيانات خاطئة أو حساب معلّق/مجمّد؛ نفس الرسالة
+  للحالتين لمنع تعداد الحسابات.
 
 ---
 
