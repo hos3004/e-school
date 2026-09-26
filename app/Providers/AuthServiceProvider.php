@@ -10,7 +10,6 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
@@ -23,6 +22,7 @@ use Laravel\Fortify\Contracts\TwoFactorChallengeViewResponse;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Http\Responses\SimpleViewResponse;
+use Modules\Identity\Application\Actions\AuthenticateWithCredentials;
 use Modules\Identity\Application\Actions\RecordUserLogin;
 use Modules\Identity\Domain\Models\User;
 
@@ -98,55 +98,21 @@ final class AuthServiceProvider extends ServiceProvider
     private function authenticateByIdentifier(): void
     {
         Fortify::authenticateUsing(function (Request $request): ?User {
-            $identifier = trim((string) $request->input(Fortify::username(), ''));
+            $identifier = (string) $request->input(Fortify::username(), '');
             $password = (string) $request->input('password', '');
 
-            if ($identifier === '' || $password === '') {
+            $user = app(AuthenticateWithCredentials::class)->execute($identifier, $password);
+
+            if ($user === null) {
                 return null;
             }
 
-            $user = $this->findByIdentifier($identifier);
-
-            if ($user === null || !$user->canLogIn()) {
-                return null;
-            }
-
-            /** @var string $hash */
-            $hash = (string) $user->getAuthPassword();
-
-            if (!Hash::check($password, $hash)) {
-                return null;
-            }
             if ((bool) config('console.enabled') && in_array($request->input('portal'), ['student', 'teacher'], true)) {
                 $request->session()->put('learning.portal', $request->input('portal'));
             }
 
             return $user;
         });
-    }
-
-    private function findByIdentifier(string $identifier): ?User
-    {
-        $isPhoneNumber = preg_match('/^\+?[0-9]{7,15}$/', $identifier) === 1;
-
-        /** @var User|null */
-        return User::query()
-            ->where(static function ($query) use ($identifier, $isPhoneNumber): void {
-                $query->where('username', $identifier)
-                    ->orWhere('email', $identifier);
-
-                if ($isPhoneNumber) {
-                    $query->orWhere(function ($phoneQuery) use ($identifier): void {
-                        $digits = ltrim($identifier, '+');
-
-                        $phoneQuery->where(function ($inner) use ($identifier, $digits): void {
-                            $inner->where('phone', $identifier)
-                                ->orWhere('phone', '+'.$digits);
-                        });
-                    });
-                }
-            })
-            ->first();
     }
 
     private function recordSuccessfulLogins(): void
@@ -172,6 +138,13 @@ final class AuthServiceProvider extends ServiceProvider
             $identifier = trim((string) $request->input(Fortify::username(), ''));
 
             // ٥ محاولات لكل ١٥ دقيقة لكل (معرّف + IP) وفق docs/15-security-model.md.
+            return Limit::perMinutes(15, 5)->by($identifier.'|'.$request->ip());
+        });
+
+        // نفس السياسة لتسجيل دخول الموبايل، بحقل identifier بدل حقل Fortify::username().
+        RateLimiter::for('mobile-login', static function (Request $request): Limit {
+            $identifier = trim((string) $request->input('identifier', ''));
+
             return Limit::perMinutes(15, 5)->by($identifier.'|'.$request->ip());
         });
     }

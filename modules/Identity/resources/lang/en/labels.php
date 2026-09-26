@@ -28,4 +28,5 @@ return [
     'device_name' => 'Device name',
     'platform' => 'Platform',
     'push_token' => 'Push token',
+    'identifier' => 'Username, email, or phone',
 ];

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Modules\Identity\Database\Factories\UserFactory;
 use Modules\Identity\Domain\Enums\UserStatus;
 use Shared\Concerns\HasUlid;
@@ -47,6 +48,8 @@ use Shared\Concerns\RecordsDomainEvents;
  */
 final class User extends Authenticatable implements FilamentUser
 {
+    use HasApiTokens;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory;
 
