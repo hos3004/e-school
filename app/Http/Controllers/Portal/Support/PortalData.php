@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Portal\Support;
 
+use App\Application\Support\JoinWindowResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\JoinClause;
@@ -1194,6 +1195,7 @@ final readonly class PortalData
                 'attendances.confirmed_at',
                 'attendances.updated_at',
                 'student_users.name as student_name',
+                'session_participants.ready_pinged_at',
             ])
             ->map(fn (object $row): array => [
                 'id' => (string) ($row->attendance_id ?? $row->participant_id),
@@ -1204,6 +1206,7 @@ final readonly class PortalData
                 'status' => $row->status === null ? 'pending' : (string) $row->status,
                 'note' => $row->override_reason === null ? null : (string) $row->override_reason,
                 'recordedAt' => $this->iso($row->confirmed_at ?? $row->updated_at),
+                'readyPingedAt' => $this->iso($row->ready_pinged_at),
             ])
             ->values()
             ->all();
@@ -1531,6 +1534,8 @@ final readonly class PortalData
             ->whereNull('sessions.deleted_at')
             ->select([
                 'sessions.id',
+                'sessions.organization_id',
+                'sessions.session_type',
                 'sessions.title as session_title',
                 'sessions.status',
                 'sessions.scheduled_start',
@@ -1548,7 +1553,8 @@ final readonly class PortalData
             ->join('session_participants', 'session_participants.session_id', '=', 'sessions.id')
             ->where('session_participants.student_profile_id', $studentProfileId)
             ->whereNull('session_participants.revoked_at')
-            ->whereNull('session_participants.deleted_at');
+            ->whereNull('session_participants.deleted_at')
+            ->addSelect('session_participants.ready_pinged_at');
     }
 
     private function teacherSessionsQuery(string $staffProfileId, string $organizationId): Builder
@@ -1582,10 +1588,13 @@ final readonly class PortalData
     {
         $startsAt = CarbonImmutable::parse((string) $row->scheduled_start, 'UTC')->utc();
         $endsAt = CarbonImmutable::parse((string) $row->scheduled_end, 'UTC')->utc();
-        $joinBefore = max(0, (int) config('virtual-classroom.join_window.before_minutes', 0));
-        $canJoinAt = $startsAt->subMinutes($joinBefore);
-        $canJoinUntil = $endsAt->addMinutes(
-            max(0, (int) config('virtual-classroom.join_window.after_minutes', 0)),
+        $sessionType = isset($row->session_type) ? (string) $row->session_type : null;
+        [$canJoinAt, $canJoinUntil, $flexibleStart] = JoinWindowResolver::resolve(
+            $startsAt,
+            $endsAt,
+            (string) ($row->organization_id ?? ''),
+            $sessionType,
+            false,
         );
         $status = SessionStatus::tryFrom((string) $row->status);
         $canJoin = $status?->allowsJoining() === true
@@ -1607,12 +1616,15 @@ final readonly class PortalData
             'endsAt' => $endsAt->toIso8601String(),
             'timezone' => $this->validTimezone((string) ($row->group_timezone ?? 'UTC')),
             'status' => (string) $row->status,
+            'sessionType' => $sessionType,
+            'flexibleStart' => $flexibleStart,
             'location' => null,
             'joinUrl' => null,
             'canJoinAt' => $canJoinAt->toIso8601String(),
             'canJoinUntil' => $canJoinUntil->toIso8601String(),
             'canJoin' => $canJoin,
             'recordingUrl' => null,
+            'readyPingedAt' => isset($row->ready_pinged_at) ? $this->iso($row->ready_pinged_at) : null,
         ];
     }
 

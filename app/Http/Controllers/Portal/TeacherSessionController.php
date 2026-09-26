@@ -53,17 +53,25 @@ final class TeacherSessionController extends Controller
         abort_if($session === null, 404);
 
         $session['joinUrl'] = route('portal.teacher.sessions.join', ['session' => $id]);
-        $session['canJoinAt'] = CarbonImmutable::parse($session['startsAt'], 'UTC')
-            ->subMinutes(max(0, (int) config('virtual-classroom.join_window.teacher_before_minutes')))
-            ->toIso8601String();
-        $session['canJoinUntil'] = CarbonImmutable::parse($session['endsAt'], 'UTC')
-            ->addMinutes(max(0, (int) config('virtual-classroom.join_window.after_minutes')))
-            ->toIso8601String();
-        $session['canJoin'] = SessionStatus::tryFrom((string) $session['status'])?->allowsJoining() === true
-            && CarbonImmutable::now('UTC')->betweenIncluded(
-                CarbonImmutable::parse($session['canJoinAt'], 'UTC'),
-                CarbonImmutable::parse($session['canJoinUntil'], 'UTC'),
-            );
+
+        /*
+         * الحصة الفردية ذات البدء المرن (mapSession) تحمل نافذة اليوم المحلي
+         * كاملًا؛ لا نستبدلها بنافذة teacher_before_minutes الثابتة، وإلا
+         * أعدنا تضييق ما وسّعه الإعداد المرن عمدًا.
+         */
+        if ($session['flexibleStart'] !== true) {
+            $session['canJoinAt'] = CarbonImmutable::parse($session['startsAt'], 'UTC')
+                ->subMinutes(max(0, (int) config('virtual-classroom.join_window.teacher_before_minutes')))
+                ->toIso8601String();
+            $session['canJoinUntil'] = CarbonImmutable::parse($session['endsAt'], 'UTC')
+                ->addMinutes(max(0, (int) config('virtual-classroom.join_window.after_minutes')))
+                ->toIso8601String();
+            $session['canJoin'] = SessionStatus::tryFrom((string) $session['status'])?->allowsJoining() === true
+                && CarbonImmutable::now('UTC')->betweenIncluded(
+                    CarbonImmutable::parse($session['canJoinAt'], 'UTC'),
+                    CarbonImmutable::parse($session['canJoinUntil'], 'UTC'),
+                );
+        }
         $user = $request->user();
         $recording = $user === null ? null : collect($this->recordings->forSession($organizationId, $id))
             ->first(fn (mixed $candidate): bool => $this->recordingAccess->canWatch($user, $candidate));

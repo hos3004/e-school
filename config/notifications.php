@@ -141,6 +141,13 @@ return [
         'attendance_recorded' => ['channels' => ['in_app'], 'critical' => false],
 
         /*
+         * تنبيه «الطالب مستعد» للمعلم فقط — لا واتساب بقرار صاحب المنصة.
+         * يتجاوز ساعات الهدوء لأن الغرض منه إخطار فوري وقت الحصة، لا رسالة
+         * تنتظر الصباح.
+         */
+        'session_readiness' => ['channels' => ['in_app', 'email'], 'critical' => false, 'respects_quiet_hours' => false],
+
+        /*
          * إخطار الغياب يقع مع كل غياب مُحتسَب لا عند العتبة وحدها، ويحمل
          * تذكيرًا بعتبة التجميد. فئة مستقلة عن discipline_notice كي تستطيع
          * الإدارة توجيه الاثنين إلى قنوات مختلفة دون أن يجرّ أحدهما الآخر.
@@ -242,6 +249,12 @@ return [
             'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
             'recipient_fields' => ['student_user_id', 'teacher_user_id'],
             'source_events' => ['Modules\\Sessions\\Domain\\Events\\StudentSessionApologized'],
+        ],
+        'session.ready_ping' => [
+            'category' => 'session_readiness',
+            'audiences' => ['teacher'],
+            'recipient_fields' => ['teacher_user_id'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\StudentPingedReady'],
         ],
         'postponement.requested' => [
             'category' => 'postponement_request',

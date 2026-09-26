@@ -26,6 +26,7 @@ use Shared\Concerns\HasUlid;
  * @property CarbonImmutable|null $first_joined_at
  * @property CarbonImmutable|null $last_left_at
  * @property CarbonImmutable|null $current_joined_at
+ * @property CarbonImmutable|null $ready_pinged_at
  * @property int $attended_seconds
  * @property CarbonImmutable|null $revoked_at
  * @property string|null $revoked_by
@@ -60,6 +61,7 @@ final class SessionParticipant extends Model
         'excused_by',
         'excuse_reason',
         'current_joined_at',
+        'ready_pinged_at',
         'attended_seconds',
         'attended_minutes',
     ];
@@ -70,6 +72,7 @@ final class SessionParticipant extends Model
             'invited_at' => 'immutable_datetime',
             'revoked_at' => 'immutable_datetime',
             'current_joined_at' => 'immutable_datetime',
+            'ready_pinged_at' => 'immutable_datetime',
             'excused_at' => 'immutable_datetime',
             'attended_seconds' => 'int',
             'first_joined_at' => 'immutable_datetime',

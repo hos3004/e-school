@@ -1,6 +1,6 @@
 import { Head, router, useForm } from "@inertiajs/react";
 import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, MouseEvent } from "react";
 
 import Button from "@/Components/Button";
 import Card, {
@@ -207,6 +207,27 @@ export default function TeacherSessionShow({
       (attendanceForm.data.statuses[record.studentId] ?? record.status) !==
         record.status,
   );
+  const latestReadyPing = attendance
+    .map((record) => record.readyPingedAt)
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .pop();
+
+  const confirmStartNow = (event: MouseEvent) => {
+    if (!session?.flexibleStart) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `${t("teacher.sessions.show.start_now_confirm_title")}\n\n${t(
+        "teacher.sessions.show.start_now_confirm_warning",
+      )}`,
+    );
+
+    if (!confirmed) {
+      event.preventDefault();
+    }
+  };
 
   const retry = () => {
     router.reload({
@@ -410,28 +431,46 @@ export default function TeacherSessionShow({
             </CardContent>
 
             {session.joinUrl || session.recordingUrl ? (
-              <CardFooter className="mt-5 flex flex-wrap gap-3">
-                {session.joinUrl ? (
-                  <Button
-                    as="link"
-                    disabled={!joinIsAvailable(session, joinNow)}
-                    href={session.joinUrl}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    {t("sessions.join")}
-                  </Button>
+              <CardFooter className="mt-5 flex flex-wrap items-start gap-3">
+                <div className="flex flex-wrap gap-3">
+                  {session.joinUrl ? (
+                    <Button
+                      as="link"
+                      disabled={!joinIsAvailable(session, joinNow)}
+                      href={session.joinUrl}
+                      onClick={confirmStartNow}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {t("sessions.join")}
+                    </Button>
+                  ) : null}
+                  {session.recordingUrl ? (
+                    <Button
+                      as="link"
+                      href={session.recordingUrl}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                      variant="secondary"
+                    >
+                      {t("teacher.sessions.show.watch_recording")}
+                    </Button>
+                  ) : null}
+                </div>
+
+                {session.flexibleStart ? (
+                  <p className="w-full text-sm leading-6 text-[var(--ink-muted)]">
+                    {t("teacher.sessions.show.flexible_start_notice")}
+                  </p>
                 ) : null}
-                {session.recordingUrl ? (
-                  <Button
-                    as="link"
-                    href={session.recordingUrl}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    variant="secondary"
-                  >
-                    {t("teacher.sessions.show.watch_recording")}
-                  </Button>
+
+                {latestReadyPing ? (
+                  <p className="w-full text-sm font-medium text-[var(--success)]">
+                    {t("teacher.sessions.show.student_ready_since")}{" "}
+                    <time dateTime={latestReadyPing}>
+                      {formatTime(latestReadyPing, locale, session.timezone)}
+                    </time>
+                  </p>
                 ) : null}
               </CardFooter>
             ) : null}

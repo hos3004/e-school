@@ -27,6 +27,7 @@ return [
     'session.rescheduled' => 'Session rescheduled',
     'session.approaching' => 'Session approaching',
     'session.joinable' => 'Session open to join',
+    'session.ready_ping' => 'Student pinged ready',
     'session.report.due' => 'Session report due',
     'session.report.late' => 'Session report late',
     'session.substitute.required' => 'Substitute teacher required',

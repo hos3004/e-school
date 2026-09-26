@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Actions;
 
+use App\Application\Support\JoinWindowResolver;
 use Carbon\CarbonImmutable;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\VirtualClassroom\Application\Actions\GenerateJoinUrlAction;
@@ -26,7 +27,7 @@ final readonly class EnterClassroom
     ) {}
 
     /**
-     * @param object{id: mixed, title: mixed, status: mixed, scheduled_start: mixed, scheduled_end: mixed} $row
+     * @param object{id: mixed, title: mixed, status: mixed, scheduled_start: mixed, scheduled_end: mixed, session_type?: mixed} $row
      */
     public function url(
         object $row,
@@ -49,14 +50,16 @@ final readonly class EnterClassroom
 
         $startsAt = CarbonImmutable::parse((string) $row->scheduled_start, 'UTC')->utc();
         $endsAt = CarbonImmutable::parse((string) $row->scheduled_end, 'UTC')->utc();
-        $beforeMinutes = $isTeacher
-            ? (int) config('virtual-classroom.join_window.teacher_before_minutes')
-            : (int) config('virtual-classroom.join_window.before_minutes');
-        $afterMinutes = (int) config('virtual-classroom.join_window.after_minutes');
+        [$canJoinAt, $canJoinUntil] = JoinWindowResolver::resolve(
+            $startsAt,
+            $endsAt,
+            $organizationId,
+            isset($row->session_type) ? (string) $row->session_type : null,
+            $isTeacher,
+        );
         $now = CarbonImmutable::now('UTC');
 
-        if ($now->lt($startsAt->subMinutes(max(0, $beforeMinutes)))
-            || $now->gt($endsAt->addMinutes(max(0, $afterMinutes)))) {
+        if ($now->lt($canJoinAt) || $now->gt($canJoinUntil)) {
             throw BusinessRuleViolation::make(
                 'virtualclassroom.join_window_closed',
                 'virtualclassroom::errors.join_window_closed',

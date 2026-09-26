@@ -44,4 +44,6 @@ return [
     'student_apology_already_submitted' => 'An apology has already been submitted for this session.',
     'student_apology_session_closed' => 'A session in :status status cannot be apologized for.',
     'student_apology_notice_not_met' => 'The apology must be submitted at least :required minutes before the session.',
+    'ready_ping_participant_not_found' => 'The student is not registered in this session.',
+    'ready_ping_session_closed' => 'A ready ping cannot be sent for a session in :status status.',
 ];

@@ -32,6 +32,8 @@ interface StudentSessionShowProps extends LoadablePageProps {
   studentApologyUrl?: string;
   studentApology?: StudentApologySummary | null;
   canSubmitApology?: boolean;
+  readyPingUrl?: string;
+  canPingReady?: boolean;
 }
 
 interface PostponementSummary {
@@ -122,6 +124,8 @@ export default function Show({
   studentApologyUrl = "",
   studentApology = null,
   canSubmitApology = false,
+  readyPingUrl = "",
+  canPingReady = false,
   error = null,
 }: StudentSessionShowProps) {
   const t = useI18n();
@@ -131,6 +135,19 @@ export default function Show({
   const postponementForm = useForm({ proposed_start: "", reason: "" });
   const apologyForm = useForm({ reason: "" });
   const [acceptingAlternative, setAcceptingAlternative] = useState(false);
+  const [sendingReady, setSendingReady] = useState(false);
+
+  const pingReady = () => {
+    if (!readyPingUrl) {
+      return;
+    }
+
+    router.post(readyPingUrl, {}, {
+      preserveScroll: true,
+      onStart: () => setSendingReady(true),
+      onFinish: () => setSendingReady(false),
+    });
+  };
   const submitPostponement = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     postponementForm.post(postponementRequestUrl, { preserveScroll: true });
@@ -316,6 +333,44 @@ export default function Show({
               ) : null}
             </CardContent>
           </Card>
+
+          {canPingReady && readyPingUrl ? (
+            <Card as="section">
+              <CardHeader>
+                <CardTitle as="h2">
+                  {t("student.sessions.ready_button")}
+                </CardTitle>
+                <CardDescription>
+                  {t("student.sessions.ready_description")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="mt-5">
+                <Button
+                  disabled={sendingReady}
+                  fullWidth
+                  onClick={pingReady}
+                  type="button"
+                  variant="secondary"
+                >
+                  {sendingReady
+                    ? t("actions.processing")
+                    : t("student.sessions.ready_button")}
+                </Button>
+                {session.readyPingedAt ? (
+                  <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
+                    {t("student.sessions.ready_pinged_label")}{" "}
+                    <time dateTime={session.readyPingedAt}>
+                      {formatDateTime(
+                        session.readyPingedAt,
+                        locale,
+                        session.timezone,
+                      )}
+                    </time>
+                  </p>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
 
           {session.recordingUrl ? (
             <Card as="section" className="border-[color:var(--brand)]/20">

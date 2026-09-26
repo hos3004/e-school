@@ -44,4 +44,6 @@ return [
     'student_apology_already_submitted' => 'Une excuse a déjà été envoyée pour cette séance.',
     'student_apology_session_closed' => 'Une séance au statut :status ne peut plus être excusée.',
     'student_apology_notice_not_met' => 'L’excuse doit être envoyée au moins :required minutes avant la séance.',
+    'ready_ping_participant_not_found' => 'L’élève n’est pas inscrit à cette séance.',
+    'ready_ping_session_closed' => 'Impossible d’envoyer ce signal pour une séance au statut :status.',
 ];

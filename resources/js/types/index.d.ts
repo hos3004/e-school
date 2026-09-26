@@ -63,6 +63,9 @@ export interface Session {
     recordingUrl?: string | null;
     attendanceConfirmed?: boolean;
     reportSubmitted?: boolean;
+    sessionType?: string | null;
+    flexibleStart?: boolean;
+    readyPingedAt?: IsoDateTime | null;
 }
 
 export interface Attendance {
@@ -74,6 +77,7 @@ export interface Attendance {
     status: string;
     note?: string | null;
     recordedAt?: IsoDateTime | null;
+    readyPingedAt?: IsoDateTime | null;
 }
 
 export interface Assignment {
