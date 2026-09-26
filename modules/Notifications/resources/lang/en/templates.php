@@ -58,6 +58,10 @@ return [
         'subject' => 'Student apology recorded',
         'body' => 'The student apology was recorded and the relevant parties were notified.',
     ],
+    'session.ready_ping' => [
+        'subject' => 'The student is ready now',
+        'body' => 'The student has signalled they are ready to start now. If the student does not join once you open the classroom, the session will not count toward your earnings.',
+    ],
     'postponement.requested' => [
         'subject' => 'Session postponement requested',
         'body' => 'A request to postpone the session to {{proposed_start}} was recorded and the relevant parties were notified.',

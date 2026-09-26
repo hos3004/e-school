@@ -42,6 +42,7 @@ final class ClassroomJoinController
                 'sessions.status',
                 'sessions.scheduled_start',
                 'sessions.scheduled_end',
+                'sessions.session_type',
             ]);
 
         abort_if($row === null, 404);
@@ -84,6 +85,7 @@ final class ClassroomJoinController
                 'sessions.status',
                 'sessions.scheduled_start',
                 'sessions.scheduled_end',
+                'sessions.session_type',
                 'enrollments.frozen_at',
             ]);
 

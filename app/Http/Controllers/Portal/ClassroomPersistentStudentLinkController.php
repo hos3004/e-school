@@ -92,6 +92,7 @@ final class ClassroomPersistentStudentLinkController
                 'sessions.status',
                 'sessions.scheduled_start',
                 'sessions.scheduled_end',
+                'sessions.session_type',
                 'sessions.organization_id',
                 'session_participants.id as participant_id',
                 'enrollments.frozen_at',

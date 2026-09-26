@@ -26,4 +26,5 @@ return [
     'auto_finalize_summary' => ':count sessions with a complete report and attendance were finalized.',
     'finalized_after_review' => 'The session was finalized automatically once the report and attendance were complete.',
     'finalized_all_absent' => 'The session was closed automatically as a no-show: every participant was recorded absent.',
+    'ready_ping_sent' => 'The teacher has been notified that you are ready now.',
 ];

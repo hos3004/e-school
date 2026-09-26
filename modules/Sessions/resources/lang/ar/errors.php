@@ -44,4 +44,6 @@ return [
     'student_apology_already_submitted' => 'تم تسجيل الاعتذار عن هذه الحصة بالفعل.',
     'student_apology_session_closed' => 'لا يمكن الاعتذار عن حصة حالتها :status.',
     'student_apology_notice_not_met' => 'يجب تقديم الاعتذار قبل الحصة بـ :required دقيقة على الأقل.',
+    'ready_ping_participant_not_found' => 'الطالب غير مسجل في هذه الحصة.',
+    'ready_ping_session_closed' => 'لا يمكن إرسال تنبيه الاستعداد لحصة حالتها :status.',
 ];

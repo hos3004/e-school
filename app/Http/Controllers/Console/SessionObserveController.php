@@ -43,6 +43,7 @@ final class SessionObserveController extends Controller
                 'sessions.status',
                 'sessions.scheduled_start',
                 'sessions.scheduled_end',
+                'sessions.session_type',
             ]);
 
         abort_if($row === null, 404);

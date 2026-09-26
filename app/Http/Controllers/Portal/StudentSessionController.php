@@ -68,6 +68,9 @@ final class StudentSessionController extends Controller
             'studentApology' => $this->data->studentApologyForSession($id, $studentId, $organizationId),
             'canSubmitApology' => (bool) $request->user()?->can('session.postpone.request')
                 && in_array((string) $session['status'], ['scheduled', 'confirmed'], true),
+            'readyPingUrl' => route('portal.student.sessions.ready.store', ['session' => $id]),
+            'canPingReady' => (bool) $request->user()?->can('session.join')
+                && in_array((string) $session['status'], ['scheduled', 'confirmed', 'in_progress'], true),
         ]);
     }
 }

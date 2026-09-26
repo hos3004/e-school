@@ -14,6 +14,7 @@ use App\Http\Controllers\Portal\GuardianChildController;
 use App\Http\Controllers\Portal\GuardianDashboardController;
 use App\Http\Controllers\Portal\GuardianReportsController;
 use App\Http\Controllers\Portal\GuardianScheduleController;
+use App\Http\Controllers\Portal\PingSessionReadyController;
 use App\Http\Controllers\Portal\PortalNotificationsController;
 use App\Http\Controllers\Portal\PortalProfileController;
 use App\Http\Controllers\Portal\RecordingPlaybackController;
@@ -161,6 +162,9 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::post('/student/sessions/{session}/apologies', StudentSessionApologyController::class)
         ->whereUlid('session')
         ->name('portal.student.sessions.apologies.store');
+    Route::post('/student/sessions/{session}/ready', PingSessionReadyController::class)
+        ->whereUlid('session')
+        ->name('portal.student.sessions.ready.store');
     Route::post('/student/postponements/{postponement}/accept-alternative', [SessionPostponementRequestController::class, 'acceptAlternative'])
         ->whereUlid('postponement')
         ->name('portal.student.postponements.accept-alternative');

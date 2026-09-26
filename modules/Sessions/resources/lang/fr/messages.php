@@ -25,4 +25,5 @@ return [
     'auto_finalize_summary' => ':count séances au rapport et à la présence complets ont été validées.',
     'finalized_after_review' => 'La séance a été validée automatiquement une fois le rapport et la présence complets.',
     'finalized_all_absent' => 'La séance a été close automatiquement comme absence : tous les participants sont marqués absents.',
+    'ready_ping_sent' => 'L’enseignant a été informé que vous êtes prêt maintenant.',
 ];

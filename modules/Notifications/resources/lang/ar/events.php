@@ -26,6 +26,7 @@ return [
     'session.rescheduled' => 'تغيير موعد حصة',
     'session.approaching' => 'اقتراب موعد الحصة',
     'session.joinable' => 'فتح الانضمام للحصة',
+    'session.ready_ping' => 'الطالب أعلن استعداده',
     'session.report.due' => 'استحقاق تقرير الحصة',
     'session.report.late' => 'تأخر تقرير الحصة',
     'session.substitute.required' => 'الحاجة إلى معلم بديل',
