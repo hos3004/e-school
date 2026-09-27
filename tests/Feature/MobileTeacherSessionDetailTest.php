@@ -46,22 +46,28 @@ function mobileSessionDetailUser(string $organizationId, string $prefix): string
 /**
  * @return array<string, mixed>
  */
-function mobileSessionDetailContext(bool $teacherPresent = true): array
-{
+function mobileSessionDetailContext(
+    bool $teacherPresent = true,
+    string $status = 'completed',
+    ?string $organizationId = null,
+): array {
     $now = CarbonImmutable::now('UTC');
-    $organizationId = (string) Str::ulid();
+    $organizationId ??= (string) Str::ulid();
+    $isNewOrganization = !DB::table('organizations')->where('id', $organizationId)->exists();
 
-    DB::table('organizations')->insert([
-        'id' => $organizationId,
-        'name' => json_encode(['ar' => 'أكاديمية الاختبار'], JSON_UNESCAPED_UNICODE),
-        'slug' => 'mobile-session-detail-'.Str::lower(Str::random(8)),
-        'default_timezone' => 'UTC',
-        'default_currency' => 'EGP',
-        'default_locale' => 'ar',
-        'week_starts_on' => 'saturday',
-        'created_at' => $now,
-        'updated_at' => $now,
-    ]);
+    if ($isNewOrganization) {
+        DB::table('organizations')->insert([
+            'id' => $organizationId,
+            'name' => json_encode(['ar' => 'أكاديمية الاختبار'], JSON_UNESCAPED_UNICODE),
+            'slug' => 'mobile-session-detail-'.Str::lower(Str::random(8)),
+            'default_timezone' => 'UTC',
+            'default_currency' => 'EGP',
+            'default_locale' => 'ar',
+            'week_starts_on' => 'saturday',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
 
     $teacherUserId = mobileSessionDetailUser($organizationId, 'teacher.detail');
     $studentUserId = mobileSessionDetailUser($organizationId, 'student.detail');
@@ -151,7 +157,7 @@ function mobileSessionDetailContext(bool $teacherPresent = true): array
         'staff_profile_id' => $staffProfileId,
         'original_teacher_id' => $staffProfileId,
         'session_type' => 'group',
-        'status' => 'completed',
+        'status' => $status,
         'scheduled_start' => $now->subHours(3),
         'scheduled_end' => $now->subHours(2),
         'title' => json_encode(['ar' => 'حصة الاختبار'], JSON_UNESCAPED_UNICODE),
@@ -202,6 +208,7 @@ function mobileSessionDetailContext(bool $teacherPresent = true): array
     }
 
     return [
+        'organization_id' => $organizationId,
         'teacher_user' => User::query()->findOrFail($teacherUserId),
         'session_id' => $sessionId,
         'participant_id' => $participantId,
@@ -282,6 +289,108 @@ it('submits a session report for the assigned teacher', function (): void {
         ])
         ->assertOk()
         ->assertJsonPath('status', 'submitted');
+});
+
+it('moves a scheduled session to awaiting review when the teacher marks it held off-platform', function (): void {
+    Gate::define('session_report.create', fn (): bool => true);
+    $context = mobileSessionDetailContext(teacherPresent: false, status: 'scheduled');
+
+    test()->actingAs($context['teacher_user'])
+        ->postJson('/api/teacher/sessions/'.$context['session_id'].'/report', [
+            'summary' => 'الحصة اتعقدت على واتساب بسبب عطل في المنصة.',
+            'notes' => null,
+            'held_off_platform' => true,
+            'students' => [[
+                'student_profile_id' => $context['student_profile_id'],
+                'participation' => 4,
+                'performance' => 4,
+                'commitment' => 5,
+            ]],
+        ])
+        ->assertOk()
+        ->assertJsonPath('status', 'submitted');
+
+    $status = DB::table('sessions')->where('id', $context['session_id'])->value('status');
+    expect($status)->toBe('awaiting_review');
+});
+
+it('leaves a scheduled session untouched when held_off_platform is not set', function (): void {
+    // يحافظ على القرار الموثّق: التقرير وحده لا يُغيّر حالة الحصة أبدًا —
+    // انظر SubmitSessionReportAction::executeForTeacher.
+    Gate::define('session_report.create', fn (): bool => true);
+    $context = mobileSessionDetailContext(teacherPresent: false, status: 'scheduled');
+
+    test()->actingAs($context['teacher_user'])
+        ->postJson('/api/teacher/sessions/'.$context['session_id'].'/report', [
+            'summary' => 'راجعنا قواعد الجمع والطرح مع تدريبات تطبيقية.',
+            'notes' => null,
+            'students' => [[
+                'student_profile_id' => $context['student_profile_id'],
+                'participation' => 4,
+                'performance' => 4,
+                'commitment' => 5,
+            ]],
+        ])
+        ->assertOk();
+
+    $status = DB::table('sessions')->where('id', $context['session_id'])->value('status');
+    expect($status)->toBe('scheduled');
+});
+
+it('forbids marking a colleagues session held off-platform', function (): void {
+    // كان يمكن قبل هذا الفحص لمعلم أن ينقل حصة زميله لبانتظار المراجعة
+    // بمجرّد معرفة معرّفها، حتى مع رفض التقرير نفسه لاحقًا لعدم التطابق.
+    Gate::define('session_report.create', fn (): bool => true);
+    $mine = mobileSessionDetailContext(teacherPresent: false, status: 'scheduled');
+    $colleagues = mobileSessionDetailContext(
+        teacherPresent: false,
+        status: 'scheduled',
+        organizationId: $mine['organization_id'],
+    );
+
+    test()->actingAs($mine['teacher_user'])
+        ->postJson('/api/teacher/sessions/'.$colleagues['session_id'].'/report', [
+            'summary' => 'محاولة غير مصرّح بها.',
+            'notes' => null,
+            'held_off_platform' => true,
+            'students' => [[
+                'student_profile_id' => $colleagues['student_profile_id'],
+                'participation' => 4,
+                'performance' => 4,
+                'commitment' => 5,
+            ]],
+        ])
+        ->assertForbidden();
+
+    $status = DB::table('sessions')->where('id', $colleagues['session_id'])->value('status');
+    expect($status)->toBe('scheduled');
+});
+
+it('rejects marking a session held off-platform before its scheduled end has passed', function (): void {
+    Gate::define('session_report.create', fn (): bool => true);
+    $context = mobileSessionDetailContext(teacherPresent: false, status: 'scheduled');
+
+    DB::table('sessions')->where('id', $context['session_id'])->update([
+        'scheduled_start' => CarbonImmutable::now('UTC')->addHours(2),
+        'scheduled_end' => CarbonImmutable::now('UTC')->addHours(3),
+    ]);
+
+    test()->actingAs($context['teacher_user'])
+        ->postJson('/api/teacher/sessions/'.$context['session_id'].'/report', [
+            'summary' => 'محاولة مبكرة.',
+            'notes' => null,
+            'held_off_platform' => true,
+            'students' => [[
+                'student_profile_id' => $context['student_profile_id'],
+                'participation' => 4,
+                'performance' => 4,
+                'commitment' => 5,
+            ]],
+        ])
+        ->assertUnprocessable();
+
+    $status = DB::table('sessions')->where('id', $context['session_id'])->value('status');
+    expect($status)->toBe('scheduled');
 });
 
 it('requires authentication for every teacher session detail route', function (): void {

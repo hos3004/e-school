@@ -17,7 +17,9 @@ use Modules\AcademicReports\Application\Actions\SubmitSessionReportAction;
 use Modules\Attendance\Application\Actions\RecordAttendanceSheetAction;
 use Modules\Scheduling\Application\Actions\ApprovePostponement;
 use Modules\Scheduling\Application\Actions\RequestPostponement;
+use Modules\Sessions\Application\Actions\RecordOffPlatformSessionAction;
 use Modules\Sessions\Application\Actions\SubmitTeacherApologyAction;
+use Modules\Sessions\Domain\Models\Session;
 
 /**
  * تفاصيل حصة المعلم للموبايل — نفس بيانات ومنطق بوابة الويب Portal بالضبط
@@ -33,6 +35,7 @@ final class TeacherSessionController extends Controller
         private readonly RequestPostponement $requestPostponement,
         private readonly ApprovePostponement $approvePostponement,
         private readonly SubmitTeacherApologyAction $submitApology,
+        private readonly RecordOffPlatformSessionAction $recordOffPlatform,
     ) {}
 
     public function show(Request $request, string $session): JsonResponse
@@ -72,12 +75,46 @@ final class TeacherSessionController extends Controller
     {
         [$organizationId, $staffProfileId] = $this->actor($request);
         $validated = $request->validated();
+        $actorId = (string) $request->user()?->getAuthIdentifier();
+
+        /*
+         * إقرار المعلم أن الحصة انعقدت فعليًا خارج المنصة — يُحوَّلها من
+         * "مجدولة/مؤكَّدة" إلى "بانتظار المراجعة" قبل إرسال التقرير نفسه،
+         * فتدخل قائمة اعتماد الإدارة بدل أن تبقى غير مرئية للأبد. الاعتماد
+         * المالي يبقى قرار الإدارة وحدها عبر SessionDecisionService، لا شيء
+         * يُعتمد هنا تلقائيًا.
+         */
+        if (($validated['held_off_platform'] ?? false) === true) {
+            $sessionModel = Session::query()->forOrganization($organizationId)->findOrFail($session);
+
+            /*
+             * RecordOffPlatformSessionAction لا تتحقق من الملكية بنفسها
+             * (تثق بالمستدعي عمدًا حسب توثيقها) — forOrganization يقصر
+             * النطاق على المؤسسة فقط، فلازم يُتحقق هنا صراحة أن المعلم
+             * هو صاحب الحصة أو معلمها الأصلي قبل أي انتقال حالة، وإلا
+             * أمكن لمعلم نقل حصة زميله لبانتظار المراجعة قبل ما يرفضها
+             * فحص الملكية في SubmitSessionReportAction لاحقًا.
+             */
+            abort_if(
+                !in_array($staffProfileId, [
+                    $sessionModel->staff_profile_id,
+                    $sessionModel->original_teacher_id,
+                ], true),
+                403,
+            );
+
+            $this->recordOffPlatform->execute(
+                $sessionModel,
+                $actorId,
+                (string) $validated['summary'],
+            );
+        }
 
         $this->submitReport->executeForTeacher(
             organizationId: $organizationId,
             sessionId: $session,
             staffProfileId: $staffProfileId,
-            actorId: (string) $request->user()?->getAuthIdentifier(),
+            actorId: $actorId,
             students: $validated['students'],
             topicsCovered: (string) $validated['summary'],
             generalNotes: isset($validated['notes']) ? (string) $validated['notes'] : null,

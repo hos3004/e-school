@@ -22,6 +22,11 @@ final class SubmitTeacherSessionReportRequest extends FormRequest
         return [
             'summary' => ['required', 'string', 'max:5000'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            // المعلم يقرّ أن الحصة انعقدت فعليًا خارج المنصة — يُحوَّلها
+            // هذا الإقرار من "مجدولة" إلى "بانتظار المراجعة" فتدخل قائمة
+            // اعتماد الإدارة بدل أن تبقى غير مرئية للأبد؛ الاعتماد المالي
+            // يبقى قرار الإدارة وحدها، هذا الحقل لا يعتمد شيئًا بنفسه.
+            'held_off_platform' => ['sometimes', 'boolean'],
             'students' => ['required', 'array', 'min:1'],
             'students.*.student_profile_id' => ['required', 'string', 'size:26', 'distinct'],
             'students.*.participation' => $score,
