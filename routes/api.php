@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\JoinSessionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,3 +14,14 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->get('/me', fn () => request()->user());
+
+/*
+ * دخول فصل الموبايل — نفس بوابة الويب Portal\ClassroomJoinController، نفس
+ * EnterClassroom بالضبط، فقط JSON بدل redirect. عمدًا خارج أي موديول: مثل
+ * نظيرتها في routes/web.php، لأن EnterClassroom نفسها في app/ لا في موديول.
+ */
+Route::middleware('auth:sanctum')
+    ->post('sessions/{session}/join', [JoinSessionController::class, 'teacher'])
+    ->whereUlid('session')
+    ->middleware('can:session.join')
+    ->name('api.sessions.join.teacher');
