@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\JoinSessionController;
 use App\Http\Controllers\Api\TeacherAvailabilityController;
 use App\Http\Controllers\Api\TeacherPostponementController;
 use App\Http\Controllers\Api\TeacherProfileController;
+use App\Http\Controllers\Api\TeacherRequiredReportsController;
 use App\Http\Controllers\Api\TeacherSessionController;
 use App\Http\Controllers\Api\TeacherStudentController;
 use Illuminate\Support\Facades\Route;
@@ -122,3 +123,12 @@ Route::middleware('auth:sanctum')->prefix('teacher/students')->group(function ()
         ->whereUlid('student')
         ->name('api.teacher.students.show');
 });
+
+/*
+ * بنود مطلوبة من المعلم للموبايل (حاليًا: تقارير حصص متأخرة) — يعتمد على
+ * PortalData::teacherLateReportSessions نفسها التي تستخدمها
+ * Portal\TeacherDashboardController، غير معدَّلة.
+ */
+Route::middleware('auth:sanctum')
+    ->get('teacher/required-reports', [TeacherRequiredReportsController::class, 'index'])
+    ->name('api.teacher.required-reports.index');
