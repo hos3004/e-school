@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\TeacherAvailabilityController;
 use App\Http\Controllers\Api\TeacherPostponementController;
 use App\Http\Controllers\Api\TeacherProfileController;
 use App\Http\Controllers\Api\TeacherSessionController;
+use App\Http\Controllers\Api\TeacherStudentController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -105,4 +106,19 @@ Route::middleware('auth:sanctum')->prefix('teacher/availability')->group(functio
     Route::delete('/{availability}', [TeacherAvailabilityController::class, 'destroy'])
         ->whereUlid('availability')
         ->name('api.teacher.availability.destroy');
+});
+
+/*
+ * دليل طلاب المعلم للموبايل — يوسّع المصدر ليشمل الجداول الفردية إلى جانب
+ * المجموعات (انظر تعليق PortalData::teacherStudentRoster). لا مسار ويب
+ * يوازيه بنفس الاتساع؛ Portal\TeacherStudentsController القديم مبني على
+ * المجموعات وحدها.
+ */
+Route::middleware('auth:sanctum')->prefix('teacher/students')->group(function (): void {
+    Route::get('/', [TeacherStudentController::class, 'index'])
+        ->name('api.teacher.students.index');
+
+    Route::get('/{student}', [TeacherStudentController::class, 'show'])
+        ->whereUlid('student')
+        ->name('api.teacher.students.show');
 });

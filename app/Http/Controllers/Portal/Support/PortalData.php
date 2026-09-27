@@ -709,6 +709,216 @@ final readonly class PortalData
     }
 
     /**
+     * دليل موحّد بطلاب المعلم — من المجموعات ومن الجداول الفردية معًا.
+     *
+     * teacherStudentsDetailed/teacherStudents التاريخيتان تقرآن من المجموعات
+     * فقط. هذه المدرسة تعمل غالبًا بجداول فردية (Schedule بلا مجموعة)، فطالب
+     * مرتبط بمعلمه عبر جدول فردي كان يختفي تمامًا من أي دليل طلاب مبني على
+     * المجموعات وحدها. هذه الدالة إضافية — لا تُغيّر الدالتين القديمتين ولا
+     * أي مستهلك لهما، فقط تضيف مصدر الجدول الفردي.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function teacherStudentRoster(string $staffProfileId, string $organizationId, string $locale): array
+    {
+        $groupRows = DB::table('group_teachers')
+            ->join('groups', 'groups.id', '=', 'group_teachers.group_id')
+            ->join('group_memberships', 'group_memberships.group_id', '=', 'groups.id')
+            ->join('student_profiles', 'student_profiles.id', '=', 'group_memberships.student_profile_id')
+            ->join('users', 'users.id', '=', 'student_profiles.user_id')
+            ->where('group_teachers.staff_profile_id', $staffProfileId)
+            ->where('groups.organization_id', $organizationId)
+            ->whereColumn('student_profiles.organization_id', 'groups.organization_id')
+            ->whereColumn('users.organization_id', 'groups.organization_id')
+            ->whereNull('groups.deleted_at')
+            ->whereNull('student_profiles.deleted_at')
+            ->whereNull('group_memberships.left_at')
+            ->where(function (Builder $query): void {
+                $query->whereNull('group_teachers.assigned_to')
+                    ->orWhere('group_teachers.assigned_to', '>=', now('UTC')->toDateString());
+            })
+            ->distinct()
+            ->get([
+                'student_profiles.id',
+                'student_profiles.student_code',
+                'student_profiles.gender',
+                'users.name',
+                'groups.name as group_name',
+            ])
+            ->map(fn (object $row): array => [
+                'id' => (string) $row->id,
+                'name' => (string) $row->name,
+                'code' => (string) $row->student_code,
+                'gender' => $row->gender === null ? null : (string) $row->gender,
+                'context' => $this->localized($row->group_name, $locale),
+                'via' => 'group',
+            ]);
+
+        $individualRows = DB::table('schedules')
+            ->join('student_profiles', 'student_profiles.id', '=', 'schedules.student_profile_id')
+            ->join('users', 'users.id', '=', 'student_profiles.user_id')
+            ->join('courses', 'courses.id', '=', 'schedules.course_id')
+            ->where('schedules.staff_profile_id', $staffProfileId)
+            ->where('schedules.organization_id', $organizationId)
+            ->where('schedules.is_active', true)
+            ->whereNotNull('schedules.student_profile_id')
+            ->where('student_profiles.organization_id', $organizationId)
+            ->whereColumn('users.organization_id', 'student_profiles.organization_id')
+            ->whereNull('student_profiles.deleted_at')
+            ->orderBy('users.name')
+            ->orderBy('courses.code')
+            ->get([
+                'student_profiles.id',
+                'student_profiles.student_code',
+                'student_profiles.gender',
+                'users.name',
+                'courses.name as course_name',
+            ])
+            // طالب واحد قد يكون له أكثر من جدول فردي بمقررات مختلفة مع نفس
+            // المعلم؛ نجمع أسماء المقررات بدل أن يختار unique() لاحقًا صفًا
+            // عشوائيًا فيضيع سياق باقي المقررات.
+            ->groupBy('id')
+            ->map(function ($rows) use ($locale): array {
+                $first = $rows->first();
+                $courseNames = $rows->map(
+                    fn (object $row): string => $this->localized($row->course_name, $locale),
+                )->unique()->values()->implode('، ');
+
+                return [
+                    'id' => (string) $first->id,
+                    'name' => (string) $first->name,
+                    'code' => (string) $first->student_code,
+                    'gender' => $first->gender === null ? null : (string) $first->gender,
+                    'context' => $courseNames,
+                    'via' => 'individual',
+                ];
+            })
+            ->values();
+
+        return $groupRows->concat($individualRows)
+            ->unique('id')
+            ->sortBy('name')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * ملف طالب واحد لدليل المعلم الموحّد — يخوّل الوصول عبر مجموعة مشتركة
+     * أو جدول فردي نشط، أيهما وُجد. مرآة إضافية لـ teacherStudentProfile
+     * (المبنية على المجموعات وحدها فقط)، بلا تعديل عليها.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function teacherStudentRosterProfile(
+        string $staffProfileId,
+        string $studentProfileId,
+        string $organizationId,
+        string $locale,
+    ): ?array {
+        $hasGroupAccess = DB::table('group_teachers')
+            ->join('groups', 'groups.id', '=', 'group_teachers.group_id')
+            ->join('group_memberships', 'group_memberships.group_id', '=', 'groups.id')
+            ->where('group_teachers.staff_profile_id', $staffProfileId)
+            ->where('group_memberships.student_profile_id', $studentProfileId)
+            ->where('groups.organization_id', $organizationId)
+            ->whereNull('groups.deleted_at')
+            ->whereNull('group_memberships.left_at')
+            ->where(function (Builder $query): void {
+                $query->whereNull('group_teachers.assigned_to')
+                    ->orWhere('group_teachers.assigned_to', '>=', now('UTC')->toDateString());
+            })
+            ->exists();
+
+        $hasIndividualAccess = DB::table('schedules')
+            ->where('staff_profile_id', $staffProfileId)
+            ->where('student_profile_id', $studentProfileId)
+            ->where('organization_id', $organizationId)
+            ->where('is_active', true)
+            ->exists();
+
+        if (!$hasGroupAccess && !$hasIndividualAccess) {
+            return null;
+        }
+
+        $row = DB::table('student_profiles')
+            ->join('users', 'users.id', '=', 'student_profiles.user_id')
+            ->where('student_profiles.id', $studentProfileId)
+            ->where('student_profiles.organization_id', $organizationId)
+            ->whereColumn('users.organization_id', 'student_profiles.organization_id')
+            ->whereNull('student_profiles.deleted_at')
+            ->whereNull('users.deleted_at')
+            ->first([
+                'student_profiles.id',
+                'student_profiles.student_code',
+                'student_profiles.date_of_birth',
+                'student_profiles.gender',
+                'student_profiles.country',
+                'student_profiles.city',
+                'users.name',
+                'users.status',
+            ]);
+
+        if ($row === null) {
+            return null;
+        }
+
+        $groups = $hasGroupAccess ? DB::table('group_teachers')
+            ->join('groups', 'groups.id', '=', 'group_teachers.group_id')
+            ->join('group_memberships', 'group_memberships.group_id', '=', 'groups.id')
+            ->where('group_teachers.staff_profile_id', $staffProfileId)
+            ->where('group_memberships.student_profile_id', $studentProfileId)
+            ->where('groups.organization_id', $organizationId)
+            ->whereNull('groups.deleted_at')
+            ->whereNull('group_memberships.left_at')
+            ->where(function (Builder $query): void {
+                $query->whereNull('group_teachers.assigned_to')
+                    ->orWhere('group_teachers.assigned_to', '>=', now('UTC')->toDateString());
+            })
+            ->distinct()
+            ->orderBy('groups.code')
+            ->get(['groups.id', 'groups.code', 'groups.name', 'group_memberships.joined_at'])
+            ->map(fn (object $group): array => [
+                'id' => (string) $group->id,
+                'code' => (string) $group->code,
+                'name' => $this->localized($group->name, $locale),
+                'joinedAt' => $group->joined_at === null ? null : (string) $group->joined_at,
+            ])
+            ->values()
+            ->all() : [];
+
+        $courses = $hasIndividualAccess ? DB::table('schedules')
+            ->join('courses', 'courses.id', '=', 'schedules.course_id')
+            ->where('schedules.staff_profile_id', $staffProfileId)
+            ->where('schedules.student_profile_id', $studentProfileId)
+            ->where('schedules.organization_id', $organizationId)
+            ->where('schedules.is_active', true)
+            ->distinct()
+            ->get(['courses.id', 'courses.code', 'courses.name'])
+            ->map(fn (object $course): array => [
+                'id' => (string) $course->id,
+                'code' => (string) $course->code,
+                'name' => $this->localized($course->name, $locale),
+            ])
+            ->values()
+            ->all() : [];
+
+        return [
+            'id' => (string) $row->id,
+            'name' => (string) $row->name,
+            'code' => (string) $row->student_code,
+            'status' => (string) $row->status,
+            'gender' => $row->gender === null ? null : (string) $row->gender,
+            'dateOfBirth' => $row->date_of_birth === null ? null : (string) $row->date_of_birth,
+            'country' => $row->country === null ? null : (string) $row->country,
+            'city' => $row->city === null ? null : (string) $row->city,
+            'attendanceRate' => $this->attendanceRate($studentProfileId, $organizationId),
+            'openAssignmentsCount' => $this->studentOpenAssignmentsCount($studentProfileId, $organizationId),
+            'groups' => $groups,
+            'courses' => $courses,
+        ];
+    }
+
+    /**
      * عدد التكليفات التي لم يسلّمها الطالب بعد.
      */
     public function studentOpenAssignmentsCount(string $studentProfileId, string $organizationId): int
