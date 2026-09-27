@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\JoinSessionController;
+use App\Http\Controllers\Api\TeacherSessionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,3 +26,21 @@ Route::middleware('auth:sanctum')
     ->whereUlid('session')
     ->middleware('can:session.join')
     ->name('api.sessions.join.teacher');
+
+/*
+ * تفاصيل حصة المعلم للموبايل — مرآة routes/web.php (portal.teacher.sessions.*)
+ * بنفس أسماء الصلاحيات بالضبط. مسار مختلف عمدًا عن GET /api/sessions/{session}
+ * (موديول Sessions، تمثيل خام بلا أسماء) لتجنّب أي تعارض مسارات.
+ */
+Route::middleware('auth:sanctum')->prefix('teacher/sessions/{session}')->whereUlid('session')->group(function (): void {
+    Route::get('/', [TeacherSessionController::class, 'show'])
+        ->middleware('can:attendance.record')
+        ->name('api.teacher.sessions.show');
+
+    Route::post('/attendance', [TeacherSessionController::class, 'recordAttendance'])
+        ->middleware('can:attendance.record')
+        ->name('api.teacher.sessions.attendance.store');
+
+    Route::post('/report', [TeacherSessionController::class, 'submitReport'])
+        ->name('api.teacher.sessions.report.store');
+});
