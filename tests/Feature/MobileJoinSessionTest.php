@@ -47,7 +47,9 @@ it('returns a join url for the sessions own teacher inside the join window', fun
     $response = $this->actingAs($user)->postJson("/api/sessions/{$session->id}/join");
 
     $response->assertOk()->assertJsonStructure(['join_url']);
-    expect($response->json('join_url'))->toBeString()->not->toBe('');
+    $joinUrl = $response->json('join_url');
+    expect($joinUrl)->toBeString()->not->toBe('')
+        ->and(urldecode($joinUrl))->toContain(route('mobile.classroom.left'));
 });
 
 it('returns 404 for a session that belongs to a different teacher', function (): void {
@@ -85,4 +87,10 @@ it('requires authentication', function (): void {
     $session = makeJoinableSession($staffProfileId, CarbonImmutable::now('UTC'));
 
     $this->postJson("/api/sessions/{$session->id}/join")->assertUnauthorized();
+});
+
+it('serves the mobile classroom-left return page the app intercepts', function (): void {
+    $this->get(route('mobile.classroom.left'))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/html; charset=UTF-8');
 });

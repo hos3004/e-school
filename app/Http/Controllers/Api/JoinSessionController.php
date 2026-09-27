@@ -56,6 +56,9 @@ final class JoinSessionController extends Controller
             role: JoinRole::Moderator,
             isFrozen: false,
             isTeacher: true,
+            // WebView الموبايل يعترض هذا الرابط بالذات ويقفل شاشة الفصل
+            // بدل ما يترك BBB يعرض صفحته الافتراضية بعد المغادرة.
+            returnUrl: route('mobile.classroom.left'),
         );
 
         return response()->json(['join_url' => $url]);

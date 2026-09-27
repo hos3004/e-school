@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\MobileClassroomReturnController;
 use App\Http\Controllers\Auth\PublicStudentRegistrationController;
 use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\HomeController;
@@ -48,6 +49,7 @@ use App\Http\Controllers\UpdateLocaleController;
 use App\Http\Middleware\EnsureConsoleEnabled;
 use App\Http\Middleware\RedirectPrimaryLearningPortal;
 use Illuminate\Support\Facades\Route;
+use Shared\Module\ModuleRegistry;
 
 Route::middleware(['auth', 'auth.session'])->prefix('profile/complete')->name('profile.complete.')->group(function (): void {
     Route::get('/', [CompleteProfileController::class, 'show'])->name('show');
@@ -56,6 +58,13 @@ Route::middleware(['auth', 'auth.session'])->prefix('profile/complete')->name('p
 });
 
 Route::get('/', HomeController::class)->name('home');
+
+/*
+ * وجهة رجوع BBB لتطبيق الموبايل بعد مغادرة الفصل — انظر
+ * app/Http/Controllers/Api/JoinSessionController.php وتعليق الكنترولر.
+ */
+Route::get('/mobile/classroom-left', MobileClassroomReturnController::class)
+    ->name('mobile.classroom.left');
 
 // الواجهة العامة. لا مصادقة ولا كتابة — صفحات عرض فقط.
 Route::controller(MarketingPageController::class)->group(function (): void {
@@ -293,12 +302,12 @@ Route::middleware([EnsureConsoleEnabled::class, 'auth', 'auth.session'])
                 require __DIR__.'/console-reports.php';
                 require __DIR__.'/console-archive.php';
                 // مسارات البوت تتبع تفعيل موديوله: إطفاؤه يعني غياب المسار لا 429 أو مفاتيح ترجمة خام.
-                if (\Shared\Module\ModuleRegistry::isEnabled('SupportBot')) {
+                if (ModuleRegistry::isEnabled('SupportBot')) {
                     require __DIR__.'/console-bot.php';
                 }
             });
         require __DIR__.'/learning.php';
-        if (\Shared\Module\ModuleRegistry::isEnabled('SupportBot')) {
+        if (ModuleRegistry::isEnabled('SupportBot')) {
             require __DIR__.'/support-bot.php';
         }
     });
