@@ -154,6 +154,11 @@ final class ScheduleResource extends Resource
                             ->live()
                             ->afterStateUpdated(fn (Set $set): mixed => $set('start_time', null))
                             ->required(),
+                        Toggle::make('flexible_start')
+                            ->label(__('scheduling::filament.schedule.fields.flexible_start'))
+                            ->helperText(__('scheduling::filament.schedule.fields.flexible_start_help'))
+                            ->visible(fn (Get $get): bool => $get('target_type') === 'student')
+                            ->default(false),
                     ]),
                 ]),
             Section::make(__('scheduling::filament.schedule.sections.recurrence'))

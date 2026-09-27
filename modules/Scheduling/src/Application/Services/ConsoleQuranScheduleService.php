@@ -41,6 +41,9 @@ final readonly class ConsoleQuranScheduleService
             $reason = $applyImmediately ? trim((string) $overrideReason) : __('console_quran.audit_update');
             $saved = $this->update->execute($schedule, [
                 ...$data, 'target_type' => 'student', 'student_profile_id' => $studentId, 'group_id' => null, 'course_id' => $courseId,
+                // هذه الشاشة لا تعدّل اختيار المرونة؛ نحافظ على قيمته الحالية
+                // كي لا يمسحه تعديل موعد أو مدة لا صلة له بالمرونة.
+                'flexible_start' => $data['flexible_start'] ?? $schedule->flexible_start,
             ], $actorId, $reason, $applyImmediately);
 
             return $this->summary($saved);

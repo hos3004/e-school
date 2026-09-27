@@ -94,6 +94,8 @@ Route::middleware('can:schedule.manage')->group(function (): void {
         ->whereUlid('profile')->name('students.teacher');
     Route::delete('students/{profile}/teacher', [StudentTeacherController::class, 'destroy'])
         ->whereUlid('profile')->name('students.teacher.remove');
+    Route::patch('students/{profile}/teacher/flexible-start', [StudentTeacherController::class, 'flexibleStart'])
+        ->whereUlid('profile')->name('students.teacher.flexible-start');
 });
 
 /*

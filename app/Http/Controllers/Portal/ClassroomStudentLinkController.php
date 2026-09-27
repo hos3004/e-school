@@ -41,6 +41,7 @@ final class ClassroomStudentLinkController
             ->join('student_profiles', 'student_profiles.id', '=', 'session_participants.student_profile_id')
             ->join('enrollments', 'enrollments.id', '=', 'session_participants.enrollment_id')
             ->join('users as student_users', 'student_users.id', '=', 'student_profiles.user_id')
+            ->leftJoin('schedules', 'schedules.id', '=', 'sessions.schedule_id')
             ->where('session_participants.id', $participant)
             ->where('session_participants.session_id', $session)
             ->whereColumn('student_profiles.organization_id', 'sessions.organization_id')
@@ -57,7 +58,7 @@ final class ClassroomStudentLinkController
                 'sessions.status',
                 'sessions.scheduled_start',
                 'sessions.scheduled_end',
-                'sessions.session_type',
+                'schedules.flexible_start as schedule_flexible_start',
                 'sessions.organization_id',
                 'session_participants.id as participant_id',
                 'enrollments.frozen_at',

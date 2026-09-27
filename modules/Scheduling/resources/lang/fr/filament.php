@@ -40,6 +40,8 @@ return [
             'course' => 'Cours', 'teacher' => 'Enseignant', 'weekdays' => 'Jours des séances', 'weekly_slots' => 'Jours et horaires', 'weekday' => 'Jour de la séance',
             'interval_weeks' => 'Répéter toutes les (semaines)', 'start_time' => 'Heure locale', 'duration' => 'Durée',
             'timezone' => 'Fuseau horaire', 'starts_on' => 'Début du modèle', 'ends_on' => 'Fin',
+            'flexible_start' => 'Début flexible dans la journée',
+            'flexible_start_help' => 'Uniquement pour un planning individuel (étudiant). Permet à l’enseignant et à l’étudiant de convenir de commencer à tout moment dans la journée prévue au lieu de l’heure fixe — sans effet sur le tarif, les rappels ou les rapports.',
             'reason' => 'Motif de l’opération', 'reason_help' => 'Conservé dans le journal d’audit.',
             'reason' => 'Motif de l’opération', 'notify_student' => 'Notifier l’élève',
             'reason' => 'Motif de l’opération', 'notify_teacher' => 'Notifier l’enseignant',

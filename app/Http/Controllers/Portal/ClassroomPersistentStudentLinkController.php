@@ -50,10 +50,11 @@ final class ClassroomPersistentStudentLinkController
         // رابط منسوخ قبل تدوير إداري: يُرفض دون كشف أي تفاصيل عن السبب.
         abort_if($requestedGeneration !== $currentGeneration, 404);
 
-        $scheduleRow = DB::table('schedules')->where('id', $schedule)->first(['id', 'organization_id']);
+        $scheduleRow = DB::table('schedules')->where('id', $schedule)->first(['id', 'organization_id', 'flexible_start']);
         abort_if($scheduleRow === null, 404);
 
         $organizationId = (string) $scheduleRow->organization_id;
+        $flexible = (bool) $scheduleRow->flexible_start && (bool) config('scheduling.flexible_individual_start.enabled');
         $beforeMinutes = (int) config('virtual-classroom.join_window.before_minutes');
         $afterMinutes = (int) config('virtual-classroom.join_window.after_minutes');
 
@@ -63,6 +64,7 @@ final class ClassroomPersistentStudentLinkController
             CarbonImmutable::now('UTC'),
             $beforeMinutes,
             $afterMinutes,
+            $flexible,
         );
 
         if ($current === null) {
@@ -76,6 +78,7 @@ final class ClassroomPersistentStudentLinkController
             ->join('student_profiles', 'student_profiles.id', '=', 'session_participants.student_profile_id')
             ->join('enrollments', 'enrollments.id', '=', 'session_participants.enrollment_id')
             ->join('users as student_users', 'student_users.id', '=', 'student_profiles.user_id')
+            ->leftJoin('schedules', 'schedules.id', '=', 'sessions.schedule_id')
             ->where('session_participants.session_id', $current->id)
             ->where('session_participants.enrollment_id', $enrollment)
             ->whereColumn('student_profiles.organization_id', 'sessions.organization_id')
@@ -92,7 +95,7 @@ final class ClassroomPersistentStudentLinkController
                 'sessions.status',
                 'sessions.scheduled_start',
                 'sessions.scheduled_end',
-                'sessions.session_type',
+                'schedules.flexible_start as schedule_flexible_start',
                 'sessions.organization_id',
                 'session_participants.id as participant_id',
                 'enrollments.frozen_at',

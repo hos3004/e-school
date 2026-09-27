@@ -25,9 +25,9 @@ afterEach(function (): void {
 });
 
 /**
- * @return object{id: string, title: mixed, status: string, scheduled_start: string, scheduled_end: string, session_type: string}
+ * @return object{id: string, title: mixed, status: string, scheduled_start: string, scheduled_end: string, schedule_flexible_start: bool}
  */
-function flexibleStartFixtureRow(string $sessionType, string $startsAt, string $endsAt): object
+function flexibleStartFixtureRow(bool $scheduleFlexibleStart, string $startsAt, string $endsAt): object
 {
     $organizationId = Fixtures::organizationId();
     $staffProfileId = Fixtures::staffProfileId();
@@ -37,7 +37,7 @@ function flexibleStartFixtureRow(string $sessionType, string $startsAt, string $
         'organization_id' => $organizationId,
         'course_id' => $courseId,
         'staff_profile_id' => $staffProfileId,
-        'session_type' => $sessionType,
+        'session_type' => 'individual',
         'status' => SessionStatus::Scheduled,
         'scheduled_start' => $startsAt,
         'scheduled_end' => $endsAt,
@@ -50,16 +50,16 @@ function flexibleStartFixtureRow(string $sessionType, string $startsAt, string $
         'status' => $session->status->value,
         'scheduled_start' => $session->scheduled_start->toIso8601String(),
         'scheduled_end' => $session->scheduled_end->toIso8601String(),
-        'session_type' => $sessionType,
+        'schedule_flexible_start' => $scheduleFlexibleStart,
     ];
 }
 
-it('still enforces the narrow join window for a group session even when the flag is on', function (): void {
+it('still enforces the narrow join window when the schedule does not allow flexible start', function (): void {
     config(['scheduling.flexible_individual_start.enabled' => true]);
     $organizationId = Fixtures::organizationId();
-    $row = flexibleStartFixtureRow('group', '2026-09-27 14:00:00', '2026-09-27 15:00:00');
+    $row = flexibleStartFixtureRow(false, '2026-09-27 14:00:00', '2026-09-27 15:00:00');
 
-    // Far outside the ±15 minute window, hours before the scheduled start.
+    // Far outside the ±20 minute teacher window, hours before the scheduled start.
     expect(fn () => app(EnterClassroom::class)->url(
         row: $row,
         organizationId: $organizationId,
@@ -71,11 +71,11 @@ it('still enforces the narrow join window for a group session even when the flag
     ))->toThrow(BusinessRuleViolation::class);
 });
 
-it('lets the teacher start an individual session hours later the same day when flexible start is enabled', function (): void {
+it('lets the teacher start a flexible schedule hours later the same day', function (): void {
     config(['scheduling.flexible_individual_start.enabled' => true]);
     $organizationId = Fixtures::organizationId();
     DB::table('organizations')->where('id', $organizationId)->update(['default_timezone' => 'UTC']);
-    $row = flexibleStartFixtureRow('individual', '2026-09-27 14:00:00', '2026-09-27 14:35:00');
+    $row = flexibleStartFixtureRow(true, '2026-09-27 14:00:00', '2026-09-27 14:35:00');
 
     // 8 hours after the scheduled start, but still the same UTC calendar day.
     CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-09-27 22:00:00', 'UTC'));
@@ -93,11 +93,11 @@ it('lets the teacher start an individual session hours later the same day when f
     expect($url)->toBeString()->not->toBe('');
 });
 
-it('rejects joining an individual flexible session on the following calendar day', function (): void {
+it('rejects joining a flexible schedule on the following calendar day', function (): void {
     config(['scheduling.flexible_individual_start.enabled' => true]);
     $organizationId = Fixtures::organizationId();
     DB::table('organizations')->where('id', $organizationId)->update(['default_timezone' => 'UTC']);
-    $row = flexibleStartFixtureRow('individual', '2026-09-27 14:00:00', '2026-09-27 14:35:00');
+    $row = flexibleStartFixtureRow(true, '2026-09-27 14:00:00', '2026-09-27 14:35:00');
 
     CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-09-28 01:00:00', 'UTC'));
 
@@ -112,10 +112,10 @@ it('rejects joining an individual flexible session on the following calendar day
     ))->toThrow(BusinessRuleViolation::class);
 });
 
-it('does not widen an individual session join window when the flag is disabled', function (): void {
+it('does not widen the window for a flexible schedule when the global kill switch is off', function (): void {
     config(['scheduling.flexible_individual_start.enabled' => false]);
     $organizationId = Fixtures::organizationId();
-    $row = flexibleStartFixtureRow('individual', '2026-09-27 14:00:00', '2026-09-27 14:35:00');
+    $row = flexibleStartFixtureRow(true, '2026-09-27 14:00:00', '2026-09-27 14:35:00');
 
     CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-09-27 22:00:00', 'UTC'));
 

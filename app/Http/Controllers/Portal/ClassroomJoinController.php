@@ -30,6 +30,7 @@ final class ClassroomJoinController
 
         $row = DB::table('sessions')
             ->join('staff_profiles', 'staff_profiles.id', '=', 'sessions.staff_profile_id')
+            ->leftJoin('schedules', 'schedules.id', '=', 'sessions.schedule_id')
             ->where('sessions.id', $session)
             ->where('sessions.organization_id', $organizationId)
             ->where('staff_profiles.organization_id', $organizationId)
@@ -42,7 +43,7 @@ final class ClassroomJoinController
                 'sessions.status',
                 'sessions.scheduled_start',
                 'sessions.scheduled_end',
-                'sessions.session_type',
+                'schedules.flexible_start as schedule_flexible_start',
             ]);
 
         abort_if($row === null, 404);
@@ -69,6 +70,7 @@ final class ClassroomJoinController
             ->join('session_participants', 'session_participants.session_id', '=', 'sessions.id')
             ->join('student_profiles', 'student_profiles.id', '=', 'session_participants.student_profile_id')
             ->join('enrollments', 'enrollments.id', '=', 'session_participants.enrollment_id')
+            ->leftJoin('schedules', 'schedules.id', '=', 'sessions.schedule_id')
             ->where('sessions.id', $session)
             ->where('sessions.organization_id', $organizationId)
             ->where('student_profiles.organization_id', $organizationId)
@@ -85,7 +87,7 @@ final class ClassroomJoinController
                 'sessions.status',
                 'sessions.scheduled_start',
                 'sessions.scheduled_end',
-                'sessions.session_type',
+                'schedules.flexible_start as schedule_flexible_start',
                 'enrollments.frozen_at',
             ]);
 

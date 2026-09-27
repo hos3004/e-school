@@ -19,6 +19,7 @@ use Shared\Concerns\HasUlid;
  * @property string $course_id
  * @property string $staff_profile_id
  * @property string $session_type
+ * @property bool $flexible_start
  * @property string $rrule
  * @property string $start_time
  * @property int $duration_minutes
@@ -43,6 +44,7 @@ final class Schedule extends Model
         'course_id',
         'staff_profile_id',
         'session_type',
+        'flexible_start',
         'rrule',
         'start_time',
         'duration_minutes',
@@ -62,6 +64,7 @@ final class Schedule extends Model
             'ends_on' => 'immutable_date',
             'materialized_until' => 'immutable_date',
             'is_active' => 'bool',
+            'flexible_start' => 'bool',
         ];
     }
 

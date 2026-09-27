@@ -7,16 +7,22 @@ namespace Modules\Sessions\Application\Queries;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Modules\Organization\Domain\Contracts\SchoolClockQueries;
 use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\SessionParticipant;
 use Modules\Sessions\Domain\ValueObjects\SessionAdministrationData;
+use Throwable;
 
 final readonly class SessionAdministrationQueryService implements SessionAdministrationQueries
 {
     /** أقصى عدد قفزات عبر سلسلة حصص التلافي قبل التوقف؛ يمنع حلقة بيانات فاسدة من تعليق الطلب. */
     private const MAX_MAKEUP_CHAIN_HOPS = 10;
+
+    public function __construct(
+        private SchoolClockQueries $schoolClock,
+    ) {}
 
     public function findForOrganization(
         string $organizationId,
@@ -317,6 +323,7 @@ final readonly class SessionAdministrationQueryService implements SessionAdminis
         CarbonImmutable $asOf,
         int $beforeMinutes,
         int $afterMinutes,
+        bool $flexible = false,
     ): ?SessionAdministrationData {
         $joinableStatuses = array_map(
             static fn (SessionStatus $status): string => $status->value,
@@ -352,7 +359,16 @@ final readonly class SessionAdministrationQueryService implements SessionAdminis
                     );
             })
             ->get()
-            ->first(static function (Session $candidate) use ($asOf, $beforeMinutes, $afterMinutes): bool {
+            ->first(function (Session $candidate) use ($asOf, $beforeMinutes, $afterMinutes, $flexible, $organizationId): bool {
+                if ($flexible) {
+                    $timezone = $this->organizationTimezone($organizationId);
+                    $localDay = $candidate->scheduled_start->setTimezone($timezone)->startOfDay();
+                    $windowStart = $localDay->setTimezone('UTC');
+                    $windowEnd = $localDay->addDay()->setTimezone('UTC');
+
+                    return $asOf->greaterThanOrEqualTo($windowStart) && $asOf->lessThanOrEqualTo($windowEnd);
+                }
+
                 $windowStart = $candidate->scheduled_start->subMinutes(max(0, $beforeMinutes));
                 $windowEnd = $candidate->scheduled_end->addMinutes(max(0, $afterMinutes));
 
@@ -360,6 +376,31 @@ final readonly class SessionAdministrationQueryService implements SessionAdminis
             });
 
         return $session === null ? null : self::data($session);
+    }
+
+    /**
+     * تُقرأ عبر عقد Organization العام. فشل الاستعلام أو منطقة زمنية غير
+     * صالحة في الإعداد يؤول إلى UTC بدل كسر إيجاد الحصة القابلة للدخول.
+     */
+    private function organizationTimezone(string $organizationId): string
+    {
+        try {
+            $timezone = $this->schoolClock->forOrganization($organizationId)['timezone'];
+        } catch (Throwable) {
+            return 'UTC';
+        }
+
+        if ($timezone === '') {
+            return 'UTC';
+        }
+
+        try {
+            new \DateTimeZone($timezone);
+        } catch (\Exception) {
+            return 'UTC';
+        }
+
+        return $timezone;
     }
 
     private static function label(Session $session, string $locale): string

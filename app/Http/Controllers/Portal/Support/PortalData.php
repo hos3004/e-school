@@ -1520,6 +1520,7 @@ final readonly class PortalData
     {
         return DB::table('sessions')
             ->leftJoin('groups', 'groups.id', '=', 'sessions.group_id')
+            ->leftJoin('schedules', 'schedules.id', '=', 'sessions.schedule_id')
             ->join('courses', 'courses.id', '=', 'sessions.course_id')
             ->join('staff_profiles as teacher_profiles', 'teacher_profiles.id', '=', 'sessions.staff_profile_id')
             ->join('users as teacher_users', 'teacher_users.id', '=', 'teacher_profiles.user_id')
@@ -1535,7 +1536,7 @@ final readonly class PortalData
             ->select([
                 'sessions.id',
                 'sessions.organization_id',
-                'sessions.session_type',
+                'schedules.flexible_start as schedule_flexible_start',
                 'sessions.title as session_title',
                 'sessions.status',
                 'sessions.scheduled_start',
@@ -1588,12 +1589,11 @@ final readonly class PortalData
     {
         $startsAt = CarbonImmutable::parse((string) $row->scheduled_start, 'UTC')->utc();
         $endsAt = CarbonImmutable::parse((string) $row->scheduled_end, 'UTC')->utc();
-        $sessionType = isset($row->session_type) ? (string) $row->session_type : null;
         [$canJoinAt, $canJoinUntil, $flexibleStart] = JoinWindowResolver::resolve(
             $startsAt,
             $endsAt,
             (string) ($row->organization_id ?? ''),
-            $sessionType,
+            (bool) ($row->schedule_flexible_start ?? false),
             false,
         );
         $status = SessionStatus::tryFrom((string) $row->status);
@@ -1616,7 +1616,6 @@ final readonly class PortalData
             'endsAt' => $endsAt->toIso8601String(),
             'timezone' => $this->validTimezone((string) ($row->group_timezone ?? 'UTC')),
             'status' => (string) $row->status,
-            'sessionType' => $sessionType,
             'flexibleStart' => $flexibleStart,
             'location' => null,
             'joinUrl' => null,

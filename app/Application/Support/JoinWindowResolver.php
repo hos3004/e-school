@@ -15,11 +15,12 @@ use Throwable;
  * الطالب والمعلم، حتى لا يفترق ما يُعرض في الواجهة عن ما يفرضه الخادم فعليًا.
  *
  * الوضع الافتراضي: ±دقائق حول الموعد المجدول (config('virtual-classroom.join_window')).
- * الوضع المرن: يُطبَّق فقط على الحصص الفردية عند تفعيل
- * config('scheduling.flexible_individual_start') — تصبح النافذة اليوم المحلي
- * كاملًا (بتوقيت مؤسسة الحصة) بدل ±دقائق، لأن المعلم والطالب قد يتراضيان على
- * أي وقت خلال يوم الموعد نفسه. الموعد المجدول لا يتغيّر: هذا حساب نافذة
- * الدخول فقط، ولا يمس التذكيرات أو التقارير أو المستحقات.
+ * الوضع المرن: يُطبَّق فقط حين تحمل الجدولة نفسها اختيار المرونة
+ * (schedules.flexible_start = true) — قرار إداري خاص بكل جدول على حدة، ليس
+ * صفة تلقائية لكل الحصص الفردية. عندئذٍ تصبح النافذة اليوم المحلي كاملًا
+ * (بتوقيت مؤسسة الحصة) بدل ±دقائق، لأن المعلم والطالب تراضيا على ذلك تحديدًا
+ * لهذا الجدول. الموعد المجدول لا يتغيّر: هذا حساب نافذة الدخول فقط، ولا يمس
+ * التذكيرات أو التقارير أو المستحقات.
  */
 final class JoinWindowResolver
 {
@@ -32,10 +33,12 @@ final class JoinWindowResolver
         CarbonImmutable $scheduledStart,
         CarbonImmutable $scheduledEnd,
         string $organizationId,
-        ?string $sessionType,
+        bool $scheduleAllowsFlexibleStart,
         bool $isTeacher,
     ): array {
-        if (self::isFlexibleEligible($sessionType)) {
+        // مفتاح إيقاف عام يبقى بيد الإعداد، فوق اختيار الجدول نفسه — يسمح
+        // بتعطيل الميزة كاملة في حادث تشغيلي دون لمس كل الجداول المفعّلة.
+        if ($scheduleAllowsFlexibleStart && (bool) config('scheduling.flexible_individual_start.enabled')) {
             $timezone = self::organizationTimezone($organizationId);
             $localDay = $scheduledStart->setTimezone($timezone)->startOfDay();
 
@@ -56,17 +59,6 @@ final class JoinWindowResolver
             $scheduledEnd->addMinutes(max(0, $afterMinutes)),
             false,
         ];
-    }
-
-    public static function isFlexibleEligible(?string $sessionType): bool
-    {
-        if ($sessionType === null || !(bool) config('scheduling.flexible_individual_start.enabled')) {
-            return false;
-        }
-
-        $eligibleTypes = (array) config('scheduling.flexible_individual_start.session_types', []);
-
-        return in_array($sessionType, $eligibleTypes, true);
     }
 
     /**
