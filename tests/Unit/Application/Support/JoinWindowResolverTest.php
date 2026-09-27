@@ -14,7 +14,7 @@ beforeEach(function (): void {
     Fixtures::flush();
 });
 
-it('keeps the fixed minutes window for group sessions regardless of the flag', function (): void {
+it('keeps the fixed minutes window when the schedule does not allow flexible start', function (): void {
     config(['scheduling.flexible_individual_start.enabled' => true]);
     $organizationId = Fixtures::organizationId();
     $start = CarbonImmutable::parse('2026-09-27 10:00:00', 'UTC');
@@ -24,7 +24,7 @@ it('keeps the fixed minutes window for group sessions regardless of the flag', f
         $start,
         $end,
         $organizationId,
-        'group',
+        false,
         false,
     );
 
@@ -37,7 +37,7 @@ it('keeps the fixed minutes window for group sessions regardless of the flag', f
         );
 });
 
-it('widens an individual session to the organization local day when the flag is enabled', function (): void {
+it('widens the window to the organization local day when the schedule allows flexible start', function (): void {
     config(['scheduling.flexible_individual_start.enabled' => true]);
     $organizationId = Fixtures::organizationId();
     DB::table('organizations')->where('id', $organizationId)->update(['default_timezone' => 'Africa/Cairo']);
@@ -50,7 +50,7 @@ it('widens an individual session to the organization local day when the flag is 
         $start,
         $end,
         $organizationId,
-        'individual',
+        true,
         true,
     );
 
@@ -64,13 +64,13 @@ it('widens an individual session to the organization local day when the flag is 
     expect($laterSameLocalDay->betweenIncluded($canJoinAt, $canJoinUntil))->toBeTrue();
 });
 
-it('does not widen an individual session when the flag is disabled', function (): void {
+it('does not widen the window when the schedule allows it but the global kill switch is disabled', function (): void {
     config(['scheduling.flexible_individual_start.enabled' => false]);
     $organizationId = Fixtures::organizationId();
     $start = CarbonImmutable::parse('2026-09-27 10:00:00', 'UTC');
     $end = $start->addMinutes(35);
 
-    [, , $flexible] = JoinWindowResolver::resolve($start, $end, $organizationId, 'individual', false);
+    [, , $flexible] = JoinWindowResolver::resolve($start, $end, $organizationId, true, false);
 
     expect($flexible)->toBeFalse();
 });
@@ -83,7 +83,7 @@ it('falls back to UTC when the organization timezone is missing or invalid', fun
     $start = CarbonImmutable::parse('2026-09-27 10:00:00', 'UTC');
     $end = $start->addMinutes(35);
 
-    [$canJoinAt, , $flexible] = JoinWindowResolver::resolve($start, $end, $organizationId, 'individual', false);
+    [$canJoinAt, , $flexible] = JoinWindowResolver::resolve($start, $end, $organizationId, true, false);
 
     expect($flexible)->toBeTrue()
         ->and($canJoinAt->toIso8601String())->toBe('2026-09-27T00:00:00+00:00');

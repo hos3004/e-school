@@ -73,6 +73,8 @@ return [
             'weekdays' => 'Session days', 'weekly_slots' => 'Session days and times', 'weekday' => 'Session day', 'interval_weeks' => 'Repeat every (weeks)',
             'start_time' => 'Local start time', 'duration' => 'Session duration',
             'timezone' => 'Timezone', 'starts_on' => 'Template starts on', 'ends_on' => 'Ends on',
+            'flexible_start' => 'Flexible start within the day',
+            'flexible_start_help' => 'Only for an individual (student) schedule. Lets the teacher and student agree to start anywhere within the scheduled calendar day instead of the fixed time — never affects the payroll rate, reminders, or reports.',
             'reason' => 'Operation reason',
             'reason_help' => 'Stored in the audit trail and not sent verbatim to students.',
             'notify_student' => 'Notify the student',

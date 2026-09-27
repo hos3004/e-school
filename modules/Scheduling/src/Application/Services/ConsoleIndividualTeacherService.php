@@ -84,6 +84,7 @@ final readonly class ConsoleIndividualTeacherService
                     ? [__('console_people.teaching.weekday_'.($rule->weekdays[0] ?? 0)).' '.substr($schedule->start_time, 0, 5)]
                     : $slots,
                 'duration_minutes' => (int) $schedule->duration_minutes,
+                'flexible_start' => (bool) $schedule->flexible_start,
             ];
         })->values()->all();
     }
@@ -159,6 +160,7 @@ final readonly class ConsoleIndividualTeacherService
         string $startsOn,
         string $actorId,
         string $reason,
+        bool $flexibleStart = false,
     ): string {
         Gate::authorize('create', Schedule::class);
 
@@ -183,9 +185,50 @@ final readonly class ConsoleIndividualTeacherService
             'timezone' => $timezone,
             'starts_on' => $startsOn,
             'ends_on' => null,
+            'flexible_start' => $flexibleStart,
         ], $actorId, $reason);
 
         return (string) $schedule->getKey();
+    }
+
+    /**
+     * تفعيل أو إيقاف البدء المرن لجدول فردي قائم — دون مساس بالمعلم أو
+     * المواعيد أو المدة. اختيار إداري خاص بكل علاقة معلم/طالب، لا يُطبَّق
+     * تلقائيًا على أي جدول آخر.
+     *
+     * @return array{id: string, flexible_start: bool}
+     */
+    public function setFlexibleStart(
+        string $organizationId,
+        string $studentProfileId,
+        string $scheduleId,
+        bool $flexibleStart,
+        string $actorId,
+        string $reason,
+    ): array {
+        return $this->transaction->run(function () use (
+            $organizationId, $studentProfileId, $scheduleId, $flexibleStart, $actorId, $reason,
+        ): array {
+            /** @var Schedule $schedule */
+            $schedule = $this->query($organizationId, $studentProfileId)->lockForUpdate()->findOrFail($scheduleId);
+            Gate::authorize('update', $schedule);
+
+            $saved = $this->update->execute(
+                $schedule,
+                [
+                    ...$this->definition($schedule),
+                    'staff_profile_id' => (string) $schedule->staff_profile_id,
+                    'flexible_start' => $flexibleStart,
+                ],
+                $actorId,
+                $reason,
+            );
+
+            return [
+                'id' => (string) $saved->getKey(),
+                'flexible_start' => (bool) $saved->flexible_start,
+            ];
+        });
     }
 
     /**
@@ -380,6 +423,7 @@ final readonly class ConsoleIndividualTeacherService
             'timezone' => (string) $schedule->timezone,
             'starts_on' => $schedule->starts_on->toDateString(),
             'ends_on' => $schedule->ends_on?->toDateString(),
+            'flexible_start' => (bool) $schedule->flexible_start,
         ];
     }
 

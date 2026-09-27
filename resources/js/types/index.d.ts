@@ -63,7 +63,6 @@ export interface Session {
     recordingUrl?: string | null;
     attendanceConfirmed?: boolean;
     reportSubmitted?: boolean;
-    sessionType?: string | null;
     flexibleStart?: boolean;
     readyPingedAt?: IsoDateTime | null;
 }

@@ -99,6 +99,10 @@ interface SessionAdministrationQueries
      * التلافي القائمة مقام حصة ملغاة منه، أيهما تقع الآن ضمن نافذة الدخول.
      *
      * تُستخدم لحلّ الرابط الدائم الذي يرسله المعلم للطالب مرة واحدة.
+     *
+     * $flexible: مرر true حين يحمل الجدول اختيار البدء المرن
+     * (schedules.flexible_start)؛ تصبح النافذة اليوم المحلي كاملًا فتُستبدل
+     * $beforeMinutes/$afterMinutes بحساب اليوم بتوقيت المؤسسة.
      */
     public function currentJoinableForSchedule(
         string $organizationId,
@@ -106,6 +110,7 @@ interface SessionAdministrationQueries
         CarbonImmutable $asOf,
         int $beforeMinutes,
         int $afterMinutes,
+        bool $flexible = false,
     ): ?SessionAdministrationData;
 
     /**

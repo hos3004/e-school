@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Console\AssignIndividualTeacherRequest;
 use App\Http\Requests\Console\ChangeIndividualTeacherRequest;
 use App\Http\Requests\Console\RemoveIndividualTeacherRequest;
+use App\Http\Requests\Console\SetScheduleFlexibleStartRequest;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -95,10 +96,31 @@ final class StudentTeacherController extends Controller
                 startsOn: (string) $request->validated('starts_on'),
                 actorId: (string) $request->user()?->getAuthIdentifier(),
                 reason: $request->reason(),
+                flexibleStart: $request->boolean('flexible_start'),
             );
         });
 
         return back()->with('success', __($slots === [] ? 'console_people.teaching.linked' : 'console_people.teaching.assigned'));
+    }
+
+    public function flexibleStart(SetScheduleFlexibleStartRequest $request, string $profile): RedirectResponse
+    {
+        $student = $this->student($request, $profile);
+
+        $this->schedules->setFlexibleStart(
+            organizationId: (string) $student->organization_id,
+            studentProfileId: (string) $student->getKey(),
+            scheduleId: (string) $request->validated('schedule_id'),
+            flexibleStart: $request->boolean('flexible_start'),
+            actorId: (string) $request->user()?->getAuthIdentifier(),
+            reason: $request->reason(),
+        );
+
+        return back()->with('success', __(
+            $request->boolean('flexible_start')
+                ? 'console_people.teaching.flexible_start_enabled'
+                : 'console_people.teaching.flexible_start_disabled',
+        ));
     }
 
     public function update(ChangeIndividualTeacherRequest $request, string $profile): RedirectResponse

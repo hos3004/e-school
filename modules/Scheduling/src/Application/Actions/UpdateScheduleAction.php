@@ -61,7 +61,7 @@ final readonly class UpdateScheduleAction
             : CarbonImmutable::now('UTC')->addHours((int) config('scheduling.recurrence.edit_lock_hours'));
         $tracked = [
             'group_id', 'student_profile_id', 'course_id', 'staff_profile_id', 'session_type',
-            'rrule', 'start_time', 'duration_minutes', 'timezone', 'starts_on', 'ends_on',
+            'flexible_start', 'rrule', 'start_time', 'duration_minutes', 'timezone', 'starts_on', 'ends_on',
         ];
         $old = collect($schedule->getAttributes())->only($tracked)->all();
         $old['weekly_slots'] = $schedule->weeklySlots()->get(['weekday', 'start_time'])
@@ -154,6 +154,9 @@ final readonly class UpdateScheduleAction
             'course_id' => $data['course_id'] ?? null,
             'staff_profile_id' => $data['staff_profile_id'] ?? null,
             'session_type' => $targetType === 'group' ? 'group' : 'individual',
+            // نفس قيد الإنشاء: الجماعي لا يحمل مرونة أبدًا، والفردي يحملها
+            // فقط إن أرسلها المستدعي صريحًا — لا افتراض ضمني.
+            'flexible_start' => $targetType === 'group' ? false : (bool) ($data['flexible_start'] ?? false),
             'rrule' => WeeklyRecurrence::fromWeekdays(
                 $weekdays,
                 (int) ($data['interval_weeks'] ?? 1),

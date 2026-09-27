@@ -34,8 +34,6 @@ use Modules\Groups\Application\Services\ConsoleSetupService;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
 use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Guardians\Application\Actions\CreateGuardianOnboardingAction;
-use Modules\Guardians\Application\Actions\LinkStudentToGuardian;
-use Modules\Guardians\Application\Actions\UnlinkStudentFromGuardian;
 use Modules\Guardians\Application\Actions\UpdateGuardianProfile;
 use Modules\Guardians\Domain\Enums\ContactChannel;
 use Modules\Guardians\Domain\Models\GuardianProfile;
@@ -676,6 +674,8 @@ final class PeopleController extends Controller
             'assignUrl' => $canSchedule ? route('console.students.teacher.assign', ['profile' => $record->id]) : null,
             'changeUrl' => $canSchedule ? route('console.students.teacher', ['profile' => $record->id]) : null,
             'removeUrl' => $canSchedule ? route('console.students.teacher.remove', ['profile' => $record->id]) : null,
+            'flexibleStartUrl' => $canSchedule
+                ? route('console.students.teacher.flexible-start', ['profile' => $record->id]) : null,
             'durations' => array_values((array) config('scheduling.individual_session_durations')),
             'durationLimits' => self::durationLimits(),
             'timezone' => (string) app(ConsoleContext::class)->forRequest($request)['timezone'],

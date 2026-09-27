@@ -34,6 +34,7 @@ final class SessionObserveController extends Controller
         $userId = (string) $user?->getAuthIdentifier();
 
         $row = DB::table('sessions')
+            ->leftJoin('schedules', 'schedules.id', '=', 'sessions.schedule_id')
             ->where('sessions.id', $session)
             ->where('sessions.organization_id', $organizationId)
             ->whereNull('sessions.deleted_at')
@@ -43,7 +44,7 @@ final class SessionObserveController extends Controller
                 'sessions.status',
                 'sessions.scheduled_start',
                 'sessions.scheduled_end',
-                'sessions.session_type',
+                'schedules.flexible_start as schedule_flexible_start',
             ]);
 
         abort_if($row === null, 404);

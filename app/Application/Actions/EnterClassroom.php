@@ -27,7 +27,7 @@ final readonly class EnterClassroom
     ) {}
 
     /**
-     * @param object{id: mixed, title: mixed, status: mixed, scheduled_start: mixed, scheduled_end: mixed, session_type?: mixed} $row
+     * @param object{id: mixed, title: mixed, status: mixed, scheduled_start: mixed, scheduled_end: mixed, schedule_flexible_start?: mixed} $row
      */
     public function url(
         object $row,
@@ -54,7 +54,7 @@ final readonly class EnterClassroom
             $startsAt,
             $endsAt,
             $organizationId,
-            isset($row->session_type) ? (string) $row->session_type : null,
+            (bool) ($row->schedule_flexible_start ?? false),
             $isTeacher,
         );
         $now = CarbonImmutable::now('UTC');

@@ -25,6 +25,7 @@ export type StudentSchedule = {
   teacher: string;
   slots: string[];
   duration_minutes: number;
+  flexible_start: boolean;
 };
 
 export type StudentProgramsData = {
@@ -37,6 +38,7 @@ export type StudentProgramsData = {
   assignUrl: string | null;
   changeUrl: string | null;
   removeUrl: string | null;
+  flexibleStartUrl: string | null;
   durations: number[];
   durationLimits?: { min: number; max: number };
   timezone: string;
@@ -47,7 +49,8 @@ type Panel =
   | { kind: "freeze"; id: string; url: string }
   | { kind: "assign" }
   | { kind: "change"; id: string }
-  | { kind: "remove"; id: string };
+  | { kind: "remove"; id: string }
+  | { kind: "flexible-start"; id: string; next: boolean };
 
 const box = "rounded-lg border border-[var(--line)] p-3";
 const field = "w-full rounded-lg border border-[var(--line)] p-3";
@@ -76,12 +79,20 @@ export default function StudentPrograms({
     timezone: programs.timezone,
     starts_on: new Date().toISOString().slice(0, 10),
     session_rate_major: "",
+    flexible_start: false,
+    reason: "",
+  });
+  const flexForm = useForm({
+    schedule_id: "",
+    flexible_start: false,
     reason: "",
   });
 
   const close = () => {
     form.clearErrors();
     form.reset();
+    flexForm.clearErrors();
+    flexForm.reset();
     setTeachers([]);
     setPanel(null);
   };
@@ -324,9 +335,38 @@ export default function StudentPrograms({
                 <span className="text-sm">
                   {schedule.slots.join("، ")} ({schedule.duration_minutes}{" "}
                   {t("console_people.programs.minutes")})
+                  {schedule.flexible_start && (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <span className="font-semibold text-emerald-700">
+                        {t("console_people.programs.flexible_start_badge")}
+                      </span>
+                    </>
+                  )}
                 </span>
               </span>
               <span className="flex gap-2">
+                {programs.flexibleStartUrl && (
+                  <button
+                    type="button"
+                    className={ghost}
+                    onClick={() => {
+                      close();
+                      const next = !schedule.flexible_start;
+                      setPanel({ kind: "flexible-start", id: schedule.id, next });
+                      flexForm.setData({
+                        schedule_id: schedule.id,
+                        flexible_start: next,
+                        reason: "",
+                      });
+                    }}
+                  >
+                    {schedule.flexible_start
+                      ? t("console_people.programs.disable_flexible_start")
+                      : t("console_people.programs.enable_flexible_start")}
+                  </button>
+                )}
                 {programs.changeUrl && (
                   <button
                     type="button"
@@ -422,6 +462,60 @@ export default function StudentPrograms({
                 {reasonField}
                 {errors}
                 {actions(t("console_people.programs.submit_remove"))}
+              </form>
+            )}
+
+            {panel?.kind === "flexible-start" && panel.id === schedule.id && (
+              <form
+                className="mt-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  flexForm.patch(programs.flexibleStartUrl as string, {
+                    preserveScroll: true,
+                    onSuccess: close,
+                  });
+                }}
+              >
+                <p className="text-sm">
+                  {panel.next
+                    ? t("console_people.programs.confirm_enable_flexible_start")
+                    : t("console_people.programs.confirm_disable_flexible_start")}
+                </p>
+                <label className="block my-3">
+                  <span className="block mb-2">
+                    {t("console_people.programs.reason")}
+                  </span>
+                  <textarea
+                    className={field}
+                    value={flexForm.data.reason}
+                    onChange={(event) =>
+                      flexForm.setData("reason", event.target.value)
+                    }
+                    required
+                    minLength={3}
+                    maxLength={1000}
+                    rows={2}
+                  />
+                </label>
+                {Object.values(flexForm.errors).map((error, index) => (
+                  <p key={index} role="alert" className="text-red-700">
+                    {error}
+                  </p>
+                ))}
+                <div className="flex gap-2">
+                  <button
+                    className={primary}
+                    disabled={
+                      flexForm.processing ||
+                      flexForm.data.reason.trim().length < 3
+                    }
+                  >
+                    {t("console_people.programs.submit_flexible_start")}
+                  </button>
+                  <button type="button" className={ghost} onClick={close}>
+                    {t("console_people.programs.cancel")}
+                  </button>
+                </div>
               </form>
             )}
           </li>
@@ -595,6 +689,24 @@ export default function StudentPrograms({
                   .replace(":max", String(limits.max))
                   .replace(":durations", programs.durations.join("، "))}
               </p>
+              <label className="flex items-start gap-2 my-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={form.data.flexible_start}
+                  onChange={(event) =>
+                    form.setData("flexible_start", event.target.checked)
+                  }
+                />
+                <span>
+                  <span className="block font-semibold">
+                    {t("console_people.programs.flexible_start")}
+                  </span>
+                  <span className="block text-sm text-[var(--ink-muted)]">
+                    {t("console_people.programs.flexible_start_hint")}
+                  </span>
+                </span>
+              </label>
               {reasonField}
               {errors}
               {actions(

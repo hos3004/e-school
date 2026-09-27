@@ -37,6 +37,8 @@ final class AssignIndividualTeacherRequest extends FormRequest
             'interval_weeks' => ['nullable', 'integer', 'min:1', 'max:8'],
             'timezone' => [$hasSchedule ? 'required' : 'nullable', 'timezone'],
             'starts_on' => [$hasSchedule ? 'required' : 'nullable', 'date_format:Y-m-d'],
+            // اختيار إداري خاص بهذا الجدول فقط — لا صفة تلقائية لكل الحصص الفردية.
+            'flexible_start' => ['nullable', 'boolean'],
             'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }

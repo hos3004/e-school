@@ -80,6 +80,7 @@ final readonly class CreateScheduleAction
                     'student_profile_id' => $schedule->student_profile_id,
                     'course_id' => $schedule->course_id,
                     'staff_profile_id' => $schedule->staff_profile_id,
+                    'flexible_start' => $schedule->flexible_start,
                     'rrule' => $schedule->rrule,
                     'weekly_slots' => $weeklySlots,
                     'created_sessions' => $materialized->created,
@@ -121,6 +122,10 @@ final readonly class CreateScheduleAction
             'course_id' => $data['course_id'] ?? null,
             'staff_profile_id' => $data['staff_profile_id'] ?? null,
             'session_type' => $targetType === 'group' ? 'group' : 'individual',
+            // مرونة البدء خيار إداري لكل جدول فردي على حدة، لا صفة تلقائية
+            // لكل الجداول الفردية. الجماعي لا يدخل هذا المسار مطلقًا: طالب
+            // واحد قد يطلب المرونة فتتعطل بقية حصة المجموعة.
+            'flexible_start' => $targetType === 'group' ? false : (bool) ($data['flexible_start'] ?? false),
             'rrule' => $rule->toRRule(),
             'start_time' => $weeklySlots[0]['start_time'] ?? ($data['start_time'] ?? null),
             'duration_minutes' => (int) ($data['duration_minutes'] ?? config('scheduling.default_duration_minutes')),

@@ -108,6 +108,9 @@ final readonly class ScheduleChangeDefinition
             'student_profile_id' => $individual ? (string) $schedule->student_profile_id : null,
             'course_id' => (string) $schedule->course_id,
             'staff_profile_id' => (string) $schedule->staff_profile_id,
+            // يحافظ على اختيار المرونة الحالي للجدول؛ الموافقة على موعد
+            // مقترح لا تعني تلقائيًا تفعيل أو إلغاء المرونة.
+            'flexible_start' => (bool) $schedule->flexible_start,
             'duration_minutes' => (int) $schedule->duration_minutes,
             'timezone' => (string) $schedule->timezone,
             'starts_on' => $schedule->starts_on->toDateString(),
