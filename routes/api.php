@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\JoinSessionController;
+use App\Http\Controllers\Api\TeacherPostponementController;
 use App\Http\Controllers\Api\TeacherSessionController;
 use Illuminate\Support\Facades\Route;
 
@@ -43,4 +44,25 @@ Route::middleware('auth:sanctum')->prefix('teacher/sessions/{session}')->whereUl
 
     Route::post('/report', [TeacherSessionController::class, 'submitReport'])
         ->name('api.teacher.sessions.report.store');
+});
+
+/*
+ * طلبات تأجيل المعلم للموبايل — مرآة routes/web.php (portal.teacher.postponements.*).
+ */
+Route::middleware('auth:sanctum')->prefix('teacher/postponements')->group(function (): void {
+    Route::get('/', [TeacherPostponementController::class, 'index'])
+        ->middleware('can:session.postpone.approve')
+        ->name('api.teacher.postponements.index');
+
+    Route::post('/{postponement}/approve', [TeacherPostponementController::class, 'approve'])
+        ->whereUlid('postponement')
+        ->name('api.teacher.postponements.approve');
+
+    Route::post('/{postponement}/propose-alternative', [TeacherPostponementController::class, 'propose'])
+        ->whereUlid('postponement')
+        ->name('api.teacher.postponements.propose-alternative');
+
+    Route::post('/{postponement}/reject', [TeacherPostponementController::class, 'reject'])
+        ->whereUlid('postponement')
+        ->name('api.teacher.postponements.reject');
 });
