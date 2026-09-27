@@ -44,9 +44,17 @@ return [
             'undeliverable_domains' => ['invalid', 'test', 'example', 'localhost', 'local'],
         ],
         'push' => [
-            // خارج قنوات المرحلة الأولى حتى يُسجّل Gateway حقيقي لـ FCM.
+            /*
+             * ليست قناة مُهيّأة بـ gateway مستقل هنا عمدًا: لا قوالب push
+             * خاصة موجودة، والمالك اختار تمرير نفس محتوى in_app بالضبط بدل
+             * كتابة نصوص push منفصلة. الإرسال الفعلي من
+             * Modules\Notifications\Infrastructure\Gateways\InAppChannelGateway
+             * عبر PushMirrorDispatcher — enabled/credentials_path هنا فقط
+             * إعداد يقرأه ذلك المسار، لا مسار توزيع قنوات منفصل.
+             */
             'enabled' => env('PUSH_ENABLED', false),
             'driver' => 'fcm',
+            'credentials_path' => env('FIREBASE_CREDENTIALS_PATH'),
         ],
         'whatsapp' => [
             // قرار العميل: إرسال فقط. الردود الواردة تُعرض للإدارة والمشرف
@@ -156,11 +164,16 @@ return [
 
         'discipline_notice' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'enrollment_frozen' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
-        'assignment_due' => ['channels' => ['in_app', 'push'], 'critical' => false],
+        // 'push' أُزيلت هنا عمدًا: push ليست قناة مُهيّأة بـ gateway مستقل
+        // (انظر تعليق config('notifications.channels.push') أعلاه) — أي
+        // سطر outbox بقناة 'push' يُرفض دومًا بـ gateway_unconfigured.
+        // الإشعار الفعلي يصل تلقائيًا عبر PushMirrorDispatcher كصدى لقناة
+        // in_app، فوجود 'push' هنا كان عالة بلا أثر.
+        'assignment_due' => ['channels' => ['in_app'], 'critical' => false],
         'grade_published' => ['channels' => ['in_app', 'email'], 'critical' => false],
         'monthly_report' => ['channels' => ['in_app', 'email'], 'critical' => false],
         'payroll_period' => ['channels' => ['in_app', 'email'], 'critical' => true],
-        'message_received' => ['channels' => ['in_app', 'push'], 'critical' => false],
+        'message_received' => ['channels' => ['in_app'], 'critical' => false],
         'system_alert' => ['channels' => ['in_app', 'email'], 'critical' => true],
     ],
 
