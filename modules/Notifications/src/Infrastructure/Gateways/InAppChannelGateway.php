@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Notifications\Infrastructure\Gateways;
 
+use Illuminate\Support\Facades\Log;
 use Modules\Integrations\Domain\Contracts\ChannelGateway;
 use Modules\Integrations\Domain\ValueObjects\GatewayMessage;
 use Modules\Integrations\Domain\ValueObjects\GatewayResult;
@@ -40,8 +41,15 @@ final class InAppChannelGateway implements ChannelGateway
 
         try {
             $this->push->dispatch($message);
-        } catch (Throwable) {
-            // إشعار فعلي أفضلية ثانوية دائمًا مقارنة بسطر in_app نفسه.
+        } catch (Throwable $error) {
+            // إشعار فعلي أفضلية ثانوية دائمًا مقارنة بسطر in_app نفسه —
+            // يُسجَّل للتشخيص فقط، ولا يُعاد رميه أبدًا.
+            Log::warning('push.mirror.threw', [
+                'user_id' => $message->recipientId,
+                'event_name' => $message->eventName,
+                'exception' => $error::class,
+                'message' => $error->getMessage(),
+            ]);
         }
 
         return GatewayResult::accepted([

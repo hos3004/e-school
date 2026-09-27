@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Notifications\Infrastructure\Push;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Domain\Models\UserDevice;
@@ -61,6 +62,23 @@ final readonly class PushMirrorDispatcher
                 body: $body,
                 data: $data,
             );
+
+            if ($result->success) {
+                Log::info('push.mirror.sent', [
+                    'device_id' => $device->id,
+                    'user_id' => $message->recipientId,
+                    'event_name' => $message->eventName,
+                ]);
+            } else {
+                Log::warning('push.mirror.failed', [
+                    'device_id' => $device->id,
+                    'user_id' => $message->recipientId,
+                    'event_name' => $message->eventName,
+                    'error' => $result->error,
+                    'retryable' => $result->retryable,
+                    'unregistered' => $result->unregistered,
+                ]);
+            }
 
             if (!$result->success && $result->unregistered) {
                 $device->forceFill(['revoked_at' => now(), 'push_token' => null])->save();
