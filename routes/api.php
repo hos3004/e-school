@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\JoinSessionController;
 use App\Http\Controllers\Api\TeacherAvailabilityController;
+use App\Http\Controllers\Api\TeacherGroupController;
 use App\Http\Controllers\Api\TeacherPostponementController;
 use App\Http\Controllers\Api\TeacherProfileController;
 use App\Http\Controllers\Api\TeacherRequiredReportsController;
@@ -132,3 +133,15 @@ Route::middleware('auth:sanctum')->prefix('teacher/students')->group(function ()
 Route::middleware('auth:sanctum')
     ->get('teacher/required-reports', [TeacherRequiredReportsController::class, 'index'])
     ->name('api.teacher.required-reports.index');
+
+/*
+ * مجموعات المعلم للموبايل — مرآة routes/web.php (portal.teacher.groups*).
+ */
+Route::middleware('auth:sanctum')->prefix('teacher/groups')->group(function (): void {
+    Route::get('/', [TeacherGroupController::class, 'index'])
+        ->name('api.teacher.groups.index');
+
+    Route::get('/{group}', [TeacherGroupController::class, 'show'])
+        ->whereUlid('group')
+        ->name('api.teacher.groups.show');
+});
