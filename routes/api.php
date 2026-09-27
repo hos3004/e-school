@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\JoinSessionController;
 use App\Http\Controllers\Api\TeacherPostponementController;
+use App\Http\Controllers\Api\TeacherProfileController;
 use App\Http\Controllers\Api\TeacherSessionController;
 use Illuminate\Support\Facades\Route;
 
@@ -72,4 +73,19 @@ Route::middleware('auth:sanctum')->prefix('teacher/postponements')->group(functi
     Route::post('/{postponement}/reject', [TeacherPostponementController::class, 'reject'])
         ->whereUlid('postponement')
         ->name('api.teacher.postponements.reject');
+});
+
+/*
+ * ملف المعلم الشخصي للموبايل — مرآة routes/web.php (portal.teacher.profile*)،
+ * نفس Actions/FormRequests بالضبط في Modules\Identity.
+ */
+Route::middleware('auth:sanctum')->prefix('teacher/profile')->group(function (): void {
+    Route::get('/', [TeacherProfileController::class, 'show'])
+        ->name('api.teacher.profile.show');
+
+    Route::patch('/', [TeacherProfileController::class, 'update'])
+        ->name('api.teacher.profile.update');
+
+    Route::put('/password', [TeacherProfileController::class, 'password'])
+        ->name('api.teacher.profile.password');
 });
