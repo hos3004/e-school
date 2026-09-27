@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\JoinSessionController;
+use App\Http\Controllers\Api\TeacherAvailabilityController;
 use App\Http\Controllers\Api\TeacherPostponementController;
 use App\Http\Controllers\Api\TeacherProfileController;
 use App\Http\Controllers\Api\TeacherSessionController;
@@ -88,4 +89,20 @@ Route::middleware('auth:sanctum')->prefix('teacher/profile')->group(function ():
 
     Route::put('/password', [TeacherProfileController::class, 'password'])
         ->name('api.teacher.profile.password');
+});
+
+/*
+ * أوقات توفّر المعلم للموبايل — مرآة routes/web.php (portal.teacher.availability*)،
+ * نفس StoreOwnAvailabilityRequest وSetTeacherAvailability/RemoveTeacherAvailability.
+ */
+Route::middleware('auth:sanctum')->prefix('teacher/availability')->group(function (): void {
+    Route::get('/', [TeacherAvailabilityController::class, 'index'])
+        ->name('api.teacher.availability.index');
+
+    Route::post('/', [TeacherAvailabilityController::class, 'store'])
+        ->name('api.teacher.availability.store');
+
+    Route::delete('/{availability}', [TeacherAvailabilityController::class, 'destroy'])
+        ->whereUlid('availability')
+        ->name('api.teacher.availability.destroy');
 });
