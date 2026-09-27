@@ -40,7 +40,11 @@ final readonly class FcmSender
                         'title' => $title,
                         'body' => $body,
                     ],
-                    'data' => $data,
+                    // FCM يشترط أن يكون data خريطة (object) دائمًا، حتى لو
+                    // فارغة. json_encode لمصفوفة PHP فارغة ينتج [] (قائمة)
+                    // لا {} (خريطة)، فيرفضه FCM بخطأ "Cannot bind a list to
+                    // map for field 'data'" — التحويل لـ object يضمن {}.
+                    'data' => (object) $data,
                     'android' => ['priority' => 'high'],
                 ],
             ]);

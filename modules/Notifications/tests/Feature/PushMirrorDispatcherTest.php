@@ -79,6 +79,26 @@ it('does nothing when the recipient has no active device', function (): void {
     Http::assertNothingSent();
 });
 
+it('sends data as a JSON object, never a list, even when there is no target_url', function (): void {
+    // رصد فعلي 2026-09-27: json_encode لمصفوفة PHP فارغة ينتج [] لا {}،
+    // فرفضته FCM بخطأ "Cannot bind a list to map for field 'data'" —
+    // وصل هذا لكل مستخدم فعلي كان بلا target_url محسوب. هذا الاختبار
+    // يفحص جسم JSON الخام المُرسَل فعليًا، لا التمثيل بعد فك الترميز، حتى
+    // يلتقط بالضبط هذا النوع من الأخطاء.
+    Http::fake([
+        'fcm.googleapis.com/*' => Http::response(['name' => 'ok'], 200),
+    ]);
+
+    $userId = Fixtures::userId();
+    UserDevice::factory()->create(['user_id' => $userId, 'push_token' => 'token-1']);
+
+    app(PushMirrorDispatcher::class)->dispatch(makeGatewayMessage($userId, payload: []));
+
+    Http::assertSent(function ($request) {
+        return str_contains($request->body(), '"data":{}');
+    });
+});
+
 it('sends the exact in-app title and body to every active device', function (): void {
     Http::fake([
         'fcm.googleapis.com/*' => Http::response(['name' => 'projects/test-project/messages/1'], 200),
@@ -104,7 +124,7 @@ it('sends the exact in-app title and body to every active device', function (): 
         return $request->url() === 'https://fcm.googleapis.com/v1/projects/test-project/messages:send'
             && $body['message']['notification']['title'] === 'طلب تأجيل'
             && $body['message']['notification']['body'] === 'وصل طلب تأجيل جديد'
-            && $body['message']['data']['target_url'] === '/teacher/postponements';
+            && ((array) $body['message']['data'])['target_url'] === '/teacher/postponements';
     });
 });
 
