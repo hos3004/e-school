@@ -28,6 +28,7 @@ use Modules\Notifications\Application\Services\OutboxDispatcher;
 use Modules\Notifications\Application\Services\PayloadDomainEventRecipientResolver;
 use Modules\Notifications\Domain\Contracts\DomainEventRecipientResolver;
 use Modules\Notifications\Domain\Contracts\EmailDeliverabilityCheck;
+use Modules\Notifications\Domain\Contracts\FirebaseAccessTokenProvider;
 use Modules\Notifications\Domain\Contracts\NotificationAdministrationQueries;
 use Modules\Notifications\Domain\Contracts\NotificationDispatcher;
 use Modules\Notifications\Domain\Contracts\PopupAudienceResolver;
@@ -40,6 +41,7 @@ use Modules\Notifications\Domain\Models\NotificationPreference;
 use Modules\Notifications\Domain\Models\NotificationTemplate;
 use Modules\Notifications\Domain\Models\PopupCampaign;
 use Modules\Notifications\Infrastructure\Persistence\ConfiguredChannelGateway;
+use Modules\Notifications\Infrastructure\Push\ServiceAccountAccessTokenProvider;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class NotificationsServiceProvider extends BaseModuleServiceProvider
@@ -110,6 +112,7 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
             // بوابة القنوات: موجّه يقرأ تنفيذ القناة من config، وتنفيذاته
             // الحقيقية (SES · FCM · Meta) تُعلَّم في الإعداد دون استيراد عابر للحدود.
             ChannelGateway::class => ConfiguredChannelGateway::class,
+            FirebaseAccessTokenProvider::class => ServiceAccountAccessTokenProvider::class,
             PopupQueries::class => EloquentPopupQueryService::class,
             PopupAudienceResolver::class => AccessControlPopupAudienceResolver::class,
             SavePopupCampaignAction::class => SavePopupCampaignAction::class,
