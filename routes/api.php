@@ -44,6 +44,9 @@ Route::middleware('auth:sanctum')->prefix('teacher/sessions/{session}')->whereUl
 
     Route::post('/report', [TeacherSessionController::class, 'submitReport'])
         ->name('api.teacher.sessions.report.store');
+
+    Route::post('/postponement-requests', [TeacherSessionController::class, 'requestPostponement'])
+        ->name('api.teacher.sessions.postponement-requests.store');
 });
 
 /*

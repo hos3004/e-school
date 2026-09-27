@@ -7,11 +7,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Portal\Support\PortalData;
 use App\Http\Requests\Portal\RecordTeacherAttendanceRequest;
+use App\Http\Requests\Portal\RequestSessionPostponementRequest;
 use App\Http\Requests\Portal\SubmitTeacherSessionReportRequest;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\AcademicReports\Application\Actions\SubmitSessionReportAction;
 use Modules\Attendance\Application\Actions\RecordAttendanceSheetAction;
+use Modules\Scheduling\Application\Actions\ApprovePostponement;
+use Modules\Scheduling\Application\Actions\RequestPostponement;
 
 /**
  * تفاصيل حصة المعلم للموبايل — نفس بيانات ومنطق بوابة الويب Portal بالضبط
@@ -24,6 +28,8 @@ final class TeacherSessionController extends Controller
         private readonly PortalData $data,
         private readonly RecordAttendanceSheetAction $attendanceSheet,
         private readonly SubmitSessionReportAction $submitReport,
+        private readonly RequestPostponement $requestPostponement,
+        private readonly ApprovePostponement $approvePostponement,
     ) {}
 
     public function show(Request $request, string $session): JsonResponse
@@ -75,6 +81,38 @@ final class TeacherSessionController extends Controller
         );
 
         return response()->json(['status' => 'submitted']);
+    }
+
+    /**
+     * طلب تأجيل من المعلم — نفس Portal\SessionPostponementRequestController::teacher
+     * بالضبط: يُنشأ ويُعتمد في نفس الخطوة لأن المعلم لا يحتاج موافقة نفسه.
+     */
+    public function requestPostponement(RequestSessionPostponementRequest $request, string $session): JsonResponse
+    {
+        [$organizationId, $staffProfileId] = $this->actor($request);
+        $actorId = (string) $request->user()?->getAuthIdentifier();
+        $validated = $request->validated();
+        $proposedStart = CarbonImmutable::parse((string) $validated['proposed_start'], 'UTC');
+
+        $postponement = $this->requestPostponement->execute(
+            organizationId: $organizationId,
+            sessionId: $session,
+            requestedBy: $actorId,
+            studentProfileId: null,
+            proposedStart: $proposedStart,
+            reason: (string) $validated['reason'],
+            requestingStaffProfileId: $staffProfileId,
+        );
+
+        $this->approvePostponement->execute(
+            organizationId: $organizationId,
+            requestId: (string) $postponement->getKey(),
+            approvedBy: $actorId,
+            agreedStart: $proposedStart,
+            reason: (string) $validated['reason'],
+        );
+
+        return response()->json(['status' => 'approved'], 201);
     }
 
     /**
