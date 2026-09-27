@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Portal\Support\PortalData;
 use App\Http\Requests\Portal\RecordTeacherAttendanceRequest;
 use App\Http\Requests\Portal\RequestSessionPostponementRequest;
+use App\Http\Requests\Portal\SubmitTeacherApologyRequest;
 use App\Http\Requests\Portal\SubmitTeacherSessionReportRequest;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,7 @@ use Modules\AcademicReports\Application\Actions\SubmitSessionReportAction;
 use Modules\Attendance\Application\Actions\RecordAttendanceSheetAction;
 use Modules\Scheduling\Application\Actions\ApprovePostponement;
 use Modules\Scheduling\Application\Actions\RequestPostponement;
+use Modules\Sessions\Application\Actions\SubmitTeacherApologyAction;
 
 /**
  * تفاصيل حصة المعلم للموبايل — نفس بيانات ومنطق بوابة الويب Portal بالضبط
@@ -30,6 +32,7 @@ final class TeacherSessionController extends Controller
         private readonly SubmitSessionReportAction $submitReport,
         private readonly RequestPostponement $requestPostponement,
         private readonly ApprovePostponement $approvePostponement,
+        private readonly SubmitTeacherApologyAction $submitApology,
     ) {}
 
     public function show(Request $request, string $session): JsonResponse
@@ -113,6 +116,25 @@ final class TeacherSessionController extends Controller
         );
 
         return response()->json(['status' => 'approved'], 201);
+    }
+
+    /**
+     * اعتذار المعلم عن حصته — Modules\Sessions\Application\Actions\
+     * SubmitTeacherApologyAction لم تكن مربوطة بأي واجهة قبل هذا؛ الفعل
+     * يعتمد الاعتذار تلقائيًا ويبدأ البحث عن بديل بنفسه، فلا حاجة لخطوة ثانية.
+     */
+    public function apologize(SubmitTeacherApologyRequest $request, string $session): JsonResponse
+    {
+        [, $staffProfileId] = $this->actor($request);
+        $reason = (string) $request->validated('reason');
+
+        $this->submitApology->execute(
+            sessionId: $session,
+            staffProfileId: $staffProfileId,
+            reason: $reason,
+        );
+
+        return response()->json(['status' => 'submitted'], 201);
     }
 
     /**
