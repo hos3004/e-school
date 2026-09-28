@@ -7,6 +7,7 @@ use Modules\Messaging\Presentation\Http\Controllers\FlagMessageController;
 use Modules\Messaging\Presentation\Http\Controllers\HandleWhatsappInboundController;
 use Modules\Messaging\Presentation\Http\Controllers\ListConversationMessagesController;
 use Modules\Messaging\Presentation\Http\Controllers\ListConversationsController;
+use Modules\Messaging\Presentation\Http\Controllers\MarkConversationReadController;
 use Modules\Messaging\Presentation\Http\Controllers\ReceiveGreenApiWebhookController;
 use Modules\Messaging\Presentation\Http\Controllers\SearchMessageRecipientsController;
 use Modules\Messaging\Presentation\Http\Controllers\ShowConversationController;
@@ -35,6 +36,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->name('conversations.messages.index');
     Route::post('conversations/{conversation}/messages', StoreMessageController::class)
         ->name('conversations.messages.store');
+    Route::post('conversations/{conversation}/read', MarkConversationReadController::class)
+        ->name('conversations.read');
 
     Route::prefix('messages/{message}')->group(function (): void {
         Route::put('', UpdateMessageController::class)->name('messages.update');
