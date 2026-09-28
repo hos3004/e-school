@@ -41,12 +41,17 @@ final class RecordPopupInteractionAction
     /**
      * @return PopupCampaignUserState الحالة بعد التفاعل
      */
+    /**
+     * @param list<string> $userAudiences مررة مسبقًا من المتصل (PopupAudienceResolver) لأن
+     *                                    هذا الموديول ممنوع معماريًا من الاعتماد على Identity مباشرة.
+     */
     public function execute(
         string $campaignId,
         string $userId,
         string $organizationId,
         string $type,
         ?string $loginMarker,
+        array $userAudiences,
     ): PopupCampaignUserState {
         if (!in_array($type, self::TYPES, true)) {
             throw BusinessRuleViolation::make(
@@ -62,6 +67,20 @@ final class RecordPopupInteractionAction
             ->first();
 
         if ($campaign === null) {
+            throw BusinessRuleViolation::make(
+                'notifications.popup_not_available',
+                'notifications::popups.errors.not_available',
+            );
+        }
+
+        // مستهدف عمليًا بهذه الحملة فعلًا — نفس الفحص الذي تطبقه
+        // EloquentPopupQueryService عند اختيار النافذة المؤهلة. بدونه، أي مستخدم
+        // في نفس المؤسسة يقدر يسجل مشاهدات/إغلاقات وهمية ضد أي
+        // حملة منشورة في مؤسسته، حتى لو كانت موجهة لغيره أو مُستثناة
+        // منه صراحة عبر excluded_audiences — وهذا يُبطل معنى الاستثناء كحد
+        // وصول لا مجرد تفضيل عرض. نفس رسالة الخطأ غير الموجودة عمدًا
+        // (not_available) لمنع تسريب وجود الحملة لمستخدم غير مستهدف.
+        if (!$campaign->isEligibleForAudiences($userAudiences)) {
             throw BusinessRuleViolation::make(
                 'notifications.popup_not_available',
                 'notifications::popups.errors.not_available',

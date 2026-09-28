@@ -178,7 +178,20 @@ final class SavePopupCampaignAction
 
         $attributes['is_dismissible'] = (bool) ($attributes['is_dismissible'] ?? false);
         $attributes['requires_acknowledgement'] = (bool) ($attributes['requires_acknowledgement'] ?? false);
-        if (!$attributes['is_dismissible'] && !$attributes['requires_acknowledgement']) {
+        $attributes['auto_dismiss_seconds'] = filled($attributes['auto_dismiss_seconds'] ?? null)
+            ? (int) $attributes['auto_dismiss_seconds']
+            : null;
+
+        // يطابق PopupCampaign::hasSafeExit() حرفيًا عمدًا — لا يجوز
+        // أن تقبل هذه الدالة حملة وقت الحفظ ثم يرفضها فحص النشر
+        // لاحقًا (hasSafeExit) — المنطقان يجب أن يبقيا متطابقين دائمًا.
+        // auto_dismiss_seconds > 0 مخرج آمن مقبول أيضًا: حملة غير قابلة
+        // للإغلاق يدويًا وغير مطالبة بإقرار، لكنها تختفي من
+        // نفسها بعد مدة محددة، فلا تحبس المستخدم فعليًا.
+        $hasSafeExit = $attributes['is_dismissible']
+            || $attributes['requires_acknowledgement']
+            || ($attributes['auto_dismiss_seconds'] !== null && $attributes['auto_dismiss_seconds'] > 0);
+        if (!$hasSafeExit) {
             $this->violate('notifications.popup_unsafe_exit', 'notifications::popups.errors.unsafe_exit');
         }
         if (!$attributes['requires_acknowledgement']) {

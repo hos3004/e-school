@@ -41,6 +41,11 @@ return [
         'all_authenticated_pages' => 'First eligible page',
     ],
 
+    'display_mode' => [
+        'bottom_banner' => 'Bottom banner',
+        'fullscreen' => 'Fullscreen',
+    ],
+
     'frequency' => [
         'once' => 'Once',
         'once_per_login' => 'Once per login',
@@ -93,17 +98,24 @@ return [
         'action_label_ar' => 'Button label (Arabic)',
         'audiences' => 'Target audiences',
         'audiences_help' => 'Pick at least one audience. "Everyone" covers all authenticated users.',
+        'excluded_audiences' => 'Excluded audiences',
+        'excluded_audiences_help' => 'Exclusion always wins: users in these groups never see the campaign, even if the target audience also matches them.',
         'placement' => 'Placement',
+        'display_mode' => 'Display mode',
         'page_key' => 'Target page',
         'frequency' => 'Frequency rule',
         'is_dismissible' => 'User can dismiss it',
         'requires_acknowledgement' => 'Requires explicit acknowledgement',
         'acknowledgement_label' => 'Acknowledgement button label',
+        'auto_dismiss_seconds' => 'Auto-dismiss after (seconds)',
+        'links' => 'In-text links',
         'priority' => 'Priority (higher shows first)',
         'starts_at' => 'Show from (UTC)',
         'ends_at' => 'Show until (UTC) — optional',
         'reason' => 'Change reason',
         'reason_help' => 'A clear reason recorded in the audit log.',
+        'media_kind' => 'Media kind',
+        'media_file' => 'File',
     ],
 
     'options' => [
@@ -129,6 +141,7 @@ return [
     'messages' => [
         'status_changed' => 'Campaign status updated.',
         'duplicated' => 'A new draft copy was created.',
+        'media_uploaded' => 'File uploaded successfully.',
     ],
 
     'errors' => [
@@ -148,6 +161,10 @@ return [
         'no_acknowledgement' => 'This campaign does not require acknowledgement.',
         'no_action' => 'This campaign has no action button.',
         'invalid_interaction' => 'Unknown interaction.',
+        'invalid_media_kind' => 'Unsupported media kind.',
+        'media_not_found' => 'This file does not belong to this campaign.',
+        'media_belongs_to_foreign_campaign' => 'A file cannot be attached to a campaign in another organization.',
+        'download_link_expired' => 'This download link has expired or is invalid.',
     ],
 
     'filters' => [

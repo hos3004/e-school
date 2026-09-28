@@ -20,6 +20,10 @@ use Shared\Support\BusinessRuleViolation;
  *
  * قرار الأهلية والتتبع Server-Side بالكامل؛ المستخدم لا يستطيع تسجيل
  * تفاعل نيابة عن غيره ولا لمؤسسة أخرى (لا IDOR).
+ *
+ * serialize() هنا مطابق حرفيًا لـApp\Http\Controllers\Api\PopupMessageController
+ * (نسخة الموبايل عبر Sanctum) — أي تعديل على أحدهما يجب أن يُطبَّق على
+ * الآخر فورًا، وإلا افترقت الواجهتان.
  */
 final class PopupController extends Controller
 {
@@ -85,13 +89,16 @@ final class PopupController extends Controller
             abort(404);
         }
 
+        $userId = (string) $user->getAuthIdentifier();
+
         try {
             $this->interactions->execute(
                 campaignId: $campaign,
-                userId: (string) $user->getAuthIdentifier(),
+                userId: $userId,
                 organizationId: (string) data_get($user, 'organization_id'),
                 type: $interaction,
                 loginMarker: self::loginMarker(),
+                userAudiences: $this->audienceResolver->audiencesFor(self::modelType(), $userId),
             );
         } catch (BusinessRuleViolation) {
             // تفاعل غير مسموح (حملة منتهية/غير قابلة للإغلاق/لم تُشاهد) — بلا كشف تفاصيل.
@@ -140,10 +147,14 @@ final class PopupController extends Controller
      *     is_dismissible: bool,
      *     requires_acknowledgement: bool,
      *     starts_at: string,
-     *     ends_at: string|null
+     *     ends_at: string|null,
+     *     display_mode: string,
+     *     auto_dismiss_seconds: int|null,
+     *     links: list<array{text: string, url: string}>,
+     *     media: list<array<string, mixed>>
      * }
      */
-    private static function serialize(ActivePopupData $popup): array
+    public static function serialize(ActivePopupData $popup): array
     {
         return [
             'id' => $popup->campaignId,
@@ -160,6 +171,10 @@ final class PopupController extends Controller
             'requires_acknowledgement' => $popup->requiresAcknowledgement,
             'starts_at' => $popup->startsAt->toIso8601String(),
             'ends_at' => $popup->endsAt?->toIso8601String(),
+            'display_mode' => $popup->displayMode,
+            'auto_dismiss_seconds' => $popup->autoDismissSeconds,
+            'links' => $popup->links,
+            'media' => $popup->media,
         ];
     }
 }

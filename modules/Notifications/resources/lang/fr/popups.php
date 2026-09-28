@@ -41,6 +41,11 @@ return [
         'all_authenticated_pages' => 'Première page éligible',
     ],
 
+    'display_mode' => [
+        'bottom_banner' => 'Bandeau bas',
+        'fullscreen' => 'Plein écran',
+    ],
+
     'frequency' => [
         'once' => 'Une fois',
         'once_per_login' => 'Une fois par connexion',
@@ -93,17 +98,24 @@ return [
         'action_label_ar' => 'Libellé du bouton (arabe)',
         'audiences' => 'Publics cibles',
         'audiences_help' => 'Choisissez au moins un public. « Tout le monde » couvre tous les utilisateurs authentifiés.',
+        'excluded_audiences' => 'Publics exclus',
+        'excluded_audiences_help' => 'L’exclusion l’emporte toujours : ces utilisateurs ne verront jamais la campagne, même si le public cible les inclut aussi.',
         'placement' => 'Emplacement',
+        'display_mode' => 'Mode d’affichage',
         'page_key' => 'Page cible',
         'frequency' => 'Règle de fréquence',
         'is_dismissible' => 'Fermeture possible par l’utilisateur',
         'requires_acknowledgement' => 'Accusé de réception obligatoire',
         'acknowledgement_label' => 'Libellé du bouton d’accusé',
+        'auto_dismiss_seconds' => 'Fermeture automatique après (secondes)',
+        'links' => 'Liens dans le texte',
         'priority' => 'Priorité (la plus haute s’affiche en premier)',
         'starts_at' => 'Début d’affichage (UTC)',
         'ends_at' => 'Fin d’affichage (UTC) — optionnel',
         'reason' => 'Motif de la modification',
         'reason_help' => 'Un motif clair enregistré dans le journal d’audit.',
+        'media_kind' => 'Type de média',
+        'media_file' => 'Fichier',
     ],
 
     'options' => [
@@ -129,6 +141,7 @@ return [
     'messages' => [
         'status_changed' => 'Statut de la campagne mis à jour.',
         'duplicated' => 'Une nouvelle copie brouillon a été créée.',
+        'media_uploaded' => 'Fichier téléversé avec succès.',
     ],
 
     'errors' => [
@@ -148,6 +161,10 @@ return [
         'no_acknowledgement' => 'Cette campagne ne demande pas d’accusé.',
         'no_action' => 'Cette campagne n’a pas de bouton d’action.',
         'invalid_interaction' => 'Interaction inconnue.',
+        'invalid_media_kind' => 'Type de média non pris en charge.',
+        'media_not_found' => 'Ce fichier n’appartient pas à cette campagne.',
+        'media_belongs_to_foreign_campaign' => 'Un fichier ne peut pas être associé à une campagne d’une autre organisation.',
+        'download_link_expired' => 'Ce lien de téléchargement a expiré ou est invalide.',
     ],
 
     'filters' => [

@@ -16,6 +16,15 @@ final readonly class ActivePopupData
      * @param array<string, string> $title
      * @param array<string, string> $body
      * @param list<string> $matchedAudiences
+     * @param list<array{text: string, url: string}> $links
+     * @param list<array{
+     *     id: string,
+     *     kind: string,
+     *     url: string,
+     *     mime_type: string,
+     *     has_sound: bool|null,
+     *     download_request_url: string|null
+     * }> $media
      */
     public function __construct(
         public string $campaignId,
@@ -33,5 +42,9 @@ final readonly class ActivePopupData
         public array $matchedAudiences,
         public CarbonImmutable $startsAt,
         public ?CarbonImmutable $endsAt,
+        public string $displayMode = 'bottom_banner',
+        public ?int $autoDismissSeconds = null,
+        public array $links = [],
+        public array $media = [],
     ) {}
 }

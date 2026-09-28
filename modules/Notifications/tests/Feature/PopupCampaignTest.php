@@ -181,7 +181,7 @@ final class PopupCampaignTest extends TestCase
         $once = $this->campaign($fixture['organization'], ['frequency' => 'once']);
         app(RecordPopupInteractionAction::class)->execute(
             (string) $once->getKey(), $fixture['user']->id, (string) $fixture['organization']->id,
-            RecordPopupInteractionAction::TYPE_IMPRESSION, 'marker-1',
+            RecordPopupInteractionAction::TYPE_IMPRESSION, 'marker-1', ['student'],
         );
         self::assertNull($queries->activeForUser(
             (string) $fixture['organization']->id, (string) $fixture['user']->id, ['student'],
@@ -194,7 +194,7 @@ final class PopupCampaignTest extends TestCase
         ]);
         app(RecordPopupInteractionAction::class)->execute(
             (string) $perLogin->getKey(), $fixture['user']->id, (string) $fixture['organization']->id,
-            RecordPopupInteractionAction::TYPE_IMPRESSION, 'login-A',
+            RecordPopupInteractionAction::TYPE_IMPRESSION, 'login-A', ['student'],
         );
         self::assertNull($queries->activeForUser(
             (string) $fixture['organization']->id, (string) $fixture['user']->id, ['student'],
@@ -212,7 +212,7 @@ final class PopupCampaignTest extends TestCase
         ]);
         $action->execute(
             (string) $untilAck->getKey(), $fixture['user']->id, (string) $fixture['organization']->id,
-            RecordPopupInteractionAction::TYPE_IMPRESSION, null,
+            RecordPopupInteractionAction::TYPE_IMPRESSION, null, ['student'],
         );
         self::assertNotNull($queries->activeForUser(
             (string) $fixture['organization']->id, (string) $fixture['user']->id,
@@ -220,7 +220,7 @@ final class PopupCampaignTest extends TestCase
         ));
         $action->execute(
             (string) $untilAck->getKey(), $fixture['user']->id, (string) $fixture['organization']->id,
-            RecordPopupInteractionAction::TYPE_DISMISS, null,
+            RecordPopupInteractionAction::TYPE_DISMISS, null, ['student'],
         );
         self::assertNull($queries->activeForUser(
             (string) $fixture['organization']->id, (string) $fixture['user']->id,
@@ -238,7 +238,7 @@ final class PopupCampaignTest extends TestCase
         // Acknowledge على حملة بلا إقرار يُرفض.
         $plain = $this->campaign($fixture['organization'], ['requires_acknowledgement' => false]);
         try {
-            $action->execute((string) $plain->getKey(), $userId, $orgId, RecordPopupInteractionAction::TYPE_ACKNOWLEDGE, null);
+            $action->execute((string) $plain->getKey(), $userId, $orgId, RecordPopupInteractionAction::TYPE_ACKNOWLEDGE, null, ['student']);
             self::fail('Expected rejection of acknowledge on a campaign without acknowledgement.');
         } catch (BusinessRuleViolation) {
         }
@@ -250,8 +250,8 @@ final class PopupCampaignTest extends TestCase
             'requires_acknowledgement' => true,
         ]);
         $ackId = (string) $ack->getKey();
-        $action->execute($ackId, $userId, $orgId, RecordPopupInteractionAction::TYPE_ACKNOWLEDGE, null);
-        $state = $action->execute($ackId, $userId, $orgId, RecordPopupInteractionAction::TYPE_ACKNOWLEDGE, null);
+        $action->execute($ackId, $userId, $orgId, RecordPopupInteractionAction::TYPE_ACKNOWLEDGE, null, ['student']);
+        $state = $action->execute($ackId, $userId, $orgId, RecordPopupInteractionAction::TYPE_ACKNOWLEDGE, null, ['student']);
 
         self::assertNotNull($state->acknowledged_at);
 
@@ -266,7 +266,7 @@ final class PopupCampaignTest extends TestCase
         // IDOR: حساب من مؤسسة أخرى لا يستطيع التفاعل مع الحملة.
         $intruder = User::factory()->inOrganization((string) Organization::factory()->create()->id)->create();
         $this->expectException(BusinessRuleViolation::class);
-        $action->execute($ackId, (string) $intruder->id, (string) $intruder->organization_id, RecordPopupInteractionAction::TYPE_IMPRESSION, null);
+        $action->execute($ackId, (string) $intruder->id, (string) $intruder->organization_id, RecordPopupInteractionAction::TYPE_IMPRESSION, null, ['student']);
     }
 
     // ------------------------------------------------------------------
