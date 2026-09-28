@@ -36,7 +36,7 @@ final class TeacherProfileController extends Controller
 
         return response()->json([
             'teacher' => $staffProfileId === null ? null : $this->data->teacherProfile($userId, $organizationId),
-            'account' => $this->data->accountSettings($userId, $organizationId),
+            'account' => ['id' => $userId, ...$this->data->accountSettings($userId, $organizationId)],
         ]);
     }
 
