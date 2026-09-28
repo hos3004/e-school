@@ -17,7 +17,9 @@ final class SearchMessageRecipientsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'q' => ['required', 'string', 'min:2', 'max:100'],
+            // اختياري الآن: بلا نص، يعرض المتحكم قائمة المستلمين المتاحين
+            // مباشرة (لمن يملك نطاقًا مقيَّدًا) بدل إجبار الكتابة أولًا.
+            'q' => ['sometimes', 'string', 'max:100'],
         ];
     }
 
