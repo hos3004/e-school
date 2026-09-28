@@ -38,4 +38,22 @@ return [
         'recipient_role_names' => ['platform_admin'],
         'conversation_subject' => 'تواصل مع الإشراف',
     ],
+
+    /*
+     * صورة واحدة اختيارية لكل منشور حائط — تُخزَّن على قرص خاص (local) لا يُخدَم
+     * مباشرة عبر الويب، وتُسلَّم فقط عبر مسار محروس بنفس سياسة عرض المنشور
+     * نفسها (canAccessClass)، فلا يصبح رابط صورة الحائط رابطًا عامًا يتداوله أحد.
+     */
+    'wall' => [
+        'attachments' => [
+            'disk' => env('WALL_ATTACHMENTS_DISK', 'local'),
+            'directory' => 'class-wall',
+            'max_size_kilobytes' => (int) env('WALL_ATTACHMENTS_MAX_KB', 8192),
+            'allowed_mime_types' => [
+                'image/jpeg',
+                'image/png',
+                'image/webp',
+            ],
+        ],
+    ],
 ];
