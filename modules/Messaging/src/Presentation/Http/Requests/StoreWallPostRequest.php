@@ -32,8 +32,10 @@ final class StoreWallPostRequest extends FormRequest
                 'string',
                 'max:'.(int) config('messaging.limits.wall_post_body_max'),
             ],
-            'attachments' => ['sometimes', 'array'],
-            'attachments.*' => ['array'],
+            // ممنوع صراحة: attachments حرّ الشكل بلا مُنتِج شرعي عدا الرفع
+            // الفعلي عبر image أدناه. السماح بقيمة عميل هنا كان يفتح منفذ
+            // حقن disk/path تعسفيَّين يخدمهما ShowWallAttachmentController.
+            'attachments' => ['prohibited'],
             'image' => [
                 'sometimes',
                 'file',

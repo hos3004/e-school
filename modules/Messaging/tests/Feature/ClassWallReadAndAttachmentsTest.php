@@ -138,6 +138,61 @@ final class ClassWallReadAndAttachmentsTest extends TestCase
         $this->actingAs($stranger)->get($url)->assertForbidden();
     }
 
+    /**
+     * attachments كان عمودًا حرّ الشكل يقبل أي قيمة من العميل، وServeAttachment
+     * الجديد كان سيثق بـdisk/path كما وردا — أي حقن {"disk":"r2","path":"..."}
+     * كان يجعل هذا المسار يخدم ملفًا من قرص تعسفي. هذا الاختبار يثبت أن الحقل
+     * مرفوض كليًا الآن قبل أن يصل لأي منطق تخزين.
+     */
+    public function test_client_supplied_attachments_field_is_rejected(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $teacher = User::factory()->inOrganization($organizationId)->create();
+        $staffProfileId = Fixtures::staffProfileForUser($teacher->id);
+        $groupId = $this->insertGroupWithTeacher($organizationId, $staffProfileId);
+        $this->grantPermission($teacher, 'class_wall.post');
+
+        $this->actingAs($teacher)->postJson('/api/wall/posts', [
+            'group_id' => $groupId,
+            'body' => 'محاولة حقن مرفق',
+            'attachments' => [['disk' => 'r2', 'path' => 'recordings/some-other-file.mp4']],
+        ])->assertUnprocessable();
+    }
+
+    /**
+     * حتى لو استقرّت قيمة disk/path مفبركة داخل عمود attachments بأي طريق آخر
+     * مستقبلًا (سجلّ قديم، مسار كتابة لم نتوقعه)، ShowWallAttachmentController
+     * لازم يتجاهل disk المخزّن تمامًا ويرفض أي path لا يبدأ بمجلد حائط هذه
+     * المجموعة بالذات — لا يكفي فقط منع الحقن وقت الإنشاء.
+     */
+    public function test_attachment_endpoint_ignores_a_foreign_disk_and_path_even_if_stored(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $teacher = User::factory()->inOrganization($organizationId)->create();
+        $staffProfileId = Fixtures::staffProfileForUser($teacher->id);
+        $groupId = $this->insertGroupWithTeacher($organizationId, $staffProfileId);
+        $this->grantPermission($teacher, 'class_wall.post');
+
+        $post = $this->actingAs($teacher)->postJson('/api/wall/posts', [
+            'group_id' => $groupId,
+            'body' => 'منشور عادي',
+        ])->assertCreated();
+        $postId = (string) $post->json('data.id');
+
+        DB::table('class_wall_posts')->where('id', $postId)->update([
+            'attachments' => json_encode([[
+                'type' => 'image',
+                'disk' => 'r2',
+                'path' => 'recordings/private-session.mp4',
+                'id' => (string) Str::ulid(),
+            ]]),
+        ]);
+
+        $this->actingAs($teacher)
+            ->get("/api/wall/posts/{$postId}/attachments/0")
+            ->assertNotFound();
+    }
+
     public function test_a_teacher_cannot_post_to_a_group_they_do_not_teach(): void
     {
         $organizationId = Fixtures::organizationId();

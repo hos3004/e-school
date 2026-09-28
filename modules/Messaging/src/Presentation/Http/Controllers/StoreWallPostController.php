@@ -44,7 +44,11 @@ final class StoreWallPostController extends Controller
             );
         }
 
-        $attachments = array_values($request->array('attachments'));
+        // attachments لا يُقرأ من مدخلات الطلب أبدًا: عمود حر الشكل تاريخيًا
+        // بلا مُنتِج شرعي غير هذا المسار نفسه. قبول قيمة العميل هنا كان يفتح
+        // منفذ حقن disk/path تعسفيَّين يخدمهما ShowWallAttachmentController
+        // لاحقًا بلا تحقق — المرفق الوحيد المقبول هو ما يرفعه هذا الطلب فعليًا.
+        $attachments = [];
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
