@@ -150,11 +150,13 @@ it('shows detail for a student reachable only through an individual schedule', f
     $courseId = Fixtures::courseId();
 
     insertIndividualSchedule($organizationId, $staffProfileId, $studentProfileId, $courseId);
+    $studentUserId = DB::table('student_profiles')->where('id', $studentProfileId)->value('user_id');
 
     $response = $this->actingAs($teacher)->getJson("/api/teacher/students/{$studentProfileId}");
 
     $response->assertOk()
         ->assertJsonPath('student.id', $studentProfileId)
+        ->assertJsonPath('student.userId', $studentUserId)
         ->assertJsonPath('student.groups', [])
         ->assertJsonCount(1, 'student.courses');
 });
