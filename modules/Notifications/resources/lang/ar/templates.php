@@ -154,6 +154,11 @@ return [
         'body' => 'تم رصد درجتك: {{score}} من {{max_score}}. اطّلع على الملاحظات من خلال حسابك.',
         'parameters' => ['score', 'max_score'],
     ],
+    'message.sent' => [
+        'subject' => 'رسالة جديدة من {{sender_name}}',
+        'body' => '{{sender_name}}: {{message_preview}}',
+        'parameters' => ['sender_name', 'message_preview'],
+    ],
     'schedule.change.requested' => [
         'subject' => 'طلب تغيير الموعد الدائم للحصص',
         'body' => 'طلب المعلم {{teacher_name}} تغيير موعد حصص {{course_name}} من {{current_schedule}} إلى {{proposed_schedule}}. لا يسري الموعد الجديد قبل قبول كل الطلاب، وتنتهي مهلة الرد في {{expires_at}}.',

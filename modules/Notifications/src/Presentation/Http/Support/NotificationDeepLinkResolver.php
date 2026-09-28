@@ -45,6 +45,15 @@ final readonly class NotificationDeepLinkResolver
                 : null;
         }
 
+        if ($outbox->event_name === 'message.sent') {
+            $conversationId = data_get($outbox->payload, 'conversation_id');
+
+            if (is_string($conversationId) && Str::isUlid($conversationId)
+                && $request->user()?->can('message.send') === true) {
+                return "/messages/{$conversationId}";
+            }
+        }
+
         return null;
     }
 }

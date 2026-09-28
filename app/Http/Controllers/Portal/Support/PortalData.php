@@ -854,6 +854,7 @@ final readonly class PortalData
                 'student_profiles.gender',
                 'student_profiles.country',
                 'student_profiles.city',
+                'users.id as user_id',
                 'users.name',
                 'users.status',
             ]);
@@ -904,6 +905,7 @@ final readonly class PortalData
 
         return [
             'id' => (string) $row->id,
+            'userId' => (string) $row->user_id,
             'name' => (string) $row->name,
             'code' => (string) $row->student_code,
             'status' => (string) $row->status,

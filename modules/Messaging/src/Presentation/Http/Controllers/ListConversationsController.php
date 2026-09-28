@@ -10,6 +10,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
+use Modules\Messaging\Application\Services\ConversationSummaryEnricher;
 use Modules\Messaging\Domain\Contracts\ClassAudienceQueries;
 use Modules\Messaging\Domain\Models\Conversation;
 use Modules\Messaging\Presentation\Http\Resources\ConversationResource;
@@ -20,6 +21,7 @@ final class ListConversationsController extends Controller
     public function __invoke(
         Request $request,
         ClassAudienceQueries $audience,
+        ConversationSummaryEnricher $summaries,
     ): AnonymousResourceCollection {
         Gate::authorize('viewAny', Conversation::class);
 
@@ -40,6 +42,7 @@ final class ListConversationsController extends Controller
             );
 
         $query = $query
+            ->orderByDesc('last_message_at')
             ->orderByDesc('created_at')
             ->orderByDesc('id');
 
@@ -47,7 +50,10 @@ final class ListConversationsController extends Controller
         // record access enforced by the policy. Keep the common path entirely
         // database-paginated instead of materializing every allowed ID.
         if (!$audience->isGuardian($organizationId, $userId)) {
-            return ConversationResource::collection($query->paginate());
+            $conversations = $query->paginate();
+            $summaries->attach($conversations->getCollection(), $organizationId, $userId);
+
+            return ConversationResource::collection($conversations);
         }
 
         // Legacy data may contain a guardian participant row on a private
@@ -71,6 +77,8 @@ final class ListConversationsController extends Controller
 
             $total++;
         }
+
+        $summaries->attach($items, $organizationId, $userId);
 
         $conversations = new LengthAwarePaginator(
             $items,

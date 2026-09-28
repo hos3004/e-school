@@ -35,4 +35,5 @@ return [
     'is_handled' => 'Handled',
     'flag' => 'Flag for review',
     'flagged_notice' => 'Message flagged for review.',
+    'unknown_sender' => 'Unknown user',
 ];
