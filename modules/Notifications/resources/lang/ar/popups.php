@@ -41,6 +41,11 @@ return [
         'all_authenticated_pages' => 'أول صفحة مؤهلة',
     ],
 
+    'display_mode' => [
+        'bottom_banner' => 'شريط سفلي',
+        'fullscreen' => 'ملء الشاشة',
+    ],
+
     'frequency' => [
         'once' => 'مرة واحدة',
         'once_per_login' => 'مرة بعد كل دخول',
@@ -93,17 +98,24 @@ return [
         'action_label_ar' => 'نص الزر (عربي)',
         'audiences' => 'الجمهور المستهدف',
         'audiences_help' => 'اختر جمهورًا واحدًا على الأقل. «الجميع» يشمل كل المستخدمين المصادقين.',
+        'excluded_audiences' => 'استثناء جمهور',
+        'excluded_audiences_help' => 'الاستثناء يفوز دائمًا: أي مستخدم ضمن هذه الفئات لن يرى الحملة حتى لو طابقها الجمهور المستهدف.',
         'placement' => 'موضع الظهور',
+        'display_mode' => 'نمط العرض',
         'page_key' => 'الصفحة المستهدفة',
         'frequency' => 'قاعدة التكرار',
         'is_dismissible' => 'يمكن للمستخدم إغلاقها',
         'requires_acknowledgement' => 'تتطلب إقرارًا صريحًا',
         'acknowledgement_label' => 'نص زر الإقرار',
+        'auto_dismiss_seconds' => 'إغلاق تلقائي بعد (ثوانٍ)',
+        'links' => 'روابط داخل النص',
         'priority' => 'الأولوية (الأعلى يظهر أولًا)',
         'starts_at' => 'بداية العرض (UTC)',
         'ends_at' => 'نهاية العرض (UTC) — اختيارية',
         'reason' => 'سبب التعديل',
         'reason_help' => 'سبب واضح يسجَّل في سجل التدقيق.',
+        'media_kind' => 'نوع الملف',
+        'media_file' => 'الملف',
     ],
 
     'options' => [
@@ -129,6 +141,7 @@ return [
     'messages' => [
         'status_changed' => 'تم تحديث حالة الحملة.',
         'duplicated' => 'أُنشئت نسخة مسودة جديدة من الحملة.',
+        'media_uploaded' => 'تم رفع الملف بنجاح.',
     ],
 
     'errors' => [
@@ -148,6 +161,10 @@ return [
         'no_acknowledgement' => 'هذه الحملة لا تتطلب إقرارًا.',
         'no_action' => 'هذه الحملة بلا زر إجراء.',
         'invalid_interaction' => 'تفاعل غير معروف.',
+        'invalid_media_kind' => 'نوع الملف غير معتمد.',
+        'media_not_found' => 'الملف غير موجود ضمن هذه الحملة.',
+        'media_belongs_to_foreign_campaign' => 'لا يمكن ربط ملف بحملة تابعة لمؤسسة أخرى.',
+        'download_link_expired' => 'رابط التنزيل منتهي أو غير صالح.',
     ],
 
     'filters' => [

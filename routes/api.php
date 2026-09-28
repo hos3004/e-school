@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\GuardianController;
 use App\Http\Controllers\Api\JoinSessionController;
+use App\Http\Controllers\Api\PopupMessageController;
 use App\Http\Controllers\Api\StudentPostponementController;
 use App\Http\Controllers\Api\StudentProfileController;
 use App\Http\Controllers\Api\StudentSessionController;
@@ -238,4 +239,27 @@ Route::middleware('auth:sanctum')->prefix('guardian')->group(function (): void {
         ->whereUlid('session')
         ->middleware('can:schedule.view')
         ->name('api.guardian.children.sessions.show');
+});
+
+/*
+ * نقاط النافذة المنبثقة للموبايل — Sanctum بدل الجلسة، بلا منطق عمل جديد:
+ * PopupMessageController يستدعي نفس PopupQueries/PopupAudienceResolver/
+ * RecordPopupInteractionAction التي يستخدمها Portal\PopupController (مسار
+ * الجلسة)، ونفس دالة التسلسل الثابتة لضمان تطابق الواجهتين.
+ */
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::get('popups/active', [PopupMessageController::class, 'active'])
+        ->name('api.popups.active');
+
+    Route::post('popups/{campaign}/{interaction}', [PopupMessageController::class, 'interact'])
+        ->whereUlid('campaign')
+        ->whereIn('interaction', ['impression', 'dismiss', 'acknowledge', 'click'])
+        ->name('api.popups.interact');
+
+    // يعيش هنا لا داخل modules/Notifications/routes/api.php لأنه يحتاج
+    // حلّ modelType عبر Modules\Identity\Domain\Contracts\UserQueryService،
+    // والموديول ممنوع معماريًا من الاعتماد على Identity.
+    Route::post('popups/{campaign}/media/{media}/download-request', [PopupMessageController::class, 'requestMediaDownloadUrl'])
+        ->whereUlid(['campaign', 'media'])
+        ->name('api.popups.media.download-request');
 });

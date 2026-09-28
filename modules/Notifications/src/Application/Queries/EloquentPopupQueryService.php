@@ -37,6 +37,10 @@ final readonly class EloquentPopupQueryService implements PopupQueries
     ): ?ActivePopupData {
         /** @var Collection<int, PopupCampaign> $candidates */
         $candidates = PopupCampaign::query()
+            // الفائز الوحيد هو من تُبنى منه الـDTO، لكن eager-load هنا
+            // (بدل تحميل كسول لاحقًا في toDto) يتجنب N+1 لو تغيّر ترتيب
+            // التقييم مستقبلًا، ويحترم منع lazy loading في بيئة الاختبار.
+            ->with('media')
             ->forOrganization($organizationId)
             ->where('status', PopupCampaignStatus::Published->value)
             ->where('placement', $placement)
@@ -59,7 +63,13 @@ final readonly class EloquentPopupQueryService implements PopupQueries
             ->keyBy(static fn (PopupCampaignUserState $state): string => (string) $state->campaign_id);
 
         foreach ($candidates as $campaign) {
-            if (!self::matchesAudience($campaign->audiences ?? [], $userAudiences)) {
+            // الاستثناء يفوز دائمًا: تقاطع مع excluded_audiences يسقط
+            // الحملة فورًا بصرف النظر عن مطابقة audiences الموجبة.
+            if (self::matchesAudience($campaign->excluded_audiences ?? [], $userAudiences, matchAllAuthenticated: false)) {
+                continue;
+            }
+
+            if (!self::matchesAudience($campaign->audiences ?? [], $userAudiences, matchAllAuthenticated: true)) {
                 continue;
             }
 
@@ -86,14 +96,16 @@ final readonly class EloquentPopupQueryService implements PopupQueries
     }
 
     /**
-     * مطابقة الجمهور: «الجميع» يطابق أي مستخدم مصادق، وإلا تقاطع القيم.
+     * مطابقة الجمهور: «الجميع» يطابق أي مستخدم مصادق فقط للمطابقة الموجبة
+     * (audiences)، أما الاستثناء (excluded_audiences) فلا معنى فيه لقيمة
+     * «الجميع» — الاستثناء يعمل فقط بتقاطع قيم فعلية.
      *
      * @param list<string> $campaignAudiences
      * @param list<string> $userAudiences
      */
-    private static function matchesAudience(array $campaignAudiences, array $userAudiences): bool
+    private static function matchesAudience(array $campaignAudiences, array $userAudiences, bool $matchAllAuthenticated): bool
     {
-        if (in_array(PopupAudience::AllAuthenticated->value, $campaignAudiences, true)) {
+        if ($matchAllAuthenticated && in_array(PopupAudience::AllAuthenticated->value, $campaignAudiences, true)) {
             return true;
         }
 
@@ -136,6 +148,10 @@ final readonly class EloquentPopupQueryService implements PopupQueries
             matchedAudiences: array_values(array_intersect($campaign->audiences ?? [], $matchedAudiences)),
             startsAt: $campaign->starts_at,
             endsAt: $campaign->ends_at,
+            displayMode: $campaign->display_mode->value,
+            autoDismissSeconds: $campaign->auto_dismiss_seconds,
+            links: self::resolveLinks($campaign),
+            media: self::resolveMedia($campaign),
         );
     }
 
@@ -175,5 +191,99 @@ final readonly class EloquentPopupQueryService implements PopupQueries
         }
 
         return null;
+    }
+
+    /**
+     * روابط النص داخل جسم الرسالة: خارجية HTTPS أو إشارة داخلية
+     * popup-media:{id} تُحل إلى رابط تنزيل حقيقي فقط إن كان الملف مملوكًا
+     * فعلًا لنفس الحملة ومن نوع file — لا ثقة بمعرّف ميديا عشوائي مخزَّن.
+     *
+     * @return list<array{text: string, url: string}>
+     */
+    private static function resolveLinks(PopupCampaign $campaign): array
+    {
+        /** @var list<array<string, mixed>> $rawLinks */
+        $rawLinks = $campaign->links ?? [];
+
+        if ($rawLinks === []) {
+            return [];
+        }
+
+        $fileMediaIds = $campaign->media
+            ->where('kind', 'file')
+            ->pluck('id')
+            ->map(static fn ($id): string => (string) $id)
+            ->all();
+
+        $resolved = [];
+
+        foreach ($rawLinks as $link) {
+            $text = trim((string) ($link['text'] ?? ''));
+            $url = trim((string) ($link['url'] ?? ''));
+
+            if ($text === '' || $url === '') {
+                continue;
+            }
+
+            if (str_starts_with($url, 'popup-media:')) {
+                $mediaId = substr($url, strlen('popup-media:'));
+
+                if (!in_array($mediaId, $fileMediaIds, true)) {
+                    // إشارة لملف لا ينتمي لهذه الحملة أو ليس قابلًا للتنزيل — تُسقط بصمت.
+                    continue;
+                }
+
+                $resolved[] = [
+                    'text' => $text,
+                    'url' => route('popups.media.show', [
+                        'campaign' => (string) $campaign->getKey(),
+                        'media' => $mediaId,
+                    ]),
+                ];
+
+                continue;
+            }
+
+            if (str_starts_with(strtolower($url), 'https://')) {
+                $resolved[] = ['text' => $text, 'url' => $url];
+            }
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * @return list<array{
+     *     id: string,
+     *     kind: string,
+     *     url: string,
+     *     mime_type: string,
+     *     has_sound: bool|null,
+     *     download_request_url: string|null
+     * }>
+     */
+    private static function resolveMedia(PopupCampaign $campaign): array
+    {
+        return $campaign->media
+            ->map(static function ($media) use ($campaign): array {
+                return [
+                    'id' => (string) $media->id,
+                    'kind' => $media->kind,
+                    'url' => route('popups.media.show', [
+                        'campaign' => (string) $campaign->getKey(),
+                        'media' => (string) $media->id,
+                    ]),
+                    'mime_type' => $media->mime_type,
+                    'has_sound' => $media->has_sound,
+                    'download_request_url' => $media->kind === 'file'
+                        ? route('api.popups.media.download-request', [
+                            'campaign' => (string) $campaign->getKey(),
+                            'media' => (string) $media->id,
+                        ])
+                        : null,
+                ];
+            })
+            ->values()
+            ->all();
     }
 }
