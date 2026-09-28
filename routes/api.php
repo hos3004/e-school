@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\JoinSessionController;
 use App\Http\Controllers\Api\TeacherAvailabilityController;
+use App\Http\Controllers\Api\TeacherEarningsController;
 use App\Http\Controllers\Api\TeacherGroupController;
 use App\Http\Controllers\Api\TeacherPostponementController;
 use App\Http\Controllers\Api\TeacherProfileController;
@@ -145,3 +146,15 @@ Route::middleware('auth:sanctum')->prefix('teacher/groups')->group(function (): 
         ->whereUlid('group')
         ->name('api.teacher.groups.show');
 });
+
+/*
+ * كشف أجر المعلم للموبايل — مرآة routes/web.php (portal.teacher.earnings)
+ * بنفس الحارسين بالضبط: المسار لا يُسجَّل أصلًا حين تكون الميزة مطفأة،
+ * وcan:payroll.view يُفعِّل TeacherFinancialVisibilityGate العالمي
+ * (Gate::before) الذي يخفي الكشف عن معلم علّمت عليه الإدارة financials_visible=false.
+ */
+if ((bool) config('features.payroll')) {
+    Route::middleware(['auth:sanctum', 'can:payroll.view'])
+        ->get('teacher/earnings', [TeacherEarningsController::class, 'index'])
+        ->name('api.teacher.earnings.index');
+}
