@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\GuardianController;
 use App\Http\Controllers\Api\JoinSessionController;
+use App\Http\Controllers\Api\StudentPostponementController;
 use App\Http\Controllers\Api\StudentProfileController;
 use App\Http\Controllers\Api\StudentSessionController;
 use App\Http\Controllers\Api\TeacherAvailabilityController;
@@ -184,7 +185,24 @@ Route::middleware('auth:sanctum')->prefix('student/sessions')->group(function ()
         ->whereUlid('session')
         ->middleware('can:session.view')
         ->name('api.student.sessions.show');
+
+    Route::post('/{session}/postponement-requests', [StudentSessionController::class, 'requestPostponement'])
+        ->whereUlid('session')
+        ->name('api.student.sessions.postponement-requests.store');
+
+    Route::post('/{session}/apologies', [StudentSessionController::class, 'submitApology'])
+        ->whereUlid('session')
+        ->name('api.student.sessions.apologies.store');
 });
+
+/*
+ * قبول الطالب لموعد بديل اقترحه المعلم لتأجيل — مرآة routes/web.php
+ * (portal.student.postponements.accept-alternative).
+ */
+Route::middleware('auth:sanctum')
+    ->post('student/postponements/{postponement}/accept-alternative', [StudentPostponementController::class, 'acceptAlternative'])
+    ->whereUlid('postponement')
+    ->name('api.student.postponements.accept-alternative');
 
 /*
  * ملف الطالب الشخصي للموبايل — مرآة routes/web.php (portal.student.profile*).
