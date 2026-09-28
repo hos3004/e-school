@@ -37,6 +37,9 @@ final readonly class CreateConversationAction
         bool $isModerated = true,
         ?string $relatedType = null,
         ?string $relatedId = null,
+        // إشراف: القناة الثابتة تتجاوز قيد "طلابي فقط" عمدًا — هي وحدها من
+        // يمرّر false، فلا يفلت أي مسار آخر من الفحص افتراضيًا.
+        bool $enforceCreatorReach = true,
     ): Conversation {
         $participants = array_values(array_unique($participantUserIds));
 
@@ -66,6 +69,22 @@ final readonly class CreateConversationAction
                 'messaging.invalid_participant_scope',
                 'messaging::errors.invalid_participant_scope',
             );
+        }
+
+        if ($enforceCreatorReach) {
+            $allowedRecipientIds = $this->audience->reachableRecipientUserIds($organizationId, $creatorUserId);
+
+            if ($allowedRecipientIds !== null) {
+                $others = array_values(array_diff($participants, [$creatorUserId]));
+                $unreachable = array_diff($others, $allowedRecipientIds);
+
+                if ($unreachable !== []) {
+                    throw BusinessRuleViolation::make(
+                        'messaging.recipient_not_reachable',
+                        'messaging::errors.recipient_not_reachable',
+                    );
+                }
+            }
         }
 
         return $this->transaction->run(function () use (

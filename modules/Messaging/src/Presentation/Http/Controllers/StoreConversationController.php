@@ -7,6 +7,7 @@ namespace Modules\Messaging\Presentation\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Modules\Messaging\Application\Actions\CreateConversationAction;
+use Modules\Messaging\Application\Services\ConversationSummaryEnricher;
 use Modules\Messaging\Domain\Enums\ConversationType;
 use Modules\Messaging\Presentation\Http\Requests\StoreConversationRequest;
 use Modules\Messaging\Presentation\Http\Resources\ConversationResource;
@@ -21,14 +22,15 @@ final class StoreConversationController extends Controller
         private readonly CreateConversationAction $action,
     ) {}
 
-    public function __invoke(StoreConversationRequest $request): JsonResponse
+    public function __invoke(StoreConversationRequest $request, ConversationSummaryEnricher $summaries): JsonResponse
     {
         /** @var string $organizationId */
         $organizationId = $request->user()->organization_id;
+        $actorId = (string) $request->user()->getAuthIdentifier();
 
         $conversation = $this->action->execute(
             organizationId: $organizationId,
-            creatorUserId: (string) $request->user()->getAuthIdentifier(),
+            creatorUserId: $actorId,
             type: ConversationType::from($request->string('type')->toString()),
             subject: $request->string('subject')->toString(),
             participantUserIds: $request->array('participant_user_ids'),
@@ -40,6 +42,8 @@ final class StoreConversationController extends Controller
                 ? $request->string('related_id')->toString()
                 : null,
         );
+
+        $summaries->attach([$conversation], $organizationId, $actorId);
 
         return (new ConversationResource($conversation))
             ->response()

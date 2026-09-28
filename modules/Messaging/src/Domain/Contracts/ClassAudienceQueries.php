@@ -23,4 +23,16 @@ interface ClassAudienceQueries
      * Frozen/withdrawn students and ended teacher assignments return false.
      */
     public function canAccessClass(string $organizationId, string $groupId, string $userId): bool;
+
+    /**
+     * Who the actor may search for / message, scoped by their actual
+     * relationships rather than a bare organization-wide search.
+     *
+     * null means "no restriction" (e.g. a moderator/admin actor). A teacher
+     * gets the list of their own students' user ids (group + individual
+     * schedule, unioned) — never null, even when empty.
+     *
+     * @return list<string>|null
+     */
+    public function reachableRecipientUserIds(string $organizationId, string $actorUserId): ?array;
 }

@@ -22,6 +22,8 @@ return [
     'whatsapp_duplicate_message' => 'رسالة الواتساب هذه مسجّلة مسبقًا.',
     'whatsapp_already_handled' => 'تم التعامل مع هذه الرسالة مسبقًا.',
     'invalid_recipient' => 'المستلم غير متاح أو لا ينتمي إلى مؤسستك.',
+    'supervision_unavailable' => 'قناة التواصل مع الإشراف غير متاحة حاليًا.',
+    'recipient_not_reachable' => 'يمكنك مراسلة طلابك فقط.',
 
     // حملات واتساب
     'campaign_delay_range_invalid' => 'أقل مهلة يجب ألا تتجاوز أكثر مهلة.',
