@@ -236,6 +236,62 @@ final class SavePopupCampaignActionValidationTest extends TestCase
         self::assertSame([['text' => 'هنا', 'url' => 'https://example.test/schedule']], $campaign->links);
     }
 
+    public function test_a_link_whose_text_is_missing_from_one_of_several_populated_locales_is_rejected(): void
+    {
+        // انحدار: قبل الإصلاح كان الفحص يبحث عن النص في تجميع كل اللغات معًا
+        // (OR)، فينجح طالما وُجد النص في أي لغة واحدة. هنا "here" موجودة في
+        // body.en لكن غائبة عن body.ar، فمستخدم الواجهة العربية لن يرى الرابط
+        // قابلًا للنقر أبدًا رغم قبول الحفظ خطأً. يجب أن يُرفض الحفظ الآن.
+        [$organization, $actor] = $this->context();
+
+        try {
+            $this->action()->execute(
+                campaign: null,
+                organizationId: (string) $organization->id,
+                attributes: $this->baseAttributes([
+                    'body' => [
+                        'ar' => 'راجع الجدول الجديد.',
+                        'en' => 'Check the schedule here.',
+                    ],
+                    'links' => [['text' => 'here', 'url' => 'https://example.test/schedule']],
+                ]),
+                scheduleChanges: null,
+                actorId: (string) $actor->id,
+                reason: 'رابط بنص موجود بلغة وغائب عن لغة أخرى',
+            );
+            self::fail('Expected a rejection for link text missing from one populated locale.');
+        } catch (BusinessRuleViolation $violation) {
+            self::assertSame('notifications.popup_link_text_not_in_body', $violation->rule);
+            self::assertSame('ar', $violation->context['locale'] ?? null);
+        }
+
+        self::assertSame(0, PopupCampaign::query()->count());
+    }
+
+    public function test_a_link_whose_text_occurs_in_every_populated_locale_is_accepted(): void
+    {
+        // النص المستخدم كرابط ("SCH-2026") موجود حرفيًا داخل كل من body.ar
+        // وbody.en المُدخلتَين معًا (وليس ترجمة له)، فيجب أن يُقبل الحفظ.
+        [$organization, $actor] = $this->context();
+
+        $campaign = $this->action()->execute(
+            campaign: null,
+            organizationId: (string) $organization->id,
+            attributes: $this->baseAttributes([
+                'body' => [
+                    'ar' => 'راجع الجدول SCH-2026 من هنا.',
+                    'en' => 'Check the schedule SCH-2026 from here.',
+                ],
+                'links' => [['text' => 'SCH-2026', 'url' => 'https://example.test/schedule']],
+            ]),
+            scheduleChanges: null,
+            actorId: (string) $actor->id,
+            reason: 'رابط بنص موجود حرفيًا في كل اللغات المدخلة',
+        );
+
+        self::assertSame([['text' => 'SCH-2026', 'url' => 'https://example.test/schedule']], $campaign->links);
+    }
+
     public function test_a_link_url_that_is_neither_https_nor_a_popup_media_reference_is_rejected(): void
     {
         [$organization, $actor] = $this->context();

@@ -168,7 +168,7 @@ return [
         'contradictory_audience' => 'Le même public ne peut pas être à la fois ciblé et exclu.',
         'invalid_auto_dismiss' => 'La durée de fermeture automatique est hors des limites autorisées.',
         'invalid_link_url' => 'Le lien est invalide. Utilisez un lien externe HTTPS ou un fichier déposé sur cette campagne.',
-        'link_text_not_in_body' => 'Le texte du lien doit apparaître réellement dans le corps du message.',
+        'link_text_not_in_body' => 'Le texte du lien doit apparaître réellement dans le corps du message pour chaque langue renseignée (manquant dans : :locale).',
         'invalid_media_link' => 'Le fichier référencé n’appartient pas aux médias de cette campagne ou n’est pas un fichier téléchargeable.',
     ],
 

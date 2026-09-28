@@ -168,7 +168,7 @@ return [
         'contradictory_audience' => 'The same audience cannot be both targeted and excluded.',
         'invalid_auto_dismiss' => 'The auto-dismiss duration is outside the allowed range.',
         'invalid_link_url' => 'The link target is invalid. Use an external HTTPS link or a file uploaded to this campaign.',
-        'link_text_not_in_body' => 'The link text must actually appear in the message body.',
+        'link_text_not_in_body' => 'The link text must actually appear in the message body for every locale entered (missing in: :locale).',
         'invalid_media_link' => 'The referenced file does not belong to this campaign\'s media or is not a downloadable file.',
     ],
 

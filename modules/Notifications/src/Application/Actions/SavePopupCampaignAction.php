@@ -302,7 +302,6 @@ final class SavePopupCampaignAction
 
         $textMax = (int) config('popups.content.link_text_max', 60);
         $urlMax = (int) config('popups.content.link_url_max', 500);
-        $bodyHaystack = implode("\n", array_values($body));
         $campaignId = $campaign->getKey();
 
         $normalized = [];
@@ -323,11 +322,21 @@ final class SavePopupCampaignAction
                 $this->violate('notifications.popup_invalid_link_url', 'notifications::popups.errors.invalid_link_url');
             }
 
-            if (!str_contains($bodyHaystack, $text)) {
-                $this->violate(
-                    'notifications.popup_link_text_not_in_body',
-                    'notifications::popups.errors.link_text_not_in_body',
-                );
+            // النص يجب أن يظهر في كل لغة مخزَّنة فعليًا للنص (body مُفلتَر مسبقًا من
+            // القيم الفارغة)، وليس في أي لغة واحدة فقط — وإلا فمستخدم لغة لا
+            // يحتوي نصها على الكلمة لن يرى الرابط قابلًا للنقر إطلاقًا.
+            foreach ($body as $locale => $value) {
+                if ($value === '' || $value === null) {
+                    continue;
+                }
+
+                if (!str_contains($value, $text)) {
+                    $this->violate(
+                        'notifications.popup_link_text_not_in_body',
+                        'notifications::popups.errors.link_text_not_in_body',
+                        ['locale' => $locale],
+                    );
+                }
             }
 
             if (preg_match('#^https://[^\s]+$#i', $url) === 1) {
@@ -386,8 +395,11 @@ final class SavePopupCampaignAction
         })->all();
     }
 
-    private function violate(string $rule, string $message): never
+    /**
+     * @param array<string, mixed> $replace
+     */
+    private function violate(string $rule, string $message, array $replace = []): never
     {
-        throw BusinessRuleViolation::make($rule, $message);
+        throw BusinessRuleViolation::make($rule, $message, $replace);
     }
 }
