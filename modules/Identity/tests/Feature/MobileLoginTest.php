@@ -51,6 +51,38 @@ it('logs in with a phone number identifier', function (): void {
     ])->assertCreated()->assertJsonPath('user.id', $user->id);
 });
 
+it('rejects a phone number identifier shared by more than one account', function (): void {
+    /** @var IdentityPestContext $this */
+    User::factory()->inOrganization($this->organizationId)->create([
+        'phone' => '+201000000002',
+    ]);
+    User::factory()->inOrganization($this->organizationId)->create([
+        'phone' => '+201000000002',
+    ]);
+
+    $this->postJson('/api/identity/login', [
+        'identifier' => '+201000000002',
+        'password' => 'password',
+    ])->assertUnprocessable()->assertJsonValidationErrors(['identifier']);
+});
+
+it('still logs in by username or email when the account also shares its phone with another account', function (): void {
+    /** @var IdentityPestContext $this */
+    /** @var User $user */
+    $user = User::factory()->inOrganization($this->organizationId)->create([
+        'username' => 'shared-phone-user',
+        'phone' => '+201000000003',
+    ]);
+    User::factory()->inOrganization($this->organizationId)->create([
+        'phone' => '+201000000003',
+    ]);
+
+    $this->postJson('/api/identity/login', [
+        'identifier' => 'shared-phone-user',
+        'password' => 'password',
+    ])->assertCreated()->assertJsonPath('user.id', $user->id);
+});
+
 it('registers the device and push token supplied at login', function (): void {
     /** @var IdentityPestContext $this */
     /** @var User $user */
