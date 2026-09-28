@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Messaging;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Messaging\Domain\Contracts\ClassAudienceQueries;
 
@@ -61,6 +62,15 @@ final readonly class DatabaseClassAudienceQueries implements ClassAudienceQuerie
         return $hasStudent && $hasTeacher;
     }
 
+    /**
+     * أول تطبيق فعلي لتقييد من يستطيع الطالب/ولي الأمر مراسلته — قبل هذا
+     * كان أي حامل message.send غير المعلم بلا تقييد إطلاقًا (انظر التعليق
+     * القديم أسفل فرع المعلم). المعلم مقيّد بطلابه فقط (بدون تغيير)، الطالب
+     * مقيّد بمعلميه وزملائه في نفس المجموعة وأولياء أمور هؤلاء الزملاء، وولي
+     * الأمر مقيّد بمعلمي أبنائه فقط (لا يصل لأولياء أمور آخرين — خصوصية بلا
+     * طلب صريح لكسرها). أي دور آخر (مثل حامل message.moderate) يبقى بلا
+     * تقييد كما كان دائمًا؛ القرار هنا للمستدعي.
+     */
     public function reachableRecipientUserIds(string $organizationId, string $actorUserId): ?array
     {
         $staffProfileId = DB::table('staff_profiles')
@@ -69,13 +79,38 @@ final readonly class DatabaseClassAudienceQueries implements ClassAudienceQuerie
             ->whereNull('deleted_at')
             ->value('id');
 
-        if ($staffProfileId === null) {
-            // Not a teacher — this method does not (yet) restrict students,
-            // guardians, or staff roles that already carry message.moderate;
-            // the caller decides who needs restricting at all.
-            return null;
+        if ($staffProfileId !== null) {
+            return $this->reachableForTeacher($organizationId, (string) $staffProfileId);
         }
 
+        $studentProfileId = DB::table('student_profiles')
+            ->where('user_id', $actorUserId)
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->value('id');
+
+        if ($studentProfileId !== null) {
+            return $this->reachableForStudent($organizationId, (string) $studentProfileId);
+        }
+
+        $guardianProfileId = DB::table('guardian_profiles')
+            ->where('user_id', $actorUserId)
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->value('id');
+
+        if ($guardianProfileId !== null) {
+            return $this->reachableForGuardian($organizationId, (string) $guardianProfileId);
+        }
+
+        // ليس معلمًا ولا طالبًا ولا ولي أمر — دور آخر (إداري بصلاحية
+        // message.moderate مثلًا)؛ لا نقيّده هنا، القرار للمستدعي.
+        return null;
+    }
+
+    /** @return list<string> */
+    private function reachableForTeacher(string $organizationId, string $staffProfileId): array
+    {
         $groupStudentIds = DB::table('group_teachers')
             ->join('groups', 'groups.id', '=', 'group_teachers.group_id')
             ->join('group_memberships', 'group_memberships.group_id', '=', 'groups.id')
@@ -102,9 +137,167 @@ final readonly class DatabaseClassAudienceQueries implements ClassAudienceQuerie
             ->whereNull('student_profiles.deleted_at')
             ->pluck('student_profiles.user_id');
 
-        return $groupStudentIds->merge($individualStudentIds)
-            ->unique()
+        return $this->normalizeIds($groupStudentIds->merge($individualStudentIds));
+    }
+
+    /** @return list<string> */
+    private function reachableForStudent(string $organizationId, string $studentProfileId): array
+    {
+        $groupIds = $this->activeGroupIdsForStudent($organizationId, $studentProfileId);
+
+        $teacherUserIds = $this->teacherUserIdsForStudent($organizationId, $studentProfileId, $groupIds);
+        $classmateStudentProfileIds = $this->classmateStudentProfileIds($organizationId, $groupIds, $studentProfileId);
+
+        $classmateUserIds = DB::table('student_profiles')
+            ->whereIn('id', $classmateStudentProfileIds)
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->pluck('user_id');
+
+        $classmateGuardianUserIds = $this->guardianUserIdsForStudents($organizationId, $classmateStudentProfileIds);
+
+        return $this->normalizeIds(
+            $teacherUserIds->merge($classmateUserIds)->merge($classmateGuardianUserIds),
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function reachableForGuardian(string $organizationId, string $guardianProfileId): array
+    {
+        // guardian_links ليس فيها عمود organization_id (تعتمد على guardian_profile_id/
+        // student_profile_id فقط)، فنتحقق صراحةً من مؤسسة الطالب عند الجدول بدل
+        // الاعتماد الضمني على أن الاستعلامات اللاحقة (المجموعات/الجداول) ستصفّيها
+        // تبعًا — نفس نمط PortalData::guardianChildren.
+        $childStudentProfileIds = DB::table('guardian_links')
+            ->join('student_profiles', 'student_profiles.id', '=', 'guardian_links.student_profile_id')
+            ->where('guardian_links.guardian_profile_id', $guardianProfileId)
+            ->whereNotNull('guardian_links.verified_at')
+            ->whereNull('guardian_links.deleted_at')
+            ->where('student_profiles.organization_id', $organizationId)
+            ->whereNull('student_profiles.deleted_at')
+            ->pluck('guardian_links.student_profile_id')
+            ->map(static fn (mixed $id): string => (string) $id);
+
+        $teacherUserIds = Collection::make();
+        foreach ($childStudentProfileIds as $childStudentProfileId) {
+            $groupIds = $this->activeGroupIdsForStudent($organizationId, $childStudentProfileId);
+            $teacherUserIds = $teacherUserIds->merge(
+                $this->teacherUserIdsForStudent($organizationId, $childStudentProfileId, $groupIds),
+            );
+        }
+
+        return $this->normalizeIds($teacherUserIds);
+    }
+
+    /** @return Collection<int, string> */
+    private function activeGroupIdsForStudent(string $organizationId, string $studentProfileId): Collection
+    {
+        return DB::table('group_memberships')
+            ->join('groups', 'groups.id', '=', 'group_memberships.group_id')
+            ->where('group_memberships.student_profile_id', $studentProfileId)
+            ->where('group_memberships.status', 'active')
+            ->whereNull('group_memberships.left_at')
+            ->where('groups.organization_id', $organizationId)
+            ->whereNull('groups.deleted_at')
+            ->pluck('groups.id')
+            ->map(static fn (mixed $id): string => (string) $id);
+    }
+
+    /**
+     * @param Collection<int, string> $groupIds
+     * @return Collection<int, string>
+     */
+    private function teacherUserIdsForStudent(
+        string $organizationId,
+        string $studentProfileId,
+        Collection $groupIds,
+    ): Collection {
+        $groupTeacherUserIds = $groupIds->isEmpty()
+            ? Collection::make()
+            : DB::table('group_teachers')
+                ->join('staff_profiles', 'staff_profiles.id', '=', 'group_teachers.staff_profile_id')
+                ->whereIn('group_teachers.group_id', $groupIds->all())
+                ->where('staff_profiles.organization_id', $organizationId)
+                ->whereNull('staff_profiles.deleted_at')
+                ->where(function ($query): void {
+                    $query->whereNull('group_teachers.assigned_to')
+                        ->orWhere('group_teachers.assigned_to', '>=', now('UTC')->toDateString());
+                })
+                ->pluck('staff_profiles.user_id');
+
+        $individualTeacherUserIds = DB::table('schedules')
+            ->join('staff_profiles', 'staff_profiles.id', '=', 'schedules.staff_profile_id')
+            ->where('schedules.student_profile_id', $studentProfileId)
+            ->where('schedules.organization_id', $organizationId)
+            ->where('schedules.is_active', true)
+            ->where('staff_profiles.organization_id', $organizationId)
+            ->whereNull('staff_profiles.deleted_at')
+            ->pluck('staff_profiles.user_id');
+
+        return $groupTeacherUserIds->merge($individualTeacherUserIds);
+    }
+
+    /**
+     * @param Collection<int, string> $groupIds
+     * @return Collection<int, string>
+     */
+    private function classmateStudentProfileIds(
+        string $organizationId,
+        Collection $groupIds,
+        string $excludingStudentProfileId,
+    ): Collection {
+        if ($groupIds->isEmpty()) {
+            return Collection::make();
+        }
+
+        // فلترة student_profiles.deleted_at هنا مباشرة (لا الاعتماد على فحص
+        // لاحق في reachableForStudent وحده) لأن هذه القائمة تُستخدم أيضًا
+        // لجلب أولياء أمور الزملاء (guardianUserIdsForStudents) — طالب محذوف
+        // بعضوية مجموعة لم تُنظَّف لا يجب أن يسرّب وليّ أمره كمستلم متاح.
+        return DB::table('group_memberships')
+            ->join('student_profiles', 'student_profiles.id', '=', 'group_memberships.student_profile_id')
+            ->whereIn('group_memberships.group_id', $groupIds->all())
+            ->where('group_memberships.status', 'active')
+            ->whereNull('group_memberships.left_at')
+            ->where('group_memberships.student_profile_id', '!=', $excludingStudentProfileId)
+            ->where('student_profiles.organization_id', $organizationId)
+            ->whereNull('student_profiles.deleted_at')
+            ->pluck('group_memberships.student_profile_id')
+            ->map(static fn (mixed $id): string => (string) $id);
+    }
+
+    /**
+     * @param Collection<int, string> $studentProfileIds
+     * @return Collection<int, string>
+     */
+    private function guardianUserIdsForStudents(string $organizationId, Collection $studentProfileIds): Collection
+    {
+        if ($studentProfileIds->isEmpty()) {
+            return Collection::make();
+        }
+
+        return DB::table('guardian_links')
+            ->join('guardian_profiles', 'guardian_profiles.id', '=', 'guardian_links.guardian_profile_id')
+            ->whereIn('guardian_links.student_profile_id', $studentProfileIds->all())
+            ->whereNotNull('guardian_links.verified_at')
+            ->whereNull('guardian_links.deleted_at')
+            ->where('guardian_profiles.organization_id', $organizationId)
+            ->whereNull('guardian_profiles.deleted_at')
+            ->pluck('guardian_profiles.user_id');
+    }
+
+    /**
+     * @param Collection<int, mixed> $ids
+     * @return list<string>
+     */
+    private function normalizeIds(Collection $ids): array
+    {
+        return $ids
+            ->filter(static fn (mixed $id): bool => $id !== null)
             ->map(static fn (mixed $id): string => (string) $id)
+            ->unique()
             ->values()
             ->all();
     }

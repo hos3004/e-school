@@ -151,6 +151,235 @@ final class RecipientSearchScopingTest extends TestCase
         ])->assertCreated();
     }
 
+    public function test_student_search_returns_their_teacher_and_classmates_and_classmates_guardian(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $me = User::factory()->inOrganization($organizationId)->create();
+        $myStudentProfileId = Fixtures::studentProfileForUser($me->id);
+        $this->grantPermission($me, 'message.send');
+
+        $teacher = User::factory()->inOrganization($organizationId)->create(['name' => 'Needle Teacher']);
+        $staffProfileId = Fixtures::staffProfileForUser($teacher->id);
+
+        $classmate = User::factory()->inOrganization($organizationId)->create(['name' => 'Needle Classmate']);
+        $classmateProfileId = Fixtures::studentProfileForUser($classmate->id);
+
+        $classmateGuardian = User::factory()->inOrganization($organizationId)->create(['name' => 'Needle Guardian']);
+        $guardianProfileId = $this->insertGuardianProfile($organizationId, $classmateGuardian->id);
+
+        $stranger = User::factory()->inOrganization($organizationId)->create(['name' => 'Needle Stranger']);
+
+        $groupId = $this->insertGroup($organizationId);
+        $this->insertGroupTeacher($organizationId, $groupId, $staffProfileId);
+        $this->insertGroupMembership($groupId, $myStudentProfileId);
+        $this->insertGroupMembership($groupId, $classmateProfileId);
+        $this->insertGuardianLink($organizationId, $guardianProfileId, $classmateProfileId);
+
+        $response = $this->actingAs($me)
+            ->getJson('/api/messaging/recipients?q=Needle')
+            ->assertOk();
+
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        expect($ids)->toContain((string) $teacher->id)
+            ->toContain((string) $classmate->id)
+            ->toContain((string) $classmateGuardian->id)
+            ->not->toContain((string) $stranger->id);
+    }
+
+    public function test_student_cannot_start_a_direct_conversation_with_a_stranger_by_id(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $me = User::factory()->inOrganization($organizationId)->create();
+        Fixtures::studentProfileForUser($me->id);
+        $this->grantPermission($me, 'message.send');
+
+        $stranger = User::factory()->inOrganization($organizationId)->create();
+
+        $this->actingAs($me)->postJson('/api/messaging/direct-conversations', [
+            'recipient_user_id' => (string) $stranger->id,
+            'subject' => 'محاولة تجاوز',
+            'body' => 'مرحبًا',
+        ])->assertUnprocessable();
+    }
+
+    public function test_student_on_an_individual_schedule_reaches_their_teacher_but_not_another_teachers_student(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $me = User::factory()->inOrganization($organizationId)->create();
+        $myStudentProfileId = Fixtures::studentProfileForUser($me->id);
+        $this->grantPermission($me, 'message.send');
+
+        $teacher = User::factory()->inOrganization($organizationId)->create(['name' => 'Needle Teacher']);
+        $staffProfileId = Fixtures::staffProfileForUser($teacher->id);
+        $courseId = Fixtures::courseId();
+        $this->insertIndividualSchedule($organizationId, $staffProfileId, $myStudentProfileId, $courseId);
+
+        // طالب آخر عند نفس المعلم لكن بلا مجموعة مشتركة — مش "زميل" فعليًا.
+        $otherTeachersStudent = User::factory()->inOrganization($organizationId)->create(['name' => 'Needle Other']);
+        $otherStudentProfileId = Fixtures::studentProfileForUser($otherTeachersStudent->id);
+        $this->insertIndividualSchedule($organizationId, $staffProfileId, $otherStudentProfileId, $courseId);
+
+        $response = $this->actingAs($me)
+            ->getJson('/api/messaging/recipients?q=Needle')
+            ->assertOk();
+
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        expect($ids)->toContain((string) $teacher->id)
+            ->not->toContain((string) $otherTeachersStudent->id);
+    }
+
+    public function test_guardian_search_returns_only_their_verified_childs_teacher(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $me = User::factory()->inOrganization($organizationId)->create();
+        $guardianProfileId = $this->insertGuardianProfile($organizationId, $me->id);
+        $this->grantPermission($me, 'message.send');
+
+        $child = User::factory()->inOrganization($organizationId)->create();
+        $childProfileId = Fixtures::studentProfileForUser($child->id);
+        $this->insertGuardianLink($organizationId, $guardianProfileId, $childProfileId);
+
+        $teacher = User::factory()->inOrganization($organizationId)->create(['name' => 'Needle Teacher']);
+        $staffProfileId = Fixtures::staffProfileForUser($teacher->id);
+        $courseId = Fixtures::courseId();
+        $this->insertIndividualSchedule($organizationId, $staffProfileId, $childProfileId, $courseId);
+
+        // طالب آخر (ليس ابن ولي الأمر هذا) عند نفس المعلم — لا يظهر.
+        $unrelatedStudent = User::factory()->inOrganization($organizationId)->create(['name' => 'Needle Unrelated']);
+        $unrelatedProfileId = Fixtures::studentProfileForUser($unrelatedStudent->id);
+        $this->insertIndividualSchedule($organizationId, $staffProfileId, $unrelatedProfileId, $courseId);
+
+        $response = $this->actingAs($me)
+            ->getJson('/api/messaging/recipients?q=Needle')
+            ->assertOk();
+
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        expect($ids)->toContain((string) $teacher->id)
+            ->not->toContain((string) $unrelatedStudent->id);
+    }
+
+    public function test_guardian_with_an_unverified_link_reaches_no_one(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $me = User::factory()->inOrganization($organizationId)->create();
+        $guardianProfileId = $this->insertGuardianProfile($organizationId, $me->id);
+        $this->grantPermission($me, 'message.send');
+
+        $child = User::factory()->inOrganization($organizationId)->create();
+        $childProfileId = Fixtures::studentProfileForUser($child->id);
+        $this->insertGuardianLink($organizationId, $guardianProfileId, $childProfileId, verified: false);
+
+        $teacher = User::factory()->inOrganization($organizationId)->create(['name' => 'Needle Teacher']);
+        $staffProfileId = Fixtures::staffProfileForUser($teacher->id);
+        $courseId = Fixtures::courseId();
+        $this->insertIndividualSchedule($organizationId, $staffProfileId, $childProfileId, $courseId);
+
+        $this->actingAs($me)
+            ->getJson('/api/messaging/recipients?q=Needle')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_guardian_cannot_start_a_direct_conversation_with_a_stranger_by_id(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $me = User::factory()->inOrganization($organizationId)->create();
+        $this->insertGuardianProfile($organizationId, (string) $me->id);
+        $this->grantPermission($me, 'message.send');
+
+        $stranger = User::factory()->inOrganization($organizationId)->create();
+
+        $this->actingAs($me)->postJson('/api/messaging/direct-conversations', [
+            'recipient_user_id' => (string) $stranger->id,
+            'subject' => 'محاولة تجاوز',
+            'body' => 'مرحبًا',
+        ])->assertUnprocessable();
+    }
+
+    private function insertGuardianProfile(string $organizationId, string $userId): string
+    {
+        $id = (string) Str::ulid();
+        DB::table('guardian_profiles')->insert([
+            'id' => $id,
+            'organization_id' => $organizationId,
+            'user_id' => $userId,
+            'guardian_code' => 'G'.strtoupper(substr($id, -8)),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $id;
+    }
+
+    private function insertGroup(string $organizationId): string
+    {
+        $groupId = (string) Str::ulid();
+        DB::table('groups')->insert([
+            'id' => $groupId,
+            'organization_id' => $organizationId,
+            'code' => 'SCOPE-'.strtoupper(substr($groupId, -8)),
+            'name' => json_encode(['ar' => 'مجموعة الاختبار', 'en' => 'Test group'], JSON_UNESCAPED_UNICODE),
+            'capacity' => 10,
+            'timezone' => 'UTC',
+            'status' => 'active',
+            'starts_on' => CarbonImmutable::now('UTC')->toDateString(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $groupId;
+    }
+
+    private function insertGroupTeacher(string $organizationId, string $groupId, string $staffProfileId): void
+    {
+        DB::table('group_teachers')->insert([
+            'id' => (string) Str::ulid(),
+            'group_id' => $groupId,
+            'staff_profile_id' => $staffProfileId,
+            'course_id' => null,
+            'role' => 'lead',
+            'assigned_from' => CarbonImmutable::now('UTC')->toDateString(),
+            'assigned_to' => null,
+            'created_at' => now(),
+        ]);
+    }
+
+    private function insertGroupMembership(string $groupId, string $studentProfileId): void
+    {
+        DB::table('group_memberships')->insert([
+            'id' => (string) Str::ulid(),
+            'group_id' => $groupId,
+            'student_profile_id' => $studentProfileId,
+            'joined_at' => now(),
+            'left_at' => null,
+            'status' => 'active',
+            'created_at' => now(),
+        ]);
+    }
+
+    private function insertGuardianLink(
+        string $organizationId,
+        string $guardianProfileId,
+        string $studentProfileId,
+        bool $verified = true,
+    ): void {
+        DB::table('guardian_links')->insert([
+            'id' => (string) Str::ulid(),
+            'guardian_profile_id' => $guardianProfileId,
+            'student_profile_id' => $studentProfileId,
+            'relationship' => 'parent',
+            'is_primary' => true,
+            'can_act_for' => true,
+            'visible_sections' => json_encode([], JSON_THROW_ON_ERROR),
+            'verified_at' => $verified ? now() : null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     private function insertIndividualSchedule(
         string $organizationId,
         string $staffProfileId,
