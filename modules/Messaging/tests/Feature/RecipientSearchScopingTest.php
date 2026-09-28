@@ -55,6 +55,58 @@ final class RecipientSearchScopingTest extends TestCase
             ->assertJsonPath('data.0.id', (string) $myStudent->id);
     }
 
+    /**
+     * عدم كتابة أي نص محتاج يعرض قائمة المستلمين المتاحين مباشرة — طالب
+     * مثلًا مش هيعرف اسم معلمه المسجَّل بالظبط في النظام دايمًا.
+     */
+    public function test_student_with_no_search_term_sees_their_teacher_by_default(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $me = User::factory()->inOrganization($organizationId)->create();
+        $myStudentProfileId = Fixtures::studentProfileForUser($me->id);
+        $this->grantPermission($me, 'message.send');
+
+        $teacher = User::factory()->inOrganization($organizationId)->create(['name' => 'Zzz Teacher']);
+        $staffProfileId = Fixtures::staffProfileForUser($teacher->id);
+        $courseId = Fixtures::courseId();
+        $this->insertIndividualSchedule($organizationId, $staffProfileId, $myStudentProfileId, $courseId);
+
+        $this->actingAs($me)
+            ->getJson('/api/messaging/recipients')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', (string) $teacher->id);
+    }
+
+    public function test_teacher_with_no_students_sees_an_empty_default_list(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $teacher = User::factory()->inOrganization($organizationId)->create();
+        Fixtures::staffProfileForUser($teacher->id);
+        $this->grantPermission($teacher, 'message.send');
+
+        $this->actingAs($teacher)
+            ->getJson('/api/messaging/recipients')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_a_moderator_with_no_search_term_gets_no_results(): void
+    {
+        // مشرف بلا تقييد: مؤسسة كاملة، فلا نعرض قائمة افتراضية له — لازم يكتب.
+        $organizationId = Fixtures::organizationId();
+        $moderator = User::factory()->inOrganization($organizationId)->create();
+        $this->grantPermission($moderator, 'message.send');
+        $this->grantPermission($moderator, 'message.moderate');
+
+        User::factory()->inOrganization($organizationId)->create();
+
+        $this->actingAs($moderator)
+            ->getJson('/api/messaging/recipients')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
     public function test_teacher_with_no_students_gets_no_results_even_with_a_name_match(): void
     {
         $organizationId = Fixtures::organizationId();
