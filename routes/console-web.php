@@ -6,6 +6,8 @@ use App\Http\Controllers\Console\DirectoryController;
 use App\Http\Controllers\Console\MessagingController;
 use App\Http\Controllers\Console\NotificationsPageController;
 use App\Http\Controllers\Console\NotificationTemplateController;
+use App\Http\Controllers\Console\PopupMessageCampaignController;
+use App\Http\Controllers\Console\PopupMessageController;
 use App\Http\Controllers\Console\QuranController;
 use App\Http\Controllers\Console\ReportsController;
 use App\Http\Controllers\Console\SessionPayController;
@@ -56,6 +58,30 @@ Route::prefix('whatsapp')->name('whatsapp.')->group(function (): void {
         Route::post('{campaign}/start', [WhatsappCampaignController::class, 'start'])->whereUlid('campaign')->name('start');
         Route::post('{campaign}/stop', [WhatsappCampaignController::class, 'stop'])->whereUlid('campaign')->name('stop');
     });
+});
+
+/*
+ * الرسائل المنبثقة (Pop Messages) — Phase 2: مدخل /manage الكامل لتركيب
+ * حملة (نمط عرض، استثناء جمهور، إغلاق تلقائي، روابط، ميديا) دون المرور
+ * بلوحة Filament القديمة. تُعاد استخدام صلاحيات popup_campaign.* والـActions
+ * الحالية (SavePopupCampaignAction وTransitionPopupCampaignAction) حرفيًا؛
+ * لا صلاحية جديدة ولا منطق حفظ أو انتقال مكرَّر.
+ */
+Route::middleware('can:popup_campaign.view_any')->prefix('popup-messages')->name('popup-messages.')->group(function (): void {
+    Route::get('/', PopupMessageController::class)->name('index');
+
+    Route::post('/', [PopupMessageCampaignController::class, 'store'])
+        ->middleware('can:popup_campaign.create')->name('store');
+    Route::put('{campaign}', [PopupMessageCampaignController::class, 'update'])
+        ->whereUlid('campaign')->middleware('can:popup_campaign.update')->name('update');
+    Route::post('{campaign}/media', [PopupMessageCampaignController::class, 'storeMedia'])
+        ->whereUlid('campaign')->middleware('can:popup_campaign.update')->name('media.store');
+    Route::post('{campaign}/publish', [PopupMessageCampaignController::class, 'publish'])
+        ->whereUlid('campaign')->middleware('can:popup_campaign.publish')->name('publish');
+    Route::post('{campaign}/pause', [PopupMessageCampaignController::class, 'pause'])
+        ->whereUlid('campaign')->middleware('can:popup_campaign.pause')->name('pause');
+    Route::post('{campaign}/archive', [PopupMessageCampaignController::class, 'archive'])
+        ->whereUlid('campaign')->middleware('can:popup_campaign.archive')->name('archive');
 });
 
 /*

@@ -11,10 +11,12 @@ use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Notifications\Application\Services\PopupPageRegistry;
 use Modules\Notifications\Domain\Enums\PopupAudience;
 use Modules\Notifications\Domain\Enums\PopupCampaignStatus;
+use Modules\Notifications\Domain\Enums\PopupDisplayMode;
 use Modules\Notifications\Domain\Enums\PopupFrequency;
 use Modules\Notifications\Domain\Enums\PopupPlacement;
 use Modules\Notifications\Domain\Enums\PopupType;
 use Modules\Notifications\Domain\Models\PopupCampaign;
+use Modules\Notifications\Domain\Models\PopupCampaignMedia;
 use Shared\Support\BusinessRuleViolation;
 use Throwable;
 
@@ -66,14 +68,14 @@ final class SavePopupCampaignAction
             );
         }
 
-        $attributes = $this->validatedAttributes($attributes, $isCreate);
+        $attributes = $this->validatedAttributes($attributes, $isCreate, $campaign);
         $attributes['organization_id'] = $organizationId;
 
         $tracked = [
-            'internal_name', 'type', 'status', 'title', 'body', 'audiences', 'placement',
-            'page_key', 'frequency', 'is_dismissible', 'requires_acknowledgement',
-            'acknowledgement_label', 'action_label', 'action_type', 'action_target',
-            'priority', 'starts_at', 'ends_at',
+            'internal_name', 'type', 'status', 'title', 'body', 'audiences', 'excluded_audiences',
+            'placement', 'display_mode', 'page_key', 'frequency', 'is_dismissible', 'requires_acknowledgement',
+            'acknowledgement_label', 'action_label', 'action_type', 'action_target', 'links',
+            'priority', 'auto_dismiss_seconds', 'starts_at', 'ends_at',
         ];
         $old = $isCreate ? null : $this->auditValues($campaign->only($tracked));
 
@@ -112,7 +114,7 @@ final class SavePopupCampaignAction
      * @param array<string, mixed> $attributes
      * @return array<string, mixed>
      */
-    private function validatedAttributes(array $attributes, bool $isCreate): array
+    private function validatedAttributes(array $attributes, bool $isCreate, PopupCampaign $campaign): array
     {
         unset($attributes['organization_id'], $attributes['created_by'], $attributes['updated_by']);
 
@@ -154,9 +156,32 @@ final class SavePopupCampaignAction
         }
         $attributes['audiences'] = $audiences;
 
+        // الاستثناء: قيم PopupAudience صالحة، ولا يجوز أن يتقاطع مع audiences
+        // — تناقض إداري (اختر الجمهور واستبعده معًا) يُرفض بدل حسم فائز صامت.
+        $excludedAudiences = array_values(array_unique(array_map(
+            fn (mixed $audience): string => $this->enumValue($audience),
+            is_array($attributes['excluded_audiences'] ?? null) ? $attributes['excluded_audiences'] : [],
+        )));
+        if (collect($excludedAudiences)->contains(
+            static fn (string $audience): bool => PopupAudience::tryFrom($audience) === null,
+        )) {
+            $this->violate('notifications.popup_invalid_configuration', 'notifications::popups.errors.invalid_configuration');
+        }
+        if (collect($excludedAudiences)->intersect($audiences)->isNotEmpty()) {
+            $this->violate('notifications.popup_contradictory_audience', 'notifications::popups.errors.contradictory_audience');
+        }
+        $attributes['excluded_audiences'] = $excludedAudiences;
+
         $attributes['placement'] = $this->enumValue($attributes['placement'] ?? null);
         $placement = PopupPlacement::tryFrom($attributes['placement']);
         if ($placement === null) {
+            $this->violate('notifications.popup_invalid_configuration', 'notifications::popups.errors.invalid_configuration');
+        }
+
+        $attributes['display_mode'] = $this->enumValue(
+            $attributes['display_mode'] ?? PopupDisplayMode::BottomBanner->value,
+        );
+        if (PopupDisplayMode::tryFrom($attributes['display_mode']) === null) {
             $this->violate('notifications.popup_invalid_configuration', 'notifications::popups.errors.invalid_configuration');
         }
 
@@ -181,6 +206,17 @@ final class SavePopupCampaignAction
         $attributes['auto_dismiss_seconds'] = filled($attributes['auto_dismiss_seconds'] ?? null)
             ? (int) $attributes['auto_dismiss_seconds']
             : null;
+
+        if ($attributes['auto_dismiss_seconds'] !== null) {
+            $minSeconds = (int) config('popups.auto_dismiss.min_seconds', 3);
+            $maxSeconds = (int) config('popups.auto_dismiss.max_seconds', 300);
+            if ($attributes['auto_dismiss_seconds'] < $minSeconds || $attributes['auto_dismiss_seconds'] > $maxSeconds) {
+                $this->violate(
+                    'notifications.popup_invalid_auto_dismiss',
+                    'notifications::popups.errors.invalid_auto_dismiss',
+                );
+            }
+        }
 
         // يطابق PopupCampaign::hasSafeExit() حرفيًا عمدًا — لا يجوز
         // أن تقبل هذه الدالة حملة وقت الحفظ ثم يرفضها فحص النشر
@@ -239,7 +275,91 @@ final class SavePopupCampaignAction
         $attributes['action_type'] = $actionType;
         $attributes['action_target'] = $actionTarget;
 
+        $attributes['links'] = $this->validatedLinks($attributes['links'] ?? null, $attributes['body'], $campaign);
+
         return $attributes;
+    }
+
+    /**
+     * روابط «كلمة قابلة للنقر» داخل نص الحملة.
+     *
+     * text يجب أن يظهر فعليًا في نص إحدى اللغات المخزَّنة، وإلا فلا معنى
+     * لجعله قابلًا للنقر عند العرض. url إما رابط خارجي https:// أو مرجع
+     * popup-media:{id} لملف مرفوع فعليًا بهذه الحملة بالذات ونوعه file —
+     * لا يجوز الإشارة إلى ميديا حملة أخرى ولا إلى صورة/فيديو/صوت كرابط تنزيل.
+     *
+     * @param array<string, string> $body
+     * @return list<array{text: string, url: string}>
+     */
+    private function validatedLinks(mixed $rawLinks, array $body, PopupCampaign $campaign): array
+    {
+        $links = is_array($rawLinks) ? $rawLinks : [];
+
+        $maxLinks = (int) config('popups.content.max_links', 10);
+        if (count($links) > $maxLinks) {
+            $this->violate('notifications.popup_invalid_configuration', 'notifications::popups.errors.invalid_configuration');
+        }
+
+        $textMax = (int) config('popups.content.link_text_max', 60);
+        $urlMax = (int) config('popups.content.link_url_max', 500);
+        $bodyHaystack = implode("\n", array_values($body));
+        $campaignId = $campaign->getKey();
+
+        $normalized = [];
+
+        foreach ($links as $link) {
+            if (!is_array($link)) {
+                $this->violate('notifications.popup_invalid_configuration', 'notifications::popups.errors.invalid_configuration');
+            }
+
+            $text = trim((string) ($link['text'] ?? ''));
+            $url = trim((string) ($link['url'] ?? ''));
+
+            if ($text === '' || mb_strlen($text) > $textMax) {
+                $this->violate('notifications.popup_invalid_configuration', 'notifications::popups.errors.invalid_configuration');
+            }
+
+            if ($url === '' || mb_strlen($url) > $urlMax) {
+                $this->violate('notifications.popup_invalid_link_url', 'notifications::popups.errors.invalid_link_url');
+            }
+
+            if (!str_contains($bodyHaystack, $text)) {
+                $this->violate(
+                    'notifications.popup_link_text_not_in_body',
+                    'notifications::popups.errors.link_text_not_in_body',
+                );
+            }
+
+            if (preg_match('#^https://[^\s]+$#i', $url) === 1) {
+                $normalized[] = ['text' => $text, 'url' => $url];
+
+                continue;
+            }
+
+            if (preg_match('#^popup-media:([A-Za-z0-9]+)$#', $url, $matches) === 1) {
+                $mediaId = $matches[1];
+                $exists = $campaignId !== null && PopupCampaignMedia::query()
+                    ->where('id', $mediaId)
+                    ->where('campaign_id', (string) $campaignId)
+                    ->where('kind', 'file')
+                    ->exists();
+
+                if (!$exists) {
+                    $this->violate(
+                        'notifications.popup_invalid_media_link',
+                        'notifications::popups.errors.invalid_media_link',
+                    );
+                }
+
+                $normalized[] = ['text' => $text, 'url' => $url];
+
+                continue;
+            }
+
+            $this->violate('notifications.popup_invalid_link_url', 'notifications::popups.errors.invalid_link_url');
+        }
+
+        return $normalized;
     }
 
     private function enumValue(mixed $value): string
