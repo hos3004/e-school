@@ -85,6 +85,72 @@ final class RecipientSearchScopingTest extends TestCase
             ->assertJsonCount(1, 'data');
     }
 
+    /**
+     * الإصلاح الأول كان يقيّد البحث فقط — معلم يعرف معرّف طالب غير طالبه
+     * (بدون المرور بالبحث) كان لسه يقدر يبدأ محادثة معه مباشرة عبر هذا الـ
+     * endpoint. هذا الاختبار يثبت أن الإنشاء نفسه مقيَّد الآن، لا الظهور في
+     * نتائج البحث فقط.
+     */
+    public function test_teacher_cannot_start_a_direct_conversation_with_a_non_student_by_id(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $teacher = User::factory()->inOrganization($organizationId)->create();
+        Fixtures::staffProfileForUser($teacher->id);
+        $this->grantPermission($teacher, 'message.send');
+
+        $stranger = User::factory()->inOrganization($organizationId)->create();
+
+        $this->actingAs($teacher)->postJson('/api/messaging/direct-conversations', [
+            'recipient_user_id' => (string) $stranger->id,
+            'subject' => 'محاولة تجاوز',
+            'body' => 'مرحبًا',
+        ])->assertUnprocessable();
+    }
+
+    /**
+     * نفس الفحص، لكن عبر endpoint إنشاء المحادثات العام (يشمل الجماعية) —
+     * إدراج طالب مش تابع للمعلم ضمن مشاركين آخرين مسموحين لازم يُرفض بالكامل.
+     */
+    public function test_teacher_cannot_include_a_non_student_in_a_group_conversation(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $teacher = User::factory()->inOrganization($organizationId)->create();
+        $staffProfileId = Fixtures::staffProfileForUser($teacher->id);
+        $this->grantPermission($teacher, 'message.send');
+
+        $myStudent = User::factory()->inOrganization($organizationId)->create();
+        $myStudentProfileId = Fixtures::studentProfileForUser($myStudent->id);
+        $courseId = Fixtures::courseId();
+        $this->insertIndividualSchedule($organizationId, $staffProfileId, $myStudentProfileId, $courseId);
+
+        $stranger = User::factory()->inOrganization($organizationId)->create();
+
+        $this->actingAs($teacher)->postJson('/api/conversations', [
+            'type' => 'group',
+            'subject' => 'مجموعة',
+            'participant_user_ids' => [(string) $myStudent->id, (string) $stranger->id],
+        ])->assertUnprocessable();
+    }
+
+    public function test_teacher_can_still_start_a_conversation_with_their_own_student(): void
+    {
+        $organizationId = Fixtures::organizationId();
+        $teacher = User::factory()->inOrganization($organizationId)->create();
+        $staffProfileId = Fixtures::staffProfileForUser($teacher->id);
+        $this->grantPermission($teacher, 'message.send');
+
+        $myStudent = User::factory()->inOrganization($organizationId)->create();
+        $myStudentProfileId = Fixtures::studentProfileForUser($myStudent->id);
+        $courseId = Fixtures::courseId();
+        $this->insertIndividualSchedule($organizationId, $staffProfileId, $myStudentProfileId, $courseId);
+
+        $this->actingAs($teacher)->postJson('/api/messaging/direct-conversations', [
+            'recipient_user_id' => (string) $myStudent->id,
+            'subject' => 'متابعة',
+            'body' => 'أهلًا',
+        ])->assertCreated();
+    }
+
     private function insertIndividualSchedule(
         string $organizationId,
         string $staffProfileId,

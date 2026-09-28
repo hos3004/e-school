@@ -23,6 +23,7 @@ return [
     'whatsapp_already_handled' => 'This message has already been handled.',
     'invalid_recipient' => 'The recipient is unavailable or outside your organization.',
     'supervision_unavailable' => 'The supervision channel is not available right now.',
+    'recipient_not_reachable' => 'You can only message your own students.',
 
     // WhatsApp campaigns
     'campaign_delay_range_invalid' => 'The shortest gap cannot exceed the longest gap.',

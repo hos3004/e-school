@@ -64,6 +64,9 @@ final readonly class StartSupervisionConversationAction
                     participantUserIds: $recipientIds,
                     relatedType: self::RELATED_TYPE,
                     relatedId: $actorUserId,
+                    // قناة ثابتة بتصميمها: تصل للإشراف بغضّ النظر عن قيد
+                    // "طلابي فقط" اللي يخضع له إنشاء المحادثات العادي.
+                    enforceCreatorReach: false,
                 );
             }
 
