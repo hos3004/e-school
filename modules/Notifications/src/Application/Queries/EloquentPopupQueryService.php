@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Route;
 use Modules\Notifications\Application\Services\PopupPageRegistry;
 use Modules\Notifications\Domain\Contracts\PopupQueries;
-use Modules\Notifications\Domain\Enums\PopupAudience;
 use Modules\Notifications\Domain\Enums\PopupCampaignStatus;
 use Modules\Notifications\Domain\Models\PopupCampaign;
 use Modules\Notifications\Domain\Models\PopupCampaignUserState;
@@ -63,13 +62,9 @@ final readonly class EloquentPopupQueryService implements PopupQueries
             ->keyBy(static fn (PopupCampaignUserState $state): string => (string) $state->campaign_id);
 
         foreach ($candidates as $campaign) {
-            // الاستثناء يفوز دائمًا: تقاطع مع excluded_audiences يسقط
-            // الحملة فورًا بصرف النظر عن مطابقة audiences الموجبة.
-            if (self::matchesAudience($campaign->excluded_audiences ?? [], $userAudiences, matchAllAuthenticated: false)) {
-                continue;
-            }
-
-            if (!self::matchesAudience($campaign->audiences ?? [], $userAudiences, matchAllAuthenticated: true)) {
+            // منطق المطابقة الوحيد على النموذج نفسه الذي تستدعيه
+            // ShowPopupAttachmentController و RecordPopupInteractionAction — لا نسخ ثانية هنا.
+            if (!$campaign->isEligibleForAudiences($userAudiences)) {
                 continue;
             }
 
@@ -93,25 +88,6 @@ final readonly class EloquentPopupQueryService implements PopupQueries
         }
 
         return null;
-    }
-
-    /**
-     * مطابقة الجمهور: «الجميع» يطابق أي مستخدم مصادق فقط للمطابقة الموجبة
-     * (audiences)، أما الاستثناء (excluded_audiences) فلا معنى فيه لقيمة
-     * «الجميع» — الاستثناء يعمل فقط بتقاطع قيم فعلية.
-     *
-     * @param list<string> $campaignAudiences
-     * @param list<string> $userAudiences
-     */
-    private static function matchesAudience(array $campaignAudiences, array $userAudiences, bool $matchAllAuthenticated): bool
-    {
-        if ($matchAllAuthenticated && in_array(PopupAudience::AllAuthenticated->value, $campaignAudiences, true)) {
-            return true;
-        }
-
-        return collect($campaignAudiences)
-            ->intersect($userAudiences)
-            ->isNotEmpty();
     }
 
     /**

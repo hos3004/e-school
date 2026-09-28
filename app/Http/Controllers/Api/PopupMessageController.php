@@ -88,13 +88,16 @@ final class PopupMessageController extends Controller
             abort(404);
         }
 
+        $userId = (string) $user->getAuthIdentifier();
+
         try {
             $this->interactions->execute(
                 campaignId: $campaign,
-                userId: (string) $user->getAuthIdentifier(),
+                userId: $userId,
                 organizationId: (string) data_get($user, 'organization_id'),
                 type: $interaction,
                 loginMarker: null,
+                userAudiences: $this->audienceResolver->audiencesFor(self::modelType(), $userId),
             );
         } catch (BusinessRuleViolation) {
             return response()->json(['ok' => false], 204);

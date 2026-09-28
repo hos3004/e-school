@@ -89,13 +89,16 @@ final class PopupController extends Controller
             abort(404);
         }
 
+        $userId = (string) $user->getAuthIdentifier();
+
         try {
             $this->interactions->execute(
                 campaignId: $campaign,
-                userId: (string) $user->getAuthIdentifier(),
+                userId: $userId,
                 organizationId: (string) data_get($user, 'organization_id'),
                 type: $interaction,
                 loginMarker: self::loginMarker(),
+                userAudiences: $this->audienceResolver->audiencesFor(self::modelType(), $userId),
             );
         } catch (BusinessRuleViolation) {
             // تفاعل غير مسموح (حملة منتهية/غير قابلة للإغلاق/لم تُشاهد) — بلا كشف تفاصيل.

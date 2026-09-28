@@ -11,13 +11,18 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
 use Modules\AccessControl\Domain\Models\ModelHasPermission;
+use Modules\AccessControl\Domain\Models\ModelHasRole;
 use Modules\AccessControl\Domain\Models\Permission;
+use Modules\AccessControl\Domain\Models\Role;
 use Modules\AccessControl\Infrastructure\Authorization\PermissionGateRegistrar;
+use Modules\Identity\Domain\Contracts\UserQueryService;
 use Modules\Identity\Domain\Models\User;
+use Modules\Notifications\Application\Actions\SavePopupCampaignAction;
 use Modules\Notifications\Domain\Contracts\PopupQueries;
 use Modules\Notifications\Domain\Enums\PopupCampaignStatus;
 use Modules\Notifications\Domain\Enums\PopupDisplayMode;
 use Modules\Notifications\Domain\Enums\PopupPlacement;
+use Modules\Notifications\Domain\Enums\PopupType;
 use Modules\Notifications\Domain\Models\PopupCampaign;
 use Modules\Notifications\Domain\Models\PopupCampaignMedia;
 use Modules\Notifications\Domain\Models\PopupCampaignUserState;
@@ -101,6 +106,236 @@ final class PopupCampaignExtensionsTest extends TestCase
 
         self::assertNull($popupForTeacher);
         self::assertNotNull($popupForStudent);
+    }
+
+    // ------------------------------------------------------------------
+    // استثناء الجمهور كحد وصول حقيقي — لا مجرد تفضيل عرض.
+    // يغطي ShowPopupAttachmentController ونقطة interact() معًا: مستخدم
+    // من نفس المؤسسة لا يطابق audiences الحملة (أو مُستثنى منها صراحة)
+    // يُرفض من كليهما، رغم مطابقة المؤسسة والحالة.
+    // ------------------------------------------------------------------
+
+    public function test_show_attachment_rejects_a_same_organization_user_not_in_the_campaign_audience(): void
+    {
+        Storage::fake((string) config('popups.attachments.disk'));
+
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->inOrganization((string) $organization->id)->create();
+        $this->allowPopupUpdateFor($admin);
+
+        $campaign = PopupCampaign::query()->create($this->baseAttributes($organization, [
+            'audiences' => ['teacher'],
+            'status' => PopupCampaignStatus::Published,
+            'created_by' => (string) $admin->id,
+        ]));
+
+        $disk = (string) config('popups.attachments.disk');
+        $path = 'popups/'.$campaign->getKey().'/note.jpg';
+        Storage::disk($disk)->put($path, 'fake-bytes');
+
+        $media = PopupCampaignMedia::query()->create([
+            'campaign_id' => (string) $campaign->getKey(),
+            'kind' => 'image',
+            'disk' => $disk,
+            'path' => $path,
+            'original_name' => 'note.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 11,
+            'position' => 1,
+        ]);
+
+        // نفس المؤسسة، دور غير مستهدف بالحملة (student ≠ teacher).
+        $student = User::factory()->inOrganization((string) $organization->id)->create();
+        $this->assignAudienceRole($student, 'student');
+
+        $this->actingAs($student)
+            ->get("/api/popups/{$campaign->getKey()}/media/{$media->getKey()}")
+            ->assertNotFound();
+    }
+
+    public function test_show_attachment_rejects_a_user_explicitly_excluded_from_the_campaign(): void
+    {
+        Storage::fake((string) config('popups.attachments.disk'));
+
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->inOrganization((string) $organization->id)->create();
+        $this->allowPopupUpdateFor($admin);
+
+        $campaign = PopupCampaign::query()->create($this->baseAttributes($organization, [
+            'audiences' => ['all_authenticated'],
+            'excluded_audiences' => ['teacher'],
+            'status' => PopupCampaignStatus::Published,
+            'created_by' => (string) $admin->id,
+        ]));
+
+        $disk = (string) config('popups.attachments.disk');
+        $path = 'popups/'.$campaign->getKey().'/note.jpg';
+        Storage::disk($disk)->put($path, 'fake-bytes');
+
+        $media = PopupCampaignMedia::query()->create([
+            'campaign_id' => (string) $campaign->getKey(),
+            'kind' => 'image',
+            'disk' => $disk,
+            'path' => $path,
+            'original_name' => 'note.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 11,
+            'position' => 1,
+        ]);
+
+        // يطابق all_authenticated لولا الاستثناء الصريح لهذا الدور.
+        $teacher = User::factory()->inOrganization((string) $organization->id)->create();
+        $this->assignAudienceRole($teacher, 'teacher');
+
+        $this->actingAs($teacher)
+            ->get("/api/popups/{$campaign->getKey()}/media/{$media->getKey()}")
+            ->assertNotFound();
+    }
+
+    public function test_show_attachment_allows_a_recipient_actually_matching_the_campaign_audience(): void
+    {
+        Storage::fake((string) config('popups.attachments.disk'));
+
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->inOrganization((string) $organization->id)->create();
+        $this->allowPopupUpdateFor($admin);
+
+        $campaign = PopupCampaign::query()->create($this->baseAttributes($organization, [
+            'audiences' => ['teacher'],
+            'status' => PopupCampaignStatus::Published,
+            'created_by' => (string) $admin->id,
+        ]));
+
+        $disk = (string) config('popups.attachments.disk');
+        $path = 'popups/'.$campaign->getKey().'/note.jpg';
+        Storage::disk($disk)->put($path, 'fake-bytes');
+
+        $media = PopupCampaignMedia::query()->create([
+            'campaign_id' => (string) $campaign->getKey(),
+            'kind' => 'image',
+            'disk' => $disk,
+            'path' => $path,
+            'original_name' => 'note.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 11,
+            'position' => 1,
+        ]);
+
+        $teacher = User::factory()->inOrganization((string) $organization->id)->create();
+        $this->assignAudienceRole($teacher, 'teacher');
+
+        $this->actingAs($teacher)
+            ->get("/api/popups/{$campaign->getKey()}/media/{$media->getKey()}")
+            ->assertOk();
+    }
+
+    public function test_interact_endpoint_silently_rejects_a_user_not_in_the_campaign_audience(): void
+    {
+        $organization = Organization::factory()->create();
+
+        $campaign = PopupCampaign::query()->create($this->baseAttributes($organization, [
+            'audiences' => ['teacher'],
+        ]));
+
+        $student = User::factory()->inOrganization((string) $organization->id)->create();
+        $this->assignAudienceRole($student, 'student');
+
+        $this->actingAs($student)
+            ->postJson("/api/popups/{$campaign->getKey()}/impression")
+            ->assertStatus(204);
+
+        self::assertSame(0, PopupCampaignUserState::query()
+            ->where('campaign_id', $campaign->getKey())
+            ->where('user_id', $student->getKey())
+            ->count());
+    }
+
+    public function test_interact_endpoint_silently_rejects_a_user_excluded_from_the_campaign(): void
+    {
+        $organization = Organization::factory()->create();
+
+        $campaign = PopupCampaign::query()->create($this->baseAttributes($organization, [
+            'audiences' => ['all_authenticated'],
+            'excluded_audiences' => ['teacher'],
+        ]));
+
+        $teacher = User::factory()->inOrganization((string) $organization->id)->create();
+        $this->assignAudienceRole($teacher, 'teacher');
+
+        $this->actingAs($teacher)
+            ->postJson("/api/popups/{$campaign->getKey()}/impression")
+            ->assertStatus(204);
+
+        self::assertSame(0, PopupCampaignUserState::query()
+            ->where('campaign_id', $campaign->getKey())
+            ->where('user_id', $teacher->getKey())
+            ->count());
+    }
+
+    public function test_interact_endpoint_still_succeeds_for_an_eligible_recipient(): void
+    {
+        $organization = Organization::factory()->create();
+
+        $campaign = PopupCampaign::query()->create($this->baseAttributes($organization, [
+            'audiences' => ['teacher'],
+        ]));
+
+        $teacher = User::factory()->inOrganization((string) $organization->id)->create();
+        $this->assignAudienceRole($teacher, 'teacher');
+
+        $this->actingAs($teacher)
+            ->postJson("/api/popups/{$campaign->getKey()}/impression")
+            ->assertOk()
+            ->assertJson(['ok' => true]);
+
+        self::assertSame(1, PopupCampaignUserState::query()
+            ->where('campaign_id', $campaign->getKey())
+            ->where('user_id', $teacher->getKey())
+            ->count());
+    }
+
+    // ------------------------------------------------------------------
+    // المخرج الآمن للإغلاق التلقائي وحده يكفي
+    // (PopupCampaign::hasSafeExit() وSavePopupCampaignAction يجب ألا يفترقا).
+    // ------------------------------------------------------------------
+
+    public function test_save_action_accepts_a_campaign_with_only_auto_dismiss_seconds_as_its_safe_exit(): void
+    {
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->inOrganization((string) $organization->id)->create();
+
+        $campaign = app(SavePopupCampaignAction::class)->execute(
+            campaign: null,
+            organizationId: (string) $organization->id,
+            attributes: [
+                'internal_name' => 'auto-dismiss-only',
+                'type' => PopupType::General->value,
+                'title' => ['ar' => 'عنوان تجريبي'],
+                'body' => ['ar' => 'نص تجريبي'],
+                'audiences' => ['student'],
+                'placement' => PopupPlacement::AfterLogin->value,
+                'page_key' => null,
+                'frequency' => 'once',
+                // لا إغلاق يدوي ولا إقرار — المخرج الآمن الوحيد هو
+                // الإغلاق التلقائي.
+                'is_dismissible' => false,
+                'requires_acknowledgement' => false,
+                'auto_dismiss_seconds' => 10,
+                'priority' => 5,
+                'starts_at' => now('UTC')->addMinute()->format('Y-m-d H:i:s'),
+                'ends_at' => now('UTC')->addWeek()->format('Y-m-d H:i:s'),
+                'action_type' => null,
+                'action_target' => null,
+            ],
+            scheduleChanges: null,
+            actorId: (string) $actor->id,
+            reason: 'حملة إغلاق تلقائي فقط',
+        );
+
+        self::assertFalse($campaign->is_dismissible);
+        self::assertFalse($campaign->requires_acknowledgement);
+        self::assertSame(10, $campaign->auto_dismiss_seconds);
+        self::assertTrue($campaign->hasSafeExit());
     }
 
     // ------------------------------------------------------------------
@@ -513,5 +748,24 @@ final class PopupCampaignExtensionsTest extends TestCase
         ]);
 
         app(PermissionGateRegistrar::class)->register();
+    }
+
+    /**
+     * يمنح المستخدم دورًا نظاميًا عبر AccessControl لكي يحلّه
+     * AccessControlPopupAudienceResolver إلى قيمة PopupAudience المقابلة
+     * (نفس المسار المستخدم في PopupCampaignTest::test_audience_resolver_maps_access_control_roles).
+     */
+    private function assignAudienceRole(User $user, string $roleName): void
+    {
+        $role = Role::query()->firstOrCreate(
+            ['name' => $roleName, 'guard_name' => 'web'],
+            ['organization_id' => null, 'is_system' => true],
+        );
+
+        ModelHasRole::query()->create([
+            'role_id' => (string) $role->getKey(),
+            'model_type' => app(UserQueryService::class)->modelType(),
+            'model_id' => (string) $user->getAuthIdentifier(),
+        ]);
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Notifications\Domain\Enums\PopupAudience;
 use Modules\Notifications\Domain\Enums\PopupCampaignStatus;
 use Modules\Notifications\Domain\Enums\PopupDisplayMode;
 use Modules\Notifications\Domain\Enums\PopupFrequency;
@@ -126,6 +127,40 @@ final class PopupCampaign extends Model
         return $this->is_dismissible
             || $this->requires_acknowledgement
             || ($this->auto_dismiss_seconds !== null && $this->auto_dismiss_seconds > 0);
+    }
+
+    /**
+     * أهلية مستخدم لهذه الحملة حسب الجمهور — المصدر الوحيد لهذا المنطق.
+     * الاستثناء يفوز دائمًا: تقاطع مع excluded_audiences يُسقط الأهلية
+     * فورًا بصرف النظر عن مطابقة audiences الموجبة. «الجميع»
+     * (AllAuthenticated) قيمة مطابقة إيجابية فقط — لا معنى لها في الاستثناء.
+     *
+     * أي نقطة تفحص أهلية مستخدم لحملة (القائمة النشطة، عرض ميديا، تسجيل
+     * تفاعل) يجب أن تستدعي هذه الدالة بدل إعادة كتابة منطق المطابقة، حتى
+     * لا تفترق النسخ بمرور الوقت.
+     *
+     * @param list<string> $userAudiences
+     */
+    public function isEligibleForAudiences(array $userAudiences): bool
+    {
+        if (self::audienceIntersects($this->excluded_audiences ?? [], $userAudiences, matchAllAuthenticated: false)) {
+            return false;
+        }
+
+        return self::audienceIntersects($this->audiences ?? [], $userAudiences, matchAllAuthenticated: true);
+    }
+
+    /**
+     * @param list<string> $campaignAudiences
+     * @param list<string> $userAudiences
+     */
+    private static function audienceIntersects(array $campaignAudiences, array $userAudiences, bool $matchAllAuthenticated): bool
+    {
+        if ($matchAllAuthenticated && in_array(PopupAudience::AllAuthenticated->value, $campaignAudiences, true)) {
+            return true;
+        }
+
+        return collect($campaignAudiences)->intersect($userAudiences)->isNotEmpty();
     }
 
     /** داخل نافذة العرض الآن (UTC). */
