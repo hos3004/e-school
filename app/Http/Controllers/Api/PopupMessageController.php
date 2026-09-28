@@ -9,9 +9,9 @@ use App\Http\Controllers\Portal\PopupController as PortalPopupController;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\URL;
 use Modules\Identity\Domain\Contracts\UserQueryService;
 use Modules\Notifications\Application\Actions\RecordPopupInteractionAction;
+use Modules\Notifications\Application\Services\PopupMediaDownloadUrlSigner;
 use Modules\Notifications\Application\Services\PopupPageRegistry;
 use Modules\Notifications\Domain\Contracts\PopupAudienceResolver;
 use Modules\Notifications\Domain\Contracts\PopupQueries;
@@ -29,7 +29,10 @@ use Shared\Support\BusinessRuleViolation;
  * عمدًا: يحتاج حلّ modelType عبر Modules\Identity\Domain\Contracts\UserQueryService،
  * والموديول ممنوع معماريًا من الاعتماد على Identity (tests/Architecture).
  * نفس القيد الذي يفسّر لماذا active()/interact() أنفسهما في app/ لا في
- * الموديول.
+ * الموديول. توقيع الرابط نفسه مفوَّض لـ
+ * Modules\Notifications\Application\Services\PopupMediaDownloadUrlSigner —
+ * نفس الدالة التي تستخدمها EloquentPopupQueryService::resolveLinks() لمسار
+ * links[] — حتى لا يتكرر منطق التوقيع في مكانين.
  */
 final class PopupMessageController extends Controller
 {
@@ -144,21 +147,15 @@ final class PopupMessageController extends Controller
 
         abort_unless($eligible !== null && $eligible->campaignId === (string) $campaignModel->getKey(), 404);
 
-        $ttlMinutes = (int) config('popups.attachments.download_link_ttl_minutes');
-
-        $url = URL::temporarySignedRoute(
-            'popups.media.download',
-            CarbonImmutable::now('UTC')->addMinutes($ttlMinutes),
-            [
-                'campaign' => (string) $campaignModel->getKey(),
-                'media' => (string) $mediaModel->getKey(),
-                'user' => $userId,
-            ],
+        $url = PopupMediaDownloadUrlSigner::sign(
+            (string) $campaignModel->getKey(),
+            (string) $mediaModel->getKey(),
+            $userId,
         );
 
         return response()->json([
             'url' => $url,
-            'expires_in_minutes' => $ttlMinutes,
+            'expires_in_minutes' => PopupMediaDownloadUrlSigner::ttlMinutes(),
         ]);
     }
 
