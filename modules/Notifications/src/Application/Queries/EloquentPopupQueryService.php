@@ -7,6 +7,7 @@ namespace Modules\Notifications\Application\Queries;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Route;
+use Modules\Notifications\Application\Services\PopupMediaDownloadUrlSigner;
 use Modules\Notifications\Application\Services\PopupPageRegistry;
 use Modules\Notifications\Domain\Contracts\PopupQueries;
 use Modules\Notifications\Domain\Enums\PopupCampaignStatus;
@@ -84,7 +85,7 @@ final readonly class EloquentPopupQueryService implements PopupQueries
                 continue;
             }
 
-            return self::toDto($campaign, $userAudiences);
+            return self::toDto($campaign, $userAudiences, $userId);
         }
 
         return null;
@@ -93,7 +94,7 @@ final readonly class EloquentPopupQueryService implements PopupQueries
     /**
      * @param list<string> $matchedAudiences
      */
-    private static function toDto(PopupCampaign $campaign, array $matchedAudiences): ActivePopupData
+    private static function toDto(PopupCampaign $campaign, array $matchedAudiences, string $userId): ActivePopupData
     {
         $locale = app()->getLocale();
 
@@ -126,7 +127,7 @@ final readonly class EloquentPopupQueryService implements PopupQueries
             endsAt: $campaign->ends_at,
             displayMode: $campaign->display_mode->value,
             autoDismissSeconds: $campaign->auto_dismiss_seconds,
-            links: self::resolveLinks($campaign),
+            links: self::resolveLinks($campaign, $userId),
             media: self::resolveMedia($campaign),
         );
     }
@@ -171,12 +172,22 @@ final readonly class EloquentPopupQueryService implements PopupQueries
 
     /**
      * روابط النص داخل جسم الرسالة: خارجية HTTPS أو إشارة داخلية
-     * popup-media:{id} تُحل إلى رابط تنزيل حقيقي فقط إن كان الملف مملوكًا
-     * فعلًا لنفس الحملة ومن نوع file — لا ثقة بمعرّف ميديا عشوائي مخزَّن.
+     * popup-media:{id} تُحل إلى رابط تنزيل **موقَّع قصير العمر** (بلا
+     * Authorization/جلسة) فقط إن كان الملف مملوكًا فعلًا لنفس الحملة ومن
+     * نوع file — لا ثقة بمعرّف ميديا عشوائي مخزَّن.
+     *
+     * كانت تُحل سابقًا إلى مسار popups.media.show المحمي بـSanctum/جلسة؛
+     * لكن تطبيق الموبايل يفتح كل links[].url بوضع خارجي (url_launcher
+     * external) عبر مدير تنزيل النظام مباشرة — بلا ترويسة Authorization
+     * وبلا جلسة ويب — فكان أي رابط ملف يفشل بـ401 دائمًا عند الضغط عليه
+     * فعليًا. نفس آلية التوقيع المستخدمة أصلًا لمسار media[] القائم
+     * (PopupMediaDownloadUrlSigner) تُبنى هنا مباشرة لأن المستخدم والأهلية
+     * معروفان بالفعل في هذه اللحظة من activeForUser() — بلا حاجة لخطوة
+     * "اطلب رابطًا" منفصلة.
      *
      * @return list<array{text: string, url: string}>
      */
-    private static function resolveLinks(PopupCampaign $campaign): array
+    private static function resolveLinks(PopupCampaign $campaign, string $userId): array
     {
         /** @var list<array<string, mixed>> $rawLinks */
         $rawLinks = $campaign->links ?? [];
@@ -211,10 +222,11 @@ final readonly class EloquentPopupQueryService implements PopupQueries
 
                 $resolved[] = [
                     'text' => $text,
-                    'url' => route('popups.media.show', [
-                        'campaign' => (string) $campaign->getKey(),
-                        'media' => $mediaId,
-                    ]),
+                    'url' => PopupMediaDownloadUrlSigner::sign(
+                        (string) $campaign->getKey(),
+                        $mediaId,
+                        $userId,
+                    ),
                 ];
 
                 continue;
