@@ -61,6 +61,54 @@ final readonly class DatabaseClassAudienceQueries implements ClassAudienceQuerie
         return $hasStudent && $hasTeacher;
     }
 
+    public function reachableRecipientUserIds(string $organizationId, string $actorUserId): ?array
+    {
+        $staffProfileId = DB::table('staff_profiles')
+            ->where('user_id', $actorUserId)
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->value('id');
+
+        if ($staffProfileId === null) {
+            // Not a teacher — this method does not (yet) restrict students,
+            // guardians, or staff roles that already carry message.moderate;
+            // the caller decides who needs restricting at all.
+            return null;
+        }
+
+        $groupStudentIds = DB::table('group_teachers')
+            ->join('groups', 'groups.id', '=', 'group_teachers.group_id')
+            ->join('group_memberships', 'group_memberships.group_id', '=', 'groups.id')
+            ->join('student_profiles', 'student_profiles.id', '=', 'group_memberships.student_profile_id')
+            ->where('group_teachers.staff_profile_id', $staffProfileId)
+            ->where('groups.organization_id', $organizationId)
+            ->whereColumn('student_profiles.organization_id', 'groups.organization_id')
+            ->whereNull('groups.deleted_at')
+            ->whereNull('student_profiles.deleted_at')
+            ->whereNull('group_memberships.left_at')
+            ->where(function ($query): void {
+                $query->whereNull('group_teachers.assigned_to')
+                    ->orWhere('group_teachers.assigned_to', '>=', now('UTC')->toDateString());
+            })
+            ->pluck('student_profiles.user_id');
+
+        $individualStudentIds = DB::table('schedules')
+            ->join('student_profiles', 'student_profiles.id', '=', 'schedules.student_profile_id')
+            ->where('schedules.staff_profile_id', $staffProfileId)
+            ->where('schedules.organization_id', $organizationId)
+            ->where('schedules.is_active', true)
+            ->whereNotNull('schedules.student_profile_id')
+            ->where('student_profiles.organization_id', $organizationId)
+            ->whereNull('student_profiles.deleted_at')
+            ->pluck('student_profiles.user_id');
+
+        return $groupStudentIds->merge($individualStudentIds)
+            ->unique()
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
     public function canAccessClass(string $organizationId, string $groupId, string $userId): bool
     {
         $groupExists = DB::table('groups')

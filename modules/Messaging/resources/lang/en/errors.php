@@ -22,6 +22,7 @@ return [
     'whatsapp_duplicate_message' => 'This WhatsApp message has already been recorded.',
     'whatsapp_already_handled' => 'This message has already been handled.',
     'invalid_recipient' => 'The recipient is unavailable or outside your organization.',
+    'supervision_unavailable' => 'The supervision channel is not available right now.',
 
     // WhatsApp campaigns
     'campaign_delay_range_invalid' => 'The shortest gap cannot exceed the longest gap.',

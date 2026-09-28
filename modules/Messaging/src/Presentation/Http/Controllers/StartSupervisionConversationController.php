@@ -6,19 +6,19 @@ namespace Modules\Messaging\Presentation\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
-use Modules\Messaging\Application\Actions\StartDirectConversationAction;
+use Modules\Messaging\Application\Actions\StartSupervisionConversationAction;
 use Modules\Messaging\Application\Services\ConversationSummaryEnricher;
-use Modules\Messaging\Presentation\Http\Requests\StartDirectConversationRequest;
+use Modules\Messaging\Presentation\Http\Requests\StartSupervisionConversationRequest;
 use Modules\Messaging\Presentation\Http\Resources\ConversationResource;
 use Symfony\Component\HttpFoundation\Response;
 
-final class StartDirectConversationController extends Controller
+final class StartSupervisionConversationController extends Controller
 {
     public function __construct(
-        private readonly StartDirectConversationAction $action,
+        private readonly StartSupervisionConversationAction $action,
     ) {}
 
-    public function __invoke(StartDirectConversationRequest $request, ConversationSummaryEnricher $summaries): JsonResponse
+    public function __invoke(StartSupervisionConversationRequest $request, ConversationSummaryEnricher $summaries): JsonResponse
     {
         $organizationId = (string) $request->user()->organization_id;
         $actorId = (string) $request->user()->getAuthIdentifier();
@@ -26,8 +26,6 @@ final class StartDirectConversationController extends Controller
         $conversation = $this->action->execute(
             organizationId: $organizationId,
             actorUserId: $actorId,
-            recipientUserId: $request->string('recipient_user_id')->toString(),
-            subject: $request->string('subject')->toString(),
             body: $request->string('body')->toString(),
         );
 
