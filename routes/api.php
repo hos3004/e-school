@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\GuardianController;
 use App\Http\Controllers\Api\JoinSessionController;
+use App\Http\Controllers\Api\StudentProfileController;
+use App\Http\Controllers\Api\StudentSessionController;
 use App\Http\Controllers\Api\TeacherAvailabilityController;
 use App\Http\Controllers\Api\TeacherEarningsController;
 use App\Http\Controllers\Api\TeacherGroupController;
@@ -158,3 +161,63 @@ if ((bool) config('features.payroll')) {
         ->get('teacher/earnings', [TeacherEarningsController::class, 'index'])
         ->name('api.teacher.earnings.index');
 }
+
+/*
+ * دخول فصل الطالب للموبايل — مرآة Portal\ClassroomJoinController::student().
+ */
+Route::middleware('auth:sanctum')
+    ->post('student/sessions/{session}/join', [JoinSessionController::class, 'student'])
+    ->whereUlid('session')
+    ->middleware('can:session.join')
+    ->name('api.student.sessions.join');
+
+/*
+ * جدول وتفاصيل حصص الطالب للموبايل — مرآة routes/web.php
+ * (portal.student.dashboard/schedule/sessions.show).
+ */
+Route::middleware('auth:sanctum')->prefix('student/sessions')->group(function (): void {
+    Route::get('/', [StudentSessionController::class, 'index'])
+        ->middleware('can:session.view')
+        ->name('api.student.sessions.index');
+
+    Route::get('/{session}', [StudentSessionController::class, 'show'])
+        ->whereUlid('session')
+        ->middleware('can:session.view')
+        ->name('api.student.sessions.show');
+});
+
+/*
+ * ملف الطالب الشخصي للموبايل — مرآة routes/web.php (portal.student.profile*).
+ */
+Route::middleware('auth:sanctum')->prefix('student/profile')->group(function (): void {
+    Route::get('/', [StudentProfileController::class, 'show'])
+        ->name('api.student.profile.show');
+
+    Route::patch('/', [StudentProfileController::class, 'update'])
+        ->name('api.student.profile.update');
+
+    Route::put('/password', [StudentProfileController::class, 'password'])
+        ->name('api.student.profile.password');
+});
+
+/*
+ * لوحة ولي الأمر للموبايل — مرآة routes/web.php (portal.guardian.*)،
+ * نفس PortalData::guardianChildren/guardianChild/upcomingStudentSessions/
+ * studentSession التي تستخدمها Portal\GuardianDashboardController وأخواتها.
+ */
+Route::middleware('auth:sanctum')->prefix('guardian')->group(function (): void {
+    Route::get('children', [GuardianController::class, 'children'])
+        ->middleware('can:student.view')
+        ->name('api.guardian.children.index');
+
+    Route::get('children/{child}/sessions', [GuardianController::class, 'childSessions'])
+        ->whereUlid('child')
+        ->middleware('can:schedule.view')
+        ->name('api.guardian.children.sessions.index');
+
+    Route::get('children/{child}/sessions/{session}', [GuardianController::class, 'childSession'])
+        ->whereUlid('child')
+        ->whereUlid('session')
+        ->middleware('can:schedule.view')
+        ->name('api.guardian.children.sessions.show');
+});
