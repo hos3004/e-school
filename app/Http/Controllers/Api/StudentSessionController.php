@@ -6,16 +6,27 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Portal\Support\PortalData;
+use App\Http\Requests\Portal\RequestSessionPostponementRequest;
+use App\Http\Requests\Portal\SubmitStudentSessionApologyRequest;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Scheduling\Application\Actions\RequestPostponement;
+use Modules\Sessions\Application\Actions\SubmitStudentSessionApologyAction;
 
 /**
  * جدول وتفاصيل حصص الطالب للموبايل — مرآة Portal\StudentDashboardController/
  * StudentScheduleController/StudentSessionController، نفس PortalData بالضبط.
+ * طلب التأجيل والاعتذار مرآة Portal\SessionPostponementRequestController::student()
+ * وPortal\StudentSessionApologyController، نفس FormRequests وActions بالضبط.
  */
 final class StudentSessionController extends Controller
 {
-    public function __construct(private readonly PortalData $data) {}
+    public function __construct(
+        private readonly PortalData $data,
+        private readonly RequestPostponement $requestPostponement,
+        private readonly SubmitStudentSessionApologyAction $submitApology,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -49,6 +60,46 @@ final class StudentSessionController extends Controller
         $data['canSubmitApology'] = $data['canRequestPostponement'];
 
         return response()->json(['session' => $data]);
+    }
+
+    public function requestPostponement(RequestSessionPostponementRequest $request, string $session): JsonResponse
+    {
+        $organizationId = (string) $request->user()?->getAttribute('organization_id');
+        $actorId = (string) $request->user()?->getAuthIdentifier();
+        $studentProfileId = $this->data->studentProfileId($actorId, $organizationId);
+        abort_if($organizationId === '' || $studentProfileId === null, 403);
+
+        $validated = $request->validated();
+
+        $this->requestPostponement->execute(
+            organizationId: $organizationId,
+            sessionId: $session,
+            requestedBy: $actorId,
+            studentProfileId: $studentProfileId,
+            proposedStart: CarbonImmutable::parse((string) $validated['proposed_start'], 'UTC'),
+            reason: (string) $validated['reason'],
+            requestingStaffProfileId: null,
+        );
+
+        return response()->json(['status' => 'requested']);
+    }
+
+    public function submitApology(SubmitStudentSessionApologyRequest $request, string $session): JsonResponse
+    {
+        $organizationId = (string) $request->user()?->getAttribute('organization_id');
+        $actorId = (string) $request->user()?->getAuthIdentifier();
+        $studentProfileId = $this->data->studentProfileId($actorId, $organizationId);
+        abort_if($organizationId === '' || $studentProfileId === null, 403);
+
+        $this->submitApology->execute(
+            organizationId: $organizationId,
+            sessionId: $session,
+            studentProfileId: $studentProfileId,
+            actorId: $actorId,
+            reason: (string) $request->validated('reason'),
+        );
+
+        return response()->json(['status' => 'submitted']);
     }
 
     /**
