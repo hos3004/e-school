@@ -161,14 +161,23 @@ final readonly class DatabaseClassAudienceQueries implements ClassAudienceQuerie
         );
     }
 
-    /** @return list<string> */
+    /**
+     * @return list<string>
+     */
     private function reachableForGuardian(string $organizationId, string $guardianProfileId): array
     {
+        // guardian_links ليس فيها عمود organization_id (تعتمد على guardian_profile_id/
+        // student_profile_id فقط)، فنتحقق صراحةً من مؤسسة الطالب عند الجدول بدل
+        // الاعتماد الضمني على أن الاستعلامات اللاحقة (المجموعات/الجداول) ستصفّيها
+        // تبعًا — نفس نمط PortalData::guardianChildren.
         $childStudentProfileIds = DB::table('guardian_links')
-            ->where('guardian_profile_id', $guardianProfileId)
-            ->whereNotNull('verified_at')
-            ->whereNull('deleted_at')
-            ->pluck('student_profile_id')
+            ->join('student_profiles', 'student_profiles.id', '=', 'guardian_links.student_profile_id')
+            ->where('guardian_links.guardian_profile_id', $guardianProfileId)
+            ->whereNotNull('guardian_links.verified_at')
+            ->whereNull('guardian_links.deleted_at')
+            ->where('student_profiles.organization_id', $organizationId)
+            ->whereNull('student_profiles.deleted_at')
+            ->pluck('guardian_links.student_profile_id')
             ->map(static fn (mixed $id): string => (string) $id);
 
         $teacherUserIds = Collection::make();
@@ -243,12 +252,19 @@ final readonly class DatabaseClassAudienceQueries implements ClassAudienceQuerie
             return Collection::make();
         }
 
+        // فلترة student_profiles.deleted_at هنا مباشرة (لا الاعتماد على فحص
+        // لاحق في reachableForStudent وحده) لأن هذه القائمة تُستخدم أيضًا
+        // لجلب أولياء أمور الزملاء (guardianUserIdsForStudents) — طالب محذوف
+        // بعضوية مجموعة لم تُنظَّف لا يجب أن يسرّب وليّ أمره كمستلم متاح.
         return DB::table('group_memberships')
-            ->whereIn('group_id', $groupIds->all())
-            ->where('status', 'active')
-            ->whereNull('left_at')
-            ->where('student_profile_id', '!=', $excludingStudentProfileId)
-            ->pluck('student_profile_id')
+            ->join('student_profiles', 'student_profiles.id', '=', 'group_memberships.student_profile_id')
+            ->whereIn('group_memberships.group_id', $groupIds->all())
+            ->where('group_memberships.status', 'active')
+            ->whereNull('group_memberships.left_at')
+            ->where('group_memberships.student_profile_id', '!=', $excludingStudentProfileId)
+            ->where('student_profiles.organization_id', $organizationId)
+            ->whereNull('student_profiles.deleted_at')
+            ->pluck('group_memberships.student_profile_id')
             ->map(static fn (mixed $id): string => (string) $id);
     }
 
