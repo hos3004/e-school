@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Notifications\Domain\Models;
 
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -49,6 +50,8 @@ use Shared\Concerns\HasUlid;
  * @property string|null $published_by
  * @property string|null $created_by
  * @property string|null $updated_by
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 final class PopupCampaign extends Model
 {
