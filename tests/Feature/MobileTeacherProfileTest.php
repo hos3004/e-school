@@ -22,6 +22,7 @@ it('shows the authenticated teacher profile and account settings', function (): 
 
     $response->assertOk()
         ->assertJsonPath('teacher.name', 'أحمد المعلم')
+        ->assertJsonPath('account.id', (string) $teacher->id)
         ->assertJsonPath('account.name', 'أحمد المعلم')
         ->assertJsonPath('account.email', $teacher->email);
 });
