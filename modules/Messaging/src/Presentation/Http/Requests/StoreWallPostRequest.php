@@ -21,6 +21,10 @@ final class StoreWallPostRequest extends FormRequest
      */
     public function rules(): array
     {
+        $maxKilobytes = (int) config('messaging.wall.attachments.max_size_kilobytes');
+        /** @var list<string> $allowedMimes */
+        $allowedMimes = config('messaging.wall.attachments.allowed_mime_types', []);
+
         return [
             'group_id' => ['required', 'string', 'size:26'],
             'body' => [
@@ -30,6 +34,12 @@ final class StoreWallPostRequest extends FormRequest
             ],
             'attachments' => ['sometimes', 'array'],
             'attachments.*' => ['array'],
+            'image' => [
+                'sometimes',
+                'file',
+                'max:'.$maxKilobytes,
+                'mimetypes:'.implode(',', $allowedMimes),
+            ],
             'is_pinned' => ['sometimes', 'boolean'],
         ];
     }
