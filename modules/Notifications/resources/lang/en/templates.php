@@ -154,6 +154,11 @@ return [
         'body' => 'Your grade has been recorded: {{score}} out of {{max_score}}. View the feedback in your account.',
         'parameters' => ['score', 'max_score'],
     ],
+    'message.sent' => [
+        'subject' => 'New message from {{sender_name}}',
+        'body' => '{{sender_name}}: {{message_preview}}',
+        'parameters' => ['sender_name', 'message_preview'],
+    ],
     'schedule.change.requested' => [
         'subject' => 'Permanent lesson time change requested',
         'body' => 'Teacher {{teacher_name}} asked to move {{course_name}} sessions from {{current_schedule}} to {{proposed_schedule}}. The new time applies only once every student accepts; the response window closes on {{expires_at}}.',

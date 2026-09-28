@@ -459,6 +459,12 @@ return [
             'recipient_fields' => ['student_user_id', 'guardian_user_ids'],
             'source_events' => ['Modules\\Assignments\\Domain\\Events\\SubmissionGraded'],
         ],
+        'message.sent' => [
+            'category' => 'message_received',
+            'audiences' => [],
+            'recipient_fields' => ['recipient_user_ids'],
+            'source_events' => ['Modules\\Messaging\\Domain\\Events\\MessageSent'],
+        ],
     ],
 
     // Permission-based operational audiences. No role names are inspected.
