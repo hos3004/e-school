@@ -35,6 +35,7 @@ return [
         'archive' => 'Archive',
         'bot' => 'AI assistant',
         'whatsapp' => 'WhatsApp centre',
+        'popup_messages' => 'Pop messages',
         'today' => 'Today',
         'courses' => 'Courses & groups',
         'quran' => 'Individual Quran',
