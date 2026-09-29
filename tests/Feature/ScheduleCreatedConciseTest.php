@@ -51,8 +51,10 @@ it('shows the weekly pattern, not every generated date, on every channel and loc
     expect($template)->not->toBeNull()
         ->and((string) $template->body)->toContain('{{weekly_pattern}}')
         ->and((string) $template->body)->not->toContain('{{schedule_times}}')
+        ->and((string) $template->body)->not->toContain('{{session_count}}')
         ->and($template->parameters)->toContain('weekly_pattern')
-        ->and($template->parameters)->not->toContain('schedule_times');
+        ->and($template->parameters)->not->toContain('schedule_times')
+        ->and($template->parameters)->not->toContain('session_count');
 })->with([
     ['in_app', 'ar'], ['email', 'ar'], ['whatsapp', 'ar'],
     ['in_app', 'en'], ['email', 'en'], ['whatsapp', 'en'],
