@@ -34,6 +34,7 @@ return [
     'nav' => [
         'archive' => 'Archives',
         'whatsapp' => 'Centre WhatsApp',
+        'popup_messages' => 'Messages pop-up',
         'today' => 'Aujourd’hui',
         'courses' => 'Cours et groupes',
         'quran' => 'Coran individuel',
