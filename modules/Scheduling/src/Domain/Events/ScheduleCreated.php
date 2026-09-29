@@ -13,8 +13,8 @@ final class ScheduleCreated extends DomainEvent
      * @param array<string, string> $courseName
      * @param string|array<string, string> $targetName
      * @param list<string> $scheduleTimes
-     * @param array<string, string> $weeklyPattern غير مستخدم في قالب هذا
-     *                                             الحدث؛ موجود لأن forSchedule() مصنع مشترك مع ScheduleTimesChanged.
+     * @param array<string, string> $weeklyPattern النمط الأسبوعي بلغات العرض؛ هو ما يعرضه قالب
+     *                                             الاعتماد بدل سرد كل موعد مولّد (schedule_times يبقى في الحمولة للتدقيق).
      */
     public function __construct(
         public readonly string $scheduleId,
@@ -68,6 +68,7 @@ final class ScheduleCreated extends DomainEvent
             'duration_minutes' => $this->durationMinutes,
             'session_count' => $this->sessionCount,
             'schedule_times' => $this->scheduleTimes,
+            'weekly_pattern' => $this->weeklyPattern,
             'timezone' => $this->timezone,
         ];
     }

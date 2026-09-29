@@ -5,8 +5,8 @@ declare(strict_types=1);
 return [
     'schedule.created' => [
         'subject' => 'تم اعتماد الجدول الدراسي',
-        'body' => 'تم اعتماد جدول {{target_name}} في كورس {{course_name}} ({{course_code}}) مع المعلم {{teacher_name}}. مدة الحصة {{duration_minutes}} دقيقة، وعدد الحصص {{session_count}}. مواعيد الحصص: {{schedule_times}}',
-        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'schedule_times'],
+        'body' => 'تم اعتماد جدول {{target_name}} في كورس {{course_name}} ({{course_code}}) مع المعلم {{teacher_name}}. مدة الحصة {{duration_minutes}} دقيقة، وعدد الحصص {{session_count}}. المواعيد الأسبوعية: {{weekly_pattern}}.',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'weekly_pattern'],
     ],
     'schedule.times_changed' => [
         'subject' => 'تم تعديل مواعيد الحصص الدائمة',
