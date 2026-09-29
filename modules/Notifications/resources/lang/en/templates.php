@@ -5,8 +5,8 @@ declare(strict_types=1);
 return [
     'schedule.created' => [
         'subject' => 'Course schedule confirmed',
-        'body' => 'The schedule for {{target_name}} in {{course_name}} ({{course_code}}) with {{teacher_name}} has been confirmed. Session duration: {{duration_minutes}} minutes. Total sessions: {{session_count}}. Weekly schedule: {{weekly_pattern}}.',
-        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'session_count', 'weekly_pattern'],
+        'body' => 'The schedule for {{target_name}} in {{course_name}} ({{course_code}}) with {{teacher_name}} has been confirmed. Session duration: {{duration_minutes}} minutes. Weekly schedule: {{weekly_pattern}}.',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'weekly_pattern'],
     ],
     'schedule.times_changed' => [
         'subject' => 'Recurring session times updated',
