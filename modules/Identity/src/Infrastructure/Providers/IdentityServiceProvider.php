@@ -8,6 +8,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Identity\Application\Actions\IssuePhonePasswordResetOtp;
+use Modules\Identity\Application\Listeners\RevokeAccessOnPasswordReset;
 use Modules\Identity\Application\Policies\PasswordResetTokenPolicy;
 use Modules\Identity\Application\Policies\UserDevicePolicy;
 use Modules\Identity\Application\Policies\UserPolicy;
@@ -22,6 +23,7 @@ use Modules\Identity\Domain\Contracts\UserAccountOperations;
 use Modules\Identity\Domain\Contracts\UserAccountProvisioner;
 use Modules\Identity\Domain\Contracts\UsernameSuggestionGateway;
 use Modules\Identity\Domain\Contracts\UserQueryService;
+use Modules\Identity\Domain\Events\PasswordResetCompleted;
 use Modules\Identity\Domain\Models\PasswordResetToken;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Domain\Models\UserDevice;
@@ -68,13 +70,18 @@ final class IdentityServiceProvider extends BaseModuleServiceProvider
 
     /**
      * أحداث Identity تستهلكها موديولات أخرى (Audit، Notifications،
-     * AccessControl). لا مستمعين داخليين حتى الآن — يُربطون هنا عند الحاجة.
+     * AccessControl). المستمع الداخلي الوحيد حاليًا يُبطل الوصول القديم
+     * عند اكتمال إعادة تعيين كلمة المرور.
      *
      * @return array<class-string, list<class-string>>
      */
     protected function listeners(): array
     {
-        return [];
+        return [
+            PasswordResetCompleted::class => [
+                RevokeAccessOnPasswordReset::class,
+            ],
+        ];
     }
 
     /**
