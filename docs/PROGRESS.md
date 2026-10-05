@@ -323,3 +323,13 @@ idempotent فلا يُسجَّل شيء عند إرسال بلا تغيير.
 - Production FPM and Nginx validated and reloaded; Horizon gracefully restarted.
   Request threshold 1000ms, query threshold 500ms, max 10 query logs per request;
   FPM trace threshold 3 seconds. No PostgreSQL restart or data migration.
+
+
+## 2026-10-05 — Production backup and local synchronization
+
+- Preserved the deployed application history through `8b63dc232cb3c3b2a0e7c0290db2a89d8fd2f717` and captured the previously untracked production Compose overlay, FPM configuration, and WhatsApp activation script.
+- Backed up application databases, uploads, environment/configuration, Redis, and repository history; backed up BBB databases, recordings, and configuration separately. Private backups and credentials remain outside Git.
+- Restored the application locally into independent Docker volumes. Kept the previous local tree and database volumes in a separate backup. External delivery, classroom integration, scheduler, and queue workers are disabled in the local copy.
+- Verified archive SHA-256 checksums, restored all application database dumps, and confirmed 3,985 tracked files match the production archive before this documentation update. No pending migrations; local home page returns HTTP 200; Composer platform requirements pass.
+- Validation debt already present in the deployed code: Pint reports 15 style issues; PHPStan reports 1000+ errors; architecture group has 85 passes and 3 failures. The full test run stops at a table-ownership failure (five unregistered tables). Full-suite success and coverage are not established.
+- Preserve this snapshot on GitHub for review. Do not merge into `main` until the existing quality-gate failures are resolved under `docs/21-definition-of-done.md`.
