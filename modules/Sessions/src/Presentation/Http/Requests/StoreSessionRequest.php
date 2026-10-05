@@ -13,7 +13,7 @@ final class StoreSessionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('sessions.session.create');
+        return $this->user()->can('session.create');
     }
 
     /**
@@ -22,7 +22,6 @@ final class StoreSessionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'organization_id' => ['required', 'string', 'size:26'],
             'schedule_id' => ['nullable', 'string', 'size:26'],
             'group_id' => ['nullable', 'string', 'size:26'],
             'course_id' => ['required', 'string', 'size:26'],
@@ -35,6 +34,7 @@ final class StoreSessionRequest extends FormRequest
             'title.ar' => ['required_with:title', 'string', 'max:255'],
             'title.en' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }
 
@@ -54,7 +54,6 @@ final class StoreSessionRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'organization_id' => __('sessions::fields.organization'),
             'course_id' => __('sessions::fields.course'),
             'staff_profile_id' => __('sessions::fields.staff_profile'),
             'session_type' => __('sessions::fields.session_type'),
@@ -62,6 +61,7 @@ final class StoreSessionRequest extends FormRequest
             'scheduled_end' => __('sessions::fields.scheduled_end'),
             'title' => __('sessions::fields.title'),
             'notes' => __('sessions::fields.notes'),
+            'reason' => __('sessions::fields.reason'),
         ];
     }
 }

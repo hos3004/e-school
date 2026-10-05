@@ -28,6 +28,8 @@ final class ReleaseDeferredEntriesController extends Controller
             organizationId: (string) $request->user()?->getAttribute('organization_id'),
             makeupSessionId: $makeupSession,
             staffProfileId: (string) $request->validated('staff_profile_id'),
+            actorId: (string) $request->user()->getAuthIdentifier(),
+            reason: (string) $request->validated('reason'),
         );
 
         return response()->json([

@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Console\Support\ConsoleContext;
+use App\Support\PageTranslations;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Lang;
 use Inertia\Middleware;
 use Modules\AccessControl\Domain\Contracts\AccessControlQuerier;
+use Shared\Support\Locales;
 
 final class HandleInertiaRequests extends Middleware
 {
@@ -17,7 +18,7 @@ final class HandleInertiaRequests extends Middleware
     ) {}
 
     /**
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     public function share(Request $request): array
     {
@@ -50,35 +51,18 @@ final class HandleInertiaRequests extends Middleware
              * والمسار نفسه غير مسجَّل حين تكون الميزة مطفأة — فلا يعتمد المنع
              * على الإخفاء وحده.
              */
+            'console' => $request->is('manage', 'manage/*', 'learn', 'learn/*')
+                ? app(ConsoleContext::class)->forRequest($request)
+                : null,
             'features' => [
-                'payroll' => (bool) config('features.payroll'),
+                'payroll' => (bool) config('features.payroll') && ($user === null || $user->can('payroll.view')),
             ],
             'locale' => $locale,
+            'supportedLocales' => $request->is('manage', 'manage/*', 'learn', 'learn/*') ? ['ar'] : Locales::supported(),
             'direction' => in_array($locale, (array) config('app.rtl_locales', ['ar']), true)
                 ? 'rtl'
                 : 'ltr',
-            'translations' => $this->translations($locale),
+            new PageTranslations,
         ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function translations(string $locale): array
-    {
-        $lines = Lang::get('portal', [], $locale);
-
-        if (!is_array($lines)) {
-            $lines = Lang::get('portal', [], (string) config('app.fallback_locale', 'en'));
-        }
-
-        if (!is_array($lines)) {
-            return [];
-        }
-
-        return array_map(
-            static fn (mixed $value): string => (string) $value,
-            Arr::dot($lines),
-        );
     }
 }

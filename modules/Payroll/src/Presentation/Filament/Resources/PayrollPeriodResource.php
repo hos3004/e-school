@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Gate;
 use Modules\Payroll\Domain\Enums\PayrollPeriodStatus;
 use Modules\Payroll\Domain\Models\PayrollPeriod;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 use Shared\ValueObjects\Money;
 
 /**
@@ -37,7 +38,7 @@ final class PayrollPeriodResource extends Resource
 
     protected static ?int $navigationSort = 80;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('payroll::navigation.group');
     }
@@ -87,7 +88,11 @@ final class PayrollPeriodResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'payroll::origin.period',
+            'heroicon-o-calendar-days',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('payroll::fields.id'))
@@ -151,5 +156,15 @@ final class PayrollPeriodResource extends Resource
                     ->visible(fn (PayrollPeriod $record): bool => Gate::forUser(auth()->user())->allows('lock', $record))
                     ->action(fn () => null),
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => PayrollPeriodResource\Pages\ListPayrollPeriods::route('/'),
+        ];
     }
 }

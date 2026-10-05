@@ -22,7 +22,13 @@ final class AssignTeacherController extends Controller
 
     public function __invoke(AssignTeacherRequest $request, Group $group): JsonResponse
     {
-        $assignment = $this->action->execute($group, $request->validated());
+        $data = $request->validated();
+        $assignment = $this->action->execute(
+            $group,
+            $data,
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $data['reason'],
+        );
 
         return GroupTeacherResource::make($assignment)
             ->response()

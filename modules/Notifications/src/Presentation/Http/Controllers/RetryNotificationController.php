@@ -29,6 +29,7 @@ final class RetryNotificationController extends Controller
         $this->action->executeManually(
             $notification,
             (string) $request->user()?->getAuthIdentifier(),
+            (string) $request->validated('reason'),
         );
 
         return new NotificationOutboxResource($notification->refresh());

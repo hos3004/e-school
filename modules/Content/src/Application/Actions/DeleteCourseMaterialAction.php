@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Content\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Content\Domain\Events\CourseMaterialRemoved;
 use Modules\Content\Domain\Models\CourseMaterial;
 use Shared\Support\BusinessRuleViolation;
@@ -18,21 +19,12 @@ final readonly class DeleteCourseMaterialAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
-    public function execute(string $materialId, string $reason, ?string $actorId = null): void
+    public function execute(CourseMaterial $material, string $reason, ?string $actorId = null): void
     {
-        /** @var CourseMaterial|null $material */
-        $material = CourseMaterial::query()->find($materialId);
-
-        if ($material === null) {
-            throw BusinessRuleViolation::make(
-                'content.material_not_found',
-                'content::errors.material_not_found',
-                ['material_id' => $materialId],
-            );
-        }
-
+        $reason = trim($reason);
         if ($reason === '') {
             throw BusinessRuleViolation::make(
                 'content.removal_reason_required',
@@ -40,21 +32,29 @@ final readonly class DeleteCourseMaterialAction
             );
         }
 
-        [$courseId, $event] = $this->transaction->run(function () use ($material, $reason, $actorId): array {
+        $event = $this->transaction->run(function () use ($material, $reason, $actorId): CourseMaterialRemoved {
             $material->delete();
 
-            return [
-                $material->course_id,
-                new CourseMaterialRemoved(
-                    materialId: $material->id,
-                    courseId: $material->course_id,
-                    reason: $reason,
-                    actorId: $actorId,
-                ),
-            ];
+            $this->audit->record(
+                organizationId: (string) $material->organization_id,
+                actorId: $actorId,
+                actorType: $actorId === null ? 'system' : 'user',
+                action: 'content.material_archived',
+                auditableType: 'course_materials',
+                auditableId: (string) $material->getKey(),
+                oldValues: ['deleted_at' => null, 'status' => $material->status->value],
+                newValues: ['deleted_at' => $material->deleted_at?->toIso8601String()],
+                reason: $reason,
+            );
+
+            return new CourseMaterialRemoved(
+                materialId: $material->id,
+                courseId: $material->course_id,
+                reason: $reason,
+                actorId: $actorId,
+            );
         });
 
-        unset($courseId);
         $this->events->dispatch($event);
     }
 }

@@ -13,7 +13,7 @@ final class GradeAttemptRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('assessments.attempt.grade');
+        return $this->user()?->can('assessment.manage') ?? false;
     }
 
     /**
@@ -23,6 +23,8 @@ final class GradeAttemptRequest extends FormRequest
     {
         return [
             'score' => ['required', 'integer', 'min:0'],
+            'feedback' => ['nullable', 'string', 'max:5000'],
+            'reason' => ['required', 'string', 'max:'.(int) config('assessments.reason_max_length', 1000)],
         ];
     }
 

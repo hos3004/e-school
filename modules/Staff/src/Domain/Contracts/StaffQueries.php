@@ -18,10 +18,41 @@ interface StaffQueries
 
     public function isAvailableOnWeekday(string $staffProfileId, int $weekday, ?CarbonImmutable $on = null): bool;
 
+    public function isActiveTeacherForOrganization(string $organizationId, string $staffProfileId): bool;
+
+    /**
+     * هل يحتسب عقد المعلم الساري بهذا التاريخ أجرًا لكل حصة؟
+     *
+     * العقد الشهري يُدفع بالراتب لا بالحصة، فلا يُطالَب بسعر حصة عند الجدولة.
+     * غياب العقد يُعامل معاملة المحتاج للسعر: الحصة بلا عقد لا يُحتسب لها أجر.
+     */
+    public function requiresSessionRates(string $staffProfileId, CarbonImmutable $on): bool;
+
+    public function hasDeclaredAvailability(string $staffProfileId, CarbonImmutable $on): bool;
+
+    public function isAvailableDuring(
+        string $staffProfileId,
+        CarbonImmutable $startsAt,
+        CarbonImmutable $endsAt,
+    ): bool;
+
+    public function isOnApprovedLeave(
+        string $staffProfileId,
+        CarbonImmutable $startsAt,
+        CarbonImmutable $endsAt,
+    ): bool;
+
     /**
      * @return list<string>
      */
     public function activeTeacherIdsForOrganization(string $organizationId): array;
+
+    /**
+     * ملخصات المعلمين النشطين المناسبة لقوائم الاختيار التشغيلية.
+     *
+     * @return list<array{staff_profile_id: string, name: string, staff_code: string}>
+     */
+    public function activeTeacherSummariesForOrganization(string $organizationId): array;
 
     public function userIdForProfile(string $organizationId, string $staffProfileId): ?string;
 

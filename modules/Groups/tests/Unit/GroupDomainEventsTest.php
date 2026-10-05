@@ -13,7 +13,7 @@ uses(RefreshDatabase::class);
 it('publishes GroupActivated with primitive payload only', function (): void {
     Event::fake([GroupActivated::class]);
 
-    $group = app(ActivateGroupAction::class)->execute(Group::factory()->create());
+    $group = app(ActivateGroupAction::class)->execute(Group::factory()->activatable()->create());
 
     Event::assertDispatched(
         GroupActivated::class,

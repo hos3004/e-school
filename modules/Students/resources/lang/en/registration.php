@@ -28,13 +28,35 @@ return [
         'under_review' => 'The application is now under review.',
         'accepted' => 'The application was accepted and the student profile was created.',
         'rejected' => 'The registration application was rejected.',
+        'assigned' => 'The student was placed in a group.',
     ],
     'filters' => [
+        'registration_form' => 'Registration source / form',
+        'registration_form_unknown' => 'Internal or legacy registration',
         'status' => 'Status',
         'country' => 'Country',
         'region' => 'Region',
+        'language' => 'Preferred language',
+        'age_range' => 'Age range',
+        'age_from' => 'From age',
+        'age_to' => 'To age',
+        'age_indicator' => 'Age from :from to :to',
+        'registered_at' => 'Registration date',
+        'registered_from' => 'From date',
+        'registered_until' => 'To date',
+        'value_from' => 'From',
+        'value_until' => 'To',
     ],
     'duplicate' => 'Potential duplicate',
     'duplicate_yes' => 'Yes',
     'duplicate_no' => 'No',
+
+    /*
+     * Texts injected into notification messages as parameter values. A missing
+     * parameter drops the whole notification, so a request without a preferred
+     * course falls back to this instead of going silent.
+     */
+    'notifications' => [
+        'course_unspecified' => 'Not selected yet',
+    ],
 ];

@@ -8,6 +8,7 @@ declare(strict_types=1);
 */
 
 return [
+    'whatsapp_media_received' => 'رسالة وسائط واردة',
     'sent' => 'تم إرسال الرسالة بنجاح.',
     'edited' => 'تم تعديل الرسالة.',
     'flagged' => 'تم وسم الرسالة كمخالفة.',
@@ -16,4 +17,6 @@ return [
     'wall_comment_added' => 'تمت إضافة التعليق.',
     'whatsapp_recorded' => 'تم تسجيل رسالة الواتساب الواردة.',
     'whatsapp_handled' => 'تم تعامل الموظف مع رسالة الواتساب.',
+    'campaign_sweep_done' => 'أُعيد توزيع :redispatched رسالة، وأُغلق :closed مستلمًا انقطع إرساله.',
+    'campaign_media_pruned' => 'حُذف :count مرفقًا انقضت مدة الاحتفاظ به.',
 ];

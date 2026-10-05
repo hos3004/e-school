@@ -52,11 +52,17 @@ final readonly class RecordViolationAction
             ? CarbonImmutable::parse((string) $data['occurred_at'], 'UTC')
             : CarbonImmutable::now('UTC');
 
+        $sourceEventId = isset($data['source_event_id'])
+            ? trim((string) $data['source_event_id'])
+            : null;
+        if ($sourceEventId === '') {
+            $sourceEventId = null;
+        }
+
         $window = DisciplineWindow::forDate($occurredAt);
 
-        $violation = $this->transaction->run(function () use ($data, $type, $occurredAt, $window): ViolationEvent {
-            $violation = new ViolationEvent;
-            $violation->fill([
+        [$violation, $created] = $this->transaction->run(function () use ($data, $type, $occurredAt, $sourceEventId, $window): array {
+            $attributes = [
                 'organization_id' => $data['organization_id'],
                 'enrollment_id' => $data['enrollment_id'],
                 'student_profile_id' => $data['student_profile_id'],
@@ -65,11 +71,27 @@ final readonly class RecordViolationAction
                 'occurred_at' => $occurredAt,
                 'window_key' => $window->key,
                 'is_countable' => $type->isCountable(),
-            ]);
+            ];
+
+            if ($sourceEventId !== null) {
+                $violation = ViolationEvent::query()->firstOrCreate(
+                    ['source_event_id' => $sourceEventId],
+                    $attributes,
+                );
+
+                return [$violation, $violation->wasRecentlyCreated];
+            }
+
+            $violation = new ViolationEvent;
+            $violation->fill($attributes);
             $violation->save();
 
-            return $violation;
+            return [$violation, true];
         });
+
+        if (!$created) {
+            return $violation;
+        }
 
         $count = $this->countInWindow($violation);
 
@@ -94,9 +116,12 @@ final readonly class RecordViolationAction
      */
     public function countInWindow(ViolationEvent $violation): int
     {
+        $range = DisciplineWindow::rangeEndingAt($violation->occurred_at);
+
         return (int) ViolationEvent::query()
             ->where('enrollment_id', $violation->enrollment_id)
-            ->where('window_key', $violation->window_key)
+            ->where('occurred_at', '>=', $range['start'])
+            ->where('occurred_at', '<=', $violation->occurred_at)
             ->countable()
             ->count();
     }

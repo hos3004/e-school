@@ -32,6 +32,7 @@ export interface AppPageProps extends Record<string, unknown> {
     flash: FlashMessages;
     translations: TranslationDictionary;
     locale?: Locale;
+    supportedLocales?: Locale[];
 }
 
 export interface LoadablePageProps {
@@ -57,10 +58,13 @@ export interface Session {
     location?: string | null;
     joinUrl?: string | null;
     canJoinAt?: IsoDateTime | null;
+    canJoinUntil?: IsoDateTime | null;
     canJoin?: boolean;
     recordingUrl?: string | null;
     attendanceConfirmed?: boolean;
     reportSubmitted?: boolean;
+    flexibleStart?: boolean;
+    readyPingedAt?: IsoDateTime | null;
 }
 
 export interface Attendance {
@@ -72,6 +76,7 @@ export interface Attendance {
     status: string;
     note?: string | null;
     recordedAt?: IsoDateTime | null;
+    readyPingedAt?: IsoDateTime | null;
 }
 
 export interface Assignment {
@@ -123,6 +128,7 @@ export interface PostponementRequest {
     status: string;
     approveUrl: string;
     proposeAlternativeUrl: string;
+    rejectUrl: string;
 }
 
 export type StatusColor = 'neutral' | 'brand' | 'success' | 'warning' | 'danger';

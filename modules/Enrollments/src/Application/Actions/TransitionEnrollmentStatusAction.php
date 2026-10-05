@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Enrollments\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Enrollments\Application\Concerns\TransitionsEnrollmentStatus;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Enrollments\Domain\Events\EnrollmentStatusChanged;
@@ -15,7 +16,7 @@ use Shared\Support\Transaction;
 /**
  * انتقال حالة عام لكل الانتقالات "النظيفة" التي لا تحمل حقولًا إضافية.
  *
- * يخدم: مراجعة الطلب، القبول، الرفض، التفعيل، العودة من الإيقاف،
+ * يخدم: مراجعة الطلب، القبول، الرفض، العودة من الإيقاف،
  * بدء التقييم، الإكمال، والانسحاب.
  *
  * لا يخدم أبدًا:
@@ -32,10 +33,18 @@ final readonly class TransitionEnrollmentStatusAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(Enrollment $enrollment, EnrollmentStatus $target, string $reason, ?string $actorId = null): Enrollment
     {
+        if ($enrollment->status === EnrollmentStatus::Approved && $target === EnrollmentStatus::Active) {
+            throw BusinessRuleViolation::make(
+                'enrollments.activation_requires_placement',
+                'enrollments::errors.activation_requires_placement',
+            );
+        }
+
         if ($target === EnrollmentStatus::Paused) {
             throw BusinessRuleViolation::make(
                 'enrollments.use_pause_action',
@@ -61,7 +70,7 @@ final readonly class TransitionEnrollmentStatusAction
         [$event] = $this->transaction->run(function () use ($enrollment, $target, $reason, $actorId): array {
             $from = $enrollment->status;
 
-            $this->applyTransition($enrollment, $target, $reason, $actorId);
+            $this->applyTransition($enrollment, $target, $reason, $this->audit, $actorId);
 
             return [new EnrollmentStatusChanged(
                 enrollmentId: $enrollment->id,

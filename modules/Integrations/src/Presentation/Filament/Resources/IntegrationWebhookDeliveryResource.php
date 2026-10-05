@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Integrations\Presentation\Filament\Resources;
 
+use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -14,9 +16,11 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Modules\Integrations\Application\Actions\RequeueDeadDeliveryAction;
 use Modules\Integrations\Domain\Enums\DeliveryStatus;
 use Modules\Integrations\Domain\Enums\WebhookDirection;
 use Modules\Integrations\Domain\Models\IntegrationWebhookDelivery;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد متابعة إيصالات Webhook في لوحة الإدارة — للقراءة والمتابعة.
@@ -29,7 +33,12 @@ final class IntegrationWebhookDeliveryResource extends Resource
 
     protected static ?int $navigationSort = 104;
 
-    public static function getNavigationGroup(): ?string
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
+    public static function getNavigationGroup(): string
     {
         return __('integrations::navigation.group');
     }
@@ -91,7 +100,11 @@ final class IntegrationWebhookDeliveryResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'integrations::origin.delivery',
+            'heroicon-o-arrows-right-left',
+        )
             ->columns([
                 TextColumn::make('event_type')
                     ->label(__('integrations::fields.event_type'))
@@ -149,6 +162,44 @@ final class IntegrationWebhookDeliveryResource extends Resource
                             ->all(),
                     ),
             ])
+            ->recordActions([self::requeueAction()])
             ->defaultSort('created_at', 'desc');
+    }
+
+    /**
+     * إعادة إدراج إيصال ميت في الطابور.
+     *
+     * `RequeueDeadDeliveryAction` وسياسة `requeue` كانتا موجودتين بلا زر، فكان
+     * الإيصال الفاشل نهائيًا يبقى ميتًا ما لم يتدخل أحد على مستوى القاعدة —
+     * أي أن تكاملًا خارجيًا يسقط بلا طريق تعافٍ من اللوحة.
+     */
+    public static function requeueAction(): Action
+    {
+        return Action::make('requeue')
+            ->label(__('integrations::fields.requeue'))
+            ->icon('heroicon-m-arrow-path')
+            ->color('primary')
+            ->authorize('requeue')
+            ->requiresConfirmation()
+            // الإجراء نفسه يرفض غير الميت؛ إخفاء الزر يمنع محاولةً مآلها خطأ.
+            ->visible(fn (IntegrationWebhookDelivery $record): bool => $record->status === DeliveryStatus::Dead)
+            ->action(function (IntegrationWebhookDelivery $record): void {
+                app(RequeueDeadDeliveryAction::class)->execute($record, (string) auth()->id());
+
+                Notification::make()
+                    ->title(__('integrations::fields.requeued'))
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => IntegrationWebhookDeliveryResource\Pages\ListIntegrationWebhookDeliveries::route('/'),
+        ];
     }
 }

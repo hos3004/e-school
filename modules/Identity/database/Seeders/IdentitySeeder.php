@@ -22,6 +22,12 @@ final class IdentitySeeder extends Seeder
 {
     public function run(): void
     {
+        if (!app()->environment(['local', 'testing'])) {
+            $this->command?->warn('IdentitySeeder: demo identities are disabled outside local/testing.');
+
+            return;
+        }
+
         if (!Schema::hasTable('organizations') || !Schema::hasTable('users')) {
             return;
         }

@@ -6,7 +6,6 @@ namespace Modules\Sessions\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
-use Modules\Sessions\Application\Concerns\TransitionsSessionStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\SessionEndedForReview;
 use Modules\Sessions\Domain\Models\Session;
@@ -16,22 +15,23 @@ use Modules\Sessions\Domain\Models\Session;
  */
 final readonly class EndSessionAction
 {
-    use TransitionsSessionStatus;
-
     public function __construct(
         private Dispatcher $events,
+        private TransitionSessionStatusAction $transition,
     ) {}
 
-    public function execute(Session $session, ?string $actorId = null): Session
+    public function execute(Session $session, string $actorId, string $reason, string $actorType = 'user'): Session
     {
-        $this->guardNotTerminal($session);
-
         $now = CarbonImmutable::now('UTC');
 
-        $this->applyTransition(
+        $session = $this->transition->execute(
             $session,
             SessionStatus::AwaitingReview,
-            ['actual_end' => $now],
+            $actorId,
+            $reason,
+            'sessions.session_ended',
+            ['actual_end' => $now->toIso8601String()],
+            actorType: $actorType,
         );
 
         $this->events->dispatch(new SessionEndedForReview(
@@ -42,6 +42,6 @@ final readonly class EndSessionAction
             actualEnd: $now->toIso8601String(),
         ));
 
-        return $session->refresh();
+        return $session;
     }
 }

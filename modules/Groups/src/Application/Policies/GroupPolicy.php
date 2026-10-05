@@ -14,64 +14,73 @@ use Modules\Groups\Domain\Models\Group;
  */
 final class GroupPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
         return $user->can('group.view');
     }
 
-    public function view($user, Group $group): bool
+    public function view(mixed $user, Group $group): bool
     {
-        return $user->can('group.view');
+        return $user->can('group.view') && $this->sameOrganization($user, $group);
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
         return $user->can('group.manage');
     }
 
-    public function update($user, Group $group): bool
+    public function update(mixed $user, Group $group): bool
     {
-        return $user->can('group.manage');
+        return $user->can('group.manage') && $this->sameOrganization($user, $group);
     }
 
     /** أرشفة مجموعة — إجراء حسّاس للمؤسسة. */
-    public function delete($user, Group $group): bool
+    public function delete(mixed $user, Group $group): bool
     {
-        return $user->can('group.manage');
+        return $user->can('group.manage') && $this->sameOrganization($user, $group);
     }
 
-    public function restore($user, Group $group): bool
+    public function restore(mixed $user, Group $group): bool
     {
-        return $user->can('group.manage');
+        return $user->can('group.manage') && $this->sameOrganization($user, $group);
     }
 
-    public function activate($user, Group $group): bool
+    public function activate(mixed $user, Group $group): bool
     {
-        return $user->can('group.manage');
+        return $user->can('group.manage') && $this->sameOrganization($user, $group);
     }
 
-    public function complete($user, Group $group): bool
+    public function complete(mixed $user, Group $group): bool
     {
-        return $user->can('group.manage');
+        return $user->can('group.manage') && $this->sameOrganization($user, $group);
     }
 
-    public function enrollStudent($user, Group $group): bool
+    public function enrollStudent(mixed $user, Group $group): bool
     {
-        return $user->can('group.manage');
+        return $user->can('group.manage') && $this->sameOrganization($user, $group);
     }
 
-    public function withdrawStudent($user, Group $group): bool
+    public function withdrawStudent(mixed $user, Group $group): bool
     {
-        return $user->can('group.manage');
+        return $user->can('group.manage') && $this->sameOrganization($user, $group);
     }
 
-    public function assignTeacher($user, Group $group): bool
+    public function assignTeacher(mixed $user, Group $group): bool
     {
-        return $user->can('group.manage');
+        return $user->can('group.manage') && $this->sameOrganization($user, $group);
     }
 
-    public function attachProgram($user, Group $group): bool
+    public function attachProgram(mixed $user, Group $group): bool
     {
-        return $user->can('group.manage');
+        return $user->can('group.manage') && $this->sameOrganization($user, $group);
+    }
+
+    private function sameOrganization(mixed $user, Group $group): bool
+    {
+        $organizationId = data_get($user, 'organization_id');
+
+        return is_string($organizationId)
+            && $organizationId !== ''
+            && hash_equals($organizationId, (string) $group->organization_id);
     }
 }

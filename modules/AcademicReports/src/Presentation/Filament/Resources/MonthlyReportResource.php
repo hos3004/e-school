@@ -11,6 +11,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -18,6 +20,11 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\AcademicReports\Domain\Enums\MonthlyReportStatus;
 use Modules\AcademicReports\Domain\Models\MonthlyReport;
+use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
+use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
+use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
+use Modules\Enrollments\Domain\ValueObjects\EnrollmentSummaryData;
+use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
 
 /**
  * مورد إدارة التقارير الشهرية في لوحة الإدارة.
@@ -30,7 +37,12 @@ final class MonthlyReportResource extends Resource
 
     protected static ?int $navigationSort = 52;
 
-    public static function getNavigationGroup(): ?string
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
+    public static function getNavigationGroup(): string
     {
         return __('academicreports::navigation.group');
     }
@@ -51,14 +63,24 @@ final class MonthlyReportResource extends Resource
             Section::make(__('academicreports::fields.period'))
                 ->schema([
                     Grid::make(2)->schema([
-                        TextInput::make('student_profile_id')
+                        Select::make('student_profile_id')
                             ->label(__('academicreports::fields.student_profile'))
-                            ->required()
-                            ->maxLength(26),
-                        TextInput::make('enrollment_id')
+                            ->searchable()
+                            ->getSearchResultsUsing(fn (string $search): array => app(StudentDirectoryQueries::class)
+                                ->searchNames(self::organizationId() ?? '', $search))
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => is_string($value)
+                                ? (app(StudentDirectoryQueries::class)->namesForProfiles(self::organizationId() ?? '', [$value])[$value] ?? null)
+                                : null)
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('enrollment_id', null))
+                            ->required(),
+                        Select::make('enrollment_id')
                             ->label(__('academicreports::fields.enrollment'))
-                            ->required()
-                            ->maxLength(26),
+                            ->options(fn (Get $get): array => self::enrollmentOptions(
+                                is_string($get('student_profile_id')) ? $get('student_profile_id') : null,
+                            ))
+                            ->searchable()
+                            ->required(),
                         TextInput::make('period_year')
                             ->label(__('academicreports::fields.period_year'))
                             ->required()
@@ -82,12 +104,6 @@ final class MonthlyReportResource extends Resource
                     Textarea::make('supervisor_summary')
                         ->label(__('academicreports::fields.supervisor_summary'))
                         ->columnSpanFull(),
-                    Select::make('status')
-                        ->label(__('academicreports::fields.status'))
-                        ->options(collect(MonthlyReportStatus::cases())
-                            ->mapWithKeys(fn (MonthlyReportStatus $s): array => [$s->value => $s->label()])
-                            ->all())
-                        ->required(),
                 ]),
         ]);
     }
@@ -102,8 +118,10 @@ final class MonthlyReportResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('student_profile_id')
                     ->label(__('academicreports::fields.student_profile'))
-                    ->searchable()
-                    ->copyable(),
+                    // كان ULID خامًا — يُعرض اسم الطالب عبر عقد Students المعلن.
+                    ->formatStateUsing(static fn ($state): string => self::studentNames()[(string) $state]
+                        ?? (string) $state)
+                    ->searchable(),
                 TextColumn::make('period_year')
                     ->label(__('academicreports::fields.period_year'))
                     ->sortable(),
@@ -132,6 +150,36 @@ final class MonthlyReportResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
+                SelectFilter::make('student_profile_id')
+                    ->label(__('academicreports::fields.student_profile'))
+                    ->options(fn (): array => self::studentNames())
+                    ->searchable(),
+
+                SelectFilter::make('period_year')
+                    ->label(__('academicreports::fields.period_year'))
+                    ->options(function (): array {
+                        $organizationId = self::organizationId();
+
+                        if ($organizationId === null) {
+                            return [];
+                        }
+
+                        return MonthlyReport::query()
+                            ->forOrganization($organizationId)
+                            ->pluck('period_year')
+                            ->unique()
+                            ->sortDesc()
+                            ->mapWithKeys(static fn ($year): array => [(string) $year => (string) $year])
+                            ->all();
+                    }),
+
+                SelectFilter::make('period_month')
+                    ->label(__('academicreports::fields.period_month'))
+                    ->options(array_combine(range(1, 12), array_map(
+                        static fn (int $m): string => __('academicreports::months.'.$m),
+                        range(1, 12),
+                    ))),
+
                 SelectFilter::make('status')
                     ->label(__('academicreports::fields.status'))
                     ->options(collect(MonthlyReportStatus::cases())
@@ -148,9 +196,75 @@ final class MonthlyReportResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->when(
-            auth()->user()?->organization_id !== null,
-            fn (Builder $query): Builder => $query->forOrganization((string) auth()->user()?->organization_id),
+        /** @var Builder<MonthlyReport> $query */
+        $query = parent::getEloquentQuery();
+        $organizationId = self::organizationId();
+
+        return $organizationId === null
+            ? $query->whereRaw('1 = 0')
+            : $query->forOrganization($organizationId);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => MonthlyReportResource\Pages\ListMonthlyReports::route('/'),
+            'create' => MonthlyReportResource\Pages\CreateMonthlyReport::route('/create'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function studentNames(): array
+    {
+        $organizationId = self::organizationId();
+
+        if ($organizationId === null) {
+            return [];
+        }
+
+        return app(StudentDirectoryQueries::class)->namesForProfiles(
+            $organizationId,
+            MonthlyReport::query()->forOrganization($organizationId)->pluck('student_profile_id')->all(),
         );
+    }
+
+    private static function organizationId(): ?string
+    {
+        $organizationId = data_get(auth()->user(), 'organization_id');
+
+        return is_string($organizationId) && $organizationId !== ''
+            ? $organizationId
+            : null;
+    }
+
+    /** @return array<string, string> */
+    private static function enrollmentOptions(?string $studentProfileId): array
+    {
+        $organizationId = self::organizationId();
+
+        if ($organizationId === null || $studentProfileId === null || $studentProfileId === '') {
+            return [];
+        }
+
+        $enrollments = app(EnrollmentAdministrationQueries::class)->forStudent($organizationId, $studentProfileId);
+        $programs = app(AcademicCatalogQueries::class)->programsByIds(
+            $organizationId,
+            collect($enrollments)->map(static fn (EnrollmentSummaryData $item): string => $item->programId)->all(),
+        );
+        $locale = app()->getLocale();
+
+        return collect($enrollments)->mapWithKeys(static function (EnrollmentSummaryData $enrollment) use ($programs, $locale): array {
+            $program = $programs[$enrollment->programId] ?? null;
+            $programName = $program === null
+                ? __('academicreports::fields.enrollment')
+                : ($program->name[$locale]
+                    ?? $program->name[(string) config('app.fallback_locale', 'en')]
+                    ?? $program->code);
+            $status = EnrollmentStatus::tryFrom($enrollment->status)?->label() ?? $enrollment->status;
+
+            return [$enrollment->id => $programName.' · '.$status];
+        })->all();
     }
 }

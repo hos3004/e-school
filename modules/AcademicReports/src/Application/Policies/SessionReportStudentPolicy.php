@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\AcademicReports\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\AcademicReports\Domain\Models\SessionReportStudent;
 
 /**
@@ -13,28 +15,28 @@ use Modules\AcademicReports\Domain\Models\SessionReportStudent;
  */
 final class SessionReportStudentPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('academicreports.session_report_student.view_any');
+        return $user->can('session_report.view');
     }
 
-    public function view($user, SessionReportStudent $record): bool
+    public function view(Authenticatable&Authorizable $user, SessionReportStudent $record): bool
     {
-        return $user->can('academicreports.session_report_student.view');
+        return $user->can('session_report.view');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('academicreports.session_report_student.create');
+        return $user->can('session_report.create');
     }
 
-    public function update($user, SessionReportStudent $record): bool
+    public function update(Authenticatable&Authorizable $user, SessionReportStudent $record): bool
     {
-        return $user->can('academicreports.session_report_student.update');
+        return $user->can('session_report.create');
     }
 
-    public function delete($user, SessionReportStudent $record): bool
+    public function delete(Authenticatable&Authorizable $user, SessionReportStudent $record): bool
     {
-        return $user->can('academicreports.session_report_student.delete');
+        return false;
     }
 }

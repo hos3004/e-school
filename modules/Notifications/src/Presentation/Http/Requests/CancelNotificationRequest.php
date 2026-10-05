@@ -13,7 +13,7 @@ final class CancelNotificationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('notifications.outbox.cancel');
+        return (bool) ($this->user()?->can('notifications.outbox.cancel') ?? false);
     }
 
     /**

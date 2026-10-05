@@ -4,25 +4,44 @@ declare(strict_types=1);
 
 namespace Modules\Notifications\Infrastructure\Providers;
 
+use Illuminate\Auth\Events\Login;
 use Modules\Integrations\Domain\Contracts\ChannelGateway;
+use Modules\Notifications\Application\Actions\SavePopupCampaignAction;
+use Modules\Notifications\Application\Console\CancelUndeliverableNotifications;
 use Modules\Notifications\Application\Console\DispatchDueNotifications;
 use Modules\Notifications\Application\Console\RetryFailedNotifications;
+use Modules\Notifications\Application\Listeners\MarkPopupLoginMarker;
 use Modules\Notifications\Application\Listeners\QueueConfiguredDomainEventNotification;
 use Modules\Notifications\Application\Policies\NotificationCategorySettingPolicy;
 use Modules\Notifications\Application\Policies\NotificationDeliveryAttemptPolicy;
 use Modules\Notifications\Application\Policies\NotificationOutboxPolicy;
 use Modules\Notifications\Application\Policies\NotificationPreferencePolicy;
 use Modules\Notifications\Application\Policies\NotificationTemplatePolicy;
+use Modules\Notifications\Application\Policies\PopupCampaignPolicy;
+use Modules\Notifications\Application\Queries\EloquentPopupQueryService;
+use Modules\Notifications\Application\Queries\NotificationAdministrationQueryService;
+use Modules\Notifications\Application\Services\AccessControlPopupAudienceResolver;
+use Modules\Notifications\Application\Services\EmailDeliverabilityGuard;
+use Modules\Notifications\Application\Services\GreenApiDeliveryStatusRecorder;
+use Modules\Notifications\Application\Services\NotificationRecipientSilencer;
 use Modules\Notifications\Application\Services\OutboxDispatcher;
 use Modules\Notifications\Application\Services\PayloadDomainEventRecipientResolver;
 use Modules\Notifications\Domain\Contracts\DomainEventRecipientResolver;
+use Modules\Notifications\Domain\Contracts\EmailDeliverabilityCheck;
+use Modules\Notifications\Domain\Contracts\FirebaseAccessTokenProvider;
+use Modules\Notifications\Domain\Contracts\NotificationAdministrationQueries;
 use Modules\Notifications\Domain\Contracts\NotificationDispatcher;
+use Modules\Notifications\Domain\Contracts\PopupAudienceResolver;
+use Modules\Notifications\Domain\Contracts\PopupQueries;
+use Modules\Notifications\Domain\Contracts\ProviderDeliveryStatusRecorder;
 use Modules\Notifications\Domain\Models\NotificationCategorySetting;
 use Modules\Notifications\Domain\Models\NotificationDeliveryAttempt;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Domain\Models\NotificationPreference;
 use Modules\Notifications\Domain\Models\NotificationTemplate;
+use Modules\Notifications\Domain\Models\PopupCampaign;
 use Modules\Notifications\Infrastructure\Persistence\ConfiguredChannelGateway;
+use Modules\Notifications\Infrastructure\Push\ServiceAccountAccessTokenProvider;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class NotificationsServiceProvider extends BaseModuleServiceProvider
@@ -39,7 +58,10 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
      */
     protected function listeners(): array
     {
-        $listeners = [];
+        $listeners = [
+            // علامة جلسة الدخول لقاعدة OncePerLogin — آمنة في الجلسة لا في المتصفح.
+            Login::class => [MarkPopupLoginMarker::class],
+        ];
 
         /** @var array<string, array<string, mixed>> $events */
         $events = (array) config('notifications.events', []);
@@ -68,6 +90,7 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
             NotificationDeliveryAttempt::class => NotificationDeliveryAttemptPolicy::class,
             NotificationTemplate::class => NotificationTemplatePolicy::class,
             NotificationCategorySetting::class => NotificationCategorySettingPolicy::class,
+            PopupCampaign::class => PopupCampaignPolicy::class,
         ];
     }
 
@@ -81,11 +104,30 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
         return [
             // محرّك الإشعارات — ما تعتمده بقية الموديولات عبر العقد.
             NotificationDispatcher::class => OutboxDispatcher::class,
+            EmailDeliverabilityCheck::class => EmailDeliverabilityGuard::class,
+            ProviderDeliveryStatusRecorder::class => GreenApiDeliveryStatusRecorder::class,
             DomainEventRecipientResolver::class => PayloadDomainEventRecipientResolver::class,
+            NotificationAdministrationQueries::class => NotificationAdministrationQueryService::class,
 
             // بوابة القنوات: موجّه يقرأ تنفيذ القناة من config، وتنفيذاته
             // الحقيقية (SES · FCM · Meta) تُعلَّم في الإعداد دون استيراد عابر للحدود.
             ChannelGateway::class => ConfiguredChannelGateway::class,
+            FirebaseAccessTokenProvider::class => ServiceAccountAccessTokenProvider::class,
+            PopupQueries::class => EloquentPopupQueryService::class,
+            PopupAudienceResolver::class => AccessControlPopupAudienceResolver::class,
+            SavePopupCampaignAction::class => SavePopupCampaignAction::class,
+        ];
+    }
+
+    /**
+     * @return array<class-string, class-string>
+     */
+    protected function scopedBindings(): array
+    {
+        return [
+            // قرار كتم مستلم لعملية واحدة — لا يصح أن يعيش أبعد من الطلب
+            // نفسه، فعامل قائمة الانتظار (عملية منفصلة) لا يرثه أبدًا.
+            NotificationRecipientSilencer::class => NotificationRecipientSilencer::class,
         ];
     }
 
@@ -94,6 +136,7 @@ final class NotificationsServiceProvider extends BaseModuleServiceProvider
         parent::boot();
 
         $this->commands([
+            CancelUndeliverableNotifications::class,
             DispatchDueNotifications::class,
             RetryFailedNotifications::class,
         ]);

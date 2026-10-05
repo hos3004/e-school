@@ -7,6 +7,7 @@ namespace Modules\Notifications\Presentation\Filament\Resources;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -38,6 +39,11 @@ final class NotificationTemplateResource extends Resource
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
 
     protected static ?int $navigationSort = 72;
+
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
 
     protected static ?string $recordTitleAttribute = 'event_key';
 
@@ -117,7 +123,8 @@ final class NotificationTemplateResource extends Resource
             ->columns([
                 TextColumn::make('event_key')
                     ->label(__('notifications::fields.event_name'))
-                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => self::eventLabel($state))
+                    ->description(fn (NotificationTemplate $record): string => (string) $record->event_key)
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('channel')
@@ -178,10 +185,17 @@ final class NotificationTemplateResource extends Resource
                         blank: fn (Builder $query): Builder => $query,
                     ),
             ])
-            ->actions([
-                EditAction::make(),
+            ->recordActions([
+                // القالب العام يُقرأ ولا يُعدَّل، فبدون ViewAction كان صفّه بلا أي
+                // إجراء صالح: Edit و Delete تمنعهما السياسة، والنتيجة صفحة تبدو
+                // معطّلة لأن كل القوالب المزروعة عامة.
+                ViewAction::make()
+                    ->visible(fn (NotificationTemplate $record): bool => $record->isGlobal()),
+                EditAction::make()
+                    ->visible(fn (NotificationTemplate $record): bool => !$record->isGlobal()),
                 self::cloneToOrganizationAction(),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->visible(fn (NotificationTemplate $record): bool => !$record->isGlobal()),
             ])
             ->defaultSort('event_key');
     }
@@ -242,7 +256,7 @@ final class NotificationTemplateResource extends Resource
                     return;
                 }
 
-                NotificationTemplate::query()->create([
+                $copy = NotificationTemplate::query()->create([
                     'organization_id' => $organizationId,
                     'event_key' => $record->event_key,
                     'channel' => $record->channel,
@@ -258,6 +272,10 @@ final class NotificationTemplateResource extends Resource
                     ->title(__('notifications::templates_admin.clone_done'))
                     ->success()
                     ->send();
+
+                // الهدف من النسخ هو التعديل — نفتح النسخة الجديدة مباشرة بدل
+                // إعادة الأدمن إلى قائمة عليه أن يبحث فيها عن صفّه من جديد.
+                redirect(self::getUrl('edit', ['record' => $copy]));
             });
     }
 
@@ -278,16 +296,37 @@ final class NotificationTemplateResource extends Resource
     }
 
     /**
-     * أحداث المرحلة الأولى المعرّفة في الإعداد — مفتاح الحدث نفسه هو التسمية.
+     * أحداث المرحلة الأولى المعرّفة في الإعداد، بأسمائها المعرّبة.
      *
      * @return array<string, string>
      */
     private static function eventOptions(): array
     {
-        $events = array_keys((array) config('notifications.events', []));
-        sort($events);
+        $options = [];
 
-        return array_combine($events, $events) ?: [];
+        foreach (array_keys((array) config('notifications.events', [])) as $event) {
+            $options[(string) $event] = self::eventLabel((string) $event);
+        }
+
+        asort($options);
+
+        return $options;
+    }
+
+    /**
+     * حدث بلا ترجمة يظهر بمفتاحه بدل أن يختفي من القائمة.
+     */
+    private static function eventLabel(?string $event): string
+    {
+        if ($event === null || $event === '') {
+            return '—';
+        }
+
+        $translation = __('notifications::events.'.$event);
+
+        return is_string($translation) && !str_starts_with($translation, 'notifications::')
+            ? $translation
+            : $event;
     }
 
     /**

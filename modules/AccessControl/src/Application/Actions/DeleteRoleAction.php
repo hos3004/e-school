@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Domain\Events\RoleDeleted;
 use Modules\AccessControl\Domain\Models\ModelHasRole;
 use Modules\AccessControl\Domain\Models\Role;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -21,12 +22,14 @@ final readonly class DeleteRoleAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(
         string $roleId,
         ?string $actorId = null,
         ?string $organizationId = null,
+        ?string $reason = null,
     ): void {
         /** @var Role|null $role */
         $role = Role::query()
@@ -50,10 +53,27 @@ final readonly class DeleteRoleAction
 
         $this->guardAssignments($role);
 
-        DB::transaction(function () use ($role): void {
+        DB::transaction(function () use ($role, $actorId, $organizationId, $reason): void {
             DB::table('role_has_permissions')
                 ->where('role_id', $role->getKey())
                 ->delete();
+
+            if ($actorId !== null && $organizationId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: $organizationId,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'accesscontrol.role_deleted',
+                    auditableType: 'roles',
+                    auditableId: (string) $role->getKey(),
+                    oldValues: [
+                        'name' => $role->name,
+                        'guard_name' => $role->guard_name->value,
+                    ],
+                    newValues: null,
+                    reason: $reason,
+                );
+            }
 
             $role->delete();
         });

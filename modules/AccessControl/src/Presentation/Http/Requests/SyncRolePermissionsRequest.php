@@ -21,6 +21,7 @@ final class SyncRolePermissionsRequest extends FormRequest
         return [
             'permissions' => ['present', 'array'],
             'permissions.*' => ['required', 'string', 'max:191'],
+            'reason' => ['required', 'string', 'max:1000'],
         ];
     }
 
@@ -33,6 +34,7 @@ final class SyncRolePermissionsRequest extends FormRequest
             'permissions.present' => __('accesscontrol::validation.permissions_required'),
             'permissions.array' => __('accesscontrol::validation.permissions_required'),
             'permissions.*.required' => __('accesscontrol::validation.permission_name_required'),
+            'reason.required' => __('accesscontrol::validation.reason_required'),
         ];
     }
 }

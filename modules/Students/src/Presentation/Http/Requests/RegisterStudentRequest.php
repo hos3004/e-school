@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Modules\Students\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\Students\Domain\Models\StudentProfile;
+use Shared\Support\Locales;
 
 /**
  * طلب تسجيل طالب جديد.
@@ -37,7 +39,7 @@ final class RegisterStudentRequest extends FormRequest
             'nationality' => ['nullable', 'string', 'size:2'],
             'country' => ['nullable', 'string', 'size:2'],
             'city' => ['nullable', 'string', 'max:120'],
-            'preferred_language' => ['nullable', 'string', 'in:ar,en,fr'],
+            'preferred_language' => ['nullable', 'string', Rule::in(Locales::supported())],
             'joined_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];

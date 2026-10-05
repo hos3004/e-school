@@ -10,14 +10,18 @@ use Modules\Identity\Application\Actions\RegisterUser;
 use Modules\Identity\Domain\Events\UserRegistered;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
+use Modules\Identity\Tests\Support\IdentityPestContext;
+use PHPUnit\Framework\Assert;
 
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
+    /** @var IdentityPestContext $this */
     $this->createTestOrganization();
 });
 
 it('registers a user and dispatches an after-commit UserRegistered event', function (): void {
+    /** @var IdentityPestContext $this */
     Event::fake([UserRegistered::class]);
 
     $response = $this->postJson('/api/identity/register', [
@@ -41,17 +45,19 @@ it('registers a user and dispatches an after-commit UserRegistered event', funct
         ->and($user->username)->toBe('eschool.student');
 
     Event::assertDispatched(UserRegistered::class, fn (UserRegistered $event): bool => $event->userId === $user->id);
-    expect(new UserRegistered(
+    $registeredEvent = new UserRegistered(
         userId: $user->id,
         organizationId: $user->organization_id,
         email: $user->email,
         username: $user->username,
         phone: $user->phone,
         locale: $user->locale,
-    ))->toBeInstanceOf(ShouldDispatchAfterCommit::class);
+    );
+    Assert::assertInstanceOf(ShouldDispatchAfterCommit::class, $registeredEvent);
 });
 
 it('does not publish UserRegistered or retain the account when an outer transaction rolls back', function (): void {
+    /** @var IdentityPestContext $this */
     Event::fake([UserRegistered::class]);
     $email = 'rolled-back@eschool.test';
 
@@ -74,6 +80,7 @@ it('does not publish UserRegistered or retain the account when an outer transact
 });
 
 it('rejects a duplicate email with a business rule violation', function (): void {
+    /** @var IdentityPestContext $this */
     User::query()->create([
         'organization_id' => $this->organizationId,
         'name' => 'موجود مسبقًا',
@@ -94,6 +101,7 @@ it('rejects a duplicate email with a business rule violation', function (): void
 });
 
 it('registers with a phone when email is unavailable', function (): void {
+    /** @var IdentityPestContext $this */
     $response = $this->postJson('/api/identity/register', [
         'organization_id' => $this->organizationId,
         'name' => 'طالب عبر الهاتف',
@@ -110,6 +118,7 @@ it('registers with a phone when email is unavailable', function (): void {
 });
 
 it('requires a username and at least one recovery contact', function (): void {
+    /** @var IdentityPestContext $this */
     $this->postJson('/api/identity/register', [
         'organization_id' => $this->organizationId,
         'name' => 'طلب ناقص',

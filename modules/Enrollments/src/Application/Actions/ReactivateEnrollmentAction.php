@@ -6,6 +6,7 @@ namespace Modules\Enrollments\Application\Actions;
 
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Enrollments\Application\Concerns\TransitionsEnrollmentStatus;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Enrollments\Domain\Events\EnrollmentStatusChanged;
@@ -28,6 +29,7 @@ final readonly class ReactivateEnrollmentAction
         private Gate $gate,
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(Enrollment $enrollment, string $reason, ?string $actorId = null): Enrollment
@@ -47,7 +49,7 @@ final readonly class ReactivateEnrollmentAction
             $enrollment->frozen_reason = null;
             $enrollment->freeze_type = null;
 
-            $this->applyTransition($enrollment, EnrollmentStatus::Active, $reason, $actorId);
+            $this->applyTransition($enrollment, EnrollmentStatus::Active, $reason, $this->audit, $actorId);
 
             return [new EnrollmentStatusChanged(
                 enrollmentId: $enrollment->id,

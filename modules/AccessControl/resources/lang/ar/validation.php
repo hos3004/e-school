@@ -5,6 +5,7 @@ declare(strict_types=1);
 /* رسائل التحقق من المدخلات — تُستهلك من FormRequests. */
 
 return [
+    'reason_required' => 'سبب تغيير الصلاحية مطلوب للتدقيق.',
 
     'role_name_required' => 'اسم الدور مطلوب.',
     'permission_name_required' => 'اسم الصلاحية مطلوب.',

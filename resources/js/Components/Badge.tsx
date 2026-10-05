@@ -21,15 +21,15 @@ export interface BadgeProps
 
 const toneClasses: Record<BadgeTone, string> = {
     neutral:
-        'border-[var(--ink-muted)] bg-[var(--surface-muted)] text-[var(--ink)]',
+        'border-[var(--line-strong)] bg-[var(--surface-muted)] text-[var(--ink-soft)]',
     brand:
-        'border-[var(--brand)] bg-[color-mix(in_srgb,var(--brand)_12%,var(--surface))] text-[var(--ink)]',
+        'border-[color-mix(in_srgb,var(--brand)_35%,var(--line))] bg-[var(--brand-soft)] text-[var(--brand-strong)]',
     success:
-        'border-[var(--success)] bg-[color-mix(in_srgb,var(--success)_12%,var(--surface))] text-[var(--ink)]',
+        'border-[color-mix(in_srgb,var(--success)_35%,var(--line))] bg-[var(--success-soft)] text-[var(--success)]',
     warning:
-        'border-[var(--warning)] bg-[color-mix(in_srgb,var(--warning)_12%,var(--surface))] text-[var(--ink)]',
+        'border-[color-mix(in_srgb,var(--warning)_35%,var(--line))] bg-[var(--warning-soft)] text-[var(--warning)]',
     danger:
-        'border-[var(--danger)] bg-[color-mix(in_srgb,var(--danger)_12%,var(--surface))] text-[var(--ink)]',
+        'border-[color-mix(in_srgb,var(--danger)_35%,var(--line))] bg-[var(--danger-soft)] text-[var(--danger)]',
 };
 
 const sizeClasses: Record<BadgeSize, string> = {
@@ -55,7 +55,7 @@ export default function Badge({
             {...badgeProps}
             className={classNames(
                 'inline-flex max-w-full items-center rounded-full border font-semibold leading-none',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
                 'focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]',
                 toneClasses[tone],
                 sizeClasses[size],

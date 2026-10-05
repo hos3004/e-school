@@ -20,6 +20,12 @@ final class AcceptRegistrationApplicationRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return [];
+        return [
+            'reason' => [
+                (bool) config('admission.application.acceptance_requires_reason', true) ? 'required' : 'nullable',
+                'string',
+                'max:2000',
+            ],
+        ];
     }
 }

@@ -1,0 +1,59 @@
+# طبقة الإنتاج فوق docker-compose.yml.
+#
+# الملف الأساسي تطويري: يشغّل خادم Vite ومَيلبِت، ويكشف منافذ قاعدة البيانات
+# وRedis على المضيف، ويحمّل إعدادات OPcache التي تفحص طوابع الملفات في كل طلب.
+# هذه الطبقة تُلغي ذلك كله.
+#
+# التقديم: nginx على المضيف يُنهي TLS ويمرّر إلى حاوية nginx على 127.0.0.1:8000
+# وحدها — لا شيء من المكدّس مكشوف على الإنترنت مباشرة.
+
+services:
+  app:
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+      # OPcache إنتاجي: لا فحص لطوابع الملفات في كل طلب.
+      - ./docker/php/opcache.production.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+      - ./docker/php/fpm-prod.conf:/usr/local/etc/php-fpm.d/zz-fpm-dev.conf:ro
+    environment:
+      PHP_IDE_CONFIG: ""
+
+  nginx:
+    restart: unless-stopped
+    # 127.0.0.1 لا 0.0.0.0: المنفذ للمضيف وحده، والإنترنت يصل عبر nginx المضيف.
+    ports: !override
+      - "127.0.0.1:8000:80"
+
+  postgres:
+    restart: unless-stopped
+    # لا منفذ مكشوف — الوصول من داخل شبكة compose فقط.
+    ports: !override []
+
+  redis:
+    restart: unless-stopped
+    ports: !override []
+
+  horizon:
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/opcache.production.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+
+  scheduler:
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/opcache.production.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+
+  # خادم Vite للتطوير فقط؛ الإنتاج يخدم أصولًا مبنيّة من public/build.
+  vite:
+    profiles: ["donotstart"]
+
+  # صندوق بريد تطويري — لا مكان له في الإنتاج.
+  mailpit:
+    profiles: ["donotstart"]
+
+  # Reverb معلن في .env لكن لا Echo في الواجهة ولا لحظية مفعّلة،
+  # فلا يُشغَّل حتى تُفعَّل عمدًا.
+  reverb:
+    profiles: ["donotstart"]

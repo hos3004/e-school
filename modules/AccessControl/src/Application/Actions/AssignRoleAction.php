@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Domain\Events\RoleAssigned;
 use Modules\AccessControl\Domain\Models\ModelHasRole;
 use Modules\AccessControl\Domain\Models\Role;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -24,6 +25,7 @@ final readonly class AssignRoleAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(
@@ -32,6 +34,7 @@ final readonly class AssignRoleAction
         string $modelId,
         ?string $actorId = null,
         ?string $organizationId = null,
+        ?string $reason = null,
     ): ModelHasRole {
         /** @var Role|null $role */
         $role = Role::query()
@@ -48,11 +51,30 @@ final readonly class AssignRoleAction
         $this->guardDuplicate($roleId, $modelType, $modelId);
 
         /** @var ModelHasRole $assignment */
-        $assignment = DB::transaction(fn (): ModelHasRole => ModelHasRole::query()->create([
-            'role_id' => $roleId,
-            'model_type' => $modelType,
-            'model_id' => $modelId,
-        ]));
+        $assignment = DB::transaction(function () use ($roleId, $modelType, $modelId, $actorId, $organizationId, $reason): ModelHasRole {
+            /** @var ModelHasRole $created */
+            $created = ModelHasRole::query()->create([
+                'role_id' => $roleId,
+                'model_type' => $modelType,
+                'model_id' => $modelId,
+            ]);
+
+            if ($actorId !== null && $organizationId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: $organizationId,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'accesscontrol.role_assigned',
+                    auditableType: $modelType,
+                    auditableId: $modelId,
+                    oldValues: null,
+                    newValues: ['role_id' => $roleId],
+                    reason: $reason,
+                );
+            }
+
+            return $created;
+        });
 
         $this->events->dispatch(new RoleAssigned(
             roleId: $roleId,

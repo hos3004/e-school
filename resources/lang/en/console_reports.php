@@ -1,0 +1,76 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'nav' => [
+        'session_reports' => 'Session Reports',
+    ],
+    'title' => 'Session Reports',
+    'description' => 'Session reports submitted by teachers, grouped by program and student.',
+    'views' => [
+        'today' => 'Today',
+        'month' => 'Month',
+        'custom' => 'Custom range',
+    ],
+    'filters' => [
+        'from' => 'From date',
+        'to' => 'To date',
+        'month' => 'Month',
+        'program' => 'Program',
+        'all_programs' => 'All programs',
+        'apply' => 'Apply',
+        'previous_month' => 'Previous month',
+        'next_month' => 'Next month',
+    ],
+    'totals' => [
+        'programs' => 'Programs',
+        'students' => 'Students',
+        'reports' => 'Reports',
+    ],
+    'empty' => 'No session reports were submitted during this period.',
+    'error' => 'Could not load reports. Please try again.',
+    'loading' => 'Loading...',
+    'view_program' => 'View program reports',
+    'columns' => [
+        'date' => 'Report date',
+        'topics' => 'Topics',
+        'homework' => 'Homework',
+        'participation' => 'Participation',
+        'performance' => 'Performance',
+        'commitment' => 'Commitment',
+        'note' => 'Note',
+        'strengths' => 'Strengths',
+        'weaknesses' => 'Areas to improve',
+    ],
+    'program_profile' => [
+        'title' => 'Program Report Profile',
+        'back' => 'Back to session reports',
+        'no_students' => 'No students have reports during this period.',
+    ],
+    'settings' => [
+        'title' => 'Monthly Digest Recipient Setting',
+        'description' => 'Determines who receives the monthly per-program digest email.',
+        'recipient_type' => 'Recipient type',
+        'type_staff' => 'Existing system user',
+        'type_custom' => 'Custom email address',
+        'select_user' => 'Select a user',
+        'custom_email' => 'Email address',
+        'reason' => 'Reason for change',
+        'reason_placeholder' => 'Write a short reason for this change (5+ characters)',
+        'save' => 'Save setting',
+        'saved' => 'Recipient setting saved successfully.',
+        'not_configured' => 'No recipient configured yet.',
+        'last_changed_by' => 'Last changed by',
+        'last_changed_at' => 'On',
+        'last_changed_reason' => 'Reason',
+        'unknown_actor' => 'Deleted user',
+        'no_accounts' => 'No accounts with a valid email in this organization.',
+        'back' => 'Back to session reports',
+    ],
+    'errors' => [
+        'invalid_date' => 'Invalid date format.',
+        'invalid_month' => 'Invalid month format.',
+        'range_order' => 'The end date must be on or after the start date.',
+    ],
+];

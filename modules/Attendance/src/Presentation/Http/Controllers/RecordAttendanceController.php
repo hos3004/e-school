@@ -29,6 +29,9 @@ final class RecordAttendanceController extends Controller
             sessionMinutes: (int) $request->validated('session_minutes'),
             joinedAfterMinutes: (int) $request->validated('joined_after_minutes', 0),
             leftBeforeMinutes: (int) $request->validated('left_before_minutes', 0),
+            organizationId: (string) $request->user()?->getAttribute('organization_id'),
+            actorId: (string) $request->user()?->getAuthIdentifier(),
+            reason: (string) $request->validated('reason'),
         );
 
         return AttendanceResource::make($attendance)->response()->setStatusCode(Response::HTTP_CREATED);

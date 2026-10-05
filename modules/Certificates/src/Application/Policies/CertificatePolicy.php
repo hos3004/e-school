@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Certificates\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Certificates\Domain\Models\Certificate;
 
 /**
@@ -14,37 +16,37 @@ use Modules\Certificates\Domain\Models\Certificate;
  */
 final class CertificatePolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('certificates.certificate.view_any');
     }
 
-    public function view($user, Certificate $certificate): bool
+    public function view(Authenticatable&Authorizable $user, Certificate $certificate): bool
     {
         return $user->can('certificates.certificate.view')
-            && $certificate->organization_id === $user->organization_id;
+            && $certificate->organization_id === data_get($user, 'organization_id');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('certificates.certificate.create');
     }
 
-    public function update($user, Certificate $certificate): bool
+    public function update(Authenticatable&Authorizable $user, Certificate $certificate): bool
     {
         // الشهادة الصادرة وثيقة — لا تعديل حر على بياناتها بعد الإصدار.
         return false;
     }
 
-    public function delete($user, Certificate $certificate): bool
+    public function delete(Authenticatable&Authorizable $user, Certificate $certificate): bool
     {
         return $user->can('certificates.certificate.revoke')
-            && $certificate->organization_id === $user->organization_id;
+            && $certificate->organization_id === data_get($user, 'organization_id');
     }
 
-    public function revoke($user, Certificate $certificate): bool
+    public function revoke(Authenticatable&Authorizable $user, Certificate $certificate): bool
     {
         return $user->can('certificates.certificate.revoke')
-            && $certificate->organization_id === $user->organization_id;
+            && $certificate->organization_id === data_get($user, 'organization_id');
     }
 }

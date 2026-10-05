@@ -8,9 +8,13 @@ use Modules\Organization\Application\Policies\AcademicCalendarPolicy;
 use Modules\Organization\Application\Policies\HolidayPolicy;
 use Modules\Organization\Application\Policies\OrganizationPolicy;
 use Modules\Organization\Application\Queries\GeographyQueryService;
+use Modules\Organization\Application\Queries\OrganizationDirectoryQueryService;
 use Modules\Organization\Application\Queries\OrganizationSettingQueryService;
+use Modules\Organization\Application\Queries\SchoolClockQueryService;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
+use Modules\Organization\Domain\Contracts\OrganizationDirectoryQueries;
 use Modules\Organization\Domain\Contracts\OrganizationSettingQueries;
+use Modules\Organization\Domain\Contracts\SchoolClockQueries;
 use Modules\Organization\Domain\Models\AcademicCalendar;
 use Modules\Organization\Domain\Models\Holiday;
 use Modules\Organization\Domain\Models\Organization;
@@ -53,6 +57,8 @@ final class OrganizationServiceProvider extends BaseModuleServiceProvider
     {
         return [
             GeographyQueries::class => GeographyQueryService::class,
+            OrganizationDirectoryQueries::class => OrganizationDirectoryQueryService::class,
+            SchoolClockQueries::class => SchoolClockQueryService::class,
         ];
     }
 

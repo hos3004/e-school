@@ -22,12 +22,20 @@ final class ApprovePayrollAdjustmentController extends Controller
 
     public function __invoke(ApprovePayrollAdjustmentRequest $request, string $adjustment): PayrollAdjustmentResource
     {
-        $adjustmentModel = PayrollAdjustment::query()->findOrFail($adjustment);
+        $organizationId = (string) $request->user()->getAttribute('organization_id');
+        $adjustmentModel = PayrollAdjustment::query()
+            ->forOrganization($organizationId)
+            ->findOrFail($adjustment);
 
         Gate::authorize('approve', $adjustmentModel);
 
         return new PayrollAdjustmentResource(
-            $this->action->execute($adjustmentModel),
+            $this->action->execute(
+                organizationId: $organizationId,
+                adjustmentId: (string) $adjustmentModel->getKey(),
+                actorId: (string) $request->user()->getAuthIdentifier(),
+                reason: (string) $request->validated('reason'),
+            ),
         );
     }
 }

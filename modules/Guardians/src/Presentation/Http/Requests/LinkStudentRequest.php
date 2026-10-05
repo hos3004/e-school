@@ -35,6 +35,7 @@ final class LinkStudentRequest extends FormRequest
             'can_act_for' => ['sometimes', 'boolean'],
             'visible_sections' => ['sometimes', 'nullable', 'array'],
             'visible_sections.*' => [Rule::in($allowedSections)],
+            'reason' => ['required', 'string', 'max:2000'],
         ];
     }
 
@@ -49,6 +50,7 @@ final class LinkStudentRequest extends FormRequest
             'relationship.required' => __('guardians::validation.relationship_required'),
             'relationship.Illuminate\Validation\Rules\Enum' => __('guardians::validation.relationship_invalid'),
             'visible_sections.*.Illuminate\Validation\Rules\In' => __('guardians::validation.visible_section_invalid'),
+            'reason.required' => __('guardians::validation.reason_required'),
         ];
     }
 }

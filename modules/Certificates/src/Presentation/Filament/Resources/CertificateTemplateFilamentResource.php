@@ -31,7 +31,12 @@ final class CertificateTemplateFilamentResource extends Resource
 
     protected static ?int $navigationSort = 53;
 
-    public static function getNavigationGroup(): ?string
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
+    public static function getNavigationGroup(): string
     {
         return __('certificates::navigation.group');
     }
@@ -119,5 +124,15 @@ final class CertificateTemplateFilamentResource extends Resource
                     ->label(__('certificates::fields.is_active')),
             ])
             ->defaultSort('created_at', direction: 'desc');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => CertificateTemplateFilamentResource\Pages\ListCertificateTemplates::route('/'),
+        ];
     }
 }

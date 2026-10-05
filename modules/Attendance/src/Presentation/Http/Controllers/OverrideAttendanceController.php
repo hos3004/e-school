@@ -30,6 +30,8 @@ final class OverrideAttendanceController extends Controller
                 $attendance,
                 AttendanceStatus::from($statusValue),
                 (string) $request->validated('reason'),
+                (string) $request->user()?->getAuthIdentifier(),
+                (string) $request->user()?->getAttribute('organization_id'),
             ),
         );
     }

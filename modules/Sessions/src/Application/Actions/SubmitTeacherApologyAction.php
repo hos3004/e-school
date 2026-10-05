@@ -7,27 +7,31 @@ namespace Modules\Sessions\Application\Actions;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Sessions\Domain\Enums\ApologyStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\TeacherApologySubmitted;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Domain\Models\TeacherApology;
+use Modules\Staff\Domain\Contracts\StaffQueries;
 use Shared\Support\BusinessRuleViolation;
 
 /**
  * تقديم المعلم اعتذارًا عن حصة.
  *
- * التقديم وحده **لا يغيّر شيئًا في الحصة**: لا يلغيها ولا يفرّغ المعلم منها
- * ولا يبدأ بحثًا عن بديل. كل ذلك معلّق على اعتماد المشرف
+ * التقديم لا يلغي الحصة ولا يفرّغ المعلم منها. يُعتمد الاعتذار تلقائيًا في
+ * نفس المسار، ثم يبدأ البحث الفوري والدوري عن بديل بلا موافقة إدارية
  * (docs/client-answers.md §ي).
  *
- * التقديم المتأخر عن المهلة **مقبول** ويُعلَّم `is_late_notice` ليراه المشرف —
- * لأن الظرف الطارئ لا يُعرّف بمهلة، لكن تكراره يجب أن يكون مرئيًا.
+ * المهلة إلزامية؛ الاعتذار داخل الساعة الأخيرة مرفوض كقاعدة عمل.
  */
 final readonly class SubmitTeacherApologyAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
+        private StaffQueries $staff,
+        private DecideTeacherApologyAction $decisions,
     ) {}
 
     public function execute(
@@ -60,7 +64,7 @@ final readonly class SubmitTeacherApologyAction
         $alreadyOpen = TeacherApology::query()
             ->where('session_id', $sessionId)
             ->where('staff_profile_id', $staffProfileId)
-            ->where('status', ApologyStatus::Submitted)
+            ->whereIn('status', [ApologyStatus::Submitted, ApologyStatus::Approved])
             ->exists();
 
         if ($alreadyOpen) {
@@ -75,9 +79,17 @@ final readonly class SubmitTeacherApologyAction
             false,
         );
 
-        $minNotice = (int) config('scheduling.apology.min_notice_minutes', 120);
+        $minNotice = (int) config('scheduling.apology.min_notice_minutes');
+        if ($noticeMinutes < $minNotice) {
+            throw BusinessRuleViolation::make(
+                'sessions.apology_notice_not_met',
+                'sessions::errors.apology_notice_not_met',
+                ['required' => $minNotice, 'actual' => max(0, $noticeMinutes)],
+            );
+        }
 
-        $apology = DB::transaction(function () use ($session, $staffProfileId, $reason, $now, $noticeMinutes, $minNotice): TeacherApology {
+        $actorId = $this->teacherUserId((string) $session->organization_id, $staffProfileId);
+        $apology = DB::transaction(function () use ($session, $staffProfileId, $reason, $now, $noticeMinutes, $minNotice, $actorId): TeacherApology {
             $apology = new TeacherApology;
             $apology->fill([
                 'organization_id' => (string) $session->organization_id,
@@ -91,6 +103,24 @@ final readonly class SubmitTeacherApologyAction
             ]);
             $apology->save();
 
+            $this->audit->record(
+                organizationId: (string) $session->organization_id,
+                actorId: $actorId,
+                actorType: $actorId === null ? 'system' : 'user',
+                action: 'sessions.teacher_apology_submitted',
+                auditableType: 'teacher_apologies',
+                auditableId: (string) $apology->getKey(),
+                oldValues: null,
+                newValues: [
+                    'session_id' => (string) $session->getKey(),
+                    'staff_profile_id' => $staffProfileId,
+                    'status' => ApologyStatus::Submitted->value,
+                    'is_late_notice' => $noticeMinutes < $minNotice,
+                    'notice_minutes' => $noticeMinutes,
+                ],
+                reason: trim($reason),
+            );
+
             return $apology;
         });
 
@@ -100,29 +130,38 @@ final readonly class SubmitTeacherApologyAction
             courseId: (string) $session->course_id,
             staffProfileId: $staffProfileId,
             apologyId: (string) $apology->id,
-            teacherUserId: $this->teacherUserId($staffProfileId),
+            teacherUserId: $actorId,
             isLateNotice: (bool) $apology->is_late_notice,
             noticeMinutes: $noticeMinutes,
             scheduledStart: CarbonImmutable::instance($session->scheduled_start)->toIso8601String(),
-            actorId: $this->teacherUserId($staffProfileId),
+            actorId: $actorId,
         ));
 
-        return $apology;
+        if ($actorId === null) {
+            throw BusinessRuleViolation::make(
+                'sessions.apology_teacher_account_missing',
+                'sessions::errors.apology_teacher_account_missing',
+            );
+        }
+
+        return $this->decisions->approve(
+            apologyId: (string) $apology->id,
+            decidedBy: $actorId,
+            decisionReason: trim($reason),
+            now: $now,
+            expectedOrganizationId: (string) $session->organization_id,
+            expectedSessionId: (string) $session->id,
+        );
     }
 
     /**
      * معرّف مستخدم المعلم — يحتاجه موديول Notifications ليعرف لمن يرسل.
      *
-     * نقرأ بالجدول لا بنموذج موديول Staff: استيراد نماذج الموديولات الأخرى
-     * ممنوع وتفرضه اختبارات المعمارية.
+     * عقد Staff يعيد هوية المستخدم دون تسريب نموذج أو جدول الموديول المالك.
      */
-    private function teacherUserId(string $staffProfileId): ?string
+    private function teacherUserId(string $organizationId, string $staffProfileId): ?string
     {
-        $id = DB::table('staff_profiles')
-            ->where('id', $staffProfileId)
-            ->value('user_id');
-
-        return is_string($id) && $id !== '' ? $id : null;
+        return $this->staff->userIdForProfile($organizationId, $staffProfileId);
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Domain\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,16 @@ use Modules\Groups\Domain\Enums\MembershipStatus;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $group_id
+ * @property string $student_profile_id
+ * @property MembershipStatus $status
+ * @property CarbonImmutable|null $joined_at
+ * @property CarbonImmutable|null $left_at
+ * @property CarbonImmutable|null $created_at
+ * @property-read Group|null $group
+ */
 final class GroupMembership extends Model
 {
     use HasModuleFactory;

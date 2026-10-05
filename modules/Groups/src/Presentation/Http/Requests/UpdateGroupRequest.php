@@ -38,10 +38,16 @@ final class UpdateGroupRequest extends FormRequest
             'name.ar' => ['required_with:name', 'string', 'max:120'],
             'name.en' => ['nullable', 'string', 'max:120'],
             'name.fr' => ['nullable', 'string', 'max:120'],
-            'capacity' => ['sometimes', 'integer', 'min:1', 'max:25'],
+            'capacity' => [
+                'sometimes',
+                'integer',
+                'min:'.(int) config('groups.capacity.minimum'),
+                'max:'.(int) config('groups.capacity.maximum'),
+            ],
             'timezone' => ['sometimes', 'string', 'max:64', 'timezone:all'],
             'starts_on' => ['sometimes', 'date'],
             'ends_on' => ['nullable', 'date'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }
 
@@ -53,6 +59,7 @@ final class UpdateGroupRequest extends FormRequest
         return [
             'code.unique' => __('groups::validation.code_taken'),
             'capacity.max' => __('groups::validation.capacity_too_large'),
+            'reason.required' => __('groups::validation.reason_required'),
         ];
     }
 
@@ -68,6 +75,7 @@ final class UpdateGroupRequest extends FormRequest
             'timezone',
             'starts_on',
             'ends_on',
+            'reason',
         ])->mapWithKeys(
             fn (string $field): array => [$field => __('groups::attributes.'.$field)],
         )->all();

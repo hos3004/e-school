@@ -17,6 +17,14 @@ final class SessionScheduled extends SessionEvent
         public readonly string $scheduledStart,
         public readonly string $scheduledEnd,
         public readonly ?string $groupId,
+        /**
+         * هل وُلّدت هذه الحصة ضمن تفريغ جدول متكرر؟
+         *
+         * تعديل جدول واحد يولّد عشرات الحصص دفعة واحدة؛ إشعار لكل واحدة منها
+         * يغرق المعلم والطالب. الإشعار المناسب لهذه الحالة ملخّص الجدول مرة
+         * واحدة، والحدث يبقى قائمًا لبقية المستمعين.
+         */
+        public readonly bool $generatedFromSchedule = false,
         ?string $actorId = null,
         ?string $correlationId = null,
     ) {
@@ -38,6 +46,7 @@ final class SessionScheduled extends SessionEvent
             'group_id' => $this->groupId,
             'scheduled_start' => $this->scheduledStart,
             'scheduled_end' => $this->scheduledEnd,
+            'generated_from_schedule' => $this->generatedFromSchedule,
         ];
     }
 }

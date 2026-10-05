@@ -13,7 +13,7 @@ final class StoreRecordingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('recordings.recording.create');
+        return $this->user()->can('recording.delete');
     }
 
     /**
@@ -32,6 +32,7 @@ final class StoreRecordingRequest extends FormRequest
             'thumbnail_path' => ['nullable', 'string', 'max:2000'],
             'duration_seconds' => ['nullable', 'integer', 'min:0', 'max:86400'],
             'size_bytes' => ['nullable', 'integer', 'min:0'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }
 

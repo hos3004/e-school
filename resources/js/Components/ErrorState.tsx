@@ -24,7 +24,7 @@ export default function ErrorState({
             aria-labelledby={titleId}
             aria-live="assertive"
             className={[
-                'rounded-2xl border border-[color:var(--danger)]/40 bg-[var(--surface)] px-5 py-8 text-center sm:px-8',
+                'rounded-[var(--radius-lg)] border border-[color:var(--danger)]/35 bg-[var(--danger-soft)] px-5 py-8 text-center sm:px-8',
                 className,
             ]
                 .filter(Boolean)
@@ -33,7 +33,7 @@ export default function ErrorState({
         >
             <div
                 aria-hidden="true"
-                className="mx-auto flex size-12 items-center justify-center rounded-full bg-[color:var(--danger)]/10 text-[var(--danger)]"
+                className="mx-auto flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-[color:var(--danger)]/25 bg-[var(--surface)] text-[var(--danger)]"
             >
                 <svg className="size-6" fill="none" viewBox="0 0 24 24">
                     <path
@@ -62,7 +62,7 @@ export default function ErrorState({
 
             {onRetry && (
                 <button
-                    className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-5 py-2.5 text-sm font-semibold text-[var(--surface)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
+                    className="mt-6 inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--brand)] bg-[var(--brand)] px-5 py-2.5 text-sm font-semibold text-[var(--ink-inverse)] transition-[background-color,transform] duration-150 ease-out hover:bg-[var(--brand-strong)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] motion-reduce:transform-none"
                     onClick={onRetry}
                     type="button"
                 >

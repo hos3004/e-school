@@ -15,6 +15,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Messaging\Domain\Models\ClassWallPost;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد إدارة حائط الصفوف في لوحة الإدارة.
@@ -29,7 +30,7 @@ final class ClassWallPostResource extends Resource
 
     protected static ?int $navigationSort = 70;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('messaging::navigation.group');
     }
@@ -67,7 +68,11 @@ final class ClassWallPostResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'messaging::origin.wall',
+            'heroicon-o-clipboard-document-list',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('messaging::fields.id'))
@@ -97,5 +102,15 @@ final class ClassWallPostResource extends Resource
                     ->label(__('messaging::fields.is_pinned')),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => ClassWallPostResource\Pages\ListClassWallPosts::route('/'),
+        ];
     }
 }

@@ -38,7 +38,8 @@ final readonly class RegisterUser
             );
         }
 
-        if ($email === null && $phone === null) {
+        // التسجيل الذاتي يبقى ملزمًا بوسيلة تواصل؛ الاستثناء للإنشاء الإداري فقط.
+        if ($email === null && $phone === null && ($attributes['contact_optional'] ?? false) !== true) {
             throw BusinessRuleViolation::make(
                 'identity.contact_required',
                 'identity::validation.contact_required',

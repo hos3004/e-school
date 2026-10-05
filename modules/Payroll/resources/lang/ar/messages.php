@@ -11,7 +11,7 @@ return [
     'adjustment_proposed' => 'قُدّمت التسوية وهي تنتظر اعتماد مشرف.',
     'adjustment_approved' => 'اعتُمدت التسوية.',
     'adjustment_rejected' => 'رُفضت التسوية.',
-    'deferred_released' => 'حُررت القيود المؤجَّلة المرتبطة بحصة التلافي.',
+    'deferred_released' => 'حُررت القيود المؤجَّلة المرتبطة بالحصة التعويضية.',
     'demo_school_name' => 'مدرسة تجريبية',
     'demo_city' => 'القاهرة',
 ];

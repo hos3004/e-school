@@ -33,4 +33,7 @@ return [
     'handled_by' => 'عالجها',
     'handled_at' => 'وقت المعالجة',
     'is_handled' => 'تمت معالجتها',
+    'flag' => 'تعليم للمراجعة',
+    'flagged_notice' => 'عُلِّمت الرسالة للمراجعة.',
+    'unknown_sender' => 'مستخدم غير معروف',
 ];

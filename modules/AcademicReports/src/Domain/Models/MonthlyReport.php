@@ -50,16 +50,28 @@ final class MonthlyReport extends Model
         ];
     }
 
+    /**
+     * @param Builder<MonthlyReport> $query
+     * @return Builder<MonthlyReport>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);
     }
 
+    /**
+     * @param Builder<MonthlyReport> $query
+     * @return Builder<MonthlyReport>
+     */
     public function scopeForStudent(Builder $query, string $studentProfileId): Builder
     {
         return $query->where('student_profile_id', $studentProfileId);
     }
 
+    /**
+     * @param Builder<MonthlyReport> $query
+     * @return Builder<MonthlyReport>
+     */
     public function scopeInPeriod(Builder $query, int $year, int $month): Builder
     {
         return $query->where('period_year', $year)->where('period_month', $month);

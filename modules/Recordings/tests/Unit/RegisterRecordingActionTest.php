@@ -8,12 +8,11 @@ use Modules\Recordings\Application\Actions\RegisterRecordingAction;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Events\RecordingRegistered;
 use Modules\Recordings\Domain\Models\Recording;
-use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
+use Modules\Recordings\Tests\RecordingTestContext;
 use Shared\Support\BusinessRuleViolation;
 
-uses(CreatesRecordingContext::class);
-
 beforeEach(function (): void {
+    /** @var RecordingTestContext $this */
     $this->context = $this->createSessionWithClassroom();
 });
 
@@ -34,7 +33,7 @@ it('registers a recording with retention from config and publishes the event', f
     );
 
     expect($recording->status)->toBe(RecordingStatus::Processing)
-        ->and($recording->available_from)->toBeInstanceOf(CarbonImmutable::class)
+        ->and($recording->getAttribute('available_from'))->toBeInstanceOf(CarbonImmutable::class)
         ->and((int) ceil($recording->available_from->diffInDays($recording->expires_at)))->toBe(30)
         ->and(Recording::query()->whereKey($recording->id)->exists())->toBeTrue();
 

@@ -46,6 +46,7 @@ final class CreateAssignmentRequest extends FormRequest
                 'min:0',
                 'max:100',
             ],
+            'reason' => ['required', 'string', 'max:1000'],
         ];
     }
 
@@ -71,6 +72,7 @@ final class CreateAssignmentRequest extends FormRequest
             'staff_profile_id' => __('assignments::attributes.teacher'),
             'due_at' => __('assignments::attributes.due_at'),
             'max_score' => __('assignments::attributes.max_score'),
+            'reason' => __('assignments::attributes.reason'),
         ];
     }
 }

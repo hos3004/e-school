@@ -25,4 +25,9 @@ return [
 
     'only_dead_can_requeue' => 'Only dead-lettered deliveries can be requeued (current status: :status).',
 
+    // Language-model provider (support bot).
+    'llm_api_key_required' => 'A provider API key is required before enabling.',
+    'llm_base_url_invalid' => 'The provider URL is invalid; it must start with https.',
+    'llm_toggle_blocked' => 'The connection cannot change state from its current status.',
+
 ];

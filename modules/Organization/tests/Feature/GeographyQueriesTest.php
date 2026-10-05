@@ -27,7 +27,7 @@ final class GeographyQueriesTest extends TestCase
         $queries = app(GeographyQueries::class);
 
         $countries = $queries->countries();
-        $this->assertCount(22, $countries);
+        $this->assertCount(249, $countries);
         $this->assertInstanceOf(CountryData::class, $countries[0]);
 
         $egypt = $queries->findCountryByIso2('eg');
@@ -50,7 +50,12 @@ final class GeographyQueriesTest extends TestCase
 
         $totalRegions = 0;
 
+        $arabCountryCodes = array_column((require __DIR__.'/../../database/data/geography.php')['countries'], 'iso2');
+
         foreach ($queries->countries() as $country) {
+            if (!in_array($country->iso2, $arabCountryCodes, true)) {
+                continue;
+            }
             $regions = $queries->regionsOf($country->id);
 
             $this->assertNotEmpty($regions, $country->iso2.' must have administrative divisions.');

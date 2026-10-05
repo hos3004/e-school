@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'Integrations',
+    'group' => 'Reports & Administration',
 
     'provider' => [
         'label' => 'Integration provider',

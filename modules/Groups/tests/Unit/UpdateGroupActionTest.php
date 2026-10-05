@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Modules\Groups\Application\Actions\ActivateGroupAction;
 use Modules\Groups\Application\Actions\ArchiveGroupAction;
 use Modules\Groups\Application\Actions\CompleteGroupAction;
@@ -10,12 +11,14 @@ use Modules\Groups\Application\Actions\UpdateGroupAction;
 use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Models\Group;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->action = app(UpdateGroupAction::class);
-    $this->group = Group::factory()->create();
+    // التفعيل يشترط معلمًا مُسندًا — راجع config('groups.activation').
+    $this->group = Group::factory()->activatable()->create();
 });
 
 it('updates editable fields and never touches status or organization', function (): void {
@@ -70,4 +73,37 @@ it('archives with a reason and keeps the row retrievable', function (): void {
 
     expect($this->group->refresh()->trashed())->toBeTrue()
         ->and(Group::withTrashed()->find($this->group->getKey()))->not->toBeNull();
+});
+
+it('audits group metadata and status changes with their written reasons', function (): void {
+    $organizationId = Fixtures::organizationId();
+    $actorId = Fixtures::userId();
+    $group = Group::factory()->activatable()->create(['organization_id' => $organizationId]);
+
+    app(UpdateGroupAction::class)->execute(
+        $group,
+        ['capacity' => 18],
+        $actorId,
+        'تعديل السعة بعد مراجعة التسجيلات',
+    );
+    app(ActivateGroupAction::class)->execute(
+        $group->refresh(),
+        $actorId,
+        'اكتمل تجهيز المعلمين والجدول',
+    );
+    app(CompleteGroupAction::class)->execute(
+        $group->refresh(),
+        $actorId,
+        'اكتملت جميع الحصص المقررة',
+    );
+    app(ArchiveGroupAction::class)->execute(
+        $group->refresh(),
+        'إغلاق سجل المجموعة بعد نهاية الدورة',
+        $actorId,
+    );
+
+    expect(DB::table('audit_log')->where('auditable_id', $group->getKey())->where('action', 'groups.group_updated')->exists())->toBeTrue()
+        ->and(DB::table('audit_log')->where('auditable_id', $group->getKey())->where('action', 'groups.group_activated')->exists())->toBeTrue()
+        ->and(DB::table('audit_log')->where('auditable_id', $group->getKey())->where('action', 'groups.group_completed')->exists())->toBeTrue()
+        ->and(DB::table('audit_log')->where('auditable_id', $group->getKey())->where('action', 'groups.group_archived')->exists())->toBeTrue();
 });

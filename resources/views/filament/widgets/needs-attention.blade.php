@@ -6,50 +6,52 @@
         :description="$subtitle"
     >
         @if (empty($items))
-            <div class="flex flex-col items-center justify-center gap-2 py-8 text-center">
-                <x-filament::icon
-                    icon="heroicon-o-check-circle"
-                    class="h-10 w-10 text-success-500"
-                />
-                <p class="text-sm text-gray-500 dark:text-gray-400">
+            <div class="flex min-h-36 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-200 bg-gray-50/70 px-6 py-8 text-center dark:border-white/10 dark:bg-white/5">
+                <span class="flex size-11 items-center justify-center rounded-xl bg-success-50 text-success-600 ring-1 ring-inset ring-success-200 dark:bg-success-950/40 dark:text-success-400 dark:ring-success-800/50">
+                    <x-filament::icon
+                        icon="heroicon-o-check-circle"
+                        class="size-6"
+                    />
+                </span>
+                <p class="max-w-md text-sm leading-6 text-gray-600 dark:text-gray-300">
                     {{ $empty }}
                 </p>
             </div>
         @else
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 @foreach ($items as $item)
                     <a
-                        aria-label="{{ $item['label'] }}"
-                        class="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                        aria-label="{{ $item['label'] }}: {{ number_format($item['count']) }}"
+                        class="group flex min-h-24 items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-[border-color,background-color,box-shadow,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 active:scale-[0.96] dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10 dark:focus-visible:ring-primary-400 dark:focus-visible:ring-offset-gray-900"
                         href="{{ $item['href'] }}"
                     >
-                        <div
+                        <span
                             @class([
-                                'flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-900/40',
-                                'border-danger-200 bg-danger-50 dark:border-danger-800/40 dark:bg-danger-950/30' => $item['color'] === 'danger',
-                                'border-warning-200 bg-warning-50 dark:border-warning-800/40 dark:bg-warning-950/30' => $item['color'] === 'warning',
-                                'border-info-200 bg-info-50 dark:border-info-800/40 dark:bg-info-950/30' => $item['color'] === 'info',
+                                'flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset',
+                                'bg-danger-50 text-danger-600 ring-danger-200 dark:bg-danger-950/40 dark:text-danger-400 dark:ring-danger-800/50' => $item['color'] === 'danger',
+                                'bg-warning-50 text-warning-700 ring-warning-200 dark:bg-warning-950/40 dark:text-warning-400 dark:ring-warning-800/50' => $item['color'] === 'warning',
+                                'bg-info-50 text-info-600 ring-info-200 dark:bg-info-950/40 dark:text-info-400 dark:ring-info-800/50' => $item['color'] === 'info',
                             ])
                         >
                             <x-filament::icon
                                 :icon="$item['icon']"
-                                @class([
-                                    'h-6 w-6 shrink-0',
-                                    'text-danger-600 dark:text-danger-400' => $item['color'] === 'danger',
-                                    'text-warning-600 dark:text-warning-400' => $item['color'] === 'warning',
-                                    'text-info-600 dark:text-info-400' => $item['color'] === 'info',
-                                ])
+                                class="size-5"
                             />
+                        </span>
 
-                            <div class="min-w-0">
-                                <div class="text-xl font-bold leading-none text-gray-950 dark:text-white">
-                                    {{ number_format($item['count']) }}
-                                </div>
-                                <div class="mt-1 truncate text-sm text-gray-600 dark:text-gray-300">
-                                    {{ $item['label'] }}
-                                </div>
-                            </div>
-                        </div>
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-2xl font-semibold leading-none tabular-nums text-gray-950 dark:text-white">
+                                {{ number_format($item['count']) }}
+                            </span>
+                            <span class="mt-2 block truncate text-sm font-medium text-gray-600 transition-colors duration-150 group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white">
+                                {{ $item['label'] }}
+                            </span>
+                        </span>
+
+                        <x-filament::icon
+                            icon="heroicon-m-chevron-right"
+                            class="size-4 shrink-0 text-gray-400 transition-[color,translate] duration-150 ease-[cubic-bezier(0.2,0,0,1)] group-hover:translate-x-0.5 group-hover:text-primary-600 rtl:rotate-180 rtl:group-hover:-translate-x-0.5 dark:text-gray-500 dark:group-hover:text-primary-400"
+                        />
                     </a>
                 @endforeach
             </div>

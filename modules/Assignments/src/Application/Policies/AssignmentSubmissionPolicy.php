@@ -65,19 +65,19 @@ final class AssignmentSubmissionPolicy
     }
 
     /** التسليم لا يُعدَّل مباشرة — التعديل الوحيد هو إجراء Submit. */
-    public function update($user, AssignmentSubmission $submission): bool
+    public function update(mixed $user, AssignmentSubmission $submission): bool
     {
         return false;
     }
 
     /** التسليم لا يُحذف أبدًا. */
-    public function delete($user, AssignmentSubmission $submission): bool
+    public function delete(mixed $user, AssignmentSubmission $submission): bool
     {
         return false;
     }
 
     /** رصد الدرجة — فعل المعلم بصلاحية مستقلة موثّقة. */
-    public function grade($user, AssignmentSubmission $submission): bool
+    public function grade(mixed $user, AssignmentSubmission $submission): bool
     {
         if ($user === null || !$user->can('assignment.grade')) {
             return false;

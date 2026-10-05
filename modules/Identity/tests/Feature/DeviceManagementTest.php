@@ -10,15 +10,18 @@ use Modules\Identity\Domain\Events\DeviceRevoked;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Domain\Models\UserDevice;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
+use Modules\Identity\Tests\Support\IdentityPestContext;
 use Shared\Support\BusinessRuleViolation;
 
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
+    /** @var IdentityPestContext $this */
     $this->createTestOrganization();
 });
 
 it('registers a device for a user', function (): void {
+    /** @var IdentityPestContext $this */
     Event::fake([DeviceRegistered::class]);
 
     /** @var User $user */
@@ -38,6 +41,7 @@ it('registers a device for a user', function (): void {
 });
 
 it('rejects a push token already bound to another active device', function (): void {
+    /** @var IdentityPestContext $this */
     /** @var User $owner */
     $owner = User::factory()->inOrganization($this->organizationId)->create();
     /** @var User $other */
@@ -56,6 +60,7 @@ it('rejects a push token already bound to another active device', function (): v
 });
 
 it('revokes a device and clears its push token', function (): void {
+    /** @var IdentityPestContext $this */
     Event::fake([DeviceRevoked::class]);
 
     /** @var User $user */
@@ -76,6 +81,7 @@ it('revokes a device and clears its push token', function (): void {
 });
 
 it('rejects revoking an already revoked device', function (): void {
+    /** @var IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create();
 
@@ -85,7 +91,35 @@ it('rejects revoking an already revoked device', function (): void {
     app(RevokeDevice::class)->execute($device);
 })->throws(BusinessRuleViolation::class);
 
+it('updates the same row instead of duplicating it when the same user re-registers the same push token', function (): void {
+    /** @var IdentityPestContext $this */
+    Event::fake([DeviceRegistered::class]);
+
+    /** @var User $user */
+    $user = User::factory()->inOrganization($this->organizationId)->create();
+    $pushToken = str_repeat('e', 64);
+
+    $first = app(RegisterDevice::class)->execute($user->id, [
+        'device_name' => 'Pixel 9',
+        'platform' => 'android',
+        'push_token' => $pushToken,
+    ]);
+
+    $second = app(RegisterDevice::class)->execute($user->id, [
+        'device_name' => 'Pixel 9 Pro',
+        'platform' => 'android',
+        'push_token' => $pushToken,
+    ]);
+
+    expect($second->id)->toBe($first->id)
+        ->and($second->device_name)->toBe('Pixel 9 Pro')
+        ->and(UserDevice::query()->forUser($user->id)->where('push_token', $pushToken)->count())->toBe(1);
+
+    Event::assertDispatchedTimes(DeviceRegistered::class, 1);
+});
+
 it('allows the same push token after it was revoked elsewhere', function (): void {
+    /** @var IdentityPestContext $this */
     /** @var User $owner */
     $owner = User::factory()->inOrganization($this->organizationId)->create();
     /** @var User $newOwner */

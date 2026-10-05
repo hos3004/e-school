@@ -1,0 +1,46 @@
+name: eschool-console-v2
+services:
+  app:
+    image: eschool-console-v2-app:local
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    command: php -d memory_limit=1G artisan serve --host=0.0.0.0 --port=8000
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    env_file: .env
+    environment:
+      CLASSROOM_PROVIDER: '"null"'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [isolated]
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "127.0.0.1:8096:80"
+    volumes:
+      - ./docker/nginx/console.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [app]
+    networks: [isolated, edge]
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - console-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    networks: [isolated]
+networks:
+  edge:
+  isolated:
+    internal: true
+volumes:
+  console-pgdata:

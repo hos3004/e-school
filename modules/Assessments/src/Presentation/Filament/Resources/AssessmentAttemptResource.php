@@ -40,7 +40,12 @@ final class AssessmentAttemptResource extends Resource
 
     protected static ?int $navigationSort = 51;
 
-    public static function getNavigationGroup(): ?string
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
+    public static function getNavigationGroup(): string
     {
         return __('assessments::navigation.group');
     }
@@ -53,6 +58,18 @@ final class AssessmentAttemptResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('assessments::navigation.attempt.plural');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('features.assessments', false)
+            && parent::shouldRegisterNavigation();
+    }
+
+    public static function canAccess(): bool
+    {
+        return (bool) config('features.assessments', false)
+            && (auth()->user()?->can('viewAny', AssessmentAttempt::class) ?? false);
     }
 
     public static function form(Schema $schema): Schema
@@ -146,5 +163,15 @@ final class AssessmentAttemptResource extends Resource
                     ->label(__('assessments::fields.submitted')),
             ])
             ->defaultSort('started_at', direction: 'desc');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => AssessmentAttemptResource\Pages\ListAssessmentAttempts::route('/'),
+        ];
     }
 }

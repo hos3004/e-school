@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\AdminNavigation;
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Widgets\NeedsAttention;
 use App\Filament\Widgets\PlatformOverview;
@@ -11,10 +12,12 @@ use App\Filament\Widgets\QuickActions;
 use App\Filament\Widgets\SessionsTrend;
 use App\Filament\Widgets\UpcomingSessions;
 use Filament\Enums\ThemeMode;
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -62,35 +65,60 @@ use Modules\Notifications\Presentation\Filament\Resources\NotificationCategorySe
 use Modules\Notifications\Presentation\Filament\Resources\NotificationOutboxResource;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationPreferenceResource;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationTemplateResource;
+use Modules\Notifications\Presentation\Filament\Resources\PopupCampaignResource;
 use Modules\Organization\Presentation\Filament\Resources\AcademicCalendarFilamentResource;
 use Modules\Organization\Presentation\Filament\Resources\HolidayFilamentResource;
 use Modules\Organization\Presentation\Filament\Resources\OrganizationFilamentResource;
+use Modules\Payroll\Presentation\Filament\Resources\PayrollAdjustmentResource;
 use Modules\Payroll\Presentation\Filament\Resources\PayrollEntryResource;
 use Modules\Payroll\Presentation\Filament\Resources\PayrollPeriodResource;
 use Modules\Recordings\Presentation\Filament\Resources\RecordingResource;
+use Modules\Reporting\Presentation\Filament\Pages\OperationalReports;
 use Modules\Reporting\Presentation\Filament\Resources\OrganizationSnapshotResource;
 use Modules\Reporting\Presentation\Filament\Resources\ReportEventLogResource;
 use Modules\Reporting\Presentation\Filament\Resources\StudentDashboardResource;
 use Modules\Reporting\Presentation\Filament\Resources\TeacherDashboardResource;
 use Modules\Scheduling\Presentation\Filament\Resources\PostponementRequestResource;
+use Modules\Scheduling\Presentation\Filament\Resources\ScheduleResource;
 use Modules\Sessions\Presentation\Filament\Resources\SessionParticipantResource;
 use Modules\Sessions\Presentation\Filament\Resources\SessionResource;
+use Modules\Staff\Presentation\Filament\Pages\TeachersDirectory;
 use Modules\Staff\Presentation\Filament\Resources\StaffProfileResource;
 use Modules\Students\Presentation\Filament\Resources\RegistrationApplicationResource;
+use Modules\Students\Presentation\Filament\Resources\RegistrationFormResource;
 use Modules\Students\Presentation\Filament\Resources\StudentProfileResource;
+use Modules\VirtualClassroom\Presentation\Filament\Pages\ClassroomConnectionSettings;
 
 final class AdminPanelProvider extends PanelProvider
 {
+    /**
+     * ترتيب التنقّل وتداخله يُضبطان على حدث `ServingFilament` لا في `panel()`
+     * ولا عبر `bootUsing()`.
+     *
+     * السبب قياسي لا تفضيلي: `bootUsing` يُنفَّذ قبل أن تحسم جلسةُ الطلب
+     * المستخدمَ، فتعود `auth()->check()` بـfalse حتى لمستخدم مسجَّل، فيسقط
+     * الضبط كله بصمت ويبقى الشريط مسطّحًا بترتيب التسجيل. أما
+     * `ServingFilament` فيُطلقه `DispatchServingFilamentEvent` بعد
+     * `StartSession`، فالمستخدم واللغة محسومان، والشريط لم يُبنَ بعد.
+     */
+    public function boot(): void
+    {
+        Filament::serving(static fn () => AdminNavigation::configure());
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
             ->id('admin')
-            ->path('admin')
+            ->path((bool) config('console.enabled') && (bool) config('console.primary') ? 'v2' : 'admin')
             ->login(Login::class)
             ->brandName(config('app.name'))
+            ->brandLogo(fn () => view('filament.brand-logo'))
+            ->brandLogoHeight('3.5rem')
             ->defaultThemeMode(ThemeMode::Light)
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->colors([
-                'primary' => Color::Emerald,
+                'primary' => Color::Teal,
                 'gray' => Color::Slate,
                 'danger' => Color::Rose,
                 'warning' => Color::Amber,
@@ -99,17 +127,17 @@ final class AdminPanelProvider extends PanelProvider
             ])
             ->sidebarCollapsibleOnDesktop()
             ->maxContentWidth(Width::Full)
-            ->navigationGroups([
-                'الأكاديمي',
-                'الطلاب وأولياء الأمور',
-                'الطاقم',
-                'التشغيل',
-                'التعلّم',
-                'الانضباط',
-                'التواصل',
-                ...((bool) config('features.payroll') ? ['المال'] : []),
-                'التقارير',
-                'النظام',
+            // خمسة أقسام لا أكثر. الترتيب والتداخل داخلها في App\Filament\AdminNavigation.
+            ->navigationGroups(AdminNavigation::groups())
+            ->navigationItems([
+                NavigationItem::make('console-primary')
+                    ->label(static fn (): string => (string) __('console.nav.current'))
+                    ->url(static fn (): string => route('console.home'))
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->sort(-100)
+                    ->visible(static fn (): bool => (bool) config('console.enabled')
+                        && (bool) config('console.primary')
+                        && (bool) auth()->user()?->can('admin.panel.access')),
             ])
             ->resources([
                 MonthlyReportResource::class,
@@ -148,12 +176,14 @@ final class AdminPanelProvider extends PanelProvider
                 NotificationPreferenceResource::class,
                 NotificationTemplateResource::class,
                 NotificationCategorySettingResource::class,
+                PopupCampaignResource::class,
                 AcademicCalendarFilamentResource::class,
                 HolidayFilamentResource::class,
                 OrganizationFilamentResource::class,
                 ...((bool) config('features.payroll') ? [
                     PayrollEntryResource::class,
                     PayrollPeriodResource::class,
+                    PayrollAdjustmentResource::class,
                 ] : []),
                 RecordingResource::class,
                 OrganizationSnapshotResource::class,
@@ -161,10 +191,12 @@ final class AdminPanelProvider extends PanelProvider
                 StudentDashboardResource::class,
                 TeacherDashboardResource::class,
                 PostponementRequestResource::class,
+                ScheduleResource::class,
                 SessionParticipantResource::class,
                 SessionResource::class,
                 StaffProfileResource::class,
                 RegistrationApplicationResource::class,
+                RegistrationFormResource::class,
                 StudentProfileResource::class,
             ])
             // في هذه التركيبة يبدأ Livewire محرّك Alpine قبل تنفيذ سكربتات
@@ -176,6 +208,11 @@ final class AdminPanelProvider extends PanelProvider
                 'panels::body.end',
                 fn () => view('filament.hooks.alpine-boot'),
             )
+            // طبقة النوافذ المنبثقة داخل لوحة الإدارة — نفس المكوّن الموحد.
+            ->renderHook(
+                'panels::body.end',
+                fn () => view('notifications::popups.layer'),
+            )
             ->widgets([
                 PlatformOverview::class,
                 NeedsAttention::class,
@@ -185,6 +222,9 @@ final class AdminPanelProvider extends PanelProvider
             ])
             ->pages([
                 Dashboard::class,
+                ClassroomConnectionSettings::class,
+                TeachersDirectory::class,
+                OperationalReports::class,
             ])
             ->middleware([
                 EncryptCookies::class,

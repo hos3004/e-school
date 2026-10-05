@@ -24,7 +24,11 @@ final readonly class ListPayrollEntriesQuery
         $organizationId = (string) $this->auth->user()?->getAttribute('organization_id');
 
         return PayrollEntry::query()
-            ->when($organizationId !== '', fn (Builder $q): Builder => $q->forOrganization($organizationId))
+            ->when(
+                $organizationId !== '',
+                fn (Builder $q): Builder => $q->forOrganization($organizationId),
+                fn (Builder $q): Builder => $q->whereRaw('1 = 0'),
+            )
             ->when($payrollPeriodId !== '', fn (Builder $q): Builder => $q->where('payroll_period_id', $payrollPeriodId))
             ->when($staffProfileId !== '', fn (Builder $q): Builder => $q->forStaff($staffProfileId))
             ->latest('created_at')

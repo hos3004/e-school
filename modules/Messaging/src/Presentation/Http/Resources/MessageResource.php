@@ -18,11 +18,15 @@ final class MessageResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        /** @var string|null $senderName */
+        $senderName = $this->resource->getAttribute('sender_name');
+
         return [
             'id' => (string) $this->resource->id,
             'organization_id' => (string) $this->resource->organization_id,
             'conversation_id' => (string) $this->resource->conversation_id,
             'user_id' => (string) $this->resource->user_id,
+            'sender_name' => $senderName,
             'body' => $this->resource->body,
             'attachments' => $this->resource->attachments ?? [],
             'is_flagged' => (bool) $this->resource->is_flagged,

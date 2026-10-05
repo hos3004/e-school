@@ -23,7 +23,7 @@ final class AcademicsSeeder extends Seeder
         $organizationId = $this->ensureOrganization();
 
         $program = Program::query()->firstOrCreate(
-            ['code' => 'GEN-AR'],
+            ['code' => 'P001'],
             [
                 'organization_id' => $organizationId,
                 'name' => ['ar' => 'البرنامج العام', 'en' => 'General Program'],
@@ -41,8 +41,8 @@ final class AcademicsSeeder extends Seeder
         );
 
         $levels = [
-            ['code' => 'L1', 'name' => ['ar' => 'المستوى الأول', 'en' => 'Level One']],
-            ['code' => 'L2', 'name' => ['ar' => 'المستوى الثاني', 'en' => 'Level Two']],
+            ['code' => 'L001', 'name' => ['ar' => 'المستوى الأول', 'en' => 'Level One']],
+            ['code' => 'L002', 'name' => ['ar' => 'المستوى الثاني', 'en' => 'Level Two']],
         ];
 
         foreach ($levels as $index => $levelData) {
@@ -56,12 +56,12 @@ final class AcademicsSeeder extends Seeder
         }
 
         Course::query()->firstOrCreate(
-            ['code' => 'MATH-101'],
+            ['code' => 'C001'],
             [
                 'organization_id' => $organizationId,
                 'level_id' => (string) Level::query()
                     ->where('program_id', $program->getKey())
-                    ->where('code', 'L1')
+                    ->where('code', 'L001')
                     ->value('id'),
                 'name' => ['ar' => 'مقدمة في الرياضيات', 'en' => 'Introduction to Mathematics'],
                 'description' => [
@@ -74,12 +74,12 @@ final class AcademicsSeeder extends Seeder
         );
 
         Course::query()->firstOrCreate(
-            ['code' => 'PHY-101'],
+            ['code' => 'C002'],
             [
                 'organization_id' => $organizationId,
                 'level_id' => (string) Level::query()
                     ->where('program_id', $program->getKey())
-                    ->where('code', 'L2')
+                    ->where('code', 'L002')
                     ->value('id'),
                 'name' => ['ar' => 'أساسيات الفيزياء', 'en' => 'Physics Basics'],
                 'description' => [

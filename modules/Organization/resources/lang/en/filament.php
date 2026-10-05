@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'Organization',
+    'navigation_group' => 'Reports & Administration',
 
     'organization' => [
         'label' => 'organization',

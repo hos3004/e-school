@@ -6,9 +6,12 @@ namespace Modules\Recordings\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Events\RecordingRegistered;
 use Modules\Recordings\Domain\Models\Recording;
+use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
+use Modules\VirtualClassroom\Domain\Contracts\ClassroomAdministrationQueries;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -24,6 +27,9 @@ final readonly class RegisterRecordingAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private SessionAdministrationQueries $sessions,
+        private ClassroomAdministrationQueries $classrooms,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(
@@ -38,7 +44,17 @@ final readonly class RegisterRecordingAction
         ?int $durationSeconds = null,
         ?int $sizeBytes = null,
         ?string $actorId = null,
+        ?string $reason = null,
     ): Recording {
+        $session = $this->sessions->findForOrganization($organizationId, $sessionId);
+        $classroom = $this->classrooms->findForSession($organizationId, $sessionId);
+        if ($session === null || $classroom === null || $classroom->id !== $classroomId) {
+            throw BusinessRuleViolation::make(
+                'recordings.context_invalid',
+                'recordings::errors.context_invalid',
+            );
+        }
+
         $duplicate = Recording::withTrashed()
             ->where('provider', $provider)
             ->where('external_recording_id', $externalRecordingId)
@@ -70,8 +86,11 @@ final readonly class RegisterRecordingAction
             $sizeBytes,
             $now,
             $expiresAt,
+            $actorId,
+            $reason,
         ): Recording {
-            return Recording::query()->create([
+            /** @var Recording $recording */
+            $recording = Recording::query()->create([
                 'organization_id' => $organizationId,
                 'session_id' => $sessionId,
                 'classroom_id' => $classroomId,
@@ -86,6 +105,26 @@ final readonly class RegisterRecordingAction
                 'available_from' => $now,
                 'expires_at' => $expiresAt,
             ]);
+
+            $this->audit->record(
+                organizationId: $organizationId,
+                actorId: $actorId,
+                actorType: $actorId === null ? 'integration' : 'user',
+                action: 'recordings.registered',
+                auditableType: 'recordings',
+                auditableId: (string) $recording->getKey(),
+                oldValues: null,
+                newValues: [
+                    'session_id' => $sessionId,
+                    'classroom_id' => $classroomId,
+                    'provider' => $provider,
+                    'status' => RecordingStatus::Processing->value,
+                    'expires_at' => $expiresAt->toIso8601String(),
+                ],
+                reason: trim($reason ?? '') ?: (string) __('recordings::messages.provider_ingestion_reason'),
+            );
+
+            return $recording;
         });
 
         $this->events->dispatch(new RecordingRegistered(

@@ -19,8 +19,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  */
 trait HasModuleFactory
 {
+    /** @use HasFactory<Factory<self>> */
     use HasFactory;
 
+    /** @return Factory<self>|null */
     protected static function newFactory(): ?Factory
     {
         $separator = chr(92);
@@ -38,6 +40,11 @@ trait HasModuleFactory
             'Modules', $module, 'Database', 'Factories', $model.'Factory',
         ]);
 
-        return class_exists($factory) ? $factory::new() : null;
+        if (!is_subclass_of($factory, Factory::class)) {
+            return null;
+        }
+
+        /** @var class-string<Factory<self>> $factory */
+        return $factory::new();
     }
 }

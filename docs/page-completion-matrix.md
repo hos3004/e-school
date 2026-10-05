@@ -68,15 +68,15 @@
 | C1 | Registration Applications List | `/admin/registration-applications` | ListRegistrationApplications | RegistrationApplicationResource (index+view) | student.view.any + review policy | قائمة + فلاتر الحالة | **FUNCTIONAL** | Feature tests جزئية | فلتر «منتظرة» افتراضي |
 | C2 | Registration Review | `/admin/registration-applications/{record}` | ViewRegistrationApplication | Actions submit/review/accept/reject مع Policy | review policy | القبول يولّد StudentProfile داخل معاملة | **FUNCTIONAL** | `RegistrationApplicationTest` جزئي | تحقق يدوي من UX الرفض بالسبب |
 | C3 | Students List | `/admin/students` | ListStudentProfiles | StudentProfileResource (CRUD كامل) | student.view.any | جدول + بحث/فلاتر | **FUNCTIONAL** | عامة | — |
-| C4 | Create Student | `/admin/students/create` | CreateStudentProfile | form موجود | student.create | إنشاء ملف + حساب | **FUNCTIONAL** | لا يوجد خاص | Agent 1 يتحقق: اكتمال الحقول + Selector جغرافيا لا نص حر |
-| C5 | Student Profile Hub | `/admin/students/{record}` | ViewStudentProfile | — | student.view | Hub بTabs: Programs/Groups/Sessions/Availability/Account | **PARTIAL** | لا يوجد | المطلوب Hub واحد بTabs بدل صفحات مشتتة |
+| C4 | Create Student | `/admin/students/create` | CreateStudentProfile Wizard | `CreateStudentOnboardingAction` | student.create | حساب جديد أو موجود → طلب → قبول → ملف → دور طالب داخل معاملة | **TESTED** | `StudentOnboardingActionTest` + `AdminProfileHubTest` | Selector جغرافيا + برنامج/كورس + سبب قبول؛ لا حسابات يتيمة عند الفشل |
+| C5 | Student Profile Hub | `/admin/students/{record}` | ViewStudentProfile | `ProfileAdministrationQueryService` عبر DTO Query Contracts | student.view | Overview + Account/Programs/Groups/Sessions Tabs | **TESTED** | `AdminProfileHubTest` | إتاحة الطالب تظل غير موجودة Domain-wise ولا يُخترع لها جدول |
 | C6 | Edit Student | `/admin/students/{record}/edit` | EditStudentProfile | form | student.update | تعديل | **FUNCTIONAL** | لا يوجد خاص | — |
 | C7 | Student Account | عبر `/admin/users/{record}/edit` | UserResource edit | Identity UserResource (create/edit) | identity.users.* | ربط حساب↔ملف، حالة، reset password | **PARTIAL** | `ChangeUserStatus*` tests | تنظيم الربط داخل Hub C5 |
-| C8 | Student Programs | Tab في C5 | EnrollmentResource index-only حاليًا | Enrollments | enrollment.view | برامج الطالب | **MISSING** كعرض | — | Tab علاقات داخل Hub |
-| C9 | Student Groups | Tab في C5 | memberships API موجودة | Groups | group.view | مجموعات الطالب | **MISSING** كعرض | — | كTab |
-| C10 | Student Sessions | Tab في C5 | SessionParticipantResource index-only | SessionParticipant | session.view | حصص الطالب | **MISSING** كعرض | — | كTab |
+| C8 | Student Programs | Tab في C5 | EnrollmentAdministrationQueries | Enrollments DTOs | enrollment.view | برامج الطالب وحالة القيد | **FUNCTIONAL** | `AdminProfileHubTest` | قراءة فقط داخل Hub |
+| C9 | Student Groups | Tab في C5 | GroupAdministrationQueries | Groups DTOs | group.view | مجموعات الطالب وحالة العضوية | **FUNCTIONAL** | `AdminProfileHubTest` | قراءة فقط داخل Hub |
+| C10 | Student Sessions | Tab في C5 | SessionAdministrationQueries | Sessions DTOs | session.view | آخر حصص الطالب والحضور | **FUNCTIONAL** | `AdminProfileHubTest` | الحد الأقصى من config لا رقم مكتوب في الواجهة |
 | C11 | Student Availability | Tab في C5 | — | تحقق من وجود نموذج إتاحة الطالب أولًا | enrollment.view | إتاحة الطالب | **MISSING** | — | Backend gap rule: إن لم يوجد نموذج، أوقف وبلّغ قبل اختراع جدول |
-| C12 | Assign Student to Program/Group | Actions في C5/C9 | تدفق التسكين API-side من عمل Task02 | Groups/Enrollments APIs | enrollment.create | تسكين بمنع ازدواج وتعارض | **PARTIAL** | Task02 acceptance tests (فاشلة حاليًا) | زر بلا Action حقيقي = غير مكتمل |
+| C12 | Assign Student to Program/Group | Action في C3/C5 | `AssignStudentToGroupAction` نفسه المستخدم بالـAPI | Groups/Enrollments Contracts | enrollment.create + group.manage | برنامج → كورس → مجموعات متاحة بالسعة والمعلم؛ سبب وتدقيق | **TESTED** | `Task02AcceptanceTest` | لا كتابة مباشرة في `group_memberships`؛ التراجع الذري واختبارات المؤسسة/الأهلية/التأهيل ناجحة |
 | C13 | Freeze / Status Management | ضمن C7 + `/admin/discipline-reactivations` | ReactivationRequests (index/view) + حالة المستخدم | ChangeUserStatus + Discipline reactivations | enrollment.freeze / reactivate | تجميد وفك وفق قاعدة العميل (تقييم ثم قرار مصرح) | **PARTIAL** | Discipline tests | فك التجميد يمر بالتقييم لا زرًا مباشرًا |
 
 ## المجموعة D — TEACHERS ADMIN  → **AGENT 1**
@@ -85,15 +85,15 @@
 |---|---|---|---|---|---|---|---|---|---|
 | D1 | Teachers List | `/admin/staff-profiles` | ListStaffProfiles | StaffProfileResource (index/view/edit، **بلا create**) | staff.view.any | جدول + فلاتر | **FUNCTIONAL** | عامة | — |
 | D2 | Create Teacher | غير موجودة | getPages بلا create | ImportStaffAction API-side موجود | staff create permission؟ | ملف معلم + contract + rates | **MISSING** | لا يوجد | Backend gap rule: صفحة create فوق الموارد الحالية |
-| D3 | Teacher Profile Hub | `/admin/staff-profiles/{record}` | ViewStaffProfile | — | staff.view | Tabs: Account/Programs/Groups/Availability/Sessions/Substitute history/Apology history | **PARTIAL** | لا يوجد | نفس منهج Hub C5 |
+| D3 | Teacher Profile Hub | `/admin/staff-profiles/{record}` | ViewStaffProfile | `ProfileAdministrationQueryService` عبر DTO Query Contracts | staff.view | Overview + Account/Qualifications/Groups/Availability/Sessions Tabs | **FUNCTIONAL** | `AdminProfileHubTest` | تاريخ البدلاء والاعتذارات ما زالا خارج هذا الإكمال |
 | D4 | Edit Teacher | `.../{record}/edit` | EditStaffProfile | form | تعديل staff | تعديل | **FUNCTIONAL** | لا يوجد خاص | — |
-| D5 | Teacher Account | عبر UserResource | — | Identity | identity.users.* | ربط حساب المعلم | **PARTIAL** | جزئي | كTab في D3 |
-| D6 | Qualifications / Subjects | غير موجودة | TeacherQualificationQueries قراءة فقط | Staff domain | staff.contract.view | مؤهلات المعلم ومواده | **MISSING** | لا يوجد | تحقق من جداول المؤهلات قبل بناء UI |
+| D5 | Teacher Account | Tab في D3 | UserAccountDirectory | Identity DTO | identity.users.* | عرض الحساب المرتبط | **FUNCTIONAL** | `AdminProfileHubTest` | التعديل يظل عبر UserResource |
+| D6 | Qualifications / Subjects | Tab في D3 | TeacherQualificationQueries | Staff + AcademicCatalogQueries | staff.contract.view | مؤهلات المعلم ومواده | **FUNCTIONAL** | `AdminProfileHubTest` | قراءة مجمعة بلا استيراد Models عبر الحدود |
 | D7 | Teacher Programs | Tab في D3 | — | روابط البرامج-المعلمين | program.manage | ارتباط بالبرامج | **MISSING** | — | — |
-| D8 | Teacher Groups | Tab في D3 | group-teachers API موجودة | Groups | group.view | مجموعات المعلم | **PARTIAL** | Groups tests | كTab؛ الإسناد/التغيير يعيش في G |
-| D9 | Teacher Availability (view) | Tab في D3 | availability API موجودة | Staff availability + approval enum | schedule.view | إتاحة المعلم | **PARTIAL** | Staff tests جزئي | — |
+| D8 | Teacher Groups | Tab في D3 | GroupAdministrationQueries | Groups DTOs | group.view | مجموعات المعلم ودوره والكورس | **FUNCTIONAL** | `AdminProfileHubTest` | الإسناد/التغيير يظل في G |
+| D9 | Teacher Availability (view) | Tab في D3 | StaffAdministrationQueries | Staff DTOs | schedule.view | إتاحة المعلم وحالة الاعتماد | **FUNCTIONAL** | `AdminProfileHubTest` | عرض فقط؛ الاعتماد D10 مستقل |
 | D10 | Availability Approval | Action ضمن D9 | ApproveTeacherAvailabilityAction موجود (عمل Task03) | Staff | إدارة الإتاحة | اعتماد/رفض مع سبب | **PARTIAL** | جزئي | أكمل UI الاعتماد الجماعي والسبب والتدقيق |
-| D11 | Teacher Sessions | فلتر في `/admin/sessions` أو Tab D3 | SessionResource | Sessions | session.view.assigned | حصص المعلم | **PARTIAL** | Sessions tests | — |
+| D11 | Teacher Sessions | Tab في D3 | SessionAdministrationQueries | Sessions DTOs | session.view.assigned | آخر حصص المعلم | **FUNCTIONAL** | `AdminProfileHubTest` | حد العرض من config |
 | D12 | Substitute History | Tab في D3 | original_teacher_id vs actual teacher | Sessions schema يدعم ذلك | session.view | تاريخ البدلاء | **MISSING** | — | — |
 | D13 | Apology History | Tab في D3 | PostponementRequestResource index-only | Scheduling | session.postpone.request | اعتذارات المعلم وقراراتها | **PARTIAL** | Scheduling tests | — |
 
@@ -145,24 +145,24 @@
 
 ## المجموعة H — SCHEDULING / SESSIONS  → **AGENT 3**
 
-أهم مجموعة. الواقع المثبت: SessionResource ‏index+view فقط. **ملاحظة حرجة:
-`EditAction::make()` مسجّل في الجدول (SessionResource.php:143) بينما صفحة edit
-غير معرّفة في getPages — زر مكسور يجب إصلاحه فورًا (إما تسجيل صفحة edit أو
-إزالة الزر).** لا يوجد مكوّن تقويم (Calendar) في المشروع إطلاقًا.
+أهم مجموعة. الواقع المثبت بعد شريحة Sessions: لا يوجد تعديل CRUD عام للحصة؛
+كل تغيير حالة يمر عبر Action وآلة الحالات وسبب وAudit. القائمة والتقويم ومركز
+التشغيل موجودة، وتكامل Attendance وVirtualClassroom وRecordings وNotifications
+أصبح داخل المركز. بقي إنشاء الحصة المنفردة ومعاينة التكرار والفحص البصري.
 
 | ID | الصفحة | Route | Status | Notes |
 |---|---|---|---|---|
-| H1 | Main Calendar | غير موجودة | **MISSING** | صفحة تقويم Filament (شهر/أسبوع) تعرض الحصص بالنقر للتفاصيل |
-| H2 | Sessions List | `/admin/sessions` | **FUNCTIONAL** | فلاتر حالة/تاريخ/معلم/مجموعة |
+| H1 | Main Calendar | `/admin/sessions/calendar` | **TESTED** | أسبوع/شهر وفلاتر وأسماء فعلية للمجموعة والمعلم؛ بقي QA بصري |
+| H2 | Sessions List | `/admin/sessions` | **TESTED** | مقرر/مجموعة/معلم وعدد مشاركين بأسماء فعلية، وفلاتر حالة/تاريخ/معلم |
 | H3 | Create Session | عبر API فقط حاليًا | **PARTIAL** | صفحة إنشاء Filament فوق منطق API الحالي + منع التعارض |
-| H4 | Create Recurring Sessions | API يدعم التكرار؟ تحقق Agent 3 | **MISSING** UI | نموذج تكرار أسبوعي بنطاق زمني |
+| H4 | Create Recurring Sessions | `/admin/schedules/create` | **TESTED** | هدف مجموعة/طالب، كورس، معلم، أيام، وقت محلي، مدة ونطاق؛ يولد Sessions ومشاركين عبر عقد Sessions |
 | H5 | Recurrence Preview | — | **MISSING** | معاينة الحصص الناتجة قبل الحفظ |
-| H6 | Session Details (Operations Hub) | `/admin/sessions/{record}` | **PARTIAL** | يجب أن تعرض: Program · Course · Group · Students · Original Teacher · Actual Teacher · Date/time + timezone · Status · BBB · Recording · Attendance metadata · Notifications · Changes/Audit |
-| H7 | Edit Session | صفحة edit غير مسجلة والزر مكسور | **SKELETON** | إصلاح التناقض أعلاه أولًا |
-| H8 | Reschedule Session | postpone API موجودة | **PARTIAL** | تدفق تأجيل بالسبب من الواجهة |
-| H9 | Conflict Display | منطق التعارض في backend | **MISSING** UI | عرض التعارضات عند الإنشاء/التعديل قبل الحفظ |
-| H10 | Substitute Assignment | Action ‏assign_substitute موجود فعليًا في SessionResource:151 | **PARTIAL** | استكمال picker المرشحين المؤهلين |
-| H11 | Substitute History | ضمن H6/D12 | **MISSING** | سجل البدلاء لكل حصة/معلم |
+| H6 | Session Details (Operations Hub) | `/admin/sessions/{record}` | **TESTED** | يعرض Program · Course · Group · Students · Original/Actual Teacher · timezone · Status · Attendance · Classroom lifecycle/health/events · Recording status/grants/views · substitutions · apologies · notifications · history/Audit |
+| H7 | Edit Session | لا يوجد عمدًا | **N/A** | أزيل مسار CRUD المكسور؛ التعديل حصريًا عبر إجراءات الحالات وإعادة الجدولة والبديل بسبب وتدقيق |
+| H8 | Reschedule Session | داخل H6 | **TESTED** | يثبت مدة الأصل، يمنع التعارض، ينسخ المشاركين، ويكتب history/Audit |
+| H9 | Conflict Display | داخل create/edit للقالب | **FUNCTIONAL** | يمنع تعارض المعلم والمجموعة والطالب؛ رسالة BusinessRuleViolation، وتبقى معاينة التعارض قبل الحفظ تحسينًا بصريًا |
+| H10 | Substitute Assignment | داخل H6 والقائمة | **TESTED** | picker يقرأ التأهيل والنشاط والإجازة من عقود Staff ويعرض التعارض؛ التجاوز يحتاج سببًا وصلاحية |
+| H11 | Substitute History | ضمن H6 | **FUNCTIONAL** | الأصل والمنفذ والسبب والتجاوز ووقته بأسماء فعلية؛ بقي ضمه إلى ملف المعلم D12 |
 
 ## المجموعة I — TEACHER APOLOGY / SUBSTITUTE  → **AGENT 3**
 
@@ -171,10 +171,10 @@
 
 | ID | الصفحة | Route | Frontend | Backend | Permissions | Business Logic | Status | Automated Test | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| I1 | Admin Apology Requests | `/admin/postponement-requests` | ListPostponementRequests (index فقط) | Scheduling | session.postpone.approve | قائمة الطلبات وقراراتها | **PARTIAL** | Scheduling tests | إضافة view page بالقرار بالسبب |
-| I2 | Apology Details + Decision | `.../{record}` غير موجودة | — | postpone approve API موجودة | session.postpone.approve | قرار مع سبب وتدقيق | **MISSING** | — | — |
-| I3 | Substitute Candidate Picker | ضمن I2/H10 | assign_substitute action جزئي | مؤهلات المعلم عبر TeacherQualificationQueries | session.assign_substitute | مرشحون مؤهلون بلا تعارض | **PARTIAL** | — | — |
-| I4 | Submit Apology (Teacher Portal) | غير موجودة | — | postpone request API موجودة (student/guardian/teacher ◐assigned) | session.postpone.request | طلب اعتذار بالسبب | **MISSING** | — | بوابة المعلم N9 |
+| I1 | Admin Postponement Requests | `/admin/postponement-requests` | قائمة مؤسسية بأسماء الحصة والطالب وحالة «على من الدور» | Scheduling | session.postpone.approve | قائمة الطلبات والتصعيد الشهري | **TESTED** | SchedulingOperationsTest | QA بصري |
+| I2 | Postponement Details + Decision | `/admin/postponement-requests/{record}` | ViewPostponementRequest | Actions عبر SessionSchedulingGateway | session.postpone.approve | اعتماد/رفض/اقتراح بديل بسبب وتدقيق وإنشاء تلافي | **TESTED** | SchedulingOperationsTest | قبول البديل من بوابة الطالب وjob انتهاء SLA متبقيان |
+| I3 | Substitute Candidate Picker | ضمن H10 | picker تشغيلي | مؤهلات وتوافر وإجازات وتعارضات | session.assign_substitute | تجاوز إداري بسبب، مع حفظ الأصلي والمنفذ | **FUNCTIONAL** | TeacherApologyFlowTest | QA بصري |
+| I4 | Submit Apology (Teacher Portal) | غير موجودة | — | SubmitTeacherApologyAction كامل ومدقق | session.postpone.request | الاعتذار لا يلغي الحصة؛ بوابة المعلم متبقية | **PARTIAL** | TeacherApologyFlowTest | بوابة المعلم N9 |
 | I5 | My Apology Requests (Teacher Portal) | غير موجودة | — | نفس المصدر | own scope | متابعة حالة الطلبات | **MISSING** | — | — |
 
 ## المجموعة J — BBB / CLASSROOM UI  → **AGENT 3** (ضمن Session Details)
@@ -183,24 +183,34 @@
 
 | ID | العنصر داخل H6 | Backend | Status | Notes |
 |---|---|---|---|---|
-| J1 | Create classroom / Retry creation | VirtualClassroomProvider + BigBlueButtonProvider موجودان | **PARTIAL** | أزرار إنشاء/إعادة المحاولة بحالة وأخطاء واضحة |
+| J1 | Create classroom / Retry creation | VirtualClassroomProvider + BigBlueButtonProvider | **TESTED** | pending/provisioned/running/ended/failed، محاولات وخطأ أخير وتدقيق؛ زر إعادة المحاولة وتجهيز آلي قبل الموعد بـ20 دقيقة |
 | J2 | Join links (teacher/student/supervisor) | أدوار BBB: moderator/attendee/observer حسب الصلاحية | **FUNCTIONAL** (البوابات تعرض joinUrl بشروط canJoin) | التحقق أن admin/supervisor يحصلان observer/moderate حسب docs |
 | J3 | Guest link generation + revoke | guest tokens بمهل وانتهاء | **PARTIAL** | classroom.guest.invite/revoke موجودتان في المصفوفة؛ UI مطلوب |
-| J4 | Meeting status + Recording status | classroom events + recordings | **PARTIAL** | عرض الحالة الأخيرة ومصدرها |
+| J4 | Meeting status + Recording status | classroom events + recordings | **TESTED** | حالة الفصل وصحته وأحداثه وأسماء المشاركين، وحالة التسجيل ومدته ومنحه ومشاهداته داخل H6 |
 
 ## المجموعة K — RECORDINGS  → **AGENT 7**
 
 | ID | الصفحة | Route | Frontend | Backend | Permissions | Business Logic | Status | Automated Test | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| K1 | Recordings List | `/admin/recordings` | RecordingResource (افتراضي index/create/edit — بلا getPages) | Recordings module | recording.view.any | قائمة بحالات التسجيلات | **FUNCTIONAL** | Recordings unit tests | create/edit يدوي غير منطقي للأعمال — استبداله بview + actions نظامية |
-| K2 | Recording Details | غير موجودة | — | Recording model + status/history | recording.view | تفاصيل وحالة وسجل | **FUNCTIONAL** | — | صفحة view مسجلة |
-| K3 | Recording Player/View | غير موجودة | — | روابط موقعة 120 دقيقة + recording_views log | recording.view + منح | تشغيل محمي بتسجيل مشاهدة | **MISSING** | — | ممنوع رابط عام |
-| K4 | Recording Access Grants | جدول grants موجود (عمل Task03) | GrantRecordingAccessAction موجود API-side | recording.grant | منح وصول بانتهاء | **FUNCTIONAL** | Task03 acceptance tests | Modal منح داخل K2 |
-| K5 | Grant Access Modal | ضمن K2 | — | نفس المصدر | recording.grant | اختيار مستلم + مدة | **FUNCTIONAL** | — | — |
-| K6 | Recording status/history | ضمن K2 | — | report_event_log | recording.view.any | مشاهدات وتنزيلات وحذف بالسبب | **FUNCTIONAL** | — | — |
+| K1 | Recordings List | `/admin/recordings` | قائمة قراءة فقط بالحصة والكورس والمعلم والحالة والمدة والمنح والمشاهدات | RecordingAdministrationQueries | recording.view.any | لا إنشاء/تعديل CRUD يدوي | **TESTED** | Recordings tests | QA بصري فقط |
+| K2 | Recording Details | `/admin/recordings/{record}` | مركز تشغيل: سياق الحصة، مؤشرات، منح، مشاهدة، Audit | RecordingOperationsQueryService | recording.view / view.any | لا يعرض path أو أسرار المزوّد | **TESTED** | RecordingOperationsHubTest | QA بصري فقط |
+| K3 | Recording Player/View | `/recordings/{recording}/watch` | redirect محمي | رابط موقّع مؤقتًا + RecordingAccessCoordinator + recording_views | recording.view + grant/assignment | رفض الرابط غير الموقّع، عزل مؤسسة، معلم الحصة أو منحة طالب نشط | **TESTED** | RecordingOperationsHubTest | اختبار رابط موقّع وتسجيل مشاهدة |
+| K4 | Recording Access Grants | داخل K2 | منح لمستخدم أو مجموعة + إلغاء | Grant/Revoke Actions | recording.grant | تحقق المؤسسة، منع التكرار، انتهاء لا يتجاوز عمر التسجيل، سبب وAudit | **TESTED** | RecordingOperationsHubTest | — |
+| K5 | Grant Access Modal | ضمن K2 | بحث مستخدم أو مجموعة ومدة وسبب | نفس المصدر | recording.grant | اختيار متسلسل ولا معرّفات خام | **TESTED** | render test | QA بصري فقط |
+| K6 | Recording status/history | ضمن K2 وH6 | status/retention/views/downloads/audit | lifecycle actions + hourly retention command | recording.view.any / recording.delete | أرشفة ثم انتهاء فعلي، soft delete بسبب | **TESTED** | Recordings tests | — |
 
 صلاحيات العميل المطبقة: Admin كامل · Supervisor حسب منح · Teacher حصته فقط
 بلا تنزيل افتراضيًا · Student/Guardian بلا وصول افتراضيًا.
+
+## مجموعة التعلم — ASSIGNMENTS
+
+| ID | الصفحة | Route | Frontend | Backend | Permissions | Business Logic | Status | Automated Test | Notes |
+|---|---|---|---|---|---|---|---|---|---|
+| AS1 | Assignments List | `/admin/assignments` | Filament list بأسماء ومؤشرات | AssignmentAdministrationQueryService | assignment.manage / grade | مقرر/مجموعة/معلم/حالة/مستهدفون/بانتظار التصحيح | **CLIENT_READY** | AssignmentOperationsHubTest + browser RTL | زر الإنشاء مثبت وفلاتر المقرر والتأخير موجودة |
+| AS2 | Create Assignment | `/admin/assignments/create` | برنامج ← مقرر ← مجموعة ← معلم | CreateAssignmentAction | assignment.manage | تحقق المؤسسة والأهلية ثم roster ذري للطلاب النشطين | **CLIENT_READY** | happy + invalid teacher + browser cascade | لا كتابة مباشرة في جدول التسليمات |
+| AS3 | Assignment Operations Hub | `/admin/assignments/{record}` | ملخص ومؤشرات وتسليمات وAudit | query contracts + DTOs | policy object scope | أسماء حقيقية، حالة تشغيلية، عدم تسليم وتأخير وتصحيح | **CLIENT_READY** | render + browser realistic record | فُحص واجب عرض لطالبين بلا Console errors |
+| AS4 | Edit / Archive | داخل AS3 | نماذج سبب | Update/Archive Actions | assignment.manage | قفل الجمهور بعد عمل الطالب وSoftDelete مع منع غير المصحح | **TESTED** | AssignmentOperationsHubTest | لا DeleteAction مباشر |
+| AS5 | Submit / Grade | بوابة الطالب + relation manager | Inertia submit + grade modal | Submit/Grade Actions | submit / grade | late server-side، raw score، penalty، final score، Audit | **TESTED** | Assignments + Task04 + PortalWriteRoutes | إشعارات الأحداث متكاملة |
 
 
 
@@ -208,13 +218,13 @@
 
 | ID | الصفحة | Route | Frontend | Backend | Permissions | Business Logic | Status | Automated Test | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| L1 | Notification Bell (portals) | — | غير موجود | api/notifications/unread-count موجودة | auth | عداد غير المقروء | **FUNCTIONAL** | لا يوجد | مكوّن مشترك واحد لكل البوابات |
-| L2 | Notification Center (user side) | غير موجود | — | api/notifications + mark-as-read + mark-all-as-read موجودة | auth | قائمة مقروء/غير مقروء بروابط عمق | **FUNCTIONAL** | لا يوجد | صفحة أو drawer مشترك |
-| L3 | Notification Deep link | ضمن L2 | — | نفس المصدر | auth | فتح الهدف حسب نوع الإشعار | **FUNCTIONAL** | — | — |
-| L4 | Delivery Log (admin) | `/admin/notification-outboxes` | ListNotificationOutboxes (index فقط) | Outbox + attempts | system.alerts / audit.view | سجل: In-App/Email/WhatsApp · status · attempts · last error · external id | **FUNCTIONAL** | Notifications tests | أكمل الأعمدة والفلاتر |
-| L5 | Delivery Details | view page غير مسجلة | — | attempts API موجودة | نفسها | تفاصيل المحاولات والخطأ الأخير | **FUNCTIONAL** | — | تسجيل صفحة view |
-| L6 | Failed Notifications | فلتر داخل L4 | — | status=failed | نفسها | قائمة الفاشل | **FUNCTIONAL** | Task04 tests (فاشلة حاليًا) | — |
-| L7 | Manual Retry | Actions داخل L4/L5 | retry/cancel API موجودة | notifications.retry | نفسها | إعادة إرسال يدوي بالتدقيق | **FUNCTIONAL** | جزئي | ربط أزرار Filament بالـAPI الحقيقية |
+| L1 | Notification Bell (portals) | مشترك في Layout | `NotificationBell.tsx` | unread-count خلف Sanctum stateful | auth | عداد غير المقروء وفتح المركز | **DONE** | NotificationOperationsHubTest + browser RTL | حالات التحميل/الخطأ/الفراغ موحدة |
+| L2 | Notification Center (user side) | `/{student,teacher,guardian}/notifications` | `Shared/Notifications.tsx` | list + mark-one + mark-all | auth | قائمة مقروء/غير مقروء، pagination وروابط عمق | **DONE** | NotificationOperationsHubTest + browser RTL | نفس المكوّن للبوابات الثلاث |
+| L3 | Notification Deep link | ضمن L2 | resolver مركزي | أهداف session/student/teacher/assignment/program | auth + target permission | رابط داخلي آمن أو null | **TESTED** | NotificationOperationsHubTest | لا يقبل URL من payload مباشرة |
+| L4 | Delivery Log (admin) | `/admin/notification-outboxes` | قائمة تشغيل بأسماء المستلمين | Outbox + attempts + administration query | system.alerts / audit.view | القناة والحالة والمحاولات والخطأ والمستلم | **TESTED** | Notifications 103/523 | بقي QA بصري للإدارة |
+| L5 | Delivery Details | `/admin/notification-outboxes/{record}` | ViewNotificationOutbox | المحتوى المحلي والمحاولات وAudit | نفسها | تفاصيل كل محاولة والخطأ والهدف | **TESTED** | NotificationOperationsHubTest | — |
+| L6 | Failed Notifications | فلتر داخل L4 | فلتر فعلي | status=failed | نفسها | قائمة الفاشل | **TESTED** | Notifications 103/523 | — |
+| L7 | Manual Retry / Cancel | Actions داخل L4/L5 | نماذج سبب | Retry/Cancel actions | notifications.retry | انتقال مدقق قبل/بعد بسبب مكتوب | **TESTED** | NotificationOperationsHubTest | لا كتابة CRUD مباشرة |
 | L8 | Notification Settings (user prefs) | `/admin/notification-preferences` | NotificationPreferenceResource (CRUD افتراضي) | preferences API | مالك الحساب | تفضيلات القنوات وساعات الهدوء | **PARTIAL** | جزئي | التأكد أن التعديل محصور بالمالك |
 
 ## المجموعة M — STUDENT PORTAL  → **AGENT 4**
@@ -230,7 +240,7 @@
 | M5 | Schedule | `/student/schedule` | Student/Schedule.tsx | StudentScheduleController | schedule.view | جدوله | **TESTED** | PortalRoutesTest | — |
 | M6 | Session Details | `/student/sessions/{id}` | Student/Sessions/Show.tsx (join logic موجود) | StudentSessionController + classroom join | session.view + session.join | تفاصيل ودخول BBB بشروط النافذة | **FUNCTIONAL** | PortalRoutesTest | إكمال حالة الخطأ عند تعذر الدخول |
 | M7 | My Availability | غير موجودة | — | تحقق من نموذج إتاحة الطالب أولًا | own | إتاحته الذاتية | **MISSING** | — | إن لم يوجد أساس backend يُبلّغ (مربوط C11) |
-| M8 | Notifications | L1+L2 | — | مصادر L | auth | إشعاراته | **FUNCTIONAL** | — | ملفات مشتركة مع Agent 7 (قاعدة تنسيق أدناه) |
+| M8 | Notifications | `/student/notifications` + L1 | Shared/Notifications.tsx | مصادر L | auth | إشعاراته | **TESTED** | NotificationOperationsHubTest | الواجهة المشتركة نفسها المختبرة في بوابة المعلم |
 
 ## المجموعة N — TEACHER PORTAL  → **AGENT 5**
 
@@ -249,7 +259,7 @@
 | N8 | Availability | غير موجودة | — | staff availability API موجودة | own | إدارة إتاته وطلبات اعتمادها | **FUNCTIONAL** | Staff tests جزئي | — |
 | N9 | Submit Apology | غير موجودة | — | postpone request API | session.postpone.request ◐assigned | طلب اعتذار بالسبب (لا يلغي الحصة) | **MISSING** | — | مربوط I4 |
 | N10 | My Apology Requests | غير موجودة | — | نفس المصدر own scope | own | متابعة طلباته وقراراتها | **MISSING** | — | مربوط I5 |
-| N11 | Notifications | L1+L2 | — | مصادر L | auth | إشعاراته | **FUNCTIONAL** | — | ملفات مشتركة مع Agent 7 |
+| N11 | Notifications | `/teacher/notifications` + L1 | Shared/Notifications.tsx | مصادر L | auth | إشعاراته | **DONE** | Automated + browser RTL | فحص فعلي للحالة الفارغة والجرس بلا أخطاء console |
 
 ## المجموعة O — GUARDIAN PORTAL  → **AGENT 6**
 
@@ -261,7 +271,7 @@
 | O4 | Child Attendance | `/guardian/children/{studentId}/attendance` | Guardian/Child/Attendance.tsx | GuardianAttendanceController | attendance.view children | حضور الابن | **TESTED** | PortalRoutesTest | — |
 | O5 | Child Reports | `/guardian/children/{studentId}/reports` | Guardian/Child/Reports.tsx | GuardianReportsController | session_report.view children | تقارير الابن | **TESTED** | PortalRoutesTest | — |
 | O6 | Child Schedule | غير موجودة | — | schedule queries children | schedule.view children | جدول الأبناء إن سمحت المصفوفة | **PARTIAL** | — | مسموح دائمًا وفق docs/06 §4 |
-| O7 | Notifications | L1+L2 | — | مصادر L | auth | إشعاراته | **FUNCTIONAL** | — | ملفات مشتركة مع Agent 7 |
+| O7 | Notifications | `/guardian/notifications` + L1 | Shared/Notifications.tsx | مصادر L | auth | إشعاراته | **TESTED** | NotificationOperationsHubTest | نفس التنفيذ المشترك مع عزل الحساب |
 
 **قاعدة صريحة:** لا تُبنى أي واجهة تتيح لولي الأمر قراءة محادثات الطالب الخاصة
 مع المعلم أو الزملاء — مهما كانت علاقاته المسجلة.
@@ -403,10 +413,10 @@ FormRequests**، وتُرجع `redirect` مع `flash`. لم تُنسخ قاعد�
 | `POST /teacher/availability` | `TeacherAvailabilityWriteController@store` | `SetTeacherAvailability` |
 | `DELETE /teacher/availability/{availability}` | `TeacherAvailabilityWriteController@destroy` | `RemoveTeacherAvailability` (جديد) |
 
-**ملاحظة أمنية مقصودة:** `POST /api/staff/availability` يقبل `staff_profile_id`
-من المدخلات، فمن يملك `staff.availability.create` يستطيع الكتابة على ملف معلم
-آخر. مسار البوابة **يشتق الملف من الجلسة ويتجاهل أي قيمة مرسلة**، والاختبار
-يثبت ذلك صراحةً.
+**حماية النطاق:** مسار البوابة **يشتق الملف من الجلسة ويتجاهل أي قيمة مرسلة**.
+أما `POST /api/staff/availability` فيتحقق من المؤسسة، ولا يسمح للمعلم بالكتابة
+إلا على ملفه الشخصي؛ ويقتصر إنشاء إتاحة لمعلم آخر داخل المؤسسة على من يملك
+`staff.view.any`. الاختبارات تثبت المسارين ومنع العبور بين المؤسسات.
 
 ### 8.3 الحالات المحدَّثة
 
@@ -452,6 +462,22 @@ FormRequests**، وتُرجع `redirect` مع `flash`. لم تُنسخ قاعد�
 | `vite build` | **ينجح** |
 | Pint على الملفات المتغيّرة | **يمر** |
 | تطابق مفاتيح الترجمة ar/en | **504 = 504، بلا فروق** |
+
+## 9. تحديث 2026-08-24 — إنشاء الطالب الإداري وملفا العمليات
+
+- صفحة `/admin/students/create` أصبحت Wizard يدعم **إنشاء شخص جديد بالكامل** أو
+  ربط حساب موجود من المؤسسة نفسها. الرحلة كلها داخل معاملة واحدة، وتشمل الطلب
+  والقبول وملف الطالب ودور `student`، مع سبب وتدقيق.
+- أُزيلت الكتابة المباشرة من Filament في `group_memberships`. التسكين المتسلسل
+  (برنامج → كورس → مجموعة متاحة) يستدعي `AssignStudentToGroupAction` ويطبّق
+  الأهلية والسعة وتأهيل المعلم والقيد والتدقيق نفسها المستخدمة في الـAPI.
+- ملف الطالب يعرض الحساب والقيود والمجموعات والحصص، وملف المعلم يعرض الحساب
+  والمؤهلات والمجموعات والتوافر والحصص. التجميع يتم في طبقة التطبيق عبر عقود
+  Query تعيد DTOs، من دون joins أو Eloquent Models عابرة لحدود الموديولات.
+- الأدلة: **15 اختبارًا ناجحًا و123 توكيدًا** للمسارات المتأثرة، وPHPStan الموجّه
+  بلا أخطاء، واختبار حدود `AccessControl` بعد التصحيح **3 ناجحة و112 توكيدًا**.
+- المتبقي المقصود: نموذج إتاحة الطالب غير موجود في المجال؛ وتاريخ بدلاء/اعتذارات
+  المعلم لم يُضم إلى الـHub في هذه الدفعة.
 
 **إخفاقات سابقة لم تنتج عن هذا العمل** (أُثبت بإرجاع `bootstrap/app.php` إلى
 HEAD وإعادة التشغيل، فبقيت فاشلة كما هي): `PublicStudentRegistrationTest`،

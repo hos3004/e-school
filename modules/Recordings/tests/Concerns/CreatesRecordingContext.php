@@ -57,6 +57,7 @@ trait CreatesRecordingContext
 
         $userId = (string) Str::ulid();
         DB::table('users')->insert([
+            'profile_completed_at' => now(),
             'id' => $userId,
             'organization_id' => $this->organizationId,
             'name' => 'معلم تجريبي',
@@ -96,6 +97,7 @@ trait CreatesRecordingContext
             'organization_id' => $this->organizationId,
             'course_id' => $courseId,
             'staff_profile_id' => $staffProfileId,
+            'original_teacher_id' => $staffProfileId,
             'session_type' => 'regular',
             'status' => 'completed',
             'scheduled_start' => $start,

@@ -20,6 +20,7 @@ use Filament\Tables\Table;
 use Modules\Messaging\Domain\Enums\ConversationType;
 use Modules\Messaging\Domain\Models\Conversation;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد إدارة المحادثات في لوحة الإدارة.
@@ -34,7 +35,7 @@ final class ConversationResource extends Resource
 
     protected static ?int $navigationSort = 70;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('messaging::navigation.group');
     }
@@ -93,7 +94,11 @@ final class ConversationResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'messaging::origin.conversation',
+            'heroicon-o-chat-bubble-left-right',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('messaging::fields.id'))
@@ -136,5 +141,15 @@ final class ConversationResource extends Resource
                     ->label(__('messaging::fields.is_moderated')),
             ])
             ->defaultSort('last_message_at', 'desc');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => ConversationResource\Pages\ListConversations::route('/'),
+        ];
     }
 }

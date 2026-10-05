@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'Access Control',
+    'group' => 'Reports & Administration',
 
     'fields' => [
         'created_at' => 'Created at',
@@ -19,13 +19,20 @@ return [
             'name' => 'Role name',
             'guard' => 'Guard',
             'organization' => 'Organization',
+            'scope' => 'Scope',
+            'scope_global' => 'Global role',
+            'scope_organization' => 'Organization role',
             'system' => 'System role',
             'permissions' => 'Granted permissions',
-            'user_id' => 'User ID',
+            'user_id' => 'User account',
+            'reason' => 'Access change reason',
         ],
         'actions' => [
             'assign_user' => 'Assign to user',
             'revoke_user' => 'Revoke from user',
+            'user_search_help' => 'Search by name, username, email, or phone within the current organization.',
+            'assigned' => 'The role was assigned and the reason was audited.',
+            'revoked' => 'The role was revoked and the reason was audited.',
         ],
         'filters' => [
             'system' => 'System roles only',

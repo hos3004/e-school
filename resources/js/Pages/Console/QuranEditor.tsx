@@ -1,0 +1,598 @@
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import axios from "axios";
+import { useI18n } from "@/lib/i18n";
+import type { Defaults, Placement, Student } from "./QuranTypes";
+
+export function QuranSheet({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: ReactNode;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const id = useId();
+  useEffect(() => {
+    const dialog = ref.current;
+    dialog?.showModal();
+    return () => dialog?.close();
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className="quran-sheet"
+      aria-labelledby={id}
+      onCancel={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <header>
+        <h2 id={id}>{title}</h2>
+        <button
+          type="button"
+          className="console-button quran-close"
+          aria-label={useI18n()("console_quran.close")}
+          onClick={onClose}
+        >
+          ×
+        </button>
+      </header>
+      <div className="quran-sheet-body">{children}</div>
+    </dialog>
+  );
+}
+export function QuranDays({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: Placement;
+  onChange: (draft: Placement) => void;
+  disabled?: boolean;
+}) {
+  const t = useI18n();
+  const id = useId();
+  return (
+    <details className="quran-days">
+      <summary
+        className="console-control"
+        aria-label={t("console_quran.choose_days")}
+      >
+        {value.weekly_slots.length
+          ? value.weekly_slots
+              .map((slot) => t("console_quran.days." + slot.weekday))
+              .join("، ")
+          : t("console_quran.choose_days")}
+      </summary>
+      <fieldset>
+        <legend className="quran-visually-hidden">
+          {t("console_quran.choose_days")}
+        </legend>
+        {Array.from({ length: 7 }, (_, day) => (
+          <label key={day} htmlFor={id + day}>
+            <input
+              id={id + day}
+              type="checkbox"
+              disabled={disabled}
+              checked={value.weekly_slots.some((slot) => slot.weekday === day)}
+              onChange={(event) =>
+                onChange({
+                  ...value,
+                  weekly_slots: event.target.checked
+                    ? [
+                        ...value.weekly_slots,
+                        { weekday: day, start_time: "" },
+                      ].sort((a, b) => a.weekday - b.weekday)
+                    : value.weekly_slots.filter((slot) => slot.weekday !== day),
+                })
+              }
+            />
+            {t("console_quran.days." + day)}
+          </label>
+        ))}
+      </fieldset>
+    </details>
+  );
+}
+export function requestError(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const errors = error.response?.data?.errors as
+      Record<string, string[]> | undefined;
+    if (errors) return Object.values(errors).flat().join(" ");
+  }
+  return fallback;
+}
+export function QuranTimes({
+  student,
+  value,
+  onChange,
+  defaults,
+  disabled = false,
+  compact = false,
+}: {
+  student: Student;
+  value: Placement;
+  onChange: (draft: Placement) => void;
+  defaults: Defaults;
+  disabled?: boolean;
+  compact?: boolean;
+}) {
+  const t = useI18n();
+  const [suggestions, setSuggestions] = useState<
+    Record<number, { key: string; times: string[] }>
+  >({});
+  const [checking, setChecking] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const queryKey = JSON.stringify([
+    value.staff_profile_id,
+    value.duration_minutes,
+    value.interval_weeks,
+    value.timezone,
+    value.starts_on,
+    value.ends_on,
+    student.schedule?.id,
+  ]);
+  const find = async (day: number) => {
+    setChecking(day);
+    setError("");
+    try {
+      const result = await axios.get<{ available_start_times: string[] }>(
+        "/manage/quran/availability",
+        {
+          params: {
+            staff_profile_id: value.staff_profile_id,
+            weekdays: [day],
+            duration_minutes: value.duration_minutes,
+            interval_weeks: value.interval_weeks,
+            timezone: value.timezone,
+            starts_on: value.starts_on,
+            ends_on: value.ends_on || null,
+            ...(student.schedule
+              ? { student_id: student.id, schedule_id: student.schedule.id }
+              : {}),
+          },
+        },
+      );
+      setSuggestions((old) => ({
+        ...old,
+        [day]: { key: queryKey, times: result.data.available_start_times },
+      }));
+    } catch (error) {
+      setError(requestError(error, t("console_quran.failed")));
+    } finally {
+      setChecking(null);
+    }
+  };
+  return (
+    <div className={compact ? "quran-time" : "quran-editor-times"}>
+      {value.weekly_slots.length === 0 && (
+        <span className="cell-sub">{t("console_quran.choose_days_first")}</span>
+      )}
+      {value.weekly_slots.map((slot) => {
+        const times =
+          suggestions[slot.weekday]?.key === queryKey
+            ? suggestions[slot.weekday]?.times
+            : undefined;
+        const change = (time: string) =>
+          onChange({
+            ...value,
+            weekly_slots: value.weekly_slots.map((item) =>
+              item.weekday === slot.weekday
+                ? { ...item, start_time: time }
+                : item,
+            ),
+          });
+        return (
+          <div key={slot.weekday} className="quran-day-time">
+            <label>
+              <span>{t("console_quran.days." + slot.weekday)}</span>
+              <input
+                className="console-control"
+                type="time"
+                dir="ltr"
+                step={defaults.time_step}
+                value={slot.start_time}
+                disabled={disabled}
+                onChange={(event) => change(event.target.value)}
+                aria-label={
+                  t("console_quran.start_time") +
+                  " " +
+                  t("console_quran.days." + slot.weekday) +
+                  " " +
+                  student.name
+                }
+              />
+            </label>
+            {!compact && !disabled && (
+              <button
+                type="button"
+                className="inline-link"
+                disabled={
+                  checking !== null ||
+                  !value.staff_profile_id ||
+                  !value.starts_on
+                }
+                onClick={() => void find(slot.weekday)}
+              >
+                {checking === slot.weekday
+                  ? t("console_quran.checking")
+                  : t("console_quran.suggest")}
+              </button>
+            )}
+            {times !== undefined &&
+              !compact &&
+              (times.length ? (
+                <select
+                  className="console-control"
+                  aria-label={
+                    t("console_quran.available_times") +
+                    " " +
+                    t("console_quran.days." + slot.weekday)
+                  }
+                  value=""
+                  onChange={(event) => change(event.target.value)}
+                >
+                  <option value="">{t("console_quran.choose_time")}</option>
+                  {times.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="cell-sub">{t("console_quran.no_times")}</p>
+              ))}
+          </div>
+        );
+      })}
+      {error && (
+        <p role="alert" className="quran-error">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+export default function QuranEditor({
+  student,
+  value,
+  onChange,
+  defaults,
+  teachers,
+  busy,
+  error,
+  onSave,
+  editLockHours,
+}: {
+  student: Student;
+  value: Placement;
+  onChange: (draft: Placement) => void;
+  defaults: Defaults;
+  teachers: Record<string, string>;
+  busy: boolean;
+  error: string;
+  onSave: (rate: {
+    session_rate_major: string;
+    rate_reason: string;
+    apply_immediately: boolean;
+    override_reason: string;
+    notify_student: boolean;
+    notify_teacher: boolean;
+  }) => void;
+  editLockHours: number;
+}) {
+  const t = useI18n();
+  const id = useId();
+  const [teacherRate, setTeacherRate] = useState<{
+    rate_major: string | null;
+    currency: string;
+    requires_rate: boolean;
+  } | null>(null);
+  const [sessionRateMajor, setSessionRateMajor] = useState("");
+  const [rateReason, setRateReason] = useState("");
+  const [applyImmediately, setApplyImmediately] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
+  const [notifyStudent, setNotifyStudent] = useState(true);
+  const [notifyTeacher, setNotifyTeacher] = useState(true);
+  const staffProfileId = value.staff_profile_id;
+  useEffect(() => {
+    if (!staffProfileId) {
+      setTeacherRate(null);
+      return;
+    }
+    let active = true;
+    axios
+      .get("/manage/quran/rate", {
+        params: { staff_profile_id: staffProfileId },
+      })
+      .then((result) => {
+        if (active) {
+          setTeacherRate(result.data);
+          setSessionRateMajor(result.data.rate_major ?? "");
+        }
+      })
+      .catch(() => {
+        if (active) setTeacherRate(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [staffProfileId]);
+  const field = (key: "starts_on" | "ends_on" | "timezone", type: string) => (
+    <div className="field">
+      <label htmlFor={id + key}>
+        {t("console_quran." + key)}
+        {key === "ends_on" && <small> · {t("console_quran.optional")}</small>}
+      </label>
+      <input
+        className="console-control"
+        id={id + key}
+        type={type}
+        dir="ltr"
+        value={value[key] ?? ""}
+        min={
+          key === "starts_on" && !student.schedule
+            ? defaults.starts_on
+            : key === "ends_on"
+              ? value.starts_on
+              : undefined
+        }
+        required={key !== "ends_on"}
+        onChange={(event) => onChange({ ...value, [key]: event.target.value })}
+      />
+    </div>
+  );
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave({
+          session_rate_major: sessionRateMajor,
+          rate_reason: rateReason,
+          apply_immediately: student.schedule ? applyImmediately : false,
+          override_reason: overrideReason,
+          notify_student: notifyStudent,
+          notify_teacher: notifyTeacher,
+        });
+      }}
+      className="quran-editor"
+    >
+      {student.schedule && (
+        <>
+          <p className="detail-note">
+            {t("console_quran.edit_protection").replace(
+              ":hours",
+              String(editLockHours),
+            )}
+          </p>
+          <div className="field quran-override">
+            <label htmlFor={id + "apply-immediately"}>
+              <input
+                id={id + "apply-immediately"}
+                type="checkbox"
+                checked={applyImmediately}
+                disabled={busy}
+                onChange={(event) => {
+                  setApplyImmediately(event.target.checked);
+                  if (!event.target.checked) setOverrideReason("");
+                }}
+              />
+              {t("console_quran.apply_immediately")}
+            </label>
+            <small className="cell-sub">
+              {t("console_quran.apply_immediately_help").replace(
+                ":hours",
+                String(editLockHours),
+              )}
+            </small>
+            {applyImmediately && (
+              <>
+                <label htmlFor={id + "override-reason"}>
+                  {t("console_quran.override_reason")}
+                </label>
+                <textarea
+                  id={id + "override-reason"}
+                  className="console-control"
+                  required
+                  minLength={3}
+                  maxLength={1000}
+                  placeholder={t("console_quran.override_reason_placeholder")}
+                  value={overrideReason}
+                  disabled={busy}
+                  onChange={(event) => setOverrideReason(event.target.value)}
+                />
+              </>
+            )}
+          </div>
+          <div className="field quran-notify">
+            <label htmlFor={id + "notify-student"}>
+              <input
+                id={id + "notify-student"}
+                type="checkbox"
+                checked={notifyStudent}
+                disabled={busy}
+                onChange={(event) => setNotifyStudent(event.target.checked)}
+              />
+              {t("console_quran.notify_student")}
+            </label>
+            <label htmlFor={id + "notify-teacher"}>
+              <input
+                id={id + "notify-teacher"}
+                type="checkbox"
+                checked={notifyTeacher}
+                disabled={busy}
+                onChange={(event) => setNotifyTeacher(event.target.checked)}
+              />
+              {t("console_quran.notify_teacher")}
+            </label>
+            <small className="cell-sub">
+              {t("console_quran.notify_help")}
+            </small>
+          </div>
+        </>
+      )}
+      <fieldset disabled={busy}>
+        <div className="field">
+          <label htmlFor={id + "teacher"}>
+            {t("console_quran.primary_teacher")}
+          </label>
+          <select
+            id={id + "teacher"}
+            className="console-control"
+            required
+            value={value.staff_profile_id}
+            onChange={(event) =>
+              onChange({ ...value, staff_profile_id: event.target.value })
+            }
+          >
+            <option value="">{t("console_quran.choose_teacher")}</option>
+            {!teachers[value.staff_profile_id] && value.staff_profile_id && (
+              <option value={value.staff_profile_id}>
+                {student.teacher_name ?? t("console_quran.teacher_unavailable")}
+              </option>
+            )}
+            {Object.entries(teachers).map(([key, name]) => (
+              <option key={key} value={key}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label>{t("console_quran.choose_days")}</label>
+          <QuranDays value={value} onChange={onChange} />
+        </div>
+        <QuranTimes
+          student={student}
+          value={value}
+          onChange={onChange}
+          defaults={defaults}
+        />
+        <div className="field-grid">
+          <div className="field">
+            <label htmlFor={id + "duration"}>
+              {t("console_quran.duration")}
+            </label>
+            <input
+              id={id + "duration"}
+              type="number"
+              className="console-control"
+              list={id + "durations"}
+              value={value.duration_minutes}
+              min={defaults.duration_limits?.min ?? 5}
+              max={defaults.duration_limits?.max ?? 240}
+              step={1}
+              onChange={(event) =>
+                onChange({
+                  ...value,
+                  duration_minutes: Number(event.target.value),
+                })
+              }
+            />
+            <datalist id={id + "durations"}>
+              {defaults.durations.map((duration) => (
+                <option key={duration} value={duration} />
+              ))}
+            </datalist>
+          </div>
+          {value.staff_profile_id && (
+            <div className="field">
+              <label htmlFor={id + "rate"}>
+                {t("console_quran.rates.session_rate")}
+              </label>
+              <input
+                id={id + "rate"}
+                type="number"
+                className="console-control"
+                min="0.01"
+                step="0.01"
+                value={sessionRateMajor}
+                onChange={(event) => setSessionRateMajor(event.target.value)}
+              />
+              <small className="cell-sub">
+                {!teacherRate || !teacherRate.requires_rate
+                  ? t("console_quran.rates.rate_not_needed")
+                  : teacherRate.rate_major === null
+                    ? t("console_quran.rates.no_rate")
+                    : t("console_quran.rates.current_rate") +
+                      " " +
+                      teacherRate.rate_major +
+                      " " +
+                      teacherRate.currency}
+              </small>
+              <small className="cell-sub">
+                {t("console_quran.rates.session_rate_hint")}
+              </small>
+            </div>
+          )}
+          {sessionRateMajor !== "" && (
+            <div className="field">
+              <label htmlFor={id + "rate-reason"}>
+                {t("console_quran.rates.rate_reason")}
+              </label>
+              <input
+                id={id + "rate-reason"}
+                type="text"
+                className="console-control"
+                required
+                minLength={3}
+                value={rateReason}
+                onChange={(event) => setRateReason(event.target.value)}
+              />
+            </div>
+          )}
+          <div className="field">
+            <label htmlFor={id + "interval"}>
+              {t("console_quran.interval")}
+            </label>
+            <input
+              id={id + "interval"}
+              className="console-control"
+              dir="ltr"
+              type="number"
+              min={1}
+              max={defaults.max_interval}
+              value={value.interval_weeks}
+              onChange={(event) =>
+                onChange({
+                  ...value,
+                  interval_weeks: Number(event.target.value),
+                })
+              }
+            />
+          </div>
+          {field("starts_on", "date")}
+          {field("ends_on", "date")}
+        </div>
+        {field("timezone", "text")}
+      </fieldset>
+      <p className="detail-note">{t("console_quran.availability_help")}</p>
+      {error && (
+        <div role="alert" className="quran-error">
+          {error}
+        </div>
+      )}
+      <button
+        type="submit"
+        className="console-button primary"
+        disabled={
+          busy ||
+          !value.staff_profile_id ||
+          (!!student.schedule && value.weekly_slots.length === 0) ||
+          value.weekly_slots.some((slot) => !slot.start_time)
+        }
+      >
+        {busy
+          ? t("console_quran.saving")
+          : t(
+              student.schedule
+                ? "console_quran.save_changes"
+                : "console_quran.save",
+            )}
+      </button>
+    </form>
+  );
+}

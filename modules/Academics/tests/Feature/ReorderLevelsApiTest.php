@@ -2,16 +2,13 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
 use Modules\Identity\Domain\Models\User;
 
-uses(RefreshDatabase::class);
-
 beforeEach(function (): void {
-    Gate::define('academics.levels.reorder', fn ($user) => true);
+    Gate::define('program.manage', fn ($user) => true);
 });
 
 it('reorders levels of a program through the API', function (): void {
@@ -28,6 +25,7 @@ it('reorders levels of a program through the API', function (): void {
                 (string) $second->getKey(),
                 (string) $first->getKey(),
             ],
+            'reason' => 'إعادة ترتيب المستويات',
         ])
         ->assertNoContent();
 
@@ -44,13 +42,14 @@ it('rejects reorder with a level from another program', function (): void {
         ->postJson('/api/academics/levels/reorder', [
             'program_id' => (string) $program->getKey(),
             'level_ids' => [(string) $foreign->getKey()],
+            'reason' => 'اختبار مستوى أجنبي',
         ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['level_ids.0']);
 });
 
 it('rejects reorder without the ability', function (): void {
-    Gate::define('academics.levels.reorder', fn ($user) => false);
+    Gate::define('program.manage', fn ($user) => false);
     $user = User::factory()->create();
     $program = Program::factory()->create();
 
@@ -58,6 +57,7 @@ it('rejects reorder without the ability', function (): void {
         ->postJson('/api/academics/levels/reorder', [
             'program_id' => (string) $program->getKey(),
             'level_ids' => [(string) str()->ulid()],
+            'reason' => 'محاولة غير مصرح بها',
         ])
         ->assertForbidden();
 });

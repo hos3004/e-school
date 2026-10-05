@@ -5,9 +5,9 @@ declare(strict_types=1);
 use App\Providers\AppServiceProvider;
 use App\Providers\AuthServiceProvider;
 use App\Providers\Filament\AdminPanelProvider;
+use App\Providers\PhaseOneCompositionServiceProvider;
 use Filament\Support\SupportServiceProvider;
 use Shared\Module\ModuleServiceProvider;
-use App\Providers\PhaseOneCompositionServiceProvider;
 
 return [
     // Alpine يُحمَّل من حزمة support — تسجيلها أولًا يضمن أن

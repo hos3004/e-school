@@ -7,6 +7,7 @@ namespace App\Infrastructure\AccessControl;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\AccessControl\Domain\Contracts\RoleAssignmentTargetScope;
 use Modules\Identity\Domain\Contracts\UserQueryService;
+use Modules\Identity\Domain\Models\User;
 
 /** Composition adapter: validates Identity accounts without exposing its model. */
 final readonly class IdentityRoleAssignmentTargetScope implements RoleAssignmentTargetScope
@@ -20,7 +21,7 @@ final readonly class IdentityRoleAssignmentTargetScope implements RoleAssignment
         $user = $this->users->findSummary($targetId);
 
         if ($user === null || !hash_equals($organizationId, $user->organizationId)) {
-            throw (new ModelNotFoundException)->setModel('user', [$targetId]);
+            throw (new ModelNotFoundException)->setModel(User::class, [$targetId]);
         }
 
         return $this->users->modelType();

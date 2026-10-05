@@ -3,6 +3,17 @@
 declare(strict_types=1);
 
 return [
+    // The five sidebar sections. These values are the single reference for group
+    // names, and every module lang file repeats the same literal string. The match
+    // is guarded by tests/Feature/AdminNavigationStructureTest.php.
+    'navigation' => [
+        'daily' => 'Daily Operations',
+        'people' => 'People',
+        'learning' => 'Learning',
+        'communication' => 'Communication',
+        'insights' => 'Reports & Administration',
+    ],
+
     'common' => [
         'dash' => '—',
     ],

@@ -9,12 +9,14 @@ enum TeacherAvailabilityApprovalStatus: string
     case Pending = 'pending';
     case Approved = 'approved';
 
+    case Rejected = 'rejected';
+
     /** @return list<self> */
     public function allowedTransitions(): array
     {
         return match ($this) {
-            self::Pending => [self::Approved],
-            self::Approved => [],
+            self::Pending => [self::Approved, self::Rejected],
+            self::Approved, self::Rejected => [],
         };
     }
 

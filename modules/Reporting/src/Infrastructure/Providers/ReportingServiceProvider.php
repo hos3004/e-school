@@ -7,17 +7,30 @@ namespace Modules\Reporting\Infrastructure\Providers;
 use Modules\Attendance\Domain\Events\AttendanceConfirmed;
 use Modules\Discipline\Domain\Events\ViolationRecorded;
 use Modules\Enrollments\Domain\Events\EnrollmentFrozen;
+use Modules\Reporting\Application\Console\SendMonthlyProgramDigestsCommand;
 use Modules\Reporting\Application\Listeners\ProjectDomainEventToDashboards;
 use Modules\Reporting\Application\Policies\OrganizationSnapshotPolicy;
+use Modules\Reporting\Application\Policies\ProgramDigestRecipientSettingPolicy;
 use Modules\Reporting\Application\Policies\ReportEventLogPolicy;
 use Modules\Reporting\Application\Policies\StudentDashboardPolicy;
 use Modules\Reporting\Application\Policies\TeacherDashboardPolicy;
+use Modules\Reporting\Application\Queries\ClosureSnapshotQueryService;
 use Modules\Reporting\Application\Queries\DashboardQueryService;
+use Modules\Reporting\Application\Queries\OperationalReportQueryService;
+use Modules\Reporting\Application\Queries\ProgramSessionReportDigestQueryService;
+use Modules\Reporting\Application\Services\ProgramDigestRecipientSettingsManager;
+use Modules\Reporting\Domain\Contracts\ClosureSnapshotQueries;
 use Modules\Reporting\Domain\Contracts\DashboardQuery;
+use Modules\Reporting\Domain\Contracts\OperationalReportQuery;
+use Modules\Reporting\Domain\Contracts\ProgramDigestRecipientSettings;
+use Modules\Reporting\Domain\Contracts\ProgramSessionReportDigestQueries;
+use Modules\Reporting\Domain\Contracts\ReportPdfRenderer;
 use Modules\Reporting\Domain\Models\OrganizationSnapshot;
+use Modules\Reporting\Domain\Models\ProgramDigestRecipientSetting;
 use Modules\Reporting\Domain\Models\ReportEventLog;
 use Modules\Reporting\Domain\Models\StudentDashboard;
 use Modules\Reporting\Domain\Models\TeacherDashboard;
+use Modules\Reporting\Infrastructure\Pdf\MpdfReportPdfRenderer;
 use Modules\Sessions\Domain\Events\SessionCompleted;
 use Modules\Sessions\Domain\Events\SessionNoShowRecorded;
 use Shared\Module\BaseModuleServiceProvider;
@@ -72,6 +85,7 @@ final class ReportingServiceProvider extends BaseModuleServiceProvider
             TeacherDashboard::class => TeacherDashboardPolicy::class,
             OrganizationSnapshot::class => OrganizationSnapshotPolicy::class,
             ReportEventLog::class => ReportEventLogPolicy::class,
+            ProgramDigestRecipientSetting::class => ProgramDigestRecipientSettingPolicy::class,
         ];
     }
 
@@ -81,7 +95,19 @@ final class ReportingServiceProvider extends BaseModuleServiceProvider
     protected function bindings(): array
     {
         return [
+            ClosureSnapshotQueries::class => ClosureSnapshotQueryService::class,
             DashboardQuery::class => DashboardQueryService::class,
+            OperationalReportQuery::class => OperationalReportQueryService::class,
+            ReportPdfRenderer::class => MpdfReportPdfRenderer::class,
+            ProgramDigestRecipientSettings::class => ProgramDigestRecipientSettingsManager::class,
+            ProgramSessionReportDigestQueries::class => ProgramSessionReportDigestQueryService::class,
         ];
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->commands([SendMonthlyProgramDigestsCommand::class]);
     }
 }

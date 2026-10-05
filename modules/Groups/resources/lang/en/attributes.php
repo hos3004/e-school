@@ -26,5 +26,6 @@ return [
     'assigned_to' => 'Assigned until',
     'joined_at' => 'Joined at',
     'left_at' => 'Left at',
+    'teacher' => 'Teacher',
     'reason' => 'Reason',
 ];

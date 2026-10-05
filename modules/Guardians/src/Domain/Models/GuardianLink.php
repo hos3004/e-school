@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Guardians\Domain\Enums\GuardianRelationship;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
@@ -15,8 +16,8 @@ use Shared\Concerns\HasUlid;
 /**
  * رابط الوصي بالطالب — يحدد صلة القرابة وصلاحيات الوساطة والأقسام المرئية.
  *
- * الجدول بلا deleted_at: فكّ الرابط حذف فعلي، لأن إعادة الربط تُنشأ من جديد
- * وتُوثَّق من أولها. student_profile_id معرّف خارجي يبقى عمودًا عاديًا.
+ * فك الرابط أرشفة منطقية تحفظ تاريخ الوصاية والتدقيق، ويمكن إعادة الربط بسجل جديد.
+ * student_profile_id معرّف خارجي يبقى عمودًا عاديًا.
  *
  * @property string $id
  * @property string $guardian_profile_id
@@ -28,12 +29,14 @@ use Shared\Concerns\HasUlid;
  * @property CarbonImmutable|null $verified_at
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
+ * @property CarbonImmutable|null $deleted_at
  * @property-read GuardianProfile $guardian
  */
 final class GuardianLink extends Model
 {
     use HasModuleFactory;
     use HasUlid;
+    use SoftDeletes;
 
     protected $table = 'guardian_links';
 
@@ -57,6 +60,7 @@ final class GuardianLink extends Model
             'verified_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
+            'deleted_at' => 'immutable_datetime',
         ];
     }
 

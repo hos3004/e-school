@@ -6,6 +6,7 @@ namespace Modules\Enrollments\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Enrollments\Application\Concerns\TransitionsEnrollmentStatus;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Enrollments\Domain\Events\EnrollmentStatusChanged;
@@ -26,6 +27,7 @@ final readonly class PauseEnrollmentAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(Enrollment $enrollment, string $expectedReturnDate, string $reason, ?string $actorId = null): Enrollment
@@ -44,7 +46,7 @@ final readonly class PauseEnrollmentAction
 
             $enrollment->expected_return_date = $returnDate;
 
-            $this->applyTransition($enrollment, EnrollmentStatus::Paused, $reason, $actorId);
+            $this->applyTransition($enrollment, EnrollmentStatus::Paused, $reason, $this->audit, $actorId);
 
             return [new EnrollmentStatusChanged(
                 enrollmentId: $enrollment->id,

@@ -33,4 +33,18 @@ return [
     'dispatch_due_done' => 'وُزِّعت :count رسالة مستحقة إلى مهام الإرسال.',
 
     'retry_failed_done' => 'أُعيدت جدولة :count رسالة فاشلة.',
+    'not_available' => 'غير متاح',
+    'no_audit_entries' => 'لم تُسجّل قرارات يدوية على هذا الإشعار.',
+    'system_actor' => 'النظام',
+    'manual_reason_help' => 'اكتب سبب الإرسال الإداري؛ يُحفظ في سجل التدقيق ولا يظهر للمستلمين.',
+    'manual_preview_empty' => 'اكتب الموضوع أو الرسالة لعرض المعاينة.',
+    'manual_preview_count' => 'سيُضاف الإشعار إلى صندوق إرسال :count مستلم.',
+    'manual_send_failed' => 'تعذر إضافة الإشعار إلى صندوق الإرسال.',
+    'manual_already_processed' => 'عولج طلب الإرسال نفسه مسبقًا؛ لم تُنشأ رسائل مكررة.',
+    'manual_queued' => 'أُضيف :queued إشعار إلى صندوق الإرسال من أصل :recipients مستلم.',
+    'undeliverable_none' => 'لا توجد رسائل منتظرة على نطاقات غير قابلة للتسليم.',
+    'undeliverable_dry_run' => 'سيتم إلغاء :count رسالة على نطاقات غير قابلة للتسليم.',
+    'undeliverable_cancelled' => 'أُلغيت :count رسالة على نطاقات غير قابلة للتسليم.',
+    'undeliverable_domains_unset' => 'لا توجد نطاقات غير قابلة للتسليم في الإعداد؛ لا شيء ليُفحص.',
+    'undeliverable_cancel_reason' => 'عنوان المستلم على نطاق محجوز لا يُسلَّم إليه؛ الإلغاء يوقف إعادة المحاولة بلا نهاية.',
 ];

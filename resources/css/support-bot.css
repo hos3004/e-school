@@ -1,0 +1,199 @@
+/*
+ * بوت الدعم — الكرة العائمة ولوحة المحادثة.
+ *
+ * الموضع الافتراضي أسفل بداية السطر (يمين في العربية، يسار في الإنجليزية)
+ * عبر inset-inline-start، فيتبع اتجاه الصفحة بلا فرع في الكود. وحين يسحب
+ * المستخدم الكرة نكتب left/top صريحين ونلغي الافتراضي.
+ */
+
+.support-bot {
+  position: fixed;
+  inset-inline-start: 20px;
+  bottom: 20px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  font-family: inherit;
+}
+
+.support-bot__ball {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  border: none;
+  cursor: grab;
+  background: #0f766e;
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgb(15 118 110 / 35%);
+  touch-action: none; /* يمنع المتصفح من ابتلاع السحب كتمرير للصفحة */
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.support-bot__ball:hover {
+  transform: scale(1.05);
+}
+
+.support-bot__ball:active {
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+.support-bot__ball:focus-visible {
+  outline: 3px solid #14b8a6;
+  outline-offset: 3px;
+}
+
+.support-bot-panel {
+  width: min(360px, calc(100vw - 40px));
+  height: min(520px, calc(100vh - 140px));
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 18px 48px rgb(15 23 42 / 18%);
+  overflow: hidden;
+}
+
+.support-bot-panel--loading {
+  height: auto;
+  padding: 20px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.support-bot-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #0f766e;
+  color: #fff;
+}
+
+.support-bot-panel__title {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.support-bot-panel__close {
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.support-bot-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f8fafc;
+}
+
+.support-bot-panel__empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.support-bot-bubble {
+  max-width: 86%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.support-bot-bubble--bot {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+.support-bot-bubble--user {
+  align-self: flex-end;
+  background: #0f766e;
+  color: #fff;
+}
+
+.support-bot-bubble--typing {
+  color: #64748b;
+  font-style: italic;
+}
+
+.support-bot-panel__expired {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.support-bot-panel__foot {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.support-bot-panel__input {
+  flex: 1;
+  resize: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.support-bot-panel__input:focus-visible {
+  outline: 2px solid #14b8a6;
+  outline-offset: 1px;
+}
+
+.support-bot-panel__send {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 14px;
+  background: #0f766e;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.support-bot-panel__send:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* على الشاشات الصغيرة تملأ اللوحة العرض المتاح بدل أن تتدلى خارجه. */
+@media (max-width: 480px) {
+  .support-bot {
+    inset-inline: 12px;
+    bottom: 12px;
+  }
+
+  .support-bot-panel {
+    width: 100%;
+    height: min(70vh, 480px);
+  }
+}

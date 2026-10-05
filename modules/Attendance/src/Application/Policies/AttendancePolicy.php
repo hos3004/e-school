@@ -7,6 +7,7 @@ namespace Modules\Attendance\Application\Policies;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Attendance\Domain\Models\Attendance;
+use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
 
 /**
  * سياسة قيود الحضور.
@@ -18,6 +19,8 @@ use Modules\Attendance\Domain\Models\Attendance;
  */
 final class AttendancePolicy
 {
+    public function __construct(private readonly SessionParticipantAdministrationQueries $participants) {}
+
     public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('attendance.view');
@@ -25,7 +28,7 @@ final class AttendancePolicy
 
     public function view(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
-        return $user->can('attendance.view');
+        return $user->can('attendance.view') && $this->belongsToUserOrganization($user, $attendance);
     }
 
     public function create(Authenticatable&Authorizable $user): bool
@@ -35,23 +38,37 @@ final class AttendancePolicy
 
     public function update(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
-        return $user->can('attendance.override');
+        return false;
     }
 
     public function delete(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
-        return $user->can('attendance.override');
+        return false;
     }
 
     /** اعتماد الحالة المشتقة — للمعلم. */
     public function confirm(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
-        return $user->can('attendance.record');
+        return $user->can('attendance.record') && $this->belongsToUserOrganization($user, $attendance);
     }
 
     /** تجاوز الحالة بسبب موثّق — للإدارة. */
     public function override(Authenticatable&Authorizable $user, Attendance $attendance): bool
     {
-        return $user->can('attendance.override');
+        return $user->can('attendance.override') && $this->belongsToUserOrganization($user, $attendance);
+    }
+
+    private function belongsToUserOrganization(
+        Authenticatable&Authorizable $user,
+        Attendance $attendance,
+    ): bool {
+        $organizationId = $user->getAttribute('organization_id');
+
+        return is_string($organizationId)
+            && $organizationId !== ''
+            && $this->participants->findForOrganization(
+                $organizationId,
+                (string) $attendance->session_participant_id,
+            ) !== null;
     }
 }

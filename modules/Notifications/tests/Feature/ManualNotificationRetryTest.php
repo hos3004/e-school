@@ -7,10 +7,13 @@ use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Models\NotificationDeliveryAttempt;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
+use PHPUnit\Framework\Assert;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
+use Tests\TestCase;
 
 it('records the administrator and queues a genuinely new delivery attempt on manual resend', function (): void {
+    /** @var TestCase $this */
     $actorId = Fixtures::userId();
     $failed = NotificationOutbox::factory()
         ->withChannel(Channel::InApp)
@@ -26,7 +29,11 @@ it('records the administrator and queues a genuinely new delivery attempt on man
         'retryable' => false,
     ]);
 
-    app(RetryNotificationAction::class)->executeManually($failed, $actorId);
+    app(RetryNotificationAction::class)->executeManually(
+        $failed,
+        $actorId,
+        'أُصلح سبب الفشل وأعيد الإرسال',
+    );
 
     $failed->refresh();
 
@@ -38,6 +45,7 @@ it('records the administrator and queues a genuinely new delivery attempt on man
 });
 
 it('does not automatically reopen a permanent failure', function (): void {
+    /** @var TestCase $this */
     $failed = NotificationOutbox::factory()
         ->failed()
         ->state(['last_error_retryable' => false])
@@ -45,7 +53,7 @@ it('does not automatically reopen a permanent failure', function (): void {
 
     try {
         app(RetryNotificationAction::class)->execute($failed);
-        test()->fail('Expected BusinessRuleViolation was not thrown.');
+        Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('notifications.failure_not_retryable');
     }

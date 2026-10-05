@@ -19,6 +19,15 @@ use Modules\VirtualClassroom\Infrastructure\Providers\NullProvider;
  */
 return [
 
+    'admin_hub' => [
+        'max_events' => 25,
+    ],
+
+    'provisioning' => [
+        'before_minutes' => 20,
+        'batch_size' => 100,
+    ],
+
     'default' => env('CLASSROOM_PROVIDER', 'bigbluebutton'),
 
     'providers' => [
@@ -27,6 +36,7 @@ return [
             'driver' => BigBlueButtonProvider::class,
             'base_url' => env('BBB_BASE_URL'),
             'secret' => env('BBB_SECRET'),
+            'checksum_algorithm' => env('BBB_CHECKSUM_ALGORITHM', 'sha1'),
             'webhook_secret' => env('BBB_WEBHOOK_SECRET'),
             'webhook_callback_url' => env('BBB_WEBHOOK_CALLBACK_URL'),
             'timeout_seconds' => env('BBB_TIMEOUT_SECONDS', 10),
@@ -59,15 +69,36 @@ return [
         ],
     ],
 
+    'webhook' => [
+        // حماية endpoint العام؛ التوقيع يتحقق قبل تفسير أي حدث.
+        'rate_limit_per_minute' => env('BBB_WEBHOOK_RATE_LIMIT_PER_MINUTE', 120),
+    ],
+
     /**
      * نافذة الدخول للفصل.
      * الطالب لا يستطيع الدخول قبل الموعد بأكثر من هذه المدة.
      */
     'join_window' => [
-        'before_minutes' => env('CLASSROOM_JOIN_WINDOW_BEFORE_MINUTES', 10),
+        /*
+         * رُفعت من 10 إلى 15 دقيقة لتطابق لحظة إرسال رابط الدخول في
+         * config('scheduling.reminder_dispatch.stages'): الرابط يصل الطالب قبل
+         * الموعد بربع ساعة، فلو بقيت النافذة أضيق لرفض الفصلُ أول نقرة عليه.
+         */
+        'before_minutes' => env('CLASSROOM_JOIN_WINDOW_BEFORE_MINUTES', 15),
         'after_minutes' => env('CLASSROOM_JOIN_WINDOW_AFTER_MINUTES', 15),
         // المعلم يستطيع الدخول أبكر لتجهيز الفصل.
         'teacher_before_minutes' => 20,
+    ],
+
+    /**
+     * رابط دخول الطالب اليدوي الذي ينسخه المعلم عند تعذّر دخول الطالب لحسابه.
+     * الرابط موقّع ومربوط بالمشارك، وينتهي مع نهاية نافذة الدخول نفسها،
+     * فلا يحتاج مدة صلاحية مستقلة تتجاوز الحصة.
+     */
+    'student_link' => [
+        'enabled' => env('CLASSROOM_STUDENT_LINK_ENABLED', true),
+        // الحد على عنوان الطالب؛ مدرسة أو منزل خلف عنوان واحد قد يفتح عدة روابط.
+        'rate_limit_per_minute' => env('CLASSROOM_STUDENT_LINK_RATE_LIMIT_PER_MINUTE', 60),
     ],
 
     /**

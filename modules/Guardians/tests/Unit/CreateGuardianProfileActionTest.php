@@ -9,8 +9,10 @@ use Modules\Guardians\Domain\Events\GuardianProfileCreated;
 use Modules\Guardians\Domain\Models\GuardianProfile;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
+use Tests\TestCase;
 
 it('creates a guardian profile and dispatches GuardianProfileCreated', function (): void {
+    /** @var TestCase $this */
     Event::fake([GuardianProfileCreated::class]);
 
     $action = app(CreateGuardianProfile::class);
@@ -31,6 +33,7 @@ it('creates a guardian profile and dispatches GuardianProfileCreated', function 
 });
 
 it('rejects a second profile for the same user', function (): void {
+    /** @var TestCase $this */
     $profile = GuardianProfile::factory()->create();
 
     $action = app(CreateGuardianProfile::class);

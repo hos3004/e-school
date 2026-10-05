@@ -17,6 +17,7 @@ final class ApiUser extends Authenticatable
     public function __construct(
         private readonly string $identifier = '',
         private readonly string $organizationId = '',
+        private readonly ?string $timezone = null,
     ) {
         parent::__construct();
     }
@@ -33,7 +34,11 @@ final class ApiUser extends Authenticatable
 
     public function getAttribute($key): mixed
     {
-        return $key === 'organization_id' ? $this->organizationId : parent::getAttribute($key);
+        return match ($key) {
+            'organization_id' => $this->organizationId,
+            'timezone' => $this->timezone,
+            default => parent::getAttribute($key),
+        };
     }
 
     public function __get($key): mixed

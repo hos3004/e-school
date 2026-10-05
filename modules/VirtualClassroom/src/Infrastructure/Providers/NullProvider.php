@@ -23,6 +23,9 @@ final class NullProvider implements VirtualClassroomProvider
     /** @var array<string, array{running: bool, recording: bool, participants: array<string, ParticipantSnapshot>}> */
     private array $classrooms = [];
 
+    /** @var array<string, true> الغرف التي أُنهيت عند المزوّد */
+    private array $ended = [];
+
     public function name(): string
     {
         return 'null';
@@ -35,6 +38,7 @@ final class NullProvider implements VirtualClassroomProvider
             'recording' => $spec->recordable,
             'participants' => [],
         ];
+        unset($this->ended[$spec->externalMeetingId]);
 
         return new RemoteClassroom(
             externalId: $spec->externalMeetingId,
@@ -70,10 +74,11 @@ final class NullProvider implements VirtualClassroomProvider
             $request->externalUserId ?? '',
         ]));
 
-        return 'https://virtual-classroom.test/join?'.http_build_query([
+        return 'https://virtual-classroom.test/join?'.http_build_query(array_filter([
             'meeting' => $request->externalId,
             'token' => $token,
-        ]);
+            'logoutURL' => $request->returnUrl,
+        ], static fn (?string $value): bool => $value !== null && $value !== ''));
     }
 
     public function isRunning(string $externalId): bool
@@ -81,16 +86,22 @@ final class NullProvider implements VirtualClassroomProvider
         return $this->classrooms[$externalId]['running'] ?? false;
     }
 
+    public function isAvailable(string $externalId): bool
+    {
+        return isset($this->classrooms[$externalId]) && !isset($this->ended[$externalId]);
+    }
+
     public function participants(string $externalId): array
     {
         return array_values($this->classrooms[$externalId]['participants'] ?? []);
     }
 
-    public function endClassroom(string $externalId): void
+    public function endClassroom(string $externalId, ?string $moderatorSecret = null): void
     {
         if (isset($this->classrooms[$externalId])) {
             $this->classrooms[$externalId]['running'] = false;
             $this->classrooms[$externalId]['participants'] = [];
+            $this->ended[$externalId] = true;
         }
     }
 

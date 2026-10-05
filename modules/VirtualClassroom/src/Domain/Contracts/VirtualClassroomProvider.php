@@ -48,6 +48,9 @@ interface VirtualClassroomProvider
      *
      * الرابط شخصي: يحمل هوية المشارك ودوره (moderator / viewer)،
      * ولا يجوز مشاركته أو تخزينه أو إرساله في إشعار.
+     *
+     * على كل تنفيذ أن يحترم JoinRequest::$returnUrl عند وجوده فيعيد المشارك
+     * إليه بعد خروجه أو انتهاء الحصة، لأن وجهة العودة تختلف بين المعلم والطالب.
      */
     public function generateJoinUrl(JoinRequest $request): string;
 
@@ -55,6 +58,15 @@ interface VirtualClassroomProvider
      * هل الفصل مفتوح فعلًا عند المزوّد الآن؟
      */
     public function isRunning(string $externalId): bool;
+
+    /**
+     * هل الغرفة موجودة عند المزوّد وتقبل الدخول، ولو لم يدخلها أحد بعد؟
+     *
+     * يختلف عن isRunning: BBB لا يعدّ الغرفة «جارية» قبل أول دخول فعلي، فبناء
+     * قرار إعادة التجهيز على isRunning يفرّق مشاركين ضغطوا «دخول» معًا على غرف
+     * مختلفة. هذا السؤال وحده يحدد إن كانت الغرفة انتهت أو اختفت.
+     */
+    public function isAvailable(string $externalId): bool;
 
     /**
      * لقطة بالمشاركين الحاليين — تُستخدم لحساب الحضور آليًا.
@@ -66,7 +78,7 @@ interface VirtualClassroomProvider
     /**
      * إنهاء الفصل وطرد كل المشاركين.
      */
-    public function endClassroom(string $externalId): void;
+    public function endClassroom(string $externalId, ?string $moderatorSecret = null): void;
 
     /**
      * بدء أو استئناف التسجيل أثناء الحصة.

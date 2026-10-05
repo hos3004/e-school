@@ -21,6 +21,10 @@ final class SubmitAssignmentController extends Controller
 
     public function __invoke(SubmitAssignmentRequest $request, AssignmentSubmission $submission): AssignmentSubmissionResource
     {
-        return new AssignmentSubmissionResource($this->action->execute($submission, $request->validated()));
+        return new AssignmentSubmissionResource($this->action->execute(
+            $submission,
+            $request->validated(),
+            (string) $request->user()->getAuthIdentifier(),
+        ));
     }
 }

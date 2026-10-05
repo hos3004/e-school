@@ -2,15 +2,24 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\MobileClassroomReturnController;
 use App\Http\Controllers\Auth\PublicStudentRegistrationController;
+use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MarketingPageController;
+use App\Http\Controllers\Portal\ClassroomJoinController;
+use App\Http\Controllers\Portal\ClassroomPersistentStudentLinkController;
+use App\Http\Controllers\Portal\ClassroomStudentLinkController;
 use App\Http\Controllers\Portal\GuardianAttendanceController;
 use App\Http\Controllers\Portal\GuardianChildController;
 use App\Http\Controllers\Portal\GuardianDashboardController;
 use App\Http\Controllers\Portal\GuardianReportsController;
 use App\Http\Controllers\Portal\GuardianScheduleController;
+use App\Http\Controllers\Portal\PingSessionReadyController;
 use App\Http\Controllers\Portal\PortalNotificationsController;
 use App\Http\Controllers\Portal\PortalProfileController;
+use App\Http\Controllers\Portal\RecordingPlaybackController;
+use App\Http\Controllers\Portal\SessionPostponementRequestController;
 use App\Http\Controllers\Portal\StudentAssignmentsController;
 use App\Http\Controllers\Portal\StudentAssignmentSubmissionController;
 use App\Http\Controllers\Portal\StudentDashboardController;
@@ -19,33 +28,105 @@ use App\Http\Controllers\Portal\StudentProfileController;
 use App\Http\Controllers\Portal\StudentProgramsController;
 use App\Http\Controllers\Portal\StudentReportsController;
 use App\Http\Controllers\Portal\StudentScheduleController;
+use App\Http\Controllers\Portal\StudentSessionApologyController;
 use App\Http\Controllers\Portal\StudentSessionController;
+use App\Http\Controllers\Portal\TeacherAttendanceController;
 use App\Http\Controllers\Portal\TeacherAvailabilityController;
 use App\Http\Controllers\Portal\TeacherAvailabilityWriteController;
 use App\Http\Controllers\Portal\TeacherDashboardController;
 use App\Http\Controllers\Portal\TeacherEarningsController;
+use App\Http\Controllers\Portal\TeacherGroupController;
 use App\Http\Controllers\Portal\TeacherGroupsController;
+use App\Http\Controllers\Portal\TeacherPostponementResponseController;
 use App\Http\Controllers\Portal\TeacherPostponementsController;
 use App\Http\Controllers\Portal\TeacherProfileController;
 use App\Http\Controllers\Portal\TeacherScheduleController;
 use App\Http\Controllers\Portal\TeacherSessionController;
+use App\Http\Controllers\Portal\TeacherSessionReportController;
+use App\Http\Controllers\Portal\TeacherStudentController;
 use App\Http\Controllers\Portal\TeacherStudentsController;
 use App\Http\Controllers\UpdateLocaleController;
+use App\Http\Middleware\EnsureConsoleEnabled;
+use App\Http\Middleware\RedirectPrimaryLearningPortal;
 use Illuminate\Support\Facades\Route;
+use Shared\Module\ModuleRegistry;
+
+Route::middleware(['auth', 'auth.session'])->prefix('profile/complete')->name('profile.complete.')->group(function (): void {
+    Route::get('/', [CompleteProfileController::class, 'show'])->name('show');
+    Route::get('/regions', [CompleteProfileController::class, 'regions'])->name('regions');
+    Route::post('/', [CompleteProfileController::class, 'store'])->name('store');
+});
 
 Route::get('/', HomeController::class)->name('home');
 
+/*
+ * وجهة رجوع BBB لتطبيق الموبايل بعد مغادرة الفصل — انظر
+ * app/Http/Controllers/Api/JoinSessionController.php وتعليق الكنترولر.
+ */
+Route::get('/mobile/classroom-left', MobileClassroomReturnController::class)
+    ->name('mobile.classroom.left');
+
+// الواجهة العامة. لا مصادقة ولا كتابة — صفحات عرض فقط.
+Route::controller(MarketingPageController::class)->group(function (): void {
+    Route::get('/about', 'about')->name('marketing.about');
+    Route::get('/programs', 'programs')->name('marketing.programs');
+    Route::get('/programs/{program}', 'program')->name('marketing.programs.show');
+    Route::get('/projects', 'projects')->name('marketing.projects');
+    Route::get('/activities', 'activities')->name('marketing.activities');
+    Route::get('/faq', 'faq')->name('marketing.faq');
+    Route::get('/contact', 'contact')->name('marketing.contact');
+    Route::get('/privacy', 'privacy')->name('marketing.privacy');
+    Route::get('/terms', 'terms')->name('marketing.terms');
+});
+
 Route::get('/register/student', [PublicStudentRegistrationController::class, 'showForm'])->name('register.student');
-Route::post('/register/student', [PublicStudentRegistrationController::class, 'store'])->name('register.student.store');
+Route::post('/register/student', [PublicStudentRegistrationController::class, 'store'])
+    ->middleware('throttle:'.(int) config('admission.self_registration.rate_limit_per_minute').',1')
+    ->name('register.student.store');
+Route::get('/register/student/{formSlug}', [PublicStudentRegistrationController::class, 'showForm'])
+    ->where('formSlug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('register.student.form');
+Route::post('/register/student/{formSlug}', [PublicStudentRegistrationController::class, 'store'])
+    ->where('formSlug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->middleware('throttle:'.(int) config('admission.self_registration.rate_limit_per_minute').',1')
+    ->name('register.student.form.store');
+/*
+ * رابط دخول الطالب اليدوي.
+ *
+ * خارج مجموعة auth عمدًا: سببه الوحيد هو الطالب الذي تعذّر دخوله لحسابه.
+ * التوقيع يربط الرابط بحصة ومشارك بعينهما وينتهي بانتهاء نافذة الحصة،
+ * والمتحكّم يعيد فرض الحالة والنافذة والتجميد قبل أي توجيه للمزوّد.
+ */
+Route::get('/classroom/student-link/{session}/{participant}', ClassroomStudentLinkController::class)
+    ->whereUlid('session')
+    ->whereUlid('participant')
+    ->middleware(['signed', 'throttle:'.(int) config('virtual-classroom.student_link.rate_limit_per_minute').',1'])
+    ->name('classroom.student-link');
+
+/*
+ * الرابط الدائم: مرة واحدة لكل جدول متكرر بدل رابط جديد كل حصة. موقّع بلا
+ * تاريخ انتهاء — التاريخ لا معنى له لرابط يخدم الجدول طول عمره؛ الإبطال عند
+ * الحاجة عبر تدوير جيل الرابط (v) من الإدارة، لا عبر صلاحية زمنية.
+ */
+Route::get('/classroom/student-link/persistent/{schedule}/{enrollment}', ClassroomPersistentStudentLinkController::class)
+    ->whereUlid('schedule')
+    ->whereUlid('enrollment')
+    ->middleware(['signed', 'throttle:'.(int) config('virtual-classroom.student_link.rate_limit_per_minute').',1'])
+    ->name('classroom.student-link.persistent');
+
 Route::get('/register/submitted', [PublicStudentRegistrationController::class, 'showSubmitted'])->name('register.submitted');
 Route::get('/register/status/{id}', [PublicStudentRegistrationController::class, 'showStatus'])->name('register.status');
 
 Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::post('/locale', UpdateLocaleController::class)
         ->name('locale.update');
+    Route::get('/recordings/{recording}/watch', RecordingPlaybackController::class)
+        ->whereUlid('recording')
+        ->middleware('signed')
+        ->name('portal.recordings.watch');
 
     Route::get('/student', StudentDashboardController::class)
-        ->middleware('can:session.view')
+        ->middleware(['can:session.view', RedirectPrimaryLearningPortal::class])
         ->name('portal.student.dashboard');
     Route::get('/student/schedule', StudentScheduleController::class)
         ->middleware('can:schedule.view')
@@ -53,6 +134,10 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::get('/student/sessions/{id}', StudentSessionController::class)
         ->middleware('can:session.view')
         ->name('portal.student.sessions.show');
+    Route::get('/student/sessions/{session}/join', [ClassroomJoinController::class, 'student'])
+        ->whereUlid('session')
+        ->middleware('can:session.join')
+        ->name('portal.student.sessions.join');
     Route::get('/student/assignments', StudentAssignmentsController::class)
         ->middleware('can:assignment.submit')
         ->name('portal.student.assignments.index');
@@ -80,6 +165,18 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::post('/student/assignments/{assignment}/submit', StudentAssignmentSubmissionController::class)
         ->whereUlid('assignment')
         ->name('portal.student.assignments.submit');
+    Route::post('/student/sessions/{session}/postponement-requests', [SessionPostponementRequestController::class, 'student'])
+        ->whereUlid('session')
+        ->name('portal.student.sessions.postponement-requests.store');
+    Route::post('/student/sessions/{session}/apologies', StudentSessionApologyController::class)
+        ->whereUlid('session')
+        ->name('portal.student.sessions.apologies.store');
+    Route::post('/student/sessions/{session}/ready', PingSessionReadyController::class)
+        ->whereUlid('session')
+        ->name('portal.student.sessions.ready.store');
+    Route::post('/student/postponements/{postponement}/accept-alternative', [SessionPostponementRequestController::class, 'acceptAlternative'])
+        ->whereUlid('postponement')
+        ->name('portal.student.postponements.accept-alternative');
 
     Route::patch('/student/profile', [PortalProfileController::class, 'update'])
         ->name('portal.student.profile.update');
@@ -88,7 +185,7 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         ->name('portal.student.profile.password');
 
     Route::get('/teacher', TeacherDashboardController::class)
-        ->middleware('can:session.view')
+        ->middleware(['can:session.view', RedirectPrimaryLearningPortal::class])
         ->name('portal.teacher.dashboard');
     Route::get('/teacher/schedule', TeacherScheduleController::class)
         ->middleware('can:schedule.view')
@@ -96,6 +193,10 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::get('/teacher/sessions/{id}', TeacherSessionController::class)
         ->middleware('can:attendance.record')
         ->name('portal.teacher.sessions.show');
+    Route::get('/teacher/sessions/{session}/join', [ClassroomJoinController::class, 'teacher'])
+        ->whereUlid('session')
+        ->middleware('can:session.join')
+        ->name('portal.teacher.sessions.join');
     Route::get('/teacher/postponements', TeacherPostponementsController::class)
         ->middleware('can:session.postpone.approve')
         ->name('portal.teacher.postponements.index');
@@ -104,9 +205,17 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::get('/teacher/groups', TeacherGroupsController::class)
         ->middleware('can:schedule.view')
         ->name('portal.teacher.groups');
+    Route::get('/teacher/groups/{group}', TeacherGroupController::class)
+        ->whereUlid('group')
+        ->middleware('can:schedule.view')
+        ->name('portal.teacher.groups.show');
     Route::get('/teacher/students', TeacherStudentsController::class)
         ->middleware('can:student.view')
         ->name('portal.teacher.students');
+    Route::get('/teacher/students/{student}', TeacherStudentController::class)
+        ->whereUlid('student')
+        ->middleware('can:student.view')
+        ->name('portal.teacher.students.show');
     Route::get('/teacher/availability', TeacherAvailabilityController::class)
         ->name('portal.teacher.availability');
     Route::get('/teacher/notifications', [PortalNotificationsController::class, 'teacher'])
@@ -134,7 +243,26 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::delete('/teacher/availability/{availability}', [TeacherAvailabilityWriteController::class, 'destroy'])
         ->whereUlid('availability')
         ->name('portal.teacher.availability.destroy');
+    Route::post('/teacher/sessions/{session}/attendance', TeacherAttendanceController::class)
+        ->whereUlid('session')
+        ->middleware('can:attendance.record')
+        ->name('portal.teacher.sessions.attendance.store');
+    Route::post('/teacher/sessions/{session}/report', TeacherSessionReportController::class)
+        ->whereUlid('session')
+        ->name('portal.teacher.sessions.report.store');
+    Route::post('/teacher/sessions/{session}/postponement-requests', [SessionPostponementRequestController::class, 'teacher'])
+        ->whereUlid('session')
+        ->name('portal.teacher.sessions.postponement-requests.store');
+    Route::post('/teacher/postponements/{postponement}/approve', [TeacherPostponementResponseController::class, 'approve'])
+        ->whereUlid('postponement')
+        ->name('portal.teacher.postponements.approve');
+    Route::post('/teacher/postponements/{postponement}/propose-alternative', [TeacherPostponementResponseController::class, 'propose'])
+        ->whereUlid('postponement')
+        ->name('portal.teacher.postponements.propose-alternative');
 
+    Route::post('/teacher/postponements/{postponement}/reject', [TeacherPostponementResponseController::class, 'reject'])
+        ->whereUlid('postponement')
+        ->name('portal.teacher.postponements.reject');
     Route::patch('/teacher/profile', [PortalProfileController::class, 'update'])
         ->name('portal.teacher.profile.update');
 
@@ -159,3 +287,29 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::get('/guardian/notifications', [PortalNotificationsController::class, 'guardian'])
         ->name('portal.guardian.notifications');
 });
+
+// The new workspace remains gated independently from the established routes.
+Route::middleware([EnsureConsoleEnabled::class, 'auth', 'auth.session'])
+    ->group(function (): void {
+        Route::prefix('manage')->name('console.')->middleware('can:admin.panel.access')
+            ->group(function (): void {
+                require __DIR__.'/console-web.php';
+                require __DIR__.'/console-people.php';
+                require __DIR__.'/console-courses.php';
+                require __DIR__.'/console-registration.php';
+                require __DIR__.'/console-followup.php';
+                require __DIR__.'/console-dues.php';
+                require __DIR__.'/console-reports.php';
+                require __DIR__.'/console-archive.php';
+                // مسارات البوت تتبع تفعيل موديوله: إطفاؤه يعني غياب المسار لا 429 أو مفاتيح ترجمة خام.
+                if (ModuleRegistry::isEnabled('SupportBot')) {
+                    require __DIR__.'/console-bot.php';
+                }
+            });
+        require __DIR__.'/learning.php';
+        if (ModuleRegistry::isEnabled('SupportBot')) {
+            require __DIR__.'/support-bot.php';
+        }
+    });
+
+require __DIR__.'/console-primary.php';

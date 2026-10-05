@@ -6,6 +6,7 @@ namespace Modules\Payroll\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Payroll\Domain\Events\PayrollAdjustmentApproved;
 use Modules\Payroll\Domain\Models\PayrollAdjustment;
 use Modules\Payroll\Domain\Models\PayrollPeriod;
@@ -23,44 +24,79 @@ final readonly class ApprovePayrollAdjustmentAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
-    public function execute(PayrollAdjustment $adjustment, ?string $actorId = null): PayrollAdjustment
-    {
-        if ($adjustment->approved_at !== null || $adjustment->rejected_at !== null) {
-            throw BusinessRuleViolation::make(
-                'payroll.adjustment.already_decided',
-                'payroll::actions.approve_adjustment.already_decided',
-                ['adjustment_id' => $adjustment->id],
-            );
-        }
+    public function execute(
+        string $organizationId,
+        string $adjustmentId,
+        string $actorId,
+        string $reason,
+    ): PayrollAdjustment {
+        $adjustment = $this->transaction->run(function () use ($organizationId, $adjustmentId, $actorId, $reason): PayrollAdjustment {
+            /** @var PayrollAdjustment|null $adjustment */
+            $adjustment = PayrollAdjustment::query()
+                ->forOrganization($organizationId)
+                ->whereKey($adjustmentId)
+                ->lockForUpdate()
+                ->first();
+            if ($adjustment === null) {
+                throw BusinessRuleViolation::make(
+                    'payroll.adjustment.not_found',
+                    'payroll::actions.approve_adjustment.not_found',
+                );
+            }
 
-        /** @var PayrollPeriod|null $period */
-        $period = PayrollPeriod::query()->find($adjustment->payroll_period_id);
+            if ($adjustment->approved_at !== null || $adjustment->rejected_at !== null) {
+                throw BusinessRuleViolation::make(
+                    'payroll.adjustment.already_decided',
+                    'payroll::actions.approve_adjustment.already_decided',
+                    ['adjustment_id' => $adjustment->id],
+                );
+            }
 
-        if ($period === null || !$period->status->acceptsAdjustments()) {
-            throw BusinessRuleViolation::make(
-                'payroll.period.frozen',
-                'payroll::actions.approve_adjustment.period_frozen',
-            );
-        }
+            /** @var PayrollPeriod|null $period */
+            $period = PayrollPeriod::query()
+                ->forOrganization($organizationId)
+                ->whereKey($adjustment->payroll_period_id)
+                ->lockForUpdate()
+                ->first();
+            if ($period === null || !$period->status->acceptsAdjustments()) {
+                throw BusinessRuleViolation::make(
+                    'payroll.period.frozen',
+                    'payroll::actions.approve_adjustment.period_frozen',
+                );
+            }
 
-        $approverId = $actorId ?? (string) auth()->id();
+            if (config('payroll.adjustments.requires_different_approver') === true
+                && $actorId === (string) $adjustment->proposed_by) {
+                throw BusinessRuleViolation::make(
+                    'payroll.adjustment.self_approval',
+                    'payroll::actions.approve_adjustment.self_approval',
+                    ['proposed_by' => (string) $adjustment->proposed_by],
+                );
+            }
 
-        if (config('payroll.adjustments.requires_different_approver') === true
-            && $approverId === (string) $adjustment->proposed_by) {
-            throw BusinessRuleViolation::make(
-                'payroll.adjustment.self_approval',
-                'payroll::actions.approve_adjustment.self_approval',
-                ['proposed_by' => (string) $adjustment->proposed_by],
-            );
-        }
-
-        $this->transaction->run(function () use ($adjustment, $approverId): void {
             $adjustment->forceFill([
-                'approved_by' => $approverId,
+                'approved_by' => $actorId,
                 'approved_at' => CarbonImmutable::now('UTC'),
             ])->save();
+            $this->audit->record(
+                organizationId: $organizationId,
+                actorId: $actorId,
+                actorType: 'user',
+                action: 'payroll.adjustment.approved',
+                auditableType: 'payroll_adjustments',
+                auditableId: (string) $adjustment->getKey(),
+                oldValues: ['approved_by' => null, 'approved_at' => null],
+                newValues: [
+                    'approved_by' => $actorId,
+                    'approved_at' => $adjustment->approved_at?->toIso8601String(),
+                ],
+                reason: trim($reason),
+            );
+
+            return $adjustment;
         });
 
         $this->events->dispatch(new PayrollAdjustmentApproved(
@@ -71,7 +107,8 @@ final readonly class ApprovePayrollAdjustmentAction
             type: $adjustment->type,
             amountMinorUnits: (int) $adjustment->amount,
             currency: (string) $adjustment->currency,
-            approvedBy: $approverId,
+            approvedBy: $actorId,
+            actorId: $actorId,
         ));
 
         return $adjustment->refresh();

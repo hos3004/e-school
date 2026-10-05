@@ -10,7 +10,7 @@ namespace Modules\Content\Domain\Events;
 final class CourseMaterialUpdated extends CourseMaterialEvent
 {
     /**
-     * @param array<string, mixed> $changed
+     * @param list<string> $changed
      */
     public function __construct(
         string $materialId,

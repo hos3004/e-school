@@ -6,10 +6,12 @@ namespace Modules\Staff\Infrastructure\Persistence;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Staff\Domain\Contracts\SessionPayCatalog;
 use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Modules\Staff\Domain\Enums\RateScope;
 use Modules\Staff\Domain\Models\TeacherContract;
 use Modules\Staff\Domain\Models\TeacherRate;
+use Shared\ValueObjects\Money;
 
 final readonly class DbTeacherRateResolver implements TeacherRateResolver
 {
@@ -19,18 +21,15 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
         ?string $programId = null,
         ?string $courseId = null,
         ?string $sessionType = null,
+        ?int $durationMinutes = null,
     ): ?array {
-        $contract = TeacherContract::query()
-            ->forProfile($staffProfileId)
-            ->activeOn($sessionDate)
-            ->orderByDesc('effective_from')
-            ->first();
+        $contract = $this->findActiveContract($staffProfileId, $sessionDate);
 
         if ($contract === null) {
             return null;
         }
 
-        /** @var list<array{scope: RateScope, query: callable(Builder): Builder}> $candidates */
+        /** @var list<array{scope: RateScope, query: callable(Builder<TeacherRate>): Builder<TeacherRate>}> $candidates */
         $candidates = [
             [
                 'scope' => RateScope::Course,
@@ -89,6 +88,97 @@ final readonly class DbTeacherRateResolver implements TeacherRateResolver
             }
         }
 
+        if ($durationMinutes !== null && $contract->basis->requiresRates()) {
+            foreach (app(SessionPayCatalog::class)->rates($contract->organization_id, $sessionDate) as $preset) {
+                if ($preset['session_type'] === $sessionType && $preset['duration_minutes'] === $durationMinutes) {
+                    return [
+                        'money' => Money::of($preset['amount'], $preset['currency']),
+                        'scope' => RateScope::SessionType, 'rate_id' => $preset['id'],
+                        'contract_id' => $contract->id, 'contract_basis' => $contract->basis->value,
+                    ];
+                }
+            }
+        }
+
         return null;
+    }
+
+    public function resolveDeduction(
+        string $staffProfileId,
+        CarbonImmutable $sessionDate,
+        ?string $programId = null,
+        ?string $courseId = null,
+        ?string $sessionType = null,
+        ?int $durationMinutes = null,
+    ): ?array {
+        $rate = $this->resolve(
+            $staffProfileId,
+            $sessionDate,
+            $programId,
+            $courseId,
+            $sessionType,
+            $durationMinutes,
+        );
+
+        if ($rate !== null) {
+            return $rate;
+        }
+
+        if (config('payroll.salary_session_value.enabled', true) !== true) {
+            return null;
+        }
+
+        $contract = $this->findActiveContract($staffProfileId, $sessionDate);
+
+        if ($contract === null
+            || !$contract->basis->requiresBaseAmount()
+            || $contract->base_amount === null
+            || $contract->monthly_target_sessions === null
+            || $contract->monthly_target_sessions <= 0) {
+            return null;
+        }
+
+        $target = $contract->monthly_target_sessions;
+        $minorUnits = intdiv($contract->base_amount, $target);
+        $remainder = $contract->base_amount % $target;
+        $roundingThreshold = intdiv($target, 2) + ($target % 2);
+
+        // Half-up rounding using integer minor units, including amounts beyond float precision.
+        if (abs($remainder) >= $roundingThreshold) {
+            $minorUnits += $remainder <=> 0;
+        }
+
+        return [
+            'money' => Money::of($minorUnits, $contract->currency ?? 'EGP'),
+            'scope' => RateScope::Default,
+            'rate_id' => (string) $contract->getKey(),
+            'contract_id' => (string) $contract->getKey(),
+            'contract_basis' => $contract->basis->value,
+        ];
+    }
+
+    public function activeContract(
+        string $staffProfileId,
+        CarbonImmutable $sessionDate,
+    ): ?array {
+        $contract = $this->findActiveContract($staffProfileId, $sessionDate);
+
+        if ($contract === null) {
+            return null;
+        }
+
+        return [
+            'contract_id' => (string) $contract->getKey(),
+            'contract_basis' => $contract->basis->value,
+        ];
+    }
+
+    private function findActiveContract(string $staffProfileId, CarbonImmutable $sessionDate): ?TeacherContract
+    {
+        return TeacherContract::query()
+            ->forProfile($staffProfileId)
+            ->activeOn($sessionDate)
+            ->orderByDesc('effective_from')
+            ->first();
     }
 }

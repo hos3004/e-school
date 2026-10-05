@@ -30,7 +30,12 @@ final class RecordParticipantAttendanceController extends Controller
         /** @var SessionParticipant $participant */
         $participant = $sessionModel->participants()->findOrFail((string) $request->validated('participant_id'));
 
-        $participant = $this->action->execute($sessionModel, $participant, (string) $request->validated('type'));
+        $participant = $this->action->execute(
+            $sessionModel,
+            $participant,
+            (string) $request->validated('type'),
+            (string) $request->user()->getAuthIdentifier(),
+        );
 
         return new SessionParticipantResource($participant);
     }

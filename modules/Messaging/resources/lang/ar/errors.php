@@ -21,4 +21,16 @@ return [
     'wall_comment_too_long' => 'التعليق أطول من الطول المسموح (:max حرفًا).',
     'whatsapp_duplicate_message' => 'رسالة الواتساب هذه مسجّلة مسبقًا.',
     'whatsapp_already_handled' => 'تم التعامل مع هذه الرسالة مسبقًا.',
+    'invalid_recipient' => 'المستلم غير متاح أو لا ينتمي إلى مؤسستك.',
+    'supervision_unavailable' => 'قناة التواصل مع الإشراف غير متاحة حاليًا.',
+    'recipient_not_reachable' => 'يمكنك مراسلة طلابك فقط.',
+
+    // حملات واتساب
+    'campaign_delay_range_invalid' => 'أقل مهلة يجب ألا تتجاوز أكثر مهلة.',
+    'campaign_recipients_empty' => 'لا يوجد رقم واحد صالح في القائمة.',
+    'campaign_recipients_exceeded' => 'عدد الأرقام يتجاوز الحد المسموح للحملة الواحدة (:max).',
+    'campaign_media_store_failed' => 'تعذّر حفظ المرفق على الخادم.',
+    'campaign_not_startable' => 'حالة الحملة الحالية لا تسمح ببدء الإرسال.',
+    'campaign_not_stoppable' => 'حالة الحملة الحالية لا تسمح بإيقافها.',
+    'campaign_channel_disabled' => 'قناة واتساب موقوفة — شغّلها قبل بدء الحملة.',
 ];

@@ -18,11 +18,15 @@ final class ClassWallCommentResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        /** @var string|null $authorName */
+        $authorName = $this->resource->getAttribute('author_name');
+
         return [
             'id' => (string) $this->resource->id,
             'organization_id' => (string) $this->resource->organization_id,
             'post_id' => (string) $this->resource->post_id,
             'user_id' => (string) $this->resource->user_id,
+            'author_name' => $authorName,
             'body' => $this->resource->body,
             'created_at' => $this->resource->created_at?->toIso8601String(),
         ];

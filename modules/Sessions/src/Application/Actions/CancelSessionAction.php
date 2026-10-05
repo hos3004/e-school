@@ -6,7 +6,6 @@ namespace Modules\Sessions\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
-use Modules\Sessions\Application\Concerns\TransitionsSessionStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\SessionCancelled;
 use Modules\Sessions\Domain\Models\Session;
@@ -20,13 +19,12 @@ use Shared\Support\BusinessRuleViolation;
  */
 final readonly class CancelSessionAction
 {
-    use TransitionsSessionStatus;
-
     public function __construct(
         private Dispatcher $events,
+        private TransitionSessionStatusAction $transition,
     ) {}
 
-    public function execute(Session $session, SessionStatus $as, string $reason, ?string $actorId = null): Session
+    public function execute(Session $session, SessionStatus $as, string $reason, string $actorId): Session
     {
         if (!in_array($as, [SessionStatus::CancelledByStudent, SessionStatus::CancelledByTeacher, SessionStatus::CancelledBySchool], true)) {
             throw BusinessRuleViolation::make(
@@ -34,8 +32,6 @@ final readonly class CancelSessionAction
                 'sessions::errors.cancel_target_invalid',
             );
         }
-
-        $this->guardNotTerminal($session);
 
         if ($as === SessionStatus::CancelledByStudent) {
             $noticeMinutes = (int) config('scheduling.notice.cancellation_minutes');
@@ -53,17 +49,18 @@ final readonly class CancelSessionAction
 
         $now = CarbonImmutable::now('UTC');
 
-        $this->applyTransition(
+        $session = $this->transition->execute(
             $session,
             $as,
+            $actorId,
+            $reason,
+            'sessions.session_cancelled',
             [
                 'cancelled_by' => $actorId,
-                'cancelled_at' => $now,
+                'cancelled_at' => $now->toIso8601String(),
                 'cancellation_reason' => $reason,
             ],
-            reason: $reason,
-            changedBy: $actorId,
-            metadata: ['cancel_channel' => 'api'],
+            ['cancelled_as' => $as->value],
         );
 
         $this->events->dispatch(new SessionCancelled(
@@ -77,6 +74,6 @@ final readonly class CancelSessionAction
             reason: $reason,
         ));
 
-        return $session->refresh();
+        return $session;
     }
 }

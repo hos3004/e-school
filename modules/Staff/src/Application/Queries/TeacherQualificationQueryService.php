@@ -10,6 +10,18 @@ use Modules\Staff\Domain\Models\TeacherCourse;
 
 final readonly class TeacherQualificationQueryService implements TeacherQualificationQueries
 {
+    public function courseIdsForTeacher(string $staffProfileId): array
+    {
+        return TeacherCourse::query()
+            ->where('staff_profile_id', $staffProfileId)
+            ->whereNull('revoked_at')
+            ->orderBy('course_id')
+            ->pluck('course_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
     /**
      * @return list<string> معرّفات ملفات المعلمين المؤهلين لتدريس الكورس
      */
@@ -18,6 +30,7 @@ final readonly class TeacherQualificationQueryService implements TeacherQualific
         /** @var list<string> $ids */
         $ids = TeacherCourse::query()
             ->where('course_id', $courseId)
+            ->whereNull('revoked_at')
             ->orderBy('staff_profile_id')
             ->pluck('staff_profile_id')
             ->all();
@@ -30,6 +43,7 @@ final readonly class TeacherQualificationQueryService implements TeacherQualific
         return TeacherCourse::query()
             ->where('staff_profile_id', $staffProfileId)
             ->where('course_id', $courseId)
+            ->whereNull('revoked_at')
             ->exists();
     }
 

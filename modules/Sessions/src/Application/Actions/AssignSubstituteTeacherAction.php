@@ -7,9 +7,12 @@ namespace Modules\Sessions\Application\Actions;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Sessions\Domain\Enums\ApologyStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\SessionSubstituteAssigned;
 use Modules\Sessions\Domain\Models\Session;
+use Modules\Sessions\Domain\Models\TeacherApology;
 use Modules\Sessions\Domain\Services\SubstituteCandidateFinder;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
@@ -32,6 +35,7 @@ final readonly class AssignSubstituteTeacherAction
     public function __construct(
         private Transaction $transaction,
         private SubstituteCandidateFinder $candidates,
+        private AuditRecorder $audit,
     ) {}
 
     /**
@@ -89,13 +93,14 @@ final readonly class AssignSubstituteTeacherAction
         }
 
         $now = CarbonImmutable::now('UTC');
+        $substitutionId = (string) Str::ulid();
 
         $updated = $this->transaction->run(function () use (
             $session, $originalTeacherId, $substituteTeacherId, $assignedBy,
-            $reason, $evaluation, $isOverride, $options, $now,
+            $reason, $evaluation, $isOverride, $options, $now, $substitutionId,
         ): Session {
             DB::table('session_substitutions')->insert([
-                'id' => (string) Str::ulid(),
+                'id' => $substitutionId,
                 'organization_id' => $session->organization_id,
                 'session_id' => $session->getKey(),
                 'original_teacher_id' => $originalTeacherId,
@@ -116,6 +121,37 @@ final readonly class AssignSubstituteTeacherAction
             $session->staff_profile_id = $substituteTeacherId;
             $session->substitute_for_staff_id = $session->substitute_for_staff_id ?? $originalTeacherId;
             $session->save();
+
+            $apology = TeacherApology::query()
+                ->where('session_id', $session->id)
+                ->where('staff_profile_id', $originalTeacherId)
+                ->where('status', ApologyStatus::Approved)
+                ->lockForUpdate()
+                ->latest('submitted_at')
+                ->first();
+            if ($apology instanceof TeacherApology) {
+                $apology->forceFill([
+                    'status' => ApologyStatus::Covered,
+                    'substitution_id' => $substitutionId,
+                ])->save();
+            }
+
+            $this->audit->record(
+                organizationId: (string) $session->organization_id,
+                actorId: $assignedBy,
+                actorType: 'user',
+                action: 'sessions.substitute_assigned',
+                auditableType: 'sessions',
+                auditableId: (string) $session->getKey(),
+                oldValues: ['staff_profile_id' => $originalTeacherId],
+                newValues: [
+                    'staff_profile_id' => $substituteTeacherId,
+                    'is_override' => $isOverride,
+                    'override_reason' => $isOverride ? ($options['override_reason'] ?? null) : null,
+                    'teacher_apology_covered' => $apology instanceof TeacherApology,
+                ],
+                reason: $reason,
+            );
 
             return $session;
         });

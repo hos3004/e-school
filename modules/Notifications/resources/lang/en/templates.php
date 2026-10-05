@@ -3,17 +3,30 @@
 declare(strict_types=1);
 
 return [
+    'schedule.created' => [
+        'subject' => 'Course schedule confirmed',
+        'body' => 'The schedule for {{target_name}} in {{course_name}} ({{course_code}}) with {{teacher_name}} has been confirmed. Session duration: {{duration_minutes}} minutes. Weekly schedule: {{weekly_pattern}}.',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'weekly_pattern'],
+    ],
+    'schedule.times_changed' => [
+        'subject' => 'Recurring session times updated',
+        'body' => 'The recurring schedule for {{target_name}} in {{course_name}} ({{course_code}}) with {{teacher_name}} is now: {{weekly_pattern}}, effective {{effective_from}}.',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'weekly_pattern', 'effective_from'],
+    ],
     'registration.submitted' => [
         'subject' => 'Registration request received',
-        'body' => 'Your registration request was received. You will be notified when the review is complete.',
+        'body' => 'We received the registration request for {{full_name}}. Requested course: {{course_name}} — submitted on {{submitted_at}}. The request is now under review, and you will be notified as soon as a decision is made.',
+        'parameters' => ['full_name', 'course_name', 'submitted_at'],
     ],
     'registration.approved' => [
         'subject' => 'Registration approved',
-        'body' => 'Your registration request was approved. You can now continue with the onboarding steps.',
+        'body' => 'The registration request for {{student_name}} was approved. Course: {{course_name}} — student code: {{student_code}}. Next, the administration assigns a teacher and the session times, and you will be notified once the schedule is confirmed. Nothing is required from you now.',
+        'parameters' => ['student_name', 'course_name', 'student_code'],
     ],
     'registration.rejected' => [
         'subject' => 'Registration request update',
-        'body' => 'Your registration request could not be approved. Review the request details or contact the administration.',
+        'body' => 'The registration request for {{student_name}} could not be approved. Course: {{course_name}} — reason: {{reason}}. Contact the administration for details, or submit a new request.',
+        'parameters' => ['student_name', 'course_name', 'reason'],
     ],
     'teacher.availability.approved' => [
         'subject' => 'Availability approved',
@@ -34,16 +47,43 @@ return [
     ],
     'session.rescheduled' => [
         'subject' => 'Session time changed',
-        'body' => 'The replacement session is scheduled for {{makeup_start}}.',
+        'body' => 'The makeup session is scheduled for {{makeup_start}}.',
         'parameters' => ['makeup_start'],
     ],
     'teacher.apology.submitted' => [
         'subject' => 'Teacher apology received',
-        'body' => 'The apology request was received and will be reviewed by a supervisor.',
+        'body' => 'The teacher apology was recorded and approved, and the substitute search started.',
+    ],
+    'student.apology.submitted' => [
+        'subject' => 'Student apology recorded',
+        'body' => 'The student apology was recorded and the relevant parties were notified.',
+    ],
+    'session.ready_ping' => [
+        'subject' => 'The student is ready now',
+        'body' => 'The student has signalled they are ready to start now. If the student does not join once you open the classroom, the session will not count toward your earnings.',
+    ],
+    'postponement.requested' => [
+        'subject' => 'Session postponement requested',
+        'body' => 'A request to postpone the session to {{proposed_start}} was recorded and the relevant parties were notified.',
+        'parameters' => ['proposed_start'],
+    ],
+    'postponement.alternative_proposed' => [
+        'subject' => 'Teacher proposed an alternative time',
+        'body' => 'The teacher proposed {{teacher_proposed_start}} as an alternative session time.',
+        'parameters' => ['teacher_proposed_start'],
+    ],
+    'postponement.scheduled' => [
+        'subject' => 'Session postponed',
+        'body' => 'The alternative session time was confirmed for {{agreed_start}}.',
+        'parameters' => ['agreed_start'],
+    ],
+    'postponement.rejected' => [
+        'subject' => 'Postponement request rejected',
+        'body' => 'The session postponement request was rejected. Review the recorded reason in the platform.',
     ],
     'teacher.apology.approved' => [
         'subject' => 'Apology approved',
-        'body' => 'The supervisor approved the teacher apology and substitute follow-up has started.',
+        'body' => 'The teacher apology was approved automatically and the substitute search started.',
     ],
     'teacher.apology.rejected' => [
         'subject' => 'Apology not approved',
@@ -58,6 +98,11 @@ return [
         'body' => 'A substitute teacher was assigned for the session scheduled at {{scheduled_start}}.',
         'parameters' => ['scheduled_start'],
     ],
+    'session.substitute.candidates_updated' => [
+        'subject' => 'Substitute candidates updated',
+        'body' => 'The automatic search found {{candidate_count}} qualified and available substitute candidates for the session.',
+        'parameters' => ['candidate_count'],
+    ],
     'session.substitute.changed' => [
         'subject' => 'Substitute teacher changed',
         'body' => 'The substitute teacher was updated for the session scheduled at {{scheduled_start}}.',
@@ -65,12 +110,8 @@ return [
     ],
     'session.approaching' => [
         'subject' => 'Your session is approaching',
-        'body' => 'Reminder: the session starts at {{scheduled_start}}.',
-        'parameters' => ['scheduled_start'],
-    ],
-    'session.joinable' => [
-        'subject' => 'You can join the session now',
-        'body' => 'The session join window is open. Use the secure join link from your schedule.',
+        'body' => 'Reminder: your {{course_name}} session starts at {{scheduled_start}} and lasts {{duration_minutes}} minutes.',
+        'parameters' => ['course_name', 'scheduled_start', 'duration_minutes'],
     ],
     'classroom.guest_invited' => [
         'subject' => 'Classroom guest invitation',
@@ -112,5 +153,40 @@ return [
         'subject' => 'Assignment graded',
         'body' => 'Your grade has been recorded: {{score}} out of {{max_score}}. View the feedback in your account.',
         'parameters' => ['score', 'max_score'],
+    ],
+    'message.sent' => [
+        'subject' => 'New message from {{sender_name}}',
+        'body' => '{{sender_name}}: {{message_preview}}',
+        'parameters' => ['sender_name', 'message_preview'],
+    ],
+    'schedule.change.requested' => [
+        'subject' => 'Permanent lesson time change requested',
+        'body' => 'Teacher {{teacher_name}} asked to move {{course_name}} sessions from {{current_schedule}} to {{proposed_schedule}}. The new time applies only once every student accepts; the response window closes on {{expires_at}}.',
+        'parameters' => ['teacher_name', 'course_name', 'current_schedule', 'proposed_schedule', 'expires_at'],
+    ],
+    'schedule.change.applied' => [
+        'subject' => 'New permanent lesson time approved',
+        'body' => 'Every student accepted the new time for {{course_name}} sessions: {{proposed_schedule}}. It applies to sessions from {{effective_from}}.',
+        'parameters' => ['course_name', 'proposed_schedule', 'effective_from'],
+    ],
+    'schedule.change.rejected' => [
+        'subject' => 'Permanent lesson time change not approved',
+        'body' => 'The request to move {{course_name}} sessions to {{proposed_schedule}} ended without approval; the current time stays in place.',
+        'parameters' => ['course_name', 'proposed_schedule'],
+    ],
+    'session.join_link.teacher' => [
+        'subject' => 'Your session starts soon — entry link',
+        'body' => '{{course_name}} starts in {{minutes_until_start}} minutes, at {{scheduled_start}}. Open the session page and sign in from there so the system records your attendance and credits the session to your balance: {{join_url}}',
+        'parameters' => ['course_name', 'minutes_until_start', 'scheduled_start', 'join_url'],
+    ],
+    'session.join_link.student' => [
+        'subject' => 'Your session starts soon — entry link',
+        'body' => '{{course_name}} starts in {{minutes_until_start}} minutes, at {{scheduled_start}}. Join the classroom directly from this link: {{join_url}}',
+        'parameters' => ['course_name', 'minutes_until_start', 'scheduled_start', 'join_url'],
+    ],
+    'discipline.absence_recorded' => [
+        'subject' => 'Session absence recorded',
+        'body' => 'An absence was recorded for {{student_name}} from the {{course_name}} session on {{scheduled_start}}. The absence count is now {{absence_count}} for the current period. Please note that the system is set to freeze the enrolment automatically and release the seat to another student once absences without prior excuse reach {{freeze_threshold}}.',
+        'parameters' => ['student_name', 'course_name', 'scheduled_start', 'absence_count', 'freeze_threshold'],
     ],
 ];

@@ -10,6 +10,7 @@ use Modules\Identity\Domain\Contracts\UserAccountProvisioner;
 use Modules\Organization\Domain\Contracts\GeographyQueries;
 use Modules\Students\Domain\Enums\StudentGender;
 use Modules\Students\Domain\Models\StudentProfile;
+use Shared\Codes\EntityCodeGenerator;
 use Shared\Support\Transaction;
 
 final readonly class ImportStudentsAction
@@ -18,6 +19,7 @@ final readonly class ImportStudentsAction
         private UserAccountProvisioner $accounts,
         private GeographyQueries $geography,
         private Transaction $transaction,
+        private EntityCodeGenerator $codes,
     ) {}
 
     /**
@@ -106,7 +108,7 @@ final readonly class ImportStudentsAction
                     StudentProfile::query()->create([
                         'organization_id' => $organizationId,
                         'user_id' => $account->id,
-                        'student_code' => $this->nullable($row['student_code'] ?? null) ?? 'STU-'.Str::upper(substr((string) Str::ulid(), -8)),
+                        'student_code' => $this->nullable($row['student_code'] ?? null) ?? $this->codes->next('student'),
                         'date_of_birth' => $dateOfBirth,
                         'gender' => $gender,
                         'country_id' => $countryId,

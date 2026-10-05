@@ -8,13 +8,12 @@ use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Events\RecordingViewed;
 use Modules\Recordings\Domain\Models\Recording;
 use Modules\Recordings\Domain\Models\RecordingView;
-use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
+use Modules\Recordings\Tests\RecordingTestContext;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
-uses(CreatesRecordingContext::class);
-
 beforeEach(function (): void {
+    /** @var RecordingTestContext $this */
     $this->context = $this->createSessionWithClassroom();
 });
 

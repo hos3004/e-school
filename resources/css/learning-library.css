@@ -1,0 +1,33 @@
+.learning-portal .lp-library-heading{margin-bottom:25px}
+.learning-portal .lp-library-filters{display:flex;align-items:end;gap:16px;flex-wrap:wrap;border:1px solid #dfe7e9;background:white;border-radius:11px;padding:22px;margin-bottom:22px}
+.learning-portal .lp-library-filters .lp-field{margin:0;min-width:180px}
+.learning-portal .lp-library-filters .lp-library-search{flex:1;min-width:230px}
+.learning-portal .lp-library-search-input{position:relative}
+.learning-portal .lp-library-search-input>svg{position:absolute;inset-inline-start:12px;top:14px;color:#78908a}
+.learning-portal .lp-library-search-input input{padding-inline-start:38px}
+.learning-portal .lp-library-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.learning-portal .lp-library-card{display:flex;flex-direction:column;border:1px solid #dfe7e9;border-radius:11px;background:#fff;padding:23px;min-width:0}
+.learning-portal .lp-library-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:21px}
+.learning-portal .lp-library-mini-icon{display:grid;place-items:center;flex:none;width:46px;height:46px;background:#eef5f1;border-radius:9px;color:#54826d}
+.learning-portal .lp-library-card h2{font-size:16px;font-weight:650;line-height:1.7;overflow-wrap:anywhere}
+.learning-portal .lp-library-course{font-size:12px;color:#536d74;margin-top:6px}
+.learning-portal .lp-library-card-description{font-size:12px;line-height:1.85;color:#61747b;margin-top:14px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.learning-portal .lp-library-card-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #e7edef;margin-top:auto;padding-top:17px;font-size:11px;color:#78908a}
+.learning-portal .lp-library-card-foot .lp-text-action{font-size:12px}
+.learning-portal .lp-library-card-description+.lp-library-card-foot{margin-top:20px}
+.learning-portal .lp-library-pagination{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:22px;color:#61747b;font-size:12px}
+.learning-portal .lp-library-pagination>div{display:flex;gap:10px}
+.learning-portal .lp-library-detail{display:flex;align-items:flex-start;gap:25px;padding:32px;border:1px solid #dfe7e9;border-radius:12px;background:#fff;max-width:900px;margin-inline:auto}
+.learning-portal .lp-library-file-icon{display:grid;place-items:center;width:85px;height:95px;border:1px solid #dfe7e9;border-radius:11px;background:#f2f7f4;color:#59846e;flex:none}
+.learning-portal .lp-library-detail-body{flex:1;min-width:0}
+.learning-portal .lp-library-detail h2{font-size:23px;line-height:1.7;margin:14px 0}
+.learning-portal .lp-library-description{font-size:14px;line-height:1.95;white-space:pre-wrap;overflow-wrap:anywhere;color:#536d74}
+.learning-portal .lp-library-detail .lp-definition{margin-block:23px}
+.learning-portal .lp-library-empty{display:flex;align-items:center;gap:12px;padding:22px 0;color:#61747b;font-size:13px}
+.learning-portal .lp-library-empty-page{padding:55px 25px;flex-direction:column;justify-content:center;text-align:center;background:#fff;border:1px solid #dfe7e9;border-radius:11px}
+.learning-portal .lp-library-empty-page h2{font-size:17px;font-weight:600}
+.learning-portal .lp-library-empty-page p{font-size:13px;line-height:1.9}
+.learning-portal .lp-library-preview .lp-text-action{display:flex;align-items:center;gap:8px;margin-top:11px;font-size:12px}
+.learning-portal :is(.lp-library-card,.lp-library-detail,.lp-library-filters,.lp-library-preview) :is(a,button,input,select):focus-visible{outline:3px solid #71ac95;outline-offset:3px}
+@media(max-width:1000px){.learning-portal .lp-library-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.learning-portal .lp-library-grid{grid-template-columns:1fr}.learning-portal .lp-library-filters{padding:18px}.learning-portal .lp-library-filters .lp-field{min-width:100%;width:100%}.learning-portal .lp-library-detail{padding:22px;display:block}.learning-portal .lp-library-file-icon{width:60px;height:65px;margin-bottom:20px}.learning-portal .lp-library-detail h2{font-size:20px}}

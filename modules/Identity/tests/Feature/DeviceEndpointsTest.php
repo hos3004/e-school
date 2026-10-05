@@ -5,14 +5,17 @@ declare(strict_types=1);
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Domain\Models\UserDevice;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
+use Modules\Identity\Tests\Support\IdentityPestContext;
 
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
+    /** @var IdentityPestContext $this */
     $this->createTestOrganization();
 });
 
 it('registers a device for the authenticated user over HTTP', function (): void {
+    /** @var IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create();
 
@@ -30,6 +33,7 @@ it('registers a device for the authenticated user over HTTP', function (): void 
 });
 
 it('lets the owner revoke their device over HTTP', function (): void {
+    /** @var IdentityPestContext $this */
     /** @var User $user */
     $user = User::factory()->inOrganization($this->organizationId)->create();
 
@@ -45,6 +49,7 @@ it('lets the owner revoke their device over HTTP', function (): void {
 });
 
 it('forbids revoking a device owned by someone else', function (): void {
+    /** @var IdentityPestContext $this */
     /** @var User $owner */
     $owner = User::factory()->inOrganization($this->organizationId)->create();
     /** @var User $intruder */
@@ -59,5 +64,6 @@ it('forbids revoking a device owned by someone else', function (): void {
 });
 
 it('requires authentication to register a device', function (): void {
+    /** @var IdentityPestContext $this */
     $this->postJson('/api/identity/devices', [])->assertUnauthorized();
 });

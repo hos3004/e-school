@@ -7,4 +7,6 @@ declare(strict_types=1);
 | Consumed via __('enrollments::messages.key') — no user-facing text outside translation files.
 */
 
-return [];
+return [
+    'automatic_discipline_freeze' => 'Automatic freeze after :threshold countable absences within :window.',
+];

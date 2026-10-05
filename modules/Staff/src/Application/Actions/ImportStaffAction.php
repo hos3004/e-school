@@ -10,6 +10,7 @@ use Modules\Identity\Domain\Contracts\UserAccountProvisioner;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Modules\Staff\Domain\Enums\StaffGender;
 use Modules\Staff\Domain\Models\StaffProfile;
+use Shared\Codes\EntityCodeGenerator;
 use Shared\Support\Transaction;
 
 final readonly class ImportStaffAction
@@ -17,6 +18,7 @@ final readonly class ImportStaffAction
     public function __construct(
         private UserAccountProvisioner $accounts,
         private Transaction $transaction,
+        private EntityCodeGenerator $codes,
     ) {}
 
     /**
@@ -97,7 +99,7 @@ final readonly class ImportStaffAction
                     StaffProfile::query()->create([
                         'organization_id' => $organizationId,
                         'user_id' => $account->id,
-                        'staff_code' => $this->nullable($row['staff_code'] ?? null) ?? 'STF-'.Str::upper(substr((string) Str::ulid(), -8)),
+                        'staff_code' => $this->nullable($row['staff_code'] ?? null) ?? $this->codes->next('staff'),
                         'employment_type' => $employmentType,
                         'gender' => $gender,
                         'hired_at' => $this->nullable($row['hired_at'] ?? null) ?? now()->utc()->toDateString(),

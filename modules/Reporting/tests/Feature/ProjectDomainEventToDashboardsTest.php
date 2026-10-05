@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Reporting\Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Modules\Reporting\Application\Actions\IngestDomainEventAction;
@@ -17,8 +16,6 @@ use Modules\Reporting\Domain\Models\StudentDashboard;
 use Modules\Reporting\Domain\Models\TeacherDashboard;
 use Shared\Domain\DomainEvent;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 /**
  * حدث مصدر تجريبي محلي — يقلّد شكل أحداث الموديولات الأخرى

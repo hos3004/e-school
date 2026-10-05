@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Discipline\Presentation\Filament\Resources;
 
+use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
@@ -15,10 +18,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Modules\Discipline\Application\Actions\WaiveViolationAction;
 use Modules\Discipline\Domain\Enums\ViolationType;
 use Modules\Discipline\Domain\Models\ViolationEvent;
 use Modules\Discipline\Presentation\Filament\Resources\ViolationEventFilamentResource\Pages;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد أحداث المخالفات في لوحة التحكم — قراءة فقط مع فعل عفو موثّق.
@@ -34,7 +39,9 @@ final class ViolationEventFilamentResource extends Resource
 
     protected static ?int $navigationSort = 60;
 
-    public static function getNavigationGroup(): ?string
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-exclamation-triangle';
+
+    public static function getNavigationGroup(): string
     {
         return __('discipline::filament.navigation_group');
     }
@@ -100,7 +107,12 @@ final class ViolationEventFilamentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'discipline::origin.violation',
+            'heroicon-o-exclamation-triangle',
+            'filament.admin.resources.attendance-filaments.index',
+        )
             ->columns([
                 TextColumn::make('enrollment_id')
                     ->label(__('discipline::attributes.enrollment_id'))
@@ -146,8 +158,45 @@ final class ViolationEventFilamentResource extends Resource
                     ->label(__('discipline::filament.waived'))
                     ->nullable(),
             ])
-            ->actions([])
+            ->recordActions([
+                ViewAction::make(),
+                self::waiveAction(),
+            ])
             ->bulkActions([]);
+    }
+
+    /**
+     * العفو عن المخالفة — المسار الوحيد لإبطالها، فالسجل لا يُعدَّل ولا يُحذف.
+     *
+     * كان `WaiveViolationAction` مكتوبًا وله سياسة `waive` وصلاحية
+     * `discipline.waive_violations`، ووصفُ هذا المورد نفسه يَعِد بـ«فعل عفو
+     * موثّق» — ولم يكن في الواجهة زرٌّ يستدعيه. المخالفة تُحتسب في نافذة
+     * التصعيد حتى تُعفى، فغيابُ الزر يعني تجميد طالب بلا مخرج إداري.
+     */
+    public static function waiveAction(): Action
+    {
+        return Action::make('waive')
+            ->label(__('discipline::filament.violations.waive'))
+            ->icon('heroicon-m-hand-raised')
+            ->color('primary')
+            ->authorize('waive')
+            ->form([
+                Textarea::make('reason')
+                    ->label(__('discipline::attributes.waiver_reason'))
+                    ->required()
+                    ->minLength(3)
+                    ->maxLength(1000),
+            ])
+            ->action(function (ViolationEvent $record, array $data): void {
+                app(WaiveViolationAction::class)->execute($record, [
+                    'reason' => (string) $data['reason'],
+                ]);
+
+                Notification::make()
+                    ->title(__('discipline::filament.violations.waived_notice'))
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function getPages(): array

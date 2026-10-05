@@ -21,7 +21,13 @@ final class StoreCourseController extends Controller
 
     public function __invoke(StoreCourseRequest $request): JsonResponse
     {
-        $course = $this->action->execute($request->validated());
+        $data = $request->validated();
+        $data['organization_id'] = (string) $request->user()->organization_id;
+        $course = $this->action->execute(
+            $data,
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return CourseResource::make($course)
             ->response()

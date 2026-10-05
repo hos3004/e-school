@@ -9,12 +9,14 @@ use App\Infrastructure\Assignments\DatabaseAssignmentAudienceQueries;
 use App\Infrastructure\Identity\WhatsAppPhonePasswordResetOtpDeliveryAdapter;
 use App\Infrastructure\Messaging\DatabaseClassAudienceQueries;
 use App\Infrastructure\Notifications\PhaseOneDomainEventRecipientResolver;
+use App\Support\SupportBot\PlatformDataSource;
 use Illuminate\Support\ServiceProvider;
 use Modules\AccessControl\Domain\Contracts\RoleAssignmentTargetScope;
 use Modules\Assignments\Domain\Contracts\AssignmentAudienceQueries;
 use Modules\Identity\Domain\Contracts\PhonePasswordResetOtpDelivery;
 use Modules\Messaging\Domain\Contracts\ClassAudienceQueries;
 use Modules\Notifications\Domain\Contracts\DomainEventRecipientResolver;
+use Modules\SupportBot\Domain\Contracts\SupportBotDataSource;
 
 /**
  * Cross-module adapters live at the application composition root and are
@@ -33,5 +35,8 @@ final class PhaseOneCompositionServiceProvider extends ServiceProvider
             PhonePasswordResetOtpDelivery::class,
             WhatsAppPhonePasswordResetOtpDeliveryAdapter::class,
         );
+
+        // الموديول يربط مصدرًا لا يعيد بيانات؛ القراءة الحقيقية بصلاحيات المستخدم هنا.
+        $this->app->bind(SupportBotDataSource::class, PlatformDataSource::class);
     }
 }

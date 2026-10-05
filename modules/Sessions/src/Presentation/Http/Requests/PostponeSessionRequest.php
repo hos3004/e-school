@@ -13,7 +13,7 @@ final class PostponeSessionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('sessions.session.postpone');
+        return $this->user()->can('session.postpone.request');
     }
 
     /**
@@ -24,7 +24,7 @@ final class PostponeSessionRequest extends FormRequest
         return [
             'makeup_start' => ['required', 'date'],
             'makeup_end' => ['required', 'date', 'after:makeup_start'],
-            'reason' => ['nullable', 'string', 'max:1000'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }
 

@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Models\NotificationCategorySetting;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationCategorySettingResource\Pages;
+use Modules\Notifications\Presentation\Support\CategoryLabel;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد إعدادات فئات الإشعارات — تحكم الأدمن في: أي قنوات لكل فئة، وهل الفئة
@@ -32,6 +34,11 @@ final class NotificationCategorySettingResource extends Resource
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-signal';
 
     protected static ?int $navigationSort = 73;
+
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
 
     protected static ?string $recordTitleAttribute = 'category';
 
@@ -63,6 +70,7 @@ final class NotificationCategorySettingResource extends Resource
                 ->schema([
                     TextInput::make('category')
                         ->label(__('notifications::fields.category'))
+                        ->formatStateUsing(fn (?string $state): string => CategoryLabel::for($state))
                         ->disabled()
                         ->dehydrated(false),
                     Select::make('channels')
@@ -89,10 +97,17 @@ final class NotificationCategorySettingResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'notifications::origin.category',
+            'heroicon-o-signal',
+            'filament.admin.resources.notification-templates.index',
+        )
             ->columns([
                 TextColumn::make('category')
                     ->label(__('notifications::fields.category'))
+                    // اسم الفئة بالعربية؛ المفتاح المخزَّن لا يتغيّر.
+                    ->formatStateUsing(fn (?string $state): string => CategoryLabel::for($state))
                     ->badge()
                     ->searchable()
                     ->sortable(),

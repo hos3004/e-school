@@ -32,6 +32,11 @@ final class NotificationPreferenceResource extends Resource
 
     protected static ?int $navigationSort = 71;
 
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
     public static function getNavigationGroup(): string
     {
         return __('notifications::navigation.group');
@@ -134,5 +139,15 @@ final class NotificationPreferenceResource extends Resource
         sort($categories);
 
         return array_combine($categories, $categories) ?: [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => NotificationPreferenceResource\Pages\ListNotificationPreferences::route('/'),
+        ];
     }
 }

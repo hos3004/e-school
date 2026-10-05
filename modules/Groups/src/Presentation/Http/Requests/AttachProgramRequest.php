@@ -27,6 +27,7 @@ final class AttachProgramRequest extends FormRequest
     {
         return [
             'program_id' => ['required', 'string', 'size:26'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }
 
@@ -37,6 +38,15 @@ final class AttachProgramRequest extends FormRequest
     {
         return [
             'program_id' => __('groups::attributes.program_id'),
+            'reason' => __('groups::attributes.reason'),
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'reason.required' => __('groups::validation.reason_required'),
         ];
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Certificates\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Certificates\Domain\Models\BadgeAward;
 
 /**
@@ -14,28 +16,28 @@ use Modules\Certificates\Domain\Models\BadgeAward;
  */
 final class BadgeAwardPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('certificates.award.view_any');
     }
 
-    public function view($user, BadgeAward $award): bool
+    public function view(Authenticatable&Authorizable $user, BadgeAward $award): bool
     {
         return $user->can('certificates.award.view')
-            && $award->organization_id === $user->organization_id;
+            && $award->organization_id === data_get($user, 'organization_id');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('certificates.award.create');
     }
 
-    public function update($user, BadgeAward $award): bool
+    public function update(Authenticatable&Authorizable $user, BadgeAward $award): bool
     {
         return false;
     }
 
-    public function delete($user, BadgeAward $award): bool
+    public function delete(Authenticatable&Authorizable $user, BadgeAward $award): bool
     {
         return false;
     }

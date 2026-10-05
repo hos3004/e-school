@@ -12,13 +12,13 @@ use Modules\Identity\Domain\Models\User;
 
 trait UsesRealAccessControl
 {
-    protected function seedRealAccessControl(): void
+    public function seedRealAccessControl(): void
     {
         (new AccessControlSeeder)->run();
         app(PermissionGateRegistrar::class)->register();
     }
 
-    protected function assignRealRole(User $user, string $roleName): void
+    public function assignRealRole(User $user, string $roleName): void
     {
         $role = Role::query()
             ->includingGlobal($user->organization_id)

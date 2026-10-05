@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Modules\Reporting\Presentation\Http\Controllers\ExportOperationalReportPdfController;
 use Modules\Reporting\Presentation\Http\Controllers\ShowStudentDashboardController;
 
 /*
@@ -18,3 +19,7 @@ Route::middleware(['web', 'auth'])
     ->get('/reporting/student-dashboards/{enrollmentId}', ShowStudentDashboardController::class)
     ->whereUlid('enrollmentId')
     ->name('reporting.web.student-dashboards.show');
+
+Route::middleware(['web', 'auth', 'can:report.export'])
+    ->get('/reporting/operational-reports/export.pdf', ExportOperationalReportPdfController::class)
+    ->name('reporting.operational.export-pdf');

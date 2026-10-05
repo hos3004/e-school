@@ -1,0 +1,10 @@
+/opt/eschool/storage/logs/php-fpm-slow.log {
+    su ubuntu ubuntu
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

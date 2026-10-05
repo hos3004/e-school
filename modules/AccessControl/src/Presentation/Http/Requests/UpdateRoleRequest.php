@@ -21,6 +21,7 @@ final class UpdateRoleRequest extends FormRequest
         return [
             'name' => ['sometimes', 'string', 'max:191'],
             'organization_id' => ['prohibited'],
+            'reason' => ['required', 'string', 'max:1000'],
         ];
     }
 
@@ -31,6 +32,7 @@ final class UpdateRoleRequest extends FormRequest
     {
         return [
             'organization_id.prohibited' => __('accesscontrol::validation.organization_managed_by_server'),
+            'reason.required' => __('accesscontrol::validation.reason_required'),
         ];
     }
 }

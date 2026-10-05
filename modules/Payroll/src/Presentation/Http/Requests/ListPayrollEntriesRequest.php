@@ -13,8 +13,7 @@ final class ListPayrollEntriesRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('payroll.entries.view_any')
-            || $this->user()->can('payroll.entries.view');
+        return $this->user()->can('payroll.view');
     }
 
     /**

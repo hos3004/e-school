@@ -13,7 +13,7 @@ final class MarkNoShowRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('sessions.session.mark_no_show');
+        return $this->user()->can('attendance.record');
     }
 
     /**
@@ -22,7 +22,7 @@ final class MarkNoShowRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => ['nullable', 'string', 'max:1000'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }
 }

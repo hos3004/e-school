@@ -4,18 +4,28 @@
         icon-color="primary"
         :heading="$title"
     >
-        <div class="flex flex-wrap gap-3">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             @foreach ($actions as $action)
                 <a
                     aria-label="{{ $action['label'] }}"
-                    class="inline-flex min-h-11 items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-950 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/40 dark:text-white dark:hover:bg-gray-900/70"
+                    class="group flex min-h-16 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm transition-[border-color,background-color,box-shadow,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:border-primary-200 hover:bg-primary-50/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 active:scale-[0.96] dark:border-white/10 dark:bg-white/5 dark:text-gray-100 dark:hover:border-primary-800/60 dark:hover:bg-primary-950/30 dark:focus-visible:ring-primary-400 dark:focus-visible:ring-offset-gray-900"
                     href="{{ $action['href'] }}"
                 >
+                    <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700 ring-1 ring-inset ring-primary-100 transition-colors duration-150 group-hover:bg-primary-100 dark:bg-primary-950/50 dark:text-primary-400 dark:ring-primary-900 dark:group-hover:bg-primary-950/80">
+                        <x-filament::icon
+                            :icon="$action['icon']"
+                            class="size-5"
+                        />
+                    </span>
+
+                    <span class="min-w-0 flex-1 leading-6">
+                        {{ $action['label'] }}
+                    </span>
+
                     <x-filament::icon
-                        :icon="$action['icon']"
-                        class="h-5 w-5 shrink-0 text-primary-600 dark:text-primary-400"
+                        icon="heroicon-m-arrow-right"
+                        class="size-4 shrink-0 text-gray-400 transition-[color,translate] duration-150 ease-[cubic-bezier(0.2,0,0,1)] group-hover:translate-x-0.5 group-hover:text-primary-700 rtl:rotate-180 rtl:group-hover:-translate-x-0.5 dark:text-gray-500 dark:group-hover:text-primary-400"
                     />
-                    {{ $action['label'] }}
                 </a>
             @endforeach
         </div>

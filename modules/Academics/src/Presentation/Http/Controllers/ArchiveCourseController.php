@@ -22,7 +22,11 @@ final class ArchiveCourseController extends Controller
 
     public function __invoke(ArchiveCourseRequest $request, Course $course): JsonResponse
     {
-        $course = $this->action->execute($course, (string) $request->validated('reason'));
+        $course = $this->action->execute(
+            $course,
+            (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
+        );
 
         return CourseResource::make($course)->response();
     }

@@ -13,7 +13,10 @@ use Shared\Support\BusinessRuleViolation;
 /**
  * تسجيل جهاز للمستخدم الحالي (للإشعارات الفورية).
  *
- * نفس رمز الإشعارات لا يتكرر على جهازَين نشطين.
+ * نفس رمز الإشعارات لا يتكرر على جهازَين نشطين. تسجيل متكرر لنفس المستخدم
+ * بنفس رمز الإشعارات (مثل تسجيل الدخول من نفس الهاتف مرارًا) يحدّث الجهاز
+ * الموجود بدل إنشاء صفّ مكرر — يمنع تراكم صفوف user_devices واحتمال إشعار
+ * مزدوج لاحقًا حين يُستهلك canReceivePush().
  */
 final readonly class RegisterDevice
 {
@@ -23,8 +26,9 @@ final readonly class RegisterDevice
     public function execute(string $userId, array $attributes): UserDevice
     {
         $pushToken = $attributes['push_token'] ?? null;
+        $pushToken = is_string($pushToken) && $pushToken !== '' ? $pushToken : null;
 
-        if (is_string($pushToken) && $pushToken !== '') {
+        if ($pushToken !== null) {
             $clash = UserDevice::query()
                 ->active()
                 ->where('push_token', $pushToken)
@@ -41,6 +45,20 @@ final readonly class RegisterDevice
 
         /** @var UserDevice $device */
         $device = DB::transaction(function () use ($userId, $attributes, $pushToken): UserDevice {
+            $existing = $pushToken !== null
+                ? UserDevice::query()->forUser($userId)->active()->where('push_token', $pushToken)->first()
+                : null;
+
+            if ($existing !== null) {
+                $existing->update([
+                    'device_name' => $attributes['device_name'] ?? $existing->device_name,
+                    'platform' => $attributes['platform'] ?? $existing->platform,
+                    'last_used_at' => now(),
+                ]);
+
+                return $existing;
+            }
+
             return UserDevice::query()->create([
                 'user_id' => $userId,
                 'device_name' => $attributes['device_name'] ?? null,
@@ -49,11 +67,13 @@ final readonly class RegisterDevice
             ]);
         });
 
-        Event::dispatch(new DeviceRegistered(
-            deviceId: $device->id,
-            userId: $userId,
-            platform: $device->platform,
-        ));
+        if ($device->wasRecentlyCreated) {
+            Event::dispatch(new DeviceRegistered(
+                deviceId: $device->id,
+                userId: $userId,
+                platform: $device->platform,
+            ));
+        }
 
         return $device;
     }

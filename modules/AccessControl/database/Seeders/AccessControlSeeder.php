@@ -23,7 +23,10 @@ final class AccessControlSeeder extends Seeder
     private const PERMISSIONS = [
         'Students' => ['student.view', 'student.view.any', 'student.create', 'student.update'],
         'Guardians' => ['guardian.view', 'guardian.link'],
-        'Staff' => ['staff.view', 'staff.view.any', 'staff.contract.view', 'staff.contract.update', 'staff.leave.approve'],
+        'Staff' => [
+            'staff.view', 'staff.view.any', 'staff.contract.view', 'staff.contract.update',
+            'staff.availability.create', 'staff.availability.approve', 'staff.leave.approve',
+        ],
         'Enrollments' => [
             'enrollment.view', 'enrollment.create', 'enrollment.pause',
             'enrollment.freeze', 'enrollment.reactivate',
@@ -34,6 +37,7 @@ final class AccessControlSeeder extends Seeder
         'Scheduling' => [
             'schedule.view', 'schedule.manage',
             'session.postpone.request', 'session.postpone.approve',
+            'schedule.change.request', 'schedule.change.respond',
         ],
         'Sessions' => [
             'session.view', 'session.create', 'session.cancel',
@@ -49,26 +53,133 @@ final class AccessControlSeeder extends Seeder
         'Assignments' => ['assignment.manage', 'assignment.submit', 'assignment.grade'],
         'Assessments' => ['assessment.manage', 'assessment.take', 'grade.view'],
         'AcademicReports' => [
-            'session_report.create', 'session_report.view', 'monthly_report.approve',
+            'session_report.create', 'session_report.view', 'monthly_report.create', 'monthly_report.approve',
         ],
-        'Certificates' => ['certificate.issue', 'badge.award'],
+        'Certificates' => [
+            'certificates.badge.view_any',
+            'certificates.badge.view',
+            'certificates.badge.create',
+            'certificates.badge.update',
+            'certificates.badge.delete',
+            'certificates.award.view_any',
+            'certificates.award.view',
+            'certificates.award.create',
+            'certificates.certificate.view_any',
+            'certificates.certificate.view',
+            'certificates.certificate.create',
+            'certificates.certificate.revoke',
+            'certificates.template.view_any',
+            'certificates.template.view',
+            'certificates.template.create',
+            'certificates.template.update',
+            'certificates.template.delete',
+            'certificate.issue', 'badge.award'],
         'Messaging' => [
+            'messaging.class_wall_comment.view_any',
+            'messaging.class_wall_comment.view',
+            'messaging.class_wall_comment.create',
+            'messaging.class_wall_comment.update',
+            'messaging.class_wall_comment.delete',
+            'messaging.whatsapp_inbound.view_any',
+            'messaging.whatsapp_inbound.view',
+            'messaging.whatsapp_inbound.create',
+            'messaging.whatsapp_inbound.update',
+            'messaging.whatsapp_inbound.delete',
+            'messaging.whatsapp_inbound.handle',
+
             'message.send', 'message.moderate', 'messaging.inbound.view',
             'announcement.publish', 'class_wall.post',
         ],
+        'Notifications' => [
+            'notifications.outbox.update',
+            'notifications.outbox.cancel',
+            'notifications.outbox.delete',
+            'notifications.attempt.view_any',
+            'notifications.attempt.view',
+            'notifications.preference.view_any',
+            'notifications.preference.view',
+            'notifications.preference.create',
+            'notifications.preference.update',
+            'notifications.preference.delete',
+            'notifications.outbox.create'],
         'Payroll' => [
             'payroll.view', 'payroll.calculate', 'payroll.review',
             'payroll.adjustment.propose', 'payroll.adjustment.approve',
             'payroll.approve', 'payroll.pay', 'payroll.lock',
         ],
-        'Reporting' => ['report.view', 'report.export'],
-        'Audit' => ['audit.view'],
-        'Organization' => ['settings.manage', 'system.alerts'],
+        'Discipline' => [
+            'discipline.view_any', 'discipline.record_violations',
+            'discipline.waive_violations', 'discipline.apply_actions',
+            'discipline.request_reactivation',
+        ],
+        'Integrations' => [
+            'integrations.provider.view_any', 'integrations.provider.view',
+            'integrations.provider.create', 'integrations.provider.update',
+            'integrations.provider.delete',
+            'integrations.connection.view_any', 'integrations.connection.view',
+            'integrations.connection.create', 'integrations.connection.update',
+            'integrations.connection.delete', 'integrations.connection.activate',
+            'integrations.connection.disable',
+            'integrations.delivery.view_any', 'integrations.delivery.view',
+            'integrations.delivery.create', 'integrations.delivery.delete',
+            'integrations.delivery.requeue',
+        ],
+        'Reporting' => [
+            'reporting.event_log.view_any',
+            'reporting.event_log.view',
+            'reporting.event_log.delete',
+            'reporting.snapshot.view_any',
+            'reporting.snapshot.view',
+            'reporting.snapshot.build',
+            'reporting.snapshot.delete',
+            'reporting.student.view',
+            'reporting.student.correct',
+            'reporting.student.delete',
+            'reporting.teacher.view',
+            'reporting.teacher.correct',
+            'reporting.teacher.delete',
+            'report.view', 'report.export', 'reporting.settings.manage'],
+        'Audit' => [
+            'audit.view_any',
+            'audit.export',
+            'audit.prune',
+            'audit.record',
+            'audit.view'],
+        'Popups' => [
+            'popup_campaign.view_any', 'popup_campaign.view', 'popup_campaign.view_analytics',
+            'popup_campaign.create', 'popup_campaign.update',
+            'popup_campaign.publish', 'popup_campaign.pause', 'popup_campaign.archive',
+        ],
+        'Organization' => [
+            'organizations.view_any',
+            'organizations.view',
+            'organizations.create',
+            'organizations.update',
+            'organizations.delete',
+            'organizations.manage_settings',
+            'academic_calendars.view_any',
+            'academic_calendars.view',
+            'academic_calendars.create',
+            'academic_calendars.update',
+            'academic_calendars.delete',
+            'academic_calendars.activate',
+            'academic_calendars.close',
+            'holidays.view_any',
+            'holidays.view',
+            'holidays.create',
+            'holidays.update',
+            'holidays.delete',
+            'settings.manage', 'system.alerts'],
         'Identity' => [
+            'identity.devices.view_any',
+            'identity.devices.view',
+            'identity.devices.revoke',
+
             'admin.panel.access',
             'identity.users.view_any', 'identity.users.view',
             'identity.users.create', 'identity.users.update',
             'identity.users.delete', 'identity.users.change_status',
+            'contact.pii.view',
             'user.impersonate',
         ],
         'AccessControl' => [
@@ -78,6 +189,16 @@ final class AccessControlSeeder extends Seeder
             'accesscontrol.permissions.view_any', 'accesscontrol.permissions.view',
             'accesscontrol.permissions.grant_direct',
             'accesscontrol.assignments.assign_role', 'accesscontrol.assignments.revoke_role',
+        ],
+
+        /*
+         * بوت الدعم. إدارته وقراءة أرشيفه صلاحيتان منفصلتان عمدًا: الأرشيف يحمل
+         * ما كتبه المستخدمون بأنفسهم، ومن يضبط نصوص البوت ليس بالضرورة من يجوز
+         * له قراءة محادثات الناس.
+         */
+        'SupportBot' => [
+            'support_bot.manage',
+            'support_bot.archive.view',
         ],
     ];
 
@@ -93,16 +214,18 @@ final class AccessControlSeeder extends Seeder
         'academic_supervisor' => [
             'admin.panel.access',
             'identity.users.view_any', 'identity.users.view', 'identity.users.update',
-            'identity.users.change_status',
+            'identity.users.change_status', 'contact.pii.view',
             'accesscontrol.roles.view_any', 'accesscontrol.roles.view',
             'accesscontrol.permissions.view_any', 'accesscontrol.permissions.view',
             'student.view', 'student.view.any', 'student.update', 'guardian.view',
-            'staff.view', 'staff.view.any', 'staff.contract.view', 'staff.leave.approve',
+            'staff.view', 'staff.view.any', 'staff.contract.view',
+            'staff.availability.approve', 'staff.leave.approve',
             'enrollment.view', 'enrollment.create', 'enrollment.pause',
             'enrollment.freeze', 'enrollment.reactivate',
             'program.manage', 'course.manage', 'group.view', 'group.manage',
             'content.view', 'content.manage',
             'schedule.view', 'schedule.manage',
+            'schedule.change.request',
             'session.view', 'session.create', 'session.cancel',
             'session.postpone.request', 'session.postpone.approve',
             'session.assign_substitute', 'session.join', 'session.finalize',
@@ -112,17 +235,17 @@ final class AccessControlSeeder extends Seeder
             'recording.view', 'recording.view.any', 'recording.grant', 'recording.download',
             'assignment.manage', 'assignment.grade',
             'assessment.manage', 'grade.view',
-            'session_report.create', 'session_report.view', 'monthly_report.approve',
+            'session_report.create', 'session_report.view', 'monthly_report.create', 'monthly_report.approve',
             'certificate.issue', 'badge.award',
             'message.send', 'message.moderate', 'messaging.inbound.view',
             'announcement.publish', 'class_wall.post',
-            'report.view', 'report.export', 'system.alerts',
+            'report.view', 'report.export', 'system.alerts', 'reporting.settings.manage',
             // يقترح التسوية ولا يعتمدها — طلب صريح من العميل
             'payroll.adjustment.propose',
         ],
 
         'finance_supervisor' => [
-            'admin.panel.access',
+            'admin.panel.access', 'contact.pii.view',
             'student.view', 'student.view.any', 'staff.view', 'staff.view.any', 'staff.contract.view',
             'enrollment.view', 'group.view', 'session.view',
             'attendance.view', 'grade.view',
@@ -135,13 +258,14 @@ final class AccessControlSeeder extends Seeder
         'registrar' => [
             'admin.panel.access',
             'identity.users.view_any', 'identity.users.view', 'identity.users.create',
-            'identity.users.update', 'identity.users.change_status',
+            'identity.users.update', 'identity.users.change_status', 'contact.pii.view',
             'student.view', 'student.view.any', 'student.create', 'student.update',
             'staff.view.any',
             'guardian.view', 'guardian.link',
             'enrollment.view', 'enrollment.create', 'enrollment.pause',
             'group.view', 'group.manage', 'content.view',
             'schedule.view', 'schedule.manage',
+            'schedule.change.request',
             'session.view', 'session.create', 'session.cancel',
             'session.postpone.request', 'session.postpone.approve',
             'session.assign_substitute',
@@ -152,24 +276,29 @@ final class AccessControlSeeder extends Seeder
         ],
 
         'communications_officer' => [
-            'admin.panel.access',
+            'admin.panel.access', 'contact.pii.view',
             'identity.users.view_any', 'identity.users.view',
             'student.view', 'student.view.any', 'guardian.view', 'group.view', 'session.view',
             'attendance.view', 'enrollment.view',
             'message.send', 'message.moderate', 'messaging.inbound.view',
             'announcement.publish', 'report.view',
+            'notifications.outbox.create',
+            'popup_campaign.view_any', 'popup_campaign.view', 'popup_campaign.view_analytics',
+            'popup_campaign.create', 'popup_campaign.update',
+            'popup_campaign.publish', 'popup_campaign.pause', 'popup_campaign.archive',
         ],
 
         'teacher' => [
             'student.view', 'guardian.view',
             'staff.view', 'staff.contract.view',
+            'staff.availability.create',
             'enrollment.view', 'group.view', 'content.view', 'content.manage',
-            'schedule.view',
+            'schedule.view', 'schedule.change.request',
             'session.view', 'session.create', 'session.cancel',
             'session.postpone.request', 'session.postpone.approve',
             'session.join', 'session.finalize',
             'attendance.view', 'attendance.record',
-            'recording.view', 'recording.download',
+            'recording.view',
             'assignment.manage', 'assignment.grade',
             'assessment.manage', 'grade.view',
             'session_report.create', 'session_report.view',
@@ -180,7 +309,7 @@ final class AccessControlSeeder extends Seeder
 
         'student' => [
             'student.view', 'enrollment.view', 'group.view', 'content.view',
-            'schedule.view', 'session.view', 'session.join',
+            'schedule.view', 'schedule.change.respond', 'session.view', 'session.join',
             'session.postpone.request',
             'attendance.view', 'recording.view',
             'assignment.submit', 'assessment.take', 'grade.view',
@@ -198,21 +327,60 @@ final class AccessControlSeeder extends Seeder
 
         // مراجع: قراءة شاملة بلا أي تعديل
         'auditor' => [
-            'admin.panel.access',
+            'admin.panel.access', 'contact.pii.view',
             'identity.users.view_any', 'identity.users.view',
             'accesscontrol.roles.view_any', 'accesscontrol.roles.view',
             'accesscontrol.permissions.view_any', 'accesscontrol.permissions.view',
             'student.view', 'student.view.any', 'guardian.view',
             'staff.view', 'staff.view.any', 'staff.contract.view',
             'enrollment.view', 'group.view', 'content.view',
-            'program.manage', 'course.manage',
             'schedule.view', 'session.view', 'attendance.view',
-            'recording.view', 'assignment.manage', 'assessment.manage',
+            'recording.view',
             'grade.view', 'session_report.view',
             'payroll.view', 'report.view', 'report.export',
             'audit.view',
         ],
+
+        /*
+         * مشرف الجودة والمتابعة: يرى ويصدّر، ولا يتخذ أي إجراء.
+         *
+         * الحزمة هنا هي الحد الأدنى المشترك. ثلاث صلاحيات تُمنح للحساب وحده
+         * عند إنشائه حسب حاجته، ولذلك هي خارج الحزمة عمدًا:
+         *   payroll.view      → الجانب المالي ومستحقات المعلمين
+         *   contact.pii.view  → بيانات التواصل الشخصية (هاتف وبريد)
+         *   recording.view    → تسجيلات الحصص
+         *
+         * session.join غير مذكورة: المشرف لا يدخل الاجتماعات الافتراضية إطلاقًا.
+         */
+        'supervisor' => [
+            'admin.panel.access',
+            'student.view', 'student.view.any', 'guardian.view',
+            'staff.view', 'staff.view.any',
+            'enrollment.view', 'group.view', 'content.view',
+            'schedule.view', 'session.view', 'attendance.view',
+            'grade.view', 'session_report.view',
+            'discipline.view_any',
+            'report.view', 'report.export',
+        ],
     ];
+
+    /**
+     * المصدر القابل للاختبار لأسماء الصلاحيات، مع إبقاء تصنيف الموديولات
+     * داخل البذرة نفسها. لا نستخدم array_unique هنا حتى يكشف الاختبار أي
+     * اسم مكرر بدل أن تخفيه عملية التطبيع.
+     *
+     * @return list<string>
+     */
+    public static function permissionNames(): array
+    {
+        $permissions = [];
+
+        foreach (self::PERMISSIONS as $names) {
+            array_push($permissions, ...$names);
+        }
+
+        return $permissions;
+    }
 
     public function run(): void
     {

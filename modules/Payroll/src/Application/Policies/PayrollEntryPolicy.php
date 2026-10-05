@@ -17,13 +17,13 @@ final class PayrollEntryPolicy
 {
     public function viewAny(Authenticatable $user): bool
     {
-        return $user->can('payroll.entries.view_any');
+        return $user->can('payroll.view');
     }
 
     public function view(Authenticatable $user, PayrollEntry $entry): bool
     {
-        return $user->can('payroll.entries.view_any')
-            || $user->can('payroll.entries.view');
+        return $user->can('payroll.view')
+            && (string) $entry->organization_id === (string) $user->getAttribute('organization_id');
     }
 
     /** إنشاء القيود يحدث آليًا عند إقفال الحصص، لا يدويًا. */
@@ -45,6 +45,6 @@ final class PayrollEntryPolicy
     /** تحرير القيود المؤجَّلة عند إقامة حصة التلافي. */
     public function release(Authenticatable $user): bool
     {
-        return $user->can('payroll.entries.release');
+        return $user->can('payroll.calculate');
     }
 }

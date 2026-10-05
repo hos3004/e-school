@@ -1,0 +1,5 @@
+<?php
+
+declare(strict_types=1);
+
+return ['type_required' => 'Le type est requis.', 'type_invalid' => 'Type invalide.', 'title_required' => 'Le titre est requis.', 'title_ar_required' => 'Le titre arabe est requis.', 'total_score_required' => 'La note totale est requise.', 'total_score_min' => 'La note totale doit être positive.', 'passing_score_required' => 'La note de réussite est requise.', 'max_attempts_min' => 'Une tentative minimum.', 'available_from_required' => 'La date de début est requise.', 'question_type_required' => 'Le type de question est requis.', 'question_body_required' => 'La question est requise.', 'question_body_ar_required' => 'La question arabe est requise.', 'question_score_required' => 'Les points sont requis.', 'student_profile_required' => 'Le profil étudiant est requis.', 'student_profile_invalid' => 'Profil invalide.', 'answers_required' => 'Les réponses sont requises.', 'answers_invalid' => 'Format de réponses invalide.', 'score_required' => 'La note est requise.', 'score_integer' => 'La note doit être un entier.', 'score_min' => 'La note ne peut pas être négative.'];

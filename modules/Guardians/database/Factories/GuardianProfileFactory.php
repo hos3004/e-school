@@ -24,6 +24,7 @@ final class GuardianProfileFactory extends Factory
         return [
             'organization_id' => Fixtures::organizationId(),
             'user_id' => Fixtures::userId(),
+            'guardian_code' => strtoupper($this->faker->unique()->bothify('GRD-####-####')),
             'national_id_last4' => $this->faker->numerify('####'),
             'occupation' => $this->faker->randomElement(['engineer', 'teacher', 'merchant', 'physician']),
             'preferred_contact_channel' => $this->faker->randomElement(ContactChannel::cases()),

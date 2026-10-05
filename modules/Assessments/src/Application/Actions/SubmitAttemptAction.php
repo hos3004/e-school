@@ -9,6 +9,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Assessments\Domain\Events\AttemptSubmitted;
 use Modules\Assessments\Domain\Models\Assessment;
 use Modules\Assessments\Domain\Models\AssessmentAttempt;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -20,6 +21,7 @@ final readonly class SubmitAttemptAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     /**
@@ -48,11 +50,36 @@ final readonly class SubmitAttemptAction
 
         $submittedAt = CarbonImmutable::now('UTC');
 
-        $this->transaction->run(function () use ($attempt, $answers, $submittedAt): void {
+        $questionIds = $assessment->questions()->pluck('id')->map(static fn (mixed $id): string => (string) $id)->all();
+        $answerIds = array_map('strval', array_keys($answers));
+
+        if (array_diff($questionIds, $answerIds) !== [] || array_diff($answerIds, $questionIds) !== []) {
+            throw BusinessRuleViolation::make(
+                'assessments.answers_do_not_match_questions',
+                'assessments::errors.answers_do_not_match_questions',
+            );
+        }
+
+        $this->transaction->run(function () use ($attempt, $assessment, $answers, $submittedAt, $actorId): void {
             $attempt->forceFill([
                 'answers' => $answers,
                 'submitted_at' => $submittedAt,
             ])->save();
+
+            $this->audit->record(
+                organizationId: (string) $assessment->organization_id,
+                actorId: $actorId,
+                actorType: 'user',
+                action: 'assessments.attempt_submitted',
+                auditableType: 'assessment_attempt',
+                auditableId: (string) $attempt->getKey(),
+                oldValues: ['submitted_at' => null],
+                newValues: [
+                    'submitted_at' => $submittedAt->toIso8601String(),
+                    'answer_count' => count($answers),
+                ],
+                reason: __('assessments::messages.attempt_submitted_reason'),
+            );
         });
 
         $this->events->dispatch(new AttemptSubmitted(

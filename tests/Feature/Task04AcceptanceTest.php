@@ -99,6 +99,15 @@ final class Task04AcceptanceTest extends TestCase
             'program_id' => (string) $program->getKey(),
             'created_at' => now()->utc(),
         ]);
+        DB::table('teacher_courses')->insert([
+            'id' => (string) Str::ulid(),
+            'staff_profile_id' => $staffProfileId,
+            'course_id' => (string) $course->getKey(),
+            'qualified_at' => now()->subDay()->utc(),
+            'qualified_by' => (string) $teacher->getKey(),
+            'created_at' => now()->utc(),
+            'updated_at' => now()->utc(),
+        ]);
         DB::table('group_teachers')->insert([
             'id' => (string) Str::ulid(),
             'group_id' => $groupId,
@@ -236,7 +245,8 @@ final class Task04AcceptanceTest extends TestCase
             'max_score' => 100,
             'allows_late' => true,
             'late_penalty_percent' => 0,
-        ])->assertOk();
+            'reason' => 'Create the assignment for the acceptance journey.',
+        ])->assertCreated();
         $assignmentId = (string) $assignmentResponse->json('data.id');
 
         $this->actingAs($student)
@@ -254,6 +264,7 @@ final class Task04AcceptanceTest extends TestCase
             ->postJson('/api/assignment-submissions/'.$submissionId.'/grade', [
                 'score' => 95,
                 'feedback' => 'Good',
+                'reason' => 'Grade the acceptance journey submission.',
             ])
             ->assertOk()
             ->assertJsonPath('data.status', AssignmentSubmissionStatus::Graded->value);

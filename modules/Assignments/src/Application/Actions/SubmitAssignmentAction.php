@@ -9,6 +9,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Assignments\Domain\Enums\AssignmentSubmissionStatus;
 use Modules\Assignments\Domain\Events\AssignmentSubmitted;
 use Modules\Assignments\Domain\Models\AssignmentSubmission;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -25,13 +26,18 @@ final readonly class SubmitAssignmentAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     /**
      * @param array<string, mixed> $data content و attachments اختيارية
      */
-    public function execute(AssignmentSubmission $submission, array $data): AssignmentSubmission
-    {
+    public function execute(
+        AssignmentSubmission $submission,
+        array $data,
+        ?string $actorId = null,
+        ?string $reason = null,
+    ): AssignmentSubmission {
         $status = $submission->status;
 
         if (!$status->canTransitionTo(AssignmentSubmissionStatus::Submitted)
@@ -55,8 +61,9 @@ final readonly class SubmitAssignmentAction
             );
         }
 
-        $this->transaction->run(function () use ($submission, $data, $now, $isLate): void {
+        $this->transaction->run(function () use ($submission, $assignment, $data, $now, $isLate, $actorId, $reason): void {
             $target = $isLate ? AssignmentSubmissionStatus::Late : AssignmentSubmissionStatus::Submitted;
+            $before = $submission->only(['status', 'submitted_at', 'is_late', 'content', 'attachments']);
 
             $submission->forceFill([
                 'submitted_at' => $now,
@@ -65,6 +72,18 @@ final readonly class SubmitAssignmentAction
                 'attachments' => (array) ($data['attachments'] ?? []),
                 'status' => $target->value,
             ])->save();
+
+            $this->audit->record(
+                organizationId: (string) $assignment->organization_id,
+                actorId: $actorId,
+                actorType: $actorId === null ? 'system' : 'user',
+                action: 'assignments.submitted',
+                auditableType: 'assignment_submission',
+                auditableId: (string) $submission->getKey(),
+                oldValues: $before,
+                newValues: $submission->only(['status', 'submitted_at', 'is_late', 'content', 'attachments']),
+                reason: $reason ?? (string) __('assignments::messages.submission_reason'),
+            );
         });
 
         $this->events->dispatch(new AssignmentSubmitted(
@@ -73,6 +92,7 @@ final readonly class SubmitAssignmentAction
             organizationId: (string) $assignment->organization_id,
             studentProfileId: (string) $submission->student_profile_id,
             isLate: $isLate,
+            actorId: $actorId,
         ));
 
         return $submission->refresh();

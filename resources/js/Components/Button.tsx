@@ -36,13 +36,13 @@ export type ButtonProps = NativeButtonProps | ButtonLinkProps;
 
 const variantClasses: Record<ButtonVariant, string> = {
     primary:
-        'bg-[var(--ink)] text-[var(--surface)] hover:opacity-90 active:opacity-80',
+        'border border-[var(--brand)] bg-[var(--brand)] text-[var(--ink-inverse)] shadow-[0_1px_2px_rgb(20_37_54/0.12)] hover:border-[var(--brand-strong)] hover:bg-[var(--brand-strong)]',
     secondary:
-        'border border-[var(--ink-muted)] bg-[var(--surface)] text-[var(--ink)] hover:bg-[var(--surface-muted)]',
+        'border border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink)] shadow-[0_1px_2px_rgb(20_37_54/0.05)] hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand-strong)]',
     danger:
-        'border border-[var(--danger)] bg-[var(--surface)] text-[var(--ink)] hover:bg-[color-mix(in_srgb,var(--danger)_10%,var(--surface))]',
+        'border border-[var(--danger)] bg-[var(--surface)] text-[var(--danger)] hover:bg-[var(--danger-soft)]',
     ghost:
-        'bg-transparent text-[var(--ink)] hover:bg-[var(--surface-muted)]',
+        'border border-transparent bg-transparent text-[var(--ink-soft)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -64,11 +64,11 @@ function buttonClasses(
     className?: string,
 ): string {
     return classNames(
-        'inline-flex items-center justify-center gap-2 rounded-lg font-semibold',
-        'transition-colors duration-150',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]',
+        'inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-semibold',
+        'transition-[color,background-color,border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.96] motion-reduce:transform-none',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
         'focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]',
-        'disabled:cursor-not-allowed disabled:opacity-60',
+        'disabled:cursor-not-allowed disabled:opacity-55 disabled:active:scale-100',
         variantClasses[variant],
         sizeClasses[size],
         fullWidth && 'w-full',
@@ -115,7 +115,7 @@ function InertiaButtonLink({
             aria-disabled={disabled || undefined}
             className={classNames(
                 buttonClasses(variant, size, fullWidth, className),
-                disabled && 'pointer-events-none cursor-not-allowed opacity-60',
+                disabled && 'cursor-not-allowed opacity-55 active:scale-100',
             )}
             onClick={(event) => {
                 if (disabled) {
@@ -125,7 +125,7 @@ function InertiaButtonLink({
 
                 onClick?.(event);
             }}
-            tabIndex={disabled ? -1 : tabIndex}
+            tabIndex={tabIndex}
         >
             {children}
         </Link>

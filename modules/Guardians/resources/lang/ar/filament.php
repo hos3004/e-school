@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'الأسر والأوصياء',
+    'navigation_group' => 'الأشخاص',
 
     'common' => [
         'id' => 'المعرّف',

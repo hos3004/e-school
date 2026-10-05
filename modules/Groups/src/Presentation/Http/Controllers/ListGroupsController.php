@@ -21,13 +21,12 @@ final class ListGroupsController extends Controller
             $request->user()?->can('viewAny', Group::class) ?? false,
             403,
         );
+        $organizationId = $request->user()->getAttribute('organization_id');
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403);
 
         $groups = Group::query()
+            ->forOrganization($organizationId)
             ->withCount(['memberships' => fn ($query) => $query->whereNull('left_at')])
-            ->when(
-                $request->filled('organization_id'),
-                fn ($query) => $query->forOrganization((string) $request->string('organization_id')),
-            )
             ->latest()
             ->paginate((int) $request->query('per_page', '15'));
 

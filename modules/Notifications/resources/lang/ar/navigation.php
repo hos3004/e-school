@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'الإشعارات',
+    'group' => 'التواصل',
 
     'outbox' => [
         'label' => 'صندوق الإرسال',
@@ -28,5 +28,10 @@ return [
     'category_setting' => [
         'label' => 'إعداد فئة',
         'plural' => 'إعدادات الفئات والقنوات',
+    ],
+
+    'popup' => [
+        'label' => 'حملة منبثقة',
+        'plural' => 'النوافذ المنبثقة',
     ],
 ];

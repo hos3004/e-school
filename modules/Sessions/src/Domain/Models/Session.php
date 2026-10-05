@@ -22,12 +22,16 @@ use Shared\Concerns\HasUlid;
  * @property string $group_id
  * @property string $course_id
  * @property string $staff_profile_id
+ * @property string $original_teacher_id
  * @property string|null $substitute_for_staff_id
  * @property string|null $makeup_for_session_id
+ * @property bool $payroll_exempt
+ * @property int|null $payroll_rate_override_minor_units
  * @property string $session_type
  * @property SessionStatus $status
  * @property CarbonImmutable $scheduled_start
  * @property CarbonImmutable $scheduled_end
+ * @property CarbonImmutable|null $reminder_sent_at
  * @property CarbonImmutable|null $actual_start
  * @property CarbonImmutable|null $actual_end
  * @property array<string, mixed> $title
@@ -60,10 +64,13 @@ final class Session extends Model
         'original_teacher_id',
         'substitute_for_staff_id',
         'makeup_for_session_id',
+        'payroll_exempt',
+        'payroll_rate_override_minor_units',
         'session_type',
         'status',
         'scheduled_start',
         'scheduled_end',
+        'reminder_sent_at',
         'actual_start',
         'actual_end',
         'title',
@@ -81,11 +88,13 @@ final class Session extends Model
             'status' => SessionStatus::class,
             'scheduled_start' => 'immutable_datetime',
             'scheduled_end' => 'immutable_datetime',
+            'reminder_sent_at' => 'immutable_datetime',
             'actual_start' => 'immutable_datetime',
             'actual_end' => 'immutable_datetime',
             'title' => 'array',
             'cancelled_at' => 'immutable_datetime',
             'finalized_at' => 'immutable_datetime',
+            'payroll_exempt' => 'bool',
         ];
     }
 
@@ -121,9 +130,9 @@ final class Session extends Model
      * نكشفه بهذا الاسم لأن عقد العميل يتحدث عن «actual teacher»، وترك المعنى
      * ضمنيًا في اسم عمود عام كان سيربك كل من يقرأ الكود لاحقًا.
      */
-    public function actualTeacherId(): ?string
+    public function actualTeacherId(): string
     {
-        return $this->staff_profile_id === null ? null : (string) $this->staff_profile_id;
+        return (string) $this->staff_profile_id;
     }
 
     public function isCoveredBySubstitute(): bool

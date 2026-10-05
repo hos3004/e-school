@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Groups\Domain\Enums\GroupTeacherRole;
 use RuntimeException;
 
 /**
@@ -19,8 +20,6 @@ use RuntimeException;
 final class DemoDataSeeder extends Seeder
 {
     private const EMAIL_MARKER = '@demo.eschool.local';
-
-    private const GROUP_PREFIX = 'DEMO-';
 
     public function run(): void
     {
@@ -52,6 +51,7 @@ final class DemoDataSeeder extends Seeder
         $groups = $this->seedGroups(
             $organizationId,
             $academics,
+            $teachers,
             [
                 'g1' => ['teacher' => 't3', 'course' => 'quran_hifz', 'program' => 'quran'],
                 'g2' => ['teacher' => 't1', 'course' => 'quran_tajwid', 'program' => 'quran'],
@@ -92,15 +92,15 @@ final class DemoDataSeeder extends Seeder
             ? []
             : DB::table('teacher_contracts')->whereIn('staff_profile_id', $staffIds)->pluck('id')->all();
 
-        $groupIds = DB::table('groups')
-            ->where('code', 'like', self::GROUP_PREFIX.'%')
-            ->pluck('id')
-            ->all();
+        // المجموعات والبرامج تُعرَّف عبر ارتباطها بمعلمي البذرة، لا عبر بادئة الكود:
+        // الأكواد صارت قصيرة ومتسلسلة (G001) ولم تعد صالحة كعلامة تمييز.
+        $groupIds = $staffIds === []
+            ? []
+            : DB::table('group_teachers')->whereIn('staff_profile_id', $staffIds)->pluck('group_id')->unique()->all();
 
-        $programIds = DB::table('programs')
-            ->where('code', 'like', self::GROUP_PREFIX.'%')
-            ->pluck('id')
-            ->all();
+        $programIds = $groupIds === []
+            ? []
+            : DB::table('group_programs')->whereIn('group_id', $groupIds)->pluck('program_id')->unique()->all();
 
         $sessionIds = $staffIds === []
             ? []
@@ -201,7 +201,7 @@ final class DemoDataSeeder extends Seeder
             't1' => [
                 'name' => 'أ. أحمد عبد الرحمن',
                 'local' => 'ahmed.abdelrahman',
-                'code' => 'DEMO-T01',
+                'code' => 'T101',
                 'employment' => 'part_time',
                 'basis' => 'per_session',
                 'base' => null,
@@ -214,7 +214,7 @@ final class DemoDataSeeder extends Seeder
             't2' => [
                 'name' => 'أ. محمود سعيد',
                 'local' => 'mahmoud.saeed',
-                'code' => 'DEMO-T02',
+                'code' => 'T102',
                 'employment' => 'part_time',
                 'basis' => 'per_session',
                 'base' => null,
@@ -227,7 +227,7 @@ final class DemoDataSeeder extends Seeder
             't3' => [
                 'name' => 'أ. فاطمة الحسيني',
                 'local' => 'fatima.elhusseiny',
-                'code' => 'DEMO-T03',
+                'code' => 'T103',
                 'employment' => 'part_time',
                 'basis' => 'monthly_with_deductions',
                 'base' => 60000,
@@ -240,7 +240,7 @@ final class DemoDataSeeder extends Seeder
             't4' => [
                 'name' => 'أ. سارة منصور',
                 'local' => 'sara.mansour',
-                'code' => 'DEMO-T04',
+                'code' => 'T104',
                 'employment' => 'full_time',
                 'basis' => 'per_session',
                 'base' => null,
@@ -253,7 +253,7 @@ final class DemoDataSeeder extends Seeder
             't5' => [
                 'name' => 'أ. عمر خليل',
                 'local' => 'omar.khalil',
-                'code' => 'DEMO-T05',
+                'code' => 'T105',
                 'employment' => 'contractor',
                 'basis' => 'per_session',
                 'base' => null,
@@ -266,7 +266,7 @@ final class DemoDataSeeder extends Seeder
             't6' => [
                 'name' => 'أ. ليلى إبراهيم',
                 'local' => 'laila.ibrahim',
-                'code' => 'DEMO-T06',
+                'code' => 'T106',
                 'employment' => 'full_time',
                 'basis' => 'salaried',
                 'base' => 800000,
@@ -366,7 +366,7 @@ final class DemoDataSeeder extends Seeder
     {
         $programs = [
             'quran' => [
-                'code' => 'DEMO-QURAN',
+                'code' => 'P101',
                 'name' => ['ar' => 'القرآن الكريم', 'en' => 'Holy Quran'],
                 'description' => ['ar' => 'برنامج تحفيظ وتجويد متدرج لكل الأعمار.', 'en' => 'Graduated memorization and tajweed program.'],
                 'weeks' => 36,
@@ -380,18 +380,18 @@ final class DemoDataSeeder extends Seeder
                 'courses' => [
                     'quran_hifz' => [
                         'level' => 'L1',
-                        'code' => 'DEMO-QURAN-L1-HIFZ',
+                        'code' => 'C101',
                         'name' => ['ar' => 'حفظ جزء عمّ', 'en' => 'Juz Amma Memorization'],
                     ],
                     'quran_tajwid' => [
                         'level' => 'L2',
-                        'code' => 'DEMO-QURAN-L2-TAJWID',
+                        'code' => 'C102',
                         'name' => ['ar' => 'تجويد متقدم', 'en' => 'Advanced Tajweed'],
                     ],
                 ],
             ],
             'english' => [
-                'code' => 'DEMO-ENG',
+                'code' => 'P102',
                 'name' => ['ar' => 'اللغة الإنجليزية', 'en' => 'English Language'],
                 'description' => ['ar' => 'مسار قواعد ومحادثة حتى الطلاقة.', 'en' => 'Grammar and conversation track towards fluency.'],
                 'weeks' => 24,
@@ -405,18 +405,18 @@ final class DemoDataSeeder extends Seeder
                 'courses' => [
                     'eng_basic' => [
                         'level' => 'L1',
-                        'code' => 'DEMO-ENG-L1-BASIC',
+                        'code' => 'C103',
                         'name' => ['ar' => 'إنجليزيات الأساس', 'en' => 'Foundation English'],
                     ],
                     'eng_conv' => [
                         'level' => 'L2',
-                        'code' => 'DEMO-ENG-L2-CONV',
+                        'code' => 'C104',
                         'name' => ['ar' => 'محادثة متقدمة', 'en' => 'Advanced Conversation'],
                     ],
                 ],
             ],
             'coding' => [
-                'code' => 'DEMO-CODE',
+                'code' => 'P103',
                 'name' => ['ar' => 'البرمجة', 'en' => 'Programming'],
                 'description' => ['ar' => 'من أوامر بايثون الأولى إلى بناء صفحات ويب.', 'en' => 'From first Python commands to building web pages.'],
                 'weeks' => 24,
@@ -430,12 +430,12 @@ final class DemoDataSeeder extends Seeder
                 'courses' => [
                     'code_py' => [
                         'level' => 'L1',
-                        'code' => 'DEMO-CODE-L1-PY',
+                        'code' => 'C105',
                         'name' => ['ar' => 'أساسيات بايثون', 'en' => 'Python Basics'],
                     ],
                     'code_web' => [
                         'level' => 'L2',
-                        'code' => 'DEMO-CODE-L2-WEB',
+                        'code' => 'C106',
                         'name' => ['ar' => 'تطوير الويب', 'en' => 'Web Development'],
                     ],
                 ],
@@ -509,33 +509,35 @@ final class DemoDataSeeder extends Seeder
 
     /**
      * @param array<string, mixed> $academics
+     * @param array<string, array{staff_profile_id: string, contract_id: string, rate: int, resolved_via: string}> $teachers
      * @param array<string, array<string, string>> $mapping
      * @return array<string, array<string, mixed>>
      */
     private function seedGroups(
         string $organizationId,
         array $academics,
+        array $teachers,
         array $mapping,
         CarbonImmutable $now,
     ): array {
         $definitions = [
             'g1' => [
-                'code' => 'DEMO-G1',
+                'code' => 'G101',
                 'name' => ['ar' => 'حلقة القرآن — المبتدئون', 'en' => 'Quran Circle — Beginners'],
                 'capacity' => 4,
             ],
             'g2' => [
-                'code' => 'DEMO-G2',
+                'code' => 'G102',
                 'name' => ['ar' => 'حلقة القرآن — المتقدمون', 'en' => 'Quran Circle — Advanced'],
                 'capacity' => 6,
             ],
             'g3' => [
-                'code' => 'DEMO-G3',
+                'code' => 'G103',
                 'name' => ['ar' => 'مجموعة الإنجليزية المسائية', 'en' => 'Evening English Group'],
                 'capacity' => 8,
             ],
             'g4' => [
-                'code' => 'DEMO-G4',
+                'code' => 'G104',
                 'name' => ['ar' => 'مجموعة البرمجة', 'en' => 'Programming Group'],
                 'capacity' => 8,
             ],
@@ -572,9 +574,9 @@ final class DemoDataSeeder extends Seeder
             DB::table('group_teachers')->insert([
                 'id' => self::ulid(),
                 'group_id' => $groupId,
-                'staff_profile_id' => self::teacherStaffId($map['teacher']),
+                'staff_profile_id' => $teachers[$map['teacher']]['staff_profile_id'],
                 'course_id' => $academics['courses'][$map['course']]['id'],
-                'role' => 'primary',
+                'role' => GroupTeacherRole::Lead->value,
                 'assigned_from' => $startsOn,
                 'created_at' => $createdAt,
             ]);
@@ -583,25 +585,15 @@ final class DemoDataSeeder extends Seeder
                 'id' => $groupId,
                 'teacher_key' => $map['teacher'],
                 'course_key' => $map['course'],
+                'course_id' => $academics['courses'][$map['course']]['id'],
+                'course_name' => $academics['courses'][$map['course']]['name'],
+                'staff_profile_id' => $teachers[$map['teacher']]['staff_profile_id'],
                 'program_key' => $map['program'],
                 'name' => $definition['name'],
             ];
         }
 
         return $groups;
-    }
-
-    /** @var array<string, string> */
-    private static array $teacherStaffIds = [];
-
-    public static function rememberTeacherStaffId(string $teacherKey, string $staffProfileId): void
-    {
-        self::$teacherStaffIds[$teacherKey] = $staffProfileId;
-    }
-
-    private static function teacherStaffId(string $teacherKey): string
-    {
-        return self::$teacherStaffIds[$teacherKey];
     }
 
     /**
@@ -762,8 +754,8 @@ final class DemoDataSeeder extends Seeder
                 'id' => $scheduleId,
                 'organization_id' => $organizationId,
                 'group_id' => $group['id'],
-                'course_id' => self::courseIdOf($group['course_key']),
-                'staff_profile_id' => self::teacherStaffId($group['teacher_key']),
+                'course_id' => $group['course_id'],
+                'staff_profile_id' => $group['staff_profile_id'],
                 'session_type' => 'group',
                 'rrule' => 'FREQ=WEEKLY;BYDAY='.implode(',', $config['bydays']),
                 'start_time' => $config['start'],
@@ -781,24 +773,6 @@ final class DemoDataSeeder extends Seeder
         }
 
         return $schedules;
-    }
-
-    /** @var array<string, string> */
-    private static array $courseIds = [];
-
-    /**
-     * @param array<string, array<string, mixed>> $courses
-     */
-    public static function registerCourses(array $courses): void
-    {
-        foreach ($courses as $key => $course) {
-            self::$courseIds[$key] = $course['id'];
-        }
-    }
-
-    private static function courseIdOf(string $courseKey): string
-    {
-        return self::$courseIds[$courseKey];
     }
 
     /**
@@ -864,7 +838,7 @@ final class DemoDataSeeder extends Seeder
                 }
 
                 $sessionId = self::ulid();
-                $courseName = self::courseNameOf($group['course_key']);
+                $courseName = $group['course_name'];
                 $title = [
                     'ar' => $courseName['ar'].' — '.$group['name']['ar'],
                     'en' => $courseName['en'].' — '.$group['name']['en'],
@@ -875,12 +849,21 @@ final class DemoDataSeeder extends Seeder
                     'organization_id' => $organizationId,
                     'schedule_id' => $schedules[$groupKey],
                     'group_id' => $group['id'],
-                    'course_id' => self::courseIdOf($group['course_key']),
-                    'staff_profile_id' => self::teacherStaffId($group['teacher_key']),
+                    'course_id' => $group['course_id'],
+                    'staff_profile_id' => $group['staff_profile_id'],
+                    'original_teacher_id' => $group['staff_profile_id'],
                     'session_type' => 'group',
                     'status' => $status,
                     'scheduled_start' => self::ts($scheduledStart),
                     'scheduled_end' => self::ts($scheduledEnd),
+                    'actual_start' => null,
+                    'actual_end' => null,
+                    'finalized_at' => null,
+                    'finalized_by' => null,
+                    'cancelled_by' => null,
+                    'cancelled_at' => null,
+                    'cancellation_reason' => null,
+                    'notes' => null,
                     'title' => self::js($title),
                     'created_at' => self::ts($now),
                     'updated_at' => self::ts($now),
@@ -908,6 +891,7 @@ final class DemoDataSeeder extends Seeder
                 $meta[] = [
                     'row' => $row,
                     'group_key' => $groupKey,
+                    'course_name' => $group['course_name'],
                     'status' => $status,
                     'scheduled_start' => $scheduledStart,
                     'scheduled_end' => $scheduledEnd,
@@ -1118,27 +1102,6 @@ final class DemoDataSeeder extends Seeder
         return $this->groupProgramKeys[$groupKey];
     }
 
-    /** @var array<string, array{ar: string, en: string}> */
-    private static array $courseNames = [];
-
-    /**
-     * @param array<string, array{name: array{ar: string, en: string}}> $courses
-     */
-    public static function registerCourseNames(array $courses): void
-    {
-        foreach ($courses as $key => $course) {
-            self::$courseNames[$key] = $course['name'];
-        }
-    }
-
-    /**
-     * @return array{ar: string, en: string}
-     */
-    private static function courseNameOf(string $courseKey): array
-    {
-        return self::$courseNames[$courseKey];
-    }
-
     /**
      * @param array<int, array<string, mixed>> $sessions
      * @param array<string, array{staff_profile_id: string, contract_id: string, rate: int, resolved_via: string}> $teachers
@@ -1207,7 +1170,7 @@ final class DemoDataSeeder extends Seeder
                 ]),
                 'status' => 'recorded',
                 'description' => self::js([
-                    'ar' => 'مستحقات حصة '.self::courseNameOf($this->courseKeyOfGroup($session['group_key']))['ar'],
+                    'ar' => 'مستحقات حصة '.$session['course_name']['ar'],
                     'en' => 'Session earning',
                 ]),
                 'created_at' => self::ts($session['scheduled_end']),
@@ -1264,22 +1227,9 @@ final class DemoDataSeeder extends Seeder
         'g4' => 't5',
     ];
 
-    /** @var array<string, string> */
-    private array $groupCourseKeys = [
-        'g1' => 'quran_hifz',
-        'g2' => 'quran_tajwid',
-        'g3' => 'eng_conv',
-        'g4' => 'code_py',
-    ];
-
     private function teacherKeyOfGroup(string $groupKey): string
     {
         return $this->groupTeacherKeys[$groupKey];
-    }
-
-    private function courseKeyOfGroup(string $groupKey): string
-    {
-        return $this->groupCourseKeys[$groupKey];
     }
 
     private static function ulid(): string

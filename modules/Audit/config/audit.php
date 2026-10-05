@@ -28,6 +28,8 @@ return [
         'billing.*',
         'permission_changed',
         'enrollment.*',
+        'assignments.*',
+        'assessments.*',
     ],
 
     /*

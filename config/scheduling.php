@@ -8,10 +8,20 @@ declare(strict_types=1);
  * كل رقم هنا سياسة مدرسية — يُقرأ من هذا الملف أو من إعدادات المؤسسة،
  * وممنوع نسخه داخل كود الموديولات. انظر docs/13-scheduling-rules.md
  *
- * مرجع القرار: إجابات العميل — الإلغاء قبل ساعة، التأجيل قبل ربع ساعة،
+ * مرجع القرار: إجابات العميل — الإلغاء والتأجيل قبل ساعة،
  * وما دون ذلك يُحتسب تغيّبًا.
  */
 return [
+
+    /*
+     * مهلة قبل عدّ الحصة «متروكة بلا إقفال».
+     *
+     * بلا مهلة تُوسم حصة انتهت قبل دقائق بأنها متأخرة بينما المعلم قد يكون
+     * بصدد رفع تقريرها — فيمتلئ العدّاد بضجيج يفقده معناه كل مساء.
+     */
+    'closure_backlog' => [
+        'after_minutes' => 120,
+    ],
 
     /*
      * مهل الإخطار قبل موعد الحصة (بالدقائق).
@@ -20,11 +30,19 @@ return [
         // الإلغاء: يجب الإخطار قبل الموعد بـ 60 دقيقة على الأقل.
         'cancellation_minutes' => env('SCHEDULING_CANCEL_NOTICE', 60),
 
-        // التأجيل: يجب تقديم الطلب قبل الموعد بـ 15 دقيقة على الأقل.
-        'postponement_minutes' => env('SCHEDULING_POSTPONE_NOTICE', 15),
+        // التأجيل: يجب تقديم الطلب قبل الموعد بـ 60 دقيقة على الأقل.
+        'postponement_minutes' => env('SCHEDULING_POSTPONE_NOTICE', 60),
 
         // ما دون هاتين المهلتين يُسجَّل تلقائيًا كـ no_show (تغيّب بدون عذر).
         'below_notice_outcome' => 'no_show',
+    ],
+
+    /*
+     * اعتذار الطالب يخضع لنفس مهلة الساعة. في الجماعي يُعذر المشارك فقط؛
+     * وفي الفردي تصبح الحصة معتذرًا عنها.
+     */
+    'student_apology' => [
+        'min_notice_minutes' => (int) env('STUDENT_APOLOGY_MIN_NOTICE_MINUTES', 60),
     ],
 
     /*
@@ -63,6 +81,32 @@ return [
     ],
 
     /*
+     * البدء المرن للحصة الفردية.
+     *
+     * قرار العمل: بعض علاقات المعلم/الطالب الفردية قد يتراضى فيها الطرفان
+     * على تحريك وقت البدء الفعلي داخل نفس يوم الموعد المجدول (لا تغييرًا
+     * دائمًا للجدول ولا تجاوزًا لليوم نفسه). **الاختيار إداري لكل جدول على
+     * حدة** عبر `schedules.flexible_start` — لا يُفعَّل تلقائيًا لكل الحصص
+     * الفردية؛ الإدارة تحدد أي علاقة بالضبط تحتاج هذه المرونة من صفحة الطالب
+     * (assignTeacher/setFlexibleStart في ConsoleIndividualTeacherService) أو
+     * من شاشة الجدول في /v2. الموعد المجدول يبقى كما هو لأغراض التذكير
+     * والتقارير والمستحقات؛ الاختيار يوسّع فقط نافذة الدخول لتغطي اليوم
+     * المحلي كاملًا للمعلم والطالب معًا بدل ±دقائق حول الموعد. الحصص الجماعية
+     * لا تحمل هذا الاختيار أبدًا — الأفعال (Create/UpdateScheduleAction)
+     * تفرضه false دائمًا لها، بصرف النظر عن أي قيمة تصل من المستدعي.
+     *
+     * `enabled` هنا مفتاح إيقاف عام فوق اختيار الجدول — يعطّل الميزة كلها
+     * فورًا في حادث تشغيلي دون تعديل كل الجداول المفعّلة واحدًا واحدًا.
+     *
+     * لا يُغيَّر شرط الحضور: الحصة لا تُعتمَد completed إلا بدخول المعلم
+     * (in_progress) وحضور الطالب فعليًا؛ غياب أي منهما يتبع مسار
+     * no_show/الاعتماد الإداري الحالي دون تعديل.
+     */
+    'flexible_individual_start' => [
+        'enabled' => (bool) env('SCHEDULING_FLEXIBLE_INDIVIDUAL_START', true),
+    ],
+
+    /*
      * منع التعارضات — تُفحص قبل الحفظ وتُفرض على مستوى قاعدة البيانات
      * بقيد EXCLUDE على مدى الوقت.
      */
@@ -82,7 +126,26 @@ return [
      * 75 دقيقة هو الطول الحالي لحصص القرآن الجماعية.
      */
     'session_durations' => [30, 45, 60, 75, 90, 120],
+    'individual_session_durations' => [25, 35, 55],
     'default_duration_minutes' => 60,
+    'default_individual_duration_minutes' => 35,
+
+    'booking_slots' => [
+        'interval_minutes' => 5,
+        'day_start' => '00:00',
+        'day_end' => '24:00',
+        'preview_limit' => 8,
+    ],
+
+    'individual_quran' => [
+        'course_code' => 'C-QURAN-IND',
+        'bulk_max_students' => 50,
+        'max_interval_weeks' => 12,
+        'reason_max_length' => 1000,
+        // نافذة العرض الافتراضية في صفحة التسكين؛ لا تغيّر إتاحة المعلم الفعلية.
+        'selection_window_start' => '06:00',
+        'selection_window_end' => '23:00',
+    ],
 
     /*
      * الجدولة المتكررة.
@@ -94,6 +157,9 @@ return [
         // توليد الحصص الفعلية من قاعدة التكرار قبل الموعد بهذه المدة.
         'materialize_ahead_days' => 60,
         'skip_holidays' => true,
+
+        // الأحداث داخل هذه النافذة لا تتغير عند تعديل القالب.
+        'edit_lock_hours' => 48,
     ],
 
     /*
@@ -103,29 +169,131 @@ return [
     'auto_finalize_after_minutes' => 30,
 
     /*
+     * إنهاء الحصة الجارية تلقائيًا (in_progress → awaiting_review) بعد موعد
+     * نهايتها بهذه الدقائق، فتظهر للمعلم في كشوف الحضور المعلّقة. لا تقل عن
+     * virtual-classroom.join_window.after_minutes حتى لا تُغلق حصة ما زال
+     * دخولها مسموحًا.
+     */
+    'auto_end' => [
+        'after_minutes' => (int) env('SESSION_AUTO_END_AFTER_MINUTES', 15),
+        'batch_size' => 200,
+    ],
+
+    /*
+     * الاعتماد الآلي للحصص المنتظرة المراجعة.
+     *
+     * قيدة المستحقات لا تُعدَّل بعد إنشائها، فلا يُعتمد آليًا إلا ما اكتمل
+     * دليله: تقرير المعلم ورصد حضور لكل مشارك. ما نقص دليله يبقى معروضًا
+     * في شاشة الاعتماد الإداري ليقرره إنسان بسبب مكتوب.
+     *
+     * المهلة تُقاس من نهاية الحصة المجدولة، وهي أطول من مهلة الإغلاق الآلي
+     * لتترك للمعلم وقتًا يكتب فيه تقريره قبل أن يُقفل عليه الباب.
+     */
+    'auto_finalize' => [
+        'enabled' => (bool) env('SESSION_AUTO_FINALIZE_ENABLED', true),
+        'after_minutes' => (int) env('SESSION_AUTO_FINALIZE_AFTER_MINUTES', 720),
+        'batch_size' => 100,
+        'require_report' => true,
+        'require_attendance' => true,
+
+        /*
+         * حالات الحضور التي تعني «لم يحضر». إذا كان كل المشاركين عليها فنتيجة
+         * الحصة `no_show` لا `completed`. تعيش هنا لا في الكود لأنها قرار
+         * مدرسة، ولأن موديول Sessions لا يستورد enum موديول Attendance.
+         */
+        'absent_attendance_statuses' => ['no_show', 'absent'],
+
+        /*
+         * حالات تعني أن الحصة **لم تُقَم**. وجود أي منها يمنع الاعتماد الآلي
+         * تمامًا: `AttendanceStatus::NotHeld` هي الحالة الوحيدة التي تُرجع
+         * `teacherStillEarns() === false`، فاعتمادها آليًا يدفع أجر حصة
+         * تقول قواعد المجال إنها لم تحدث — والدفتر append-only فلا تصحيح
+         * إلا بقيدة تسوية. تُترك لقرار إداري.
+         */
+        'blocking_attendance_statuses' => ['not_held'],
+    ],
+
+    /*
      * التذكيرات قبل الحصة (بالدقائق قبل البداية).
      */
     'reminders' => [
         'student' => [1440, 60, 10],
-        'teacher' => [1440, 30],
+        'teacher' => [1440, 60, 30],
         'guardian' => [1440],
+    ],
+
+    /*
+     * عامل إرسال تذكير البريد قبل الحصة. يحتفظ كل صف حصة بعلامة الإرسال
+     * لضمان عدم تكرار التذكير عند تشغيل المجدول كل دقيقة.
+     */
+    'reminder_dispatch' => [
+        'before_minutes' => 60,
+        'batch_size' => 200,
+
+        /*
+         * مراحل التذكير قبل الحصة. لكل مرحلة مفتاح حدث مستقل في
+         * config('notifications.events') وقالب مستقل، وصفّ واحد في
+         * session_reminder_dispatches يمنع تكرارها للحصة نفسها.
+         *
+         * type = approaching → تنبيه عام للطرفين.
+         * type = join_link   → رابط دخول يخصّ جمهورًا بعينه.
+         *
+         * قيد لا يجوز كسره: before_minutes لمرحلة رابط الطالب يجب ألا يسبق
+         * نافذة الدخول في config('virtual-classroom.join_window.before_minutes')،
+         * وإلا وصل الرابط قبل أن يقبله الفصل فيرى الطالب رسالة رفض.
+         */
+        'stages' => [
+            [
+                'key' => 'session.approaching',
+                'type' => 'approaching',
+                'audience' => 'all',
+                'before_minutes' => (int) env('SESSION_REMINDER_BEFORE_MINUTES', 120),
+            ],
+            [
+                'key' => 'session.join_link.teacher',
+                'type' => 'join_link',
+                'audience' => 'teacher',
+                'before_minutes' => (int) env('SESSION_JOIN_LINK_BEFORE_MINUTES', 15),
+            ],
+            [
+                'key' => 'session.join_link.student',
+                'type' => 'join_link',
+                'audience' => 'student',
+                'before_minutes' => (int) env('SESSION_JOIN_LINK_BEFORE_MINUTES', 15),
+            ],
+        ],
+
+        // أسماء المسارات إعداد لا كود، حتى لا يعرف الموديول بوابة بعينها.
+        'teacher_session_route' => 'learning.teacher.sessions.show',
+        'student_link_route' => 'classroom.student-link',
+    ],
+
+    /*
+     * المراسلة اليدوية: سقف مسح الجداول عند بناء قوائم اختيار الهدف.
+     * سقف حماية من تحميل كل الجداول، وليس حدًا لعدد النتائج المعروضة.
+     */
+    'messaging' => [
+        'schedule_scan_limit' => (int) env('MESSAGING_SCHEDULE_SCAN_LIMIT', 500),
+    ],
+
+    'notification_summary' => [
+        'max_sessions' => 200,
     ],
 
     /*
      * اعتذار المعلم عن الحصة.
      *
-     * قاعدة العميل 2026-08-22: الاعتذار **لا يُلغي الحصة**. بعد اعتماد
-     * المشرف يبدأ البحث عن بديل، ويظل المعلم الأصلي مسجَّلًا في الحصة.
+     * الاعتذار **لا يُلغي الحصة** ويُعتمد فورًا دون موافقة إدارية.
+     * يبدأ البحث عن بديل، ويظل المعلم الأصلي مسجَّلًا في الحصة.
      * سُلَّم المتابعة والنافذة المتحركة في config/discipline.php ('teacher').
      */
     'apology' => [
         'requires_reason' => true,
-        'requires_approval' => true,
+        'requires_approval' => false,
         'approver_permission' => 'session.apology.approve',
 
-        // أقل مهلة قبل الحصة لتقديم اعتذار (بالدقائق). ما دونها يُقبل لكنه
-        // يُعلَّم late_notice ويظهر للمشرف.
-        'min_notice_minutes' => (int) env('APOLOGY_MIN_NOTICE_MINUTES', 120),
+        // الاعتذار يجب أن يصل قبل الحصة بساعة على الأقل.
+        'min_notice_minutes' => (int) env('APOLOGY_MIN_NOTICE_MINUTES', 60),
 
         // مهلة رد المشرف قبل تصعيد الطلب (بالساعات).
         'approver_sla_hours' => 6,
@@ -221,5 +389,28 @@ return [
 
         // الجدولة خارج الإتاحة المعلنة: warn (تحذير للإدارة) أو block.
         'outside_declared' => env('AVAILABILITY_OUTSIDE_DECLARED', 'warn'),
+
+        // الحصة الفردية لا تُحجز إلا داخل إتاحة معتمدة للمعلم.
+        'individual_requires_declared' => true,
+    ],
+
+    'admin_hub' => [
+        'max_sessions' => 40,
+        'max_history' => 30,
+    ],
+
+    /*
+     * تغيير الموعد الدائم بطلب المعلم.
+     *
+     * قرار العميل: المعلم يقترح موعدًا أسبوعيًا جديدًا لقالب الجدول، ولا يسري
+     * إلا بقبول **كل** طلاب الكورس؛ ويُخطر المشرف والإدارة عند الطلب وعند
+     * النتيجة. التغيير لا يمس الحصص داخل نافذة recurrence.edit_lock_hours.
+     */
+    'permanent_change' => [
+        'requires_all_students_approval' => true,
+        'notify_admin_on_request' => true,
+
+        // مهلة رد الطلاب قبل انقضاء الطلب (بالساعات).
+        'student_response_sla_hours' => (int) env('SCHEDULE_CHANGE_STUDENT_SLA_HOURS', 72),
     ],
 ];

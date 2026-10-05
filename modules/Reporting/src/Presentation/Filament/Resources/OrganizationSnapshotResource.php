@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Reporting\Presentation\Filament\Resources;
 
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -15,9 +17,11 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Reporting\Application\Actions\RecordOrganizationSnapshotAction;
 use Modules\Reporting\Domain\Enums\SnapshotType;
 use Modules\Reporting\Domain\Models\OrganizationSnapshot;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد اللقطات التنظيمية — قراءة فقط، والبناء عبر الإجراء المجدول.
@@ -32,7 +36,12 @@ final class OrganizationSnapshotResource extends Resource
 
     protected static ?int $navigationSort = 90;
 
-    public static function getNavigationGroup(): ?string
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
+    public static function getNavigationGroup(): string
     {
         return __('reporting::navigation.group');
     }
@@ -99,7 +108,11 @@ final class OrganizationSnapshotResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'reporting::origin.snapshot',
+            'heroicon-o-building-office-2',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('reporting::fields.id'))
@@ -150,6 +163,49 @@ final class OrganizationSnapshotResource extends Resource
                         ->mapWithKeys(fn (SnapshotType $type): array => [$type->value => $type->label()])
                         ->all()),
             ])
+            ->headerActions([self::captureAction()])
             ->defaultSort('snapshot_date', direction: 'desc');
+    }
+
+    /**
+     * التقاط لقطة اليوم يدويًا.
+     *
+     * `RecordOrganizationSnapshotAction` كان بلا زر، فلم يكن أمام المشرف سوى
+     * انتظار الالتقاط الدوري. اللقطة idempotent لليوم نفسه: تُحدَّث ولا تتكرر.
+     */
+    public static function captureAction(): Action
+    {
+        return Action::make('capture_snapshot')
+            ->label(__('reporting::fields.capture_snapshot'))
+            ->icon('heroicon-m-camera')
+            ->color('primary')
+            ->authorize('create', OrganizationSnapshot::class)
+            ->form([
+                DatePicker::make('snapshot_date')
+                    ->label(__('reporting::fields.snapshot_date'))
+                    ->default(now('UTC')->toDateString())
+                    ->required(),
+            ])
+            ->action(function (array $data): void {
+                app(RecordOrganizationSnapshotAction::class)->execute(
+                    (string) session('organization_id'),
+                    ['snapshot_date' => (string) $data['snapshot_date']],
+                );
+
+                Notification::make()
+                    ->title(__('reporting::fields.snapshot_captured'))
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => OrganizationSnapshotResource\Pages\ListOrganizationSnapshots::route('/'),
+        ];
     }
 }

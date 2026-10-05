@@ -18,6 +18,7 @@ return [
     'permission_in_use' => 'The permission ":name" cannot be deleted because it is attached to roles or models.',
     'permission_already_granted' => 'This permission is already granted to the target model.',
     'permission_not_granted' => 'This permission is not granted to the target model.',
+    'permission_not_optional' => 'This permission is not one of the optional permissions that may be granted directly to an account.',
 
     'guard_mismatch' => 'The permission ":name" does not belong to the role guard.',
 ];

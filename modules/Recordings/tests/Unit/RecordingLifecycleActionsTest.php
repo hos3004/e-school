@@ -13,13 +13,12 @@ use Modules\Recordings\Domain\Events\RecordingArchived;
 use Modules\Recordings\Domain\Events\RecordingBecameReady;
 use Modules\Recordings\Domain\Events\RecordingDeleted;
 use Modules\Recordings\Domain\Models\Recording;
-use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
+use Modules\Recordings\Tests\RecordingTestContext;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
-uses(CreatesRecordingContext::class);
-
 beforeEach(function (): void {
+    /** @var RecordingTestContext $this */
     $this->context = $this->createSessionWithClassroom();
 });
 
@@ -79,7 +78,7 @@ it('expires recordings past retention according to the configured policy', funct
     $processed = app(ExpireRecordingsAction::class)->execute();
 
     expect($processed)->toContain((string) $pastReady->id)
-        ->not->toContain((string) $withinRetention->id)
+        ->and(in_array((string) $withinRetention->id, $processed, true))->toBeFalse()
         ->and($pastReady->refresh()->status)->toBe(RecordingStatus::Expired)
         ->and($withinRetention->refresh()->status)->toBe(RecordingStatus::Ready);
 });

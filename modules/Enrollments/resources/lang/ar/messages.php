@@ -7,4 +7,6 @@ declare(strict_types=1);
 | تُستهلك عبر __('enrollments::messages.key') — ولا نص ظاهر خارج ملفات الترجمة.
 */
 
-return [];
+return [
+    'automatic_discipline_freeze' => 'تجميد تلقائي بعد :threshold غيابات محتسبة خلال نافذة :window.',
+];

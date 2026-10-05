@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\Attendance\Infrastructure\Providers;
 
 use Modules\Attendance\Application\Policies\AttendancePolicy;
+use Modules\Attendance\Application\Queries\AttendanceAdministrationQueryService;
+use Modules\Attendance\Application\Queries\AttendanceOperationsQueryService;
+use Modules\Attendance\Domain\Contracts\AttendanceAdministrationQueries;
 use Modules\Attendance\Domain\Models\Attendance;
 use Shared\Module\BaseModuleServiceProvider;
 
@@ -45,6 +48,14 @@ final class AttendanceServiceProvider extends BaseModuleServiceProvider
      */
     protected function bindings(): array
     {
-        return [];
+        return [
+            AttendanceAdministrationQueries::class => AttendanceAdministrationQueryService::class,
+        ];
+    }
+
+    /** @return array<class-string, class-string> */
+    protected function scopedBindings(): array
+    {
+        return [AttendanceOperationsQueryService::class => AttendanceOperationsQueryService::class];
     }
 }

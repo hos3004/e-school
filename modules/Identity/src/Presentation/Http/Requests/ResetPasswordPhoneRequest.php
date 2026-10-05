@@ -15,7 +15,7 @@ final class ResetPasswordPhoneRequest extends FormRequest
     }
 
     /**
-     * @return array<string, list<string>>
+     * @return array<string, list<string|Password>>
      */
     public function rules(): array
     {

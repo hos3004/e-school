@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\Groups\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Arr;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Groups\Domain\Enums\GroupStatus;
 use Modules\Groups\Domain\Events\GroupCreated;
 use Modules\Groups\Domain\Models\Group;
@@ -20,26 +22,46 @@ final readonly class CreateGroupAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     /**
      * @param array<string, mixed> $data بيانات المجموعة بعد تحقّق FormRequest
      */
-    public function execute(array $data): Group
+    public function execute(array $data, ?string $actorId = null, ?string $reason = null): Group
     {
         $code = (string) $data['code'];
         $organizationId = (string) $data['organization_id'];
-        $startsOn = (string) $data['starts_on'];
-        $endsOn = isset($data['ends_on']) && $data['ends_on'] !== null ? (string) $data['ends_on'] : null;
+        // تاريخ البدء مؤجَّل في المسودة؛ يُستوفى قبل التفعيل لا عند الإنشاء.
+        $startsOn = isset($data['starts_on']) ? (string) $data['starts_on'] : null;
+        $endsOn = isset($data['ends_on']) ? (string) $data['ends_on'] : null;
 
         $this->assertCodeAvailable($code);
         $this->assertEndsAfterStarts($startsOn, $endsOn);
 
-        $group = $this->transaction->run(function () use ($data): Group {
+        $group = $this->transaction->run(function () use ($data, $actorId, $reason): Group {
             $group = new Group;
-            $group->fill($data);
+            $group->fill(Arr::except($data, ['reason']));
             $group->status = GroupStatus::Planning;
             $group->save();
+
+            if ($actorId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: (string) $group->organization_id,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'groups.group_created',
+                    auditableType: 'groups',
+                    auditableId: (string) $group->getKey(),
+                    oldValues: null,
+                    newValues: [
+                        'code' => $group->code,
+                        'capacity' => $group->capacity,
+                        'status' => $group->status->value,
+                    ],
+                    reason: trim($reason),
+                );
+            }
 
             return $group;
         });
@@ -71,9 +93,9 @@ final readonly class CreateGroupAction
         }
     }
 
-    private function assertEndsAfterStarts(string $startsOn, ?string $endsOn): void
+    private function assertEndsAfterStarts(?string $startsOn, ?string $endsOn): void
     {
-        if ($endsOn === null) {
+        if ($startsOn === null || $endsOn === null) {
             return;
         }
 

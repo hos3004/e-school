@@ -5,14 +5,21 @@ declare(strict_types=1);
 namespace Modules\Payroll\Presentation\Filament\Resources;
 
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Payroll\Application\Actions\ReleaseDeferredEntriesAction;
+use Modules\Payroll\Domain\Enums\PayrollEntryStatus;
 use Modules\Payroll\Domain\Models\PayrollEntry;
+use Modules\Staff\Domain\Contracts\StaffQueries;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * قيود المستحقات — **للعرض فقط**.
@@ -30,7 +37,12 @@ final class PayrollEntryResource extends Resource
 
     protected static ?int $navigationSort = 80;
 
-    public static function getNavigationGroup(): ?string
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
+    public static function getNavigationGroup(): string
     {
         return __('payroll::navigation.group');
     }
@@ -73,7 +85,12 @@ final class PayrollEntryResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'payroll::origin.entry',
+            'heroicon-o-banknotes',
+            'filament.admin.resources.sessions.index',
+        )
             ->columns([
                 TextColumn::make('created_at')
                     ->label(__('payroll::filament.entry.created_at'))
@@ -82,14 +99,19 @@ final class PayrollEntryResource extends Resource
 
                 TextColumn::make('staff_profile_id')
                     ->label(__('payroll::filament.entry.staff'))
+                    // اسم المعلم بدل ULID من ٢٦ خانة. الأسماء تُجلب دفعة واحدة
+                    // لكل صفحة عبر عقد Staff العام تفاديًا لـ N+1.
+                    ->formatStateUsing(fn (?string $state): string => self::teacherName($state))
                     ->searchable(),
 
                 TextColumn::make('entry_type')
                     ->label(__('payroll::filament.entry.type'))
+                    ->formatStateUsing(fn (?string $state): string => self::translated('payroll::filament.entry_type', $state))
                     ->badge(),
 
                 TextColumn::make('outcome_key')
                     ->label(__('payroll::filament.entry.outcome'))
+                    ->formatStateUsing(fn (?string $state): string => self::translated('payroll::outcomes', $state))
                     ->toggleable(),
 
                 TextColumn::make('amount')
@@ -104,7 +126,17 @@ final class PayrollEntryResource extends Resource
 
                 TextColumn::make('status')
                     ->label(__('payroll::filament.entry.status'))
-                    ->badge(),
+                    ->formatStateUsing(fn (PayrollEntryStatus|string|null $state): string => $state instanceof PayrollEntryStatus
+                        ? $state->label()
+                        : (PayrollEntryStatus::tryFrom((string) $state)?->label() ?? (string) $state))
+                    ->badge()
+                    ->color(fn (PayrollEntryStatus|string|null $state): string => match (
+                        $state instanceof PayrollEntryStatus ? $state : PayrollEntryStatus::tryFrom((string) $state)
+                    ) {
+                        PayrollEntryStatus::Released => 'success',
+                        PayrollEntryStatus::Deferred => 'warning',
+                        default => 'gray',
+                    }),
 
                 TextColumn::make('session_id')
                     ->label(__('payroll::filament.entry.session'))
@@ -121,7 +153,49 @@ final class PayrollEntryResource extends Resource
                         'adjustment' => __('payroll::filament.entry_type.adjustment'),
                     ]),
             ])
+            ->recordActions([self::releaseDeferredAction()])
             ->defaultSort('created_at', 'desc');
+    }
+
+    /**
+     * تحرير المستحق المؤجَّل بعد إقامة حصة التلافي.
+     *
+     * `ReleaseDeferredEntriesAction` كان بلا زر، فيبقى مستحق المعلم معلّقًا في
+     * حالة `deferred` بلا مسار إغلاق من اللوحة رغم إقامة الحصة.
+     *
+     * القيدة نفسها تحمل حصة التلافي والمعلم، فلا حاجة لسؤال المستخدم عنهما.
+     * والدفتر append-only فالتحرير انتقال حالة موثّق لا تعديل مبلغ.
+     */
+    public static function releaseDeferredAction(): Action
+    {
+        return Action::make('release_deferred')
+            ->label(__('payroll::filament.release_deferred'))
+            ->icon('heroicon-m-lock-open')
+            ->color('primary')
+            ->authorize('release')
+            ->visible(fn (PayrollEntry $record): bool => $record->status === PayrollEntryStatus::Deferred
+                && $record->deferred_until_session_id !== null)
+            ->form([
+                Textarea::make('reason')
+                    ->label(__('payroll::filament.release_reason'))
+                    ->required()
+                    ->minLength(3)
+                    ->maxLength(1000),
+            ])
+            ->action(function (PayrollEntry $record, array $data): void {
+                app(ReleaseDeferredEntriesAction::class)->execute(
+                    (string) $record->organization_id,
+                    (string) $record->deferred_until_session_id,
+                    (string) $record->staff_profile_id,
+                    (string) auth()->id(),
+                    (string) $data['reason'],
+                );
+
+                Notification::make()
+                    ->title(__('payroll::filament.released'))
+                    ->success()
+                    ->send();
+            });
     }
 
     /**
@@ -133,4 +207,51 @@ final class PayrollEntryResource extends Resource
             'index' => PayrollEntryResource\Pages\ListPayrollEntries::route('/'),
         ];
     }
+
+    /**
+     * ترجمة مفتاح مخزَّن؛ المفتاح نفسه هو البديل حين تنقص الترجمة، فلا يظهر
+     * صف فارغ لقيمة موجودة في قاعدة البيانات.
+     */
+    private static function translated(string $group, ?string $key): string
+    {
+        if ($key === null || $key === '') {
+            return '—';
+        }
+
+        $translation = __("{$group}.{$key}");
+
+        return is_string($translation) && $translation !== "{$group}.{$key}"
+            ? $translation
+            : $key;
+    }
+
+    /**
+     * أسماء المعلمين، مُحمَّلة مرة واحدة لكل طلب — لا استعلام لكل صف.
+     */
+    private static function teacherName(?string $staffProfileId): string
+    {
+        if ($staffProfileId === null || $staffProfileId === '') {
+            return '—';
+        }
+
+        $organizationId = data_get(auth()->user(), 'organization_id');
+
+        if (!is_string($organizationId) || $organizationId === '') {
+            return $staffProfileId;
+        }
+
+        if (self::$teacherNames === null) {
+            /** @var StaffQueries $staff */
+            $staff = app(StaffQueries::class);
+            self::$teacherNames = $staff->namesForProfiles(
+                $organizationId,
+                $staff->profileIdsForOrganization($organizationId),
+            );
+        }
+
+        return self::$teacherNames[$staffProfileId] ?? $staffProfileId;
+    }
+
+    /** @var array<string, string>|null */
+    private static ?array $teacherNames = null;
 }

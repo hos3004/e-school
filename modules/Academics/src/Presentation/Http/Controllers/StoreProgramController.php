@@ -21,7 +21,13 @@ final class StoreProgramController extends Controller
 
     public function __invoke(StoreProgramRequest $request): JsonResponse
     {
-        $program = $this->action->execute($request->validated());
+        $data = $request->validated();
+        $data['organization_id'] = (string) $request->user()->organization_id;
+        $program = $this->action->execute(
+            $data,
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return ProgramResource::make($program)
             ->response()

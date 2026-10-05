@@ -26,7 +26,11 @@ final class EndSessionController extends Controller
 
         Gate::authorize('end', $sessionModel);
 
-        $this->action->execute($sessionModel);
+        $this->action->execute(
+            $sessionModel,
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return new SessionResource($sessionModel->refresh());
     }

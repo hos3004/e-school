@@ -2,93 +2,68 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Modules\Academics\Application\Policies\CoursePolicy;
 use Modules\Academics\Application\Policies\LevelPolicy;
 use Modules\Academics\Application\Policies\ProgramPolicy;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
+use Modules\Identity\Domain\Models\User;
 
-it('grants program access through declared abilities only', function (): void {
-    $allowed = new class
-    {
-        public function can(string $ability): bool
-        {
-            return str_contains($ability, 'view');
-        }
+function academicPolicyUser(string $organizationId): User
+{
+    $user = new User;
+    $user->forceFill([
+        'id' => (string) Str::ulid(),
+        'organization_id' => $organizationId,
+    ]);
 
-        public function getAuthIdentifier(): string
-        {
-            return 'user-1';
-        }
-    };
+    return $user;
+}
 
-    $denied = new class
-    {
-        public function can(string $ability): bool
-        {
-            return false;
-        }
-    };
-
+it('grants program access only through the declared permission and tenant', function (): void {
+    Gate::define('program.manage', static fn (): bool => true);
+    $organizationId = (string) Str::ulid();
+    $user = academicPolicyUser($organizationId);
+    $program = new Program(['organization_id' => $organizationId]);
+    $foreign = new Program(['organization_id' => (string) Str::ulid()]);
     $policy = new ProgramPolicy;
-    $program = Program::factory()->make();
 
-    expect($policy->viewAny($allowed))->toBeTrue()
-        ->and($policy->view($allowed, $program))->toBeTrue()
-        ->and($policy->create($allowed))->toBeFalse()
-        ->and($policy->update($denied, $program))->toBeFalse()
-        ->and($policy->delete($denied, $program))->toBeFalse();
+    expect($policy->viewAny($user))->toBeTrue()
+        ->and($policy->create($user))->toBeTrue()
+        ->and($policy->view($user, $program))->toBeTrue()
+        ->and($policy->update($user, $foreign))->toBeFalse()
+        ->and($policy->delete($user, $foreign))->toBeFalse();
 });
 
-it('gates level reorder behind its own ability', function (): void {
-    $allowed = new class
-    {
-        public function can(string $ability): bool
-        {
-            return $ability === 'academics.levels.reorder';
-        }
-    };
-
-    $denied = new class
-    {
-        public function can(string $ability): bool
-        {
-            return false;
-        }
-    };
-
+it('scopes level access through the parent program organization', function (): void {
+    Gate::define('program.manage', static fn (): bool => true);
+    $organizationId = (string) Str::ulid();
+    $user = academicPolicyUser($organizationId);
+    $level = new Level;
+    $level->setRelation('program', new Program(['organization_id' => $organizationId]));
+    $foreign = new Level;
+    $foreign->setRelation('program', new Program(['organization_id' => (string) Str::ulid()]));
     $policy = new LevelPolicy;
-    $level = Level::factory()->make();
 
-    expect($policy->reorder($allowed))->toBeTrue()
-        ->and($policy->reorder($denied))->toBeFalse()
-        ->and($policy->create($allowed))->toBeFalse()
-        ->and($policy->update($allowed, $level))->toBeFalse();
+    expect($policy->reorder($user))->toBeTrue()
+        ->and($policy->create($user))->toBeTrue()
+        ->and($policy->update($user, $level))->toBeTrue()
+        ->and($policy->view($user, $foreign))->toBeFalse();
 });
 
-it('separates course archive from update abilities', function (): void {
-    $archiverOnly = new class
-    {
-        public function can(string $ability): bool
-        {
-            return $ability === 'academics.courses.archive';
-        }
-    };
-
-    $updaterOnly = new class
-    {
-        public function can(string $ability): bool
-        {
-            return $ability === 'academics.courses.update';
-        }
-    };
-
+it('scopes course management to the actor organization', function (): void {
+    Gate::define('course.manage', static fn (): bool => true);
+    $organizationId = (string) Str::ulid();
+    $user = academicPolicyUser($organizationId);
+    $course = new Course(['organization_id' => $organizationId]);
+    $foreign = new Course(['organization_id' => (string) Str::ulid()]);
     $policy = new CoursePolicy;
-    $course = Course::factory()->make();
 
-    expect($policy->delete($archiverOnly, $course))->toBeTrue()
-        ->and($policy->update($archiverOnly, $course))->toBeFalse()
-        ->and($policy->update($updaterOnly, $course))->toBeTrue()
-        ->and($policy->delete($updaterOnly, $course))->toBeFalse();
+    expect($policy->create($user))->toBeTrue()
+        ->and($policy->view($user, $course))->toBeTrue()
+        ->and($policy->update($user, $foreign))->toBeFalse()
+        ->and($policy->delete($user, $foreign))->toBeFalse();
 });

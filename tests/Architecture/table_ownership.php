@@ -14,6 +14,7 @@ declare(strict_types=1);
  * أي جدول جديد يجب أن يُسجَّل هنا أولاً، وإلا ستفشل اختبارات المعمارية.
  */
 return [
+    'pending_teaching_assignments' => 'Scheduling',
     // Organization
     'organizations' => 'Organization',
     'organization_settings' => 'Organization',
@@ -27,6 +28,7 @@ return [
     'user_devices' => 'Identity',
     'password_reset_tokens' => 'Identity',
     'phone_password_reset_tokens' => 'Identity',
+    'personal_access_tokens' => 'Identity',
 
     // AccessControl
     'roles' => 'AccessControl',
@@ -44,6 +46,8 @@ return [
     // Students
     'student_profiles' => 'Students',
     'registration_applications' => 'Students',
+    'registration_forms' => 'Students',
+    'registration_questions' => 'Students',
 
     // Guardians
     'guardian_profiles' => 'Guardians',
@@ -77,10 +81,14 @@ return [
 
     // Content
     'course_materials' => 'Content',
+    'course_material_versions' => 'Content',
 
     // Scheduling
     'schedules' => 'Scheduling',
+    'schedule_weekly_slots' => 'Scheduling',
     'postponement_requests' => 'Scheduling',
+    'schedule_change_requests' => 'Scheduling',
+    'schedule_change_approvals' => 'Scheduling',
 
     // Sessions
     'sessions' => 'Sessions',
@@ -88,6 +96,7 @@ return [
     'teacher_apologies' => 'Sessions',
     'session_status_history' => 'Sessions',
     'session_participants' => 'Sessions',
+    'session_reminder_dispatches' => 'Sessions',
 
     // Attendance
     'attendances' => 'Attendance',
@@ -132,12 +141,19 @@ return [
     'messages' => 'Messaging',
     'class_wall_*' => 'Messaging',
     'whatsapp_inbound' => 'Messaging',
+    'whatsapp_campaigns' => 'Messaging',
+    'whatsapp_campaign_recipients' => 'Messaging',
+    'whatsapp_campaign_media' => 'Messaging',
 
     // Notifications
     'notification_outbox' => 'Notifications',
     'notification_delivery_attempts' => 'Notifications',
     'notification_preferences' => 'Notifications',
     'notification_templates' => 'Notifications',
+    'notification_category_settings' => 'Notifications',
+    'popup_campaigns' => 'Notifications',
+    'popup_campaign_media' => 'Notifications',
+    'popup_campaign_user_state' => 'Notifications',
 
     // Payroll
     'payroll_periods' => 'Payroll',
@@ -154,4 +170,13 @@ return [
 
     // Reporting — Read Models فقط
     'report_*' => 'Reporting',
+    'reporting_program_digest_recipients' => 'Reporting',
+
+    // SupportBot
+    'support_bot_entries' => 'SupportBot',
+    'support_bot_rules' => 'SupportBot',
+    'support_bot_conversations' => 'SupportBot',
+    'support_bot_messages' => 'SupportBot',
+    'support_bot_account_access' => 'SupportBot',
+    'support_bot_usage' => 'SupportBot',
 ];

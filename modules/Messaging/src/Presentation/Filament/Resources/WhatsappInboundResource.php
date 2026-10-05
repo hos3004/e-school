@@ -16,6 +16,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Messaging\Domain\Models\WhatsappInbound;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد صندوق رسائل واتساب الواردة في لوحة الإدارة.
@@ -30,7 +31,12 @@ final class WhatsappInboundResource extends Resource
 
     protected static ?int $navigationSort = 70;
 
-    public static function getNavigationGroup(): ?string
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
+    public static function getNavigationGroup(): string
     {
         return __('messaging::navigation.group');
     }
@@ -81,7 +87,11 @@ final class WhatsappInboundResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'messaging::origin.whatsapp',
+            'heroicon-o-device-phone-mobile',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('messaging::fields.id'))
@@ -118,5 +128,15 @@ final class WhatsappInboundResource extends Resource
                     ),
             ])
             ->defaultSort('received_at', 'desc');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => WhatsappInboundResource\Pages\ListWhatsappInbounds::route('/'),
+        ];
     }
 }

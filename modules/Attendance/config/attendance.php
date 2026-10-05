@@ -11,6 +11,20 @@ declare(strict_types=1);
 
 return [
 
+    'admin_hub' => [
+        'max_history' => 25,
+    ],
+
+    'record' => [
+        'reason_min_chars' => 5,
+        'reason_max_chars' => 1000,
+    ],
+
+    'confirm' => [
+        'reason_min_chars' => 5,
+        'reason_max_chars' => 1000,
+    ],
+
     // حدود التحقق من الدقائق المُدخلة عند الرصد.
     'limits' => [
         'max_attended_minutes' => 600,

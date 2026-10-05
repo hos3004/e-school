@@ -6,6 +6,7 @@ namespace Modules\Groups\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Groups\Domain\Events\StudentLeftGroup;
 use Modules\Groups\Domain\Models\Group;
@@ -22,9 +23,10 @@ final readonly class WithdrawStudentAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
-    public function execute(GroupMembership $membership, string $reason): GroupMembership
+    public function execute(GroupMembership $membership, string $reason, ?string $actorId = null): GroupMembership
     {
         $this->assertReasonGiven($reason);
         $this->assertStillActive($membership);
@@ -32,10 +34,27 @@ final readonly class WithdrawStudentAction
         /** @var Group $group */
         $group = $membership->group()->firstOrFail();
 
-        $membership = $this->transaction->run(function () use ($membership): GroupMembership {
+        $membership = $this->transaction->run(function () use ($membership, $group, $reason, $actorId): GroupMembership {
             $membership->left_at = CarbonImmutable::now('UTC');
             $membership->status = MembershipStatus::Left;
             $membership->save();
+
+            if ($actorId !== null) {
+                $this->audit->record(
+                    organizationId: (string) $group->organization_id,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'groups.student_withdrawn',
+                    auditableType: 'group_memberships',
+                    auditableId: (string) $membership->getKey(),
+                    oldValues: ['status' => MembershipStatus::Active->value, 'left_at' => null],
+                    newValues: [
+                        'status' => MembershipStatus::Left->value,
+                        'left_at' => $membership->left_at->toIso8601String(),
+                    ],
+                    reason: trim($reason),
+                );
+            }
 
             return $membership;
         });

@@ -21,7 +21,11 @@ final class ArchiveGroupController extends Controller
 
     public function __invoke(ArchiveGroupRequest $request, Group $group): JsonResponse
     {
-        $this->action->execute($group, (string) $request->validated('reason'));
+        $this->action->execute(
+            $group,
+            (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
+        );
 
         return response()->json(null, 204);
     }

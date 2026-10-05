@@ -22,7 +22,7 @@ final class UpdateCourseMaterialRequest extends FormRequest
             return $this->user()->can('update', $material);
         }
 
-        return $this->user()->can('content.material.update');
+        return false;
     }
 
     /**
@@ -36,6 +36,11 @@ final class UpdateCourseMaterialRequest extends FormRequest
             'title' => ['sometimes', 'array'],
             'title.ar' => ['required_with:title', 'string', 'max:255'],
             'title.en' => ['nullable', 'string', 'max:255'],
+            'title.fr' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'array'],
+            'description.ar' => ['nullable', 'string'],
+            'description.en' => ['nullable', 'string'],
+            'description.fr' => ['nullable', 'string'],
             'type' => ['sometimes', 'string', Rule::enum(MaterialType::class)],
             'disk' => ['nullable', 'string', 'max:64'],
             'path' => ['nullable', 'string', 'max:1024'],
@@ -43,6 +48,8 @@ final class UpdateCourseMaterialRequest extends FormRequest
             'size_bytes' => ['nullable', 'integer', 'min:0', 'max:'.($maxSizeMb * 1024 * 1024)],
             'visible_from' => ['nullable', 'date'],
             'visible_to' => ['nullable', 'date'],
+            'display_order' => ['nullable', 'integer', 'min:0'],
+            'reason' => ['required', 'string', 'max:'.config('content.reason_max_length')],
         ];
     }
 

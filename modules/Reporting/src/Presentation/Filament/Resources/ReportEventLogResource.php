@@ -11,6 +11,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Reporting\Domain\Models\ReportEventLog;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد سجل الأحداث المُدخلة — قراءة تشخيصية فقط، السجل append-only.
@@ -25,7 +26,12 @@ final class ReportEventLogResource extends Resource
 
     protected static ?int $navigationSort = 90;
 
-    public static function getNavigationGroup(): ?string
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
+    public static function getNavigationGroup(): string
     {
         return __('reporting::navigation.group');
     }
@@ -57,7 +63,11 @@ final class ReportEventLogResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'reporting::origin.event_log',
+            'heroicon-o-inbox-arrow-down',
+        )
             ->columns([
                 TextColumn::make('id')
                     ->label(__('reporting::fields.id'))
@@ -85,5 +95,15 @@ final class ReportEventLogResource extends Resource
                     ->sortable(),
             ])
             ->defaultSort('created_at', direction: 'desc');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => ReportEventLogResource\Pages\ListReportEventLogs::route('/'),
+        ];
     }
 }

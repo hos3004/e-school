@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Groups\Presentation\Filament\Resources;
 
+use App\Application\Queries\ProfileAdministrationQueryService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -13,7 +14,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use Modules\Groups\Application\Actions\WithdrawStudentAction;
 use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Groups\Domain\Models\GroupMembership;
@@ -35,7 +35,7 @@ final class GroupMembershipResource extends Resource
 
     protected static ?int $navigationSort = 12;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('groups::filament.navigation_group');
     }
@@ -128,7 +128,7 @@ final class GroupMembershipResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->whereHas('group', fn (Builder $groupQuery): Builder => $groupQuery->forOrganization($organizationId));
+        return $query->whereHas('group', fn (Builder $groupQuery): Builder => $groupQuery->where('organization_id', $organizationId));
     }
 
     public static function getPages(): array
@@ -157,7 +157,11 @@ final class GroupMembershipResource extends Resource
             ])
             ->action(function (GroupMembership $record, array $data): void {
                 try {
-                    app(WithdrawStudentAction::class)->execute($record, (string) $data['reason']);
+                    app(WithdrawStudentAction::class)->execute(
+                        $record,
+                        (string) $data['reason'],
+                        (string) auth()->id(),
+                    );
                 } catch (BusinessRuleViolation $violation) {
                     Notification::make()
                         ->title($violation->getMessage())
@@ -174,17 +178,18 @@ final class GroupMembershipResource extends Resource
             });
     }
 
-    /**
-     * اسم الطالب للعرض — يُقرأ جدول الطبقة الأدنى للقراءة فقط.
-     */
     private static function studentName(string $studentProfileId): string
     {
-        $name = DB::table('student_profiles')
-            ->join('users', 'users.id', '=', 'student_profiles.user_id')
-            ->where('student_profiles.id', $studentProfileId)
-            ->value('users.name');
+        $organizationId = data_get(auth()->user(), 'organization_id');
 
-        return is_string($name) ? $name : $studentProfileId;
+        if (!is_string($organizationId) || $organizationId === '') {
+            return $studentProfileId;
+        }
+
+        return app(ProfileAdministrationQueryService::class)->studentOptionLabel(
+            $organizationId,
+            $studentProfileId,
+        ) ?? $studentProfileId;
     }
 
     /**

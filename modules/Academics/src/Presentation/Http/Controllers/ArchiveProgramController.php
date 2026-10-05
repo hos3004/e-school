@@ -22,7 +22,11 @@ final class ArchiveProgramController extends Controller
 
     public function __invoke(ArchiveProgramRequest $request, Program $program): JsonResponse
     {
-        $program = $this->action->execute($program, (string) $request->validated('reason'));
+        $program = $this->action->execute(
+            $program,
+            (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
+        );
 
         return ProgramResource::make($program)->response();
     }

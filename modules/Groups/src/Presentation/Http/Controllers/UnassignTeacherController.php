@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Modules\Groups\Application\Actions\UnassignTeacherAction;
 use Modules\Groups\Domain\Models\GroupTeacher;
+use Modules\Groups\Presentation\Http\Requests\UnassignTeacherRequest;
 use Modules\Groups\Presentation\Http\Resources\GroupTeacherResource;
 
 /**
@@ -19,14 +20,13 @@ final class UnassignTeacherController extends Controller
         private readonly UnassignTeacherAction $action,
     ) {}
 
-    public function __invoke(GroupTeacher $assignment): JsonResponse
+    public function __invoke(UnassignTeacherRequest $request, GroupTeacher $assignment): JsonResponse
     {
-        abort_unless(
-            request()->user()?->can('delete', $assignment) ?? false,
-            403,
+        $assignment = $this->action->execute(
+            $assignment,
+            (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
         );
-
-        $assignment = $this->action->execute($assignment);
 
         return GroupTeacherResource::make($assignment)->response();
     }

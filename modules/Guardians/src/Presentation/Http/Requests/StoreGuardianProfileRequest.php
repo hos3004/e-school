@@ -5,14 +5,34 @@ declare(strict_types=1);
 namespace Modules\Guardians\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Modules\Guardians\Domain\Enums\ContactChannel;
+use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 
 final class StoreGuardianProfileRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('guardians.create');
+        $user = $this->user();
+        $organizationId = data_get($user, 'organization_id');
+        $requestedOrganizationId = $this->input('organization_id');
+        $userId = $this->input('user_id');
+
+        if ($user === null || !$user->can('guardian.link') || !is_string($organizationId)) {
+            return false;
+        }
+
+        if (!is_string($requestedOrganizationId) || !Str::isUlid($requestedOrganizationId)
+            || !is_string($userId) || !Str::isUlid($userId)) {
+            return true;
+        }
+
+        if (!hash_equals($organizationId, $requestedOrganizationId)) {
+            return false;
+        }
+
+        return app(UserAccountDirectory::class)->find($organizationId, $userId) !== null;
     }
 
     /**
@@ -21,8 +41,8 @@ final class StoreGuardianProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'organization_id' => ['required', 'string', 'size:26'],
-            'user_id' => ['required', 'string', 'size:26'],
+            'organization_id' => ['required', 'ulid'],
+            'user_id' => ['required', 'ulid'],
             'national_id_last4' => ['nullable', 'digits:4'],
             'occupation' => ['nullable', 'string', 'max:120'],
             'preferred_contact_channel' => ['nullable', Rule::enum(ContactChannel::class)],

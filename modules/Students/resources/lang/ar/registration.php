@@ -28,13 +28,34 @@ return [
         'under_review' => 'انتقل الطلب إلى المراجعة.',
         'accepted' => 'قُبل الطلب وأُنشئ ملف الطالب.',
         'rejected' => 'تم رفض طلب التسجيل.',
+        'assigned' => 'تم تسكين الطالب في المجموعة.',
     ],
     'filters' => [
+        'registration_form' => 'مصدر التسجيل / النموذج',
+        'registration_form_unknown' => 'تسجيل داخلي أو مصدر قديم',
         'status' => 'الحالة',
         'country' => 'الدولة',
         'region' => 'المنطقة',
+        'language' => 'اللغة المفضّلة',
+        'age_range' => 'نطاق العمر',
+        'age_from' => 'من عمر',
+        'age_to' => 'إلى عمر',
+        'age_indicator' => 'العمر من :from إلى :to',
+        'registered_at' => 'تاريخ التسجيل',
+        'registered_from' => 'من تاريخ',
+        'registered_until' => 'إلى تاريخ',
+        'value_from' => 'من',
+        'value_until' => 'إلى',
     ],
     'duplicate' => 'طلب مكرر محتمل',
     'duplicate_yes' => 'نعم',
     'duplicate_no' => 'لا',
+
+    /*
+     * نصوص تدخل رسائل الإشعار كقيم بارامترات. القالب يرفض بارامترًا ناقصًا
+     * ويُسقط الإشعار كله، فطلب بلا كورس مفضّل يأخذ هذا البديل بدل الصمت.
+     */
+    'notifications' => [
+        'course_unspecified' => 'لم يُحدَّد بعد',
+    ],
 ];

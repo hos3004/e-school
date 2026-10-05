@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\Messaging\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Str;
+use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Messaging\Domain\Events\MessageSent;
 use Modules\Messaging\Domain\Models\Conversation;
 use Modules\Messaging\Domain\Models\ConversationParticipant;
@@ -20,6 +22,7 @@ final readonly class SendMessageAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private UserAccountDirectory $accounts,
     ) {}
 
     /**
@@ -43,7 +46,25 @@ final readonly class SendMessageAction
             );
         }
 
-        return $this->transaction->run(function () use ($conversation, $senderUserId, $body, $attachments): Message {
+        $recipientUserIds = ConversationParticipant::query()
+            ->where('conversation_id', (string) $conversation->id)
+            ->where('user_id', '!=', $senderUserId)
+            ->pluck('user_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+
+        $senderAccount = $this->accounts->find((string) $conversation->organization_id, $senderUserId);
+        $senderName = $senderAccount !== null ? $senderAccount->name : __('messaging::fields.unknown_sender');
+
+        return $this->transaction->run(function () use (
+            $conversation,
+            $senderUserId,
+            $body,
+            $attachments,
+            $recipientUserIds,
+            $senderName,
+        ): Message {
             $message = new Message([
                 'organization_id' => $conversation->organization_id,
                 'conversation_id' => (string) $conversation->id,
@@ -66,6 +87,10 @@ final readonly class SendMessageAction
                 conversationId: (string) $conversation->id,
                 organizationId: (string) $conversation->organization_id,
                 senderUserId: $senderUserId,
+                recipientUserIds: $recipientUserIds,
+                senderName: $senderName,
+                messagePreview: Str::limit($body, 140),
+                conversationSubject: $conversation->subject,
             ));
 
             return $message;

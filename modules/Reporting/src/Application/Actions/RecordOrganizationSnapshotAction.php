@@ -25,21 +25,21 @@ final readonly class RecordOrganizationSnapshotAction
     ) {}
 
     /**
-     * @param array<string, mixed> $data organization_id · snapshot_date ·
-     *                                   students_active · students_frozen ·
-     *                                   teachers_active · sessions_held ·
-     *                                   sessions_cancelled · attendance_rate_bp؟
+     * @param array<string, mixed> $data snapshot_date · students_active ·
+     *                                   students_frozen · teachers_active ·
+     *                                   sessions_held · sessions_cancelled ·
+     *                                   attendance_rate_bp؟
      */
-    public function execute(array $data): OrganizationSnapshot
+    public function execute(string $organizationId, array $data): OrganizationSnapshot
     {
         $snapshotDate = $data['snapshot_date'] instanceof \DateTimeInterface
             ? CarbonImmutable::instance($data['snapshot_date'])
             : CarbonImmutable::parse((string) $data['snapshot_date'], 'UTC');
 
-        [$snapshot, $event] = $this->transaction->run(function () use ($data, $snapshotDate): array {
+        [$snapshot, $event] = $this->transaction->run(function () use ($organizationId, $data, $snapshotDate): array {
             /** @var OrganizationSnapshot|null $snapshot */
             $snapshot = OrganizationSnapshot::query()
-                ->forOrganization((string) $data['organization_id'])
+                ->forOrganization($organizationId)
                 ->whereDate('snapshot_date', $snapshotDate->toDateString())
                 ->where('period_type', SnapshotType::Daily)
                 ->first();
@@ -47,7 +47,7 @@ final readonly class RecordOrganizationSnapshotAction
             if ($snapshot === null) {
                 $snapshot = new OrganizationSnapshot;
                 $snapshot->fill([
-                    'organization_id' => (string) $data['organization_id'],
+                    'organization_id' => $organizationId,
                     'snapshot_date' => $snapshotDate,
                     'period_type' => SnapshotType::Daily,
                 ]);

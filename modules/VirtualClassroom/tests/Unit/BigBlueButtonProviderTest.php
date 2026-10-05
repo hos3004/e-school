@@ -6,12 +6,15 @@ use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Modules\VirtualClassroom\Domain\Contracts\SupportsWebhookRegistration;
 use Modules\VirtualClassroom\Domain\Enums\ClassroomEventType;
 use Modules\VirtualClassroom\Domain\Enums\JoinRole;
 use Modules\VirtualClassroom\Domain\Exceptions\ClassroomProviderException;
 use Modules\VirtualClassroom\Domain\ValueObjects\ClassroomSpec;
 use Modules\VirtualClassroom\Domain\ValueObjects\JoinRequest;
 use Modules\VirtualClassroom\Infrastructure\Providers\BigBlueButtonProvider;
+use PHPUnit\Framework\Assert;
 
 /** @return array<string, mixed> */
 function bbbProviderTestConfiguration(): array
@@ -95,6 +98,50 @@ it('generates a personal signed join URL without a network request', function ()
     expect($query['role'])->toBe('MODERATOR')
         ->and($query['password'])->toBe('moderator-secret')
         ->and($query['userID'])->toBe('teacher-1');
+
+    Http::assertNothingSent();
+});
+
+it('signs the return destination into the join URL so each role leaves to its own page', function (): void {
+    Http::fake();
+    $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
+    $returnUrl = 'https://eschool.test/learn/teacher/sessions/01J0';
+    $url = $provider->generateJoinUrl(new JoinRequest(
+        externalId: 'meeting-1',
+        displayName: 'Teacher Name',
+        role: JoinRole::Moderator,
+        rolePassword: 'moderator-secret',
+        externalUserId: 'teacher-1',
+        returnUrl: $returnUrl,
+    ));
+
+    $query = (string) parse_url($url, PHP_URL_QUERY);
+    $checksum = substr($query, (int) strrpos($query, 'checksum=') + 9);
+    $unsignedQuery = substr($query, 0, (int) strrpos($query, '&checksum='));
+    parse_str($query, $parsed);
+
+    // التوقيع محسوب على النص المرسل فعلًا؛ لو لم تدخل logoutURL في الـchecksum
+    // لرفض المزوّد الرابط كله بدل أن يتجاهل الوجهة فقط.
+    expect($parsed['logoutURL'])->toBe($returnUrl)
+        ->and(hash_equals(sha1('join'.$unsignedQuery.'api-secret'), $checksum))->toBeTrue();
+
+    Http::assertNothingSent();
+});
+
+it('omits the return destination when the caller has none', function (): void {
+    Http::fake();
+    $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
+    $url = $provider->generateJoinUrl(new JoinRequest(
+        externalId: 'meeting-1',
+        displayName: 'Student Name',
+        role: JoinRole::Viewer,
+        rolePassword: 'viewer-secret',
+        externalUserId: 'student-1',
+    ));
+
+    parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+    expect($query)->not->toHaveKey('logoutURL');
 
     Http::assertNothingSent();
 });
@@ -234,6 +281,122 @@ it('verifies the official webhook checksum before parsing the event', function (
 
     expect(fn () => $provider->parseWebhook($invalid))
         ->toThrow(ClassroomProviderException::class);
+});
+
+/** @param array<string, string> $parameters */
+function signedBbbWebhookRequest(array $parameters): Request
+{
+    $body = http_build_query($parameters);
+    $checksum = sha1('https://eschool.test/webhooks/bbb'.$body.'webhook-secret');
+
+    return Request::create(
+        'https://eschool.test/webhooks/bbb?checksum='.$checksum,
+        'POST',
+        $parameters,
+        content: $body,
+    );
+}
+
+it('parses the array-wrapped body that bbb-webhooks 3 actually sends', function (): void {
+    $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
+    // نفس بنية حدث user-joined الملتقط من سيرفر BBB الفعلي (callback-emitter.js).
+    $event = json_encode([
+        'data' => [
+            'type' => 'event',
+            'id' => 'user-joined',
+            'attributes' => [
+                'meeting' => [
+                    'internal-meeting-id' => 'internal-1',
+                    'external-meeting-id' => 'SES-01m23265xqjjag7dt063xsqx06-R2',
+                ],
+                'user' => [
+                    'internal-user-id' => 'w_xi4cehstrc36',
+                    'external-user-id' => '01m22tv64waqermche4wcw9eq1',
+                    'name' => 'معلمة تجريبية',
+                    'role' => 'MODERATOR',
+                    'presenter' => false,
+                    'guest' => false,
+                ],
+            ],
+            'event' => ['ts' => 1789239033577],
+        ],
+    ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+
+    $parsed = $provider->parseWebhook(signedBbbWebhookRequest([
+        'domain' => 'bbb.telecourse.org',
+        'event' => '['.$event.']',
+        'timestamp' => '1789239033580',
+    ]));
+
+    expect($parsed?->type)->toBe(ClassroomEventType::ParticipantJoined)
+        ->and($parsed?->externalId)->toBe('SES-01m23265xqjjag7dt063xsqx06-R2')
+        ->and($parsed?->externalUserId)->toBe('01m22tv64waqermche4wcw9eq1')
+        ->and($parsed?->occurredAt->getTimestamp())->toBe(1789239033)
+        ->and(data_get($parsed?->payload, 'data.attributes.user.role'))->toBe('MODERATOR');
+});
+
+it('logs a delivery it cannot read instead of dropping it silently', function (): void {
+    $log = Log::spy();
+    $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
+
+    $parsed = $provider->parseWebhook(signedBbbWebhookRequest([
+        'domain' => 'bbb.telecourse.org',
+        'event' => '[{"unexpected":true}]',
+        'timestamp' => '1789239033580',
+    ]));
+
+    expect($parsed)->toBeNull();
+    $log->shouldHaveReceived('warning')
+        ->with('virtualclassroom.webhook_unparseable', Mockery::on(
+            static fn (array $context): bool => $context['reason'] === 'missing_event_name',
+        ))
+        ->once();
+});
+
+it('registers, lists, and removes provider webhooks through the BBB API', function (): void {
+    Http::fake(function (ClientRequest $request) {
+        return match (true) {
+            str_contains($request->url(), '/hooks/create?') => Http::response(<<<'XML'
+                <response>
+                    <returncode>SUCCESS</returncode>
+                    <hookID>hook-1</hookID>
+                    <permanentHook>false</permanentHook>
+                </response>
+                XML),
+            str_contains($request->url(), '/hooks/list?') => Http::response(<<<'XML'
+                <response>
+                    <returncode>SUCCESS</returncode>
+                    <hooks>
+                        <hook>
+                            <hookID>hook-1</hookID>
+                            <callbackURL>https://eschool.test/api/webhooks/classroom</callbackURL>
+                            <meetingID>meeting-1</meetingID>
+                            <permanentHook>false</permanentHook>
+                        </hook>
+                    </hooks>
+                </response>
+                XML),
+            str_contains($request->url(), '/hooks/destroy?') => Http::response(
+                '<response><returncode>SUCCESS</returncode><removed>true</removed></response>',
+            ),
+            default => Http::response('not found', 404),
+        };
+    });
+
+    $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
+
+    Assert::assertInstanceOf(SupportsWebhookRegistration::class, $provider);
+
+    $registered = $provider->registerWebhook('https://eschool.test/api/webhooks/classroom', 'meeting-1');
+    $hooks = $provider->registeredWebhooks('meeting-1');
+    $provider->removeWebhook('hook-1');
+
+    expect($registered->hookId)->toBe('hook-1')
+        ->and($registered->externalId)->toBe('meeting-1')
+        ->and($hooks)->toHaveCount(1)
+        ->and($hooks[0]->callbackUrl)->toBe('https://eschool.test/api/webhooks/classroom');
+
+    Http::assertSentCount(3);
 });
 
 it('declares runtime recording control unsupported instead of calling a fake API', function (): void {

@@ -5,36 +5,59 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Modules\Messaging\Presentation\Http\Controllers\FlagMessageController;
 use Modules\Messaging\Presentation\Http\Controllers\HandleWhatsappInboundController;
+use Modules\Messaging\Presentation\Http\Controllers\ListClassWallCommentsController;
+use Modules\Messaging\Presentation\Http\Controllers\ListClassWallPostsController;
 use Modules\Messaging\Presentation\Http\Controllers\ListConversationMessagesController;
+use Modules\Messaging\Presentation\Http\Controllers\ListConversationsController;
+use Modules\Messaging\Presentation\Http\Controllers\MarkConversationReadController;
+use Modules\Messaging\Presentation\Http\Controllers\ReceiveGreenApiWebhookController;
+use Modules\Messaging\Presentation\Http\Controllers\SearchMessageRecipientsController;
 use Modules\Messaging\Presentation\Http\Controllers\ShowConversationController;
+use Modules\Messaging\Presentation\Http\Controllers\ShowWallAttachmentController;
+use Modules\Messaging\Presentation\Http\Controllers\StartDirectConversationController;
+use Modules\Messaging\Presentation\Http\Controllers\StartSupervisionConversationController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreConversationController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreMessageController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreWallCommentController;
 use Modules\Messaging\Presentation\Http\Controllers\StoreWallPostController;
 use Modules\Messaging\Presentation\Http\Controllers\UpdateMessageController;
-use Modules\Messaging\Presentation\Http\Controllers\WhatsappWebhookController;
 
 /*
 | Webhook الواتساب من مزوّد خارجي — بلا مصادقة جلسة، التحقق عبر المدخلات.
 */
-Route::post('webhooks/whatsapp', WhatsappWebhookController::class)->name('whatsapp.webhook');
+Route::post('webhooks/green-api', ReceiveGreenApiWebhookController::class)->name('whatsapp.green-api.webhook');
 
 Route::middleware('auth:sanctum')->group(function (): void {
+    Route::get('conversations', ListConversationsController::class)->name('conversations.index');
     Route::post('conversations', StoreConversationController::class)->name('conversations.store');
+    Route::get('messaging/recipients', SearchMessageRecipientsController::class)
+        ->name('messaging.recipients.index');
+    Route::post('messaging/direct-conversations', StartDirectConversationController::class)
+        ->name('messaging.direct-conversations.store');
+    Route::post('messaging/supervision-conversations', StartSupervisionConversationController::class)
+        ->name('messaging.supervision-conversations.store');
     Route::get('messaging/conversations/{conversation}', ShowConversationController::class)
         ->name('messaging.conversations.show');
     Route::get('conversations/{conversation}/messages', ListConversationMessagesController::class)
         ->name('conversations.messages.index');
     Route::post('conversations/{conversation}/messages', StoreMessageController::class)
         ->name('conversations.messages.store');
+    Route::post('conversations/{conversation}/read', MarkConversationReadController::class)
+        ->name('conversations.read');
 
     Route::prefix('messages/{message}')->group(function (): void {
         Route::put('', UpdateMessageController::class)->name('messages.update');
         Route::post('flag', FlagMessageController::class)->name('messages.flag');
     });
 
+    Route::get('wall/groups/{group}/posts', ListClassWallPostsController::class)->name('wall.posts.index');
     Route::post('wall/posts', StoreWallPostController::class)->name('wall.posts.store');
+    Route::get('wall/posts/{post}/comments', ListClassWallCommentsController::class)
+        ->name('wall.posts.comments.index');
     Route::post('wall/posts/{post}/comments', StoreWallCommentController::class)->name('wall.posts.comments.store');
+    Route::get('wall/posts/{post}/attachments/{index}', ShowWallAttachmentController::class)
+        ->whereNumber('index')
+        ->name('wall.posts.attachments.show');
 
     Route::post('whatsapp/inbound/{inbound}/handle', HandleWhatsappInboundController::class)
         ->name('whatsapp.inbound.handle');

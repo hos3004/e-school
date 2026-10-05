@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Staff\Presentation\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Modules\Staff\Application\Actions\RequestTeacherLeave;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Presentation\Http\Requests\StoreTeacherLeaveRequest;
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class StoreTeacherLeaveController
 {
-    public function __invoke(StoreTeacherLeaveRequest $request, RequestTeacherLeave $action): TeacherLeaveResource
+    public function __invoke(StoreTeacherLeaveRequest $request, RequestTeacherLeave $action): JsonResponse
     {
         $validated = $request->validated();
 

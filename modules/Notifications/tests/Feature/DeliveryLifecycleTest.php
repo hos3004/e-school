@@ -12,12 +12,15 @@ use Modules\Notifications\Domain\Events\NotificationSent;
 use Modules\Notifications\Domain\Models\NotificationDeliveryAttempt;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Shared\Support\BusinessRuleViolation;
+use Tests\TestCase;
 
 afterEach(function (): void {
+    /** @var TestCase $this */
     CarbonImmutable::setTestNow();
 });
 
 it('claims queued notifications for exactly one sender', function (): void {
+    /** @var TestCase $this */
     $outbox = NotificationOutbox::factory()->state([
         'scheduled_for' => now('UTC'),
     ])->create();
@@ -25,8 +28,6 @@ it('claims queued notifications for exactly one sender', function (): void {
     $claimed = app(MarkNotificationSendingAction::class)->execute($outbox);
 
     expect($claimed->refresh()->status)->toBe(OutboxStatus::Sending);
-
-    MarkNotificationSendingAction::class;
 
     try {
         app(MarkNotificationSendingAction::class)->execute($claimed->refresh());
@@ -37,6 +38,7 @@ it('claims queued notifications for exactly one sender', function (): void {
 });
 
 it('closes the notification as sent after a successful attempt', function (): void {
+    /** @var TestCase $this */
     Event::fake([NotificationSent::class]);
 
     $outbox = NotificationOutbox::factory()->withStatus(OutboxStatus::Sending)->create();
@@ -53,6 +55,7 @@ it('closes the notification as sent after a successful attempt', function (): vo
 });
 
 it('requeues failed attempts while retries remain', function (): void {
+    /** @var TestCase $this */
     config(['notifications.delivery.max_retries' => 2]);
 
     $outbox = NotificationOutbox::factory()->withStatus(OutboxStatus::Sending)->create();
@@ -74,6 +77,7 @@ it('requeues failed attempts while retries remain', function (): void {
 });
 
 it('declares final failure once the configured maximum is exhausted', function (): void {
+    /** @var TestCase $this */
     Event::fake([NotificationFailed::class]);
 
     config(['notifications.delivery.max_retries' => 1]);
@@ -97,6 +101,7 @@ it('declares final failure once the configured maximum is exhausted', function (
 });
 
 it('refuses to record attempts on terminal notifications', function (): void {
+    /** @var TestCase $this */
     $sent = NotificationOutbox::factory()->withStatus(OutboxStatus::Sent)->create();
     $cancelled = NotificationOutbox::factory()->withStatus(OutboxStatus::Cancelled)->create();
 

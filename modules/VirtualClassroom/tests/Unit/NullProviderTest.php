@@ -7,6 +7,7 @@ use Modules\VirtualClassroom\Domain\Enums\JoinRole;
 use Modules\VirtualClassroom\Domain\ValueObjects\ClassroomSpec;
 use Modules\VirtualClassroom\Domain\ValueObjects\JoinRequest;
 use Modules\VirtualClassroom\Infrastructure\Providers\NullProvider;
+use PHPUnit\Framework\Assert;
 
 it('simulates the classroom lifecycle without network access', function (): void {
     $provider = new NullProvider;
@@ -44,9 +45,29 @@ it('simulates the classroom lifecycle without network access', function (): void
         ->and($provider->healthCheck()->status->value)->toBe('healthy');
 });
 
+it('keeps a created room available before anyone enters and until it ends', function (): void {
+    $provider = new NullProvider;
+    $provider->createClassroom(new ClassroomSpec(
+        sessionId: 'session-1',
+        externalMeetingId: 'meeting-1',
+        title: 'Test classroom',
+        startsAt: null,
+        maxParticipants: 25,
+        recordable: false,
+    ));
+
+    expect($provider->isAvailable('meeting-1'))->toBeTrue()
+        ->and($provider->isRunning('meeting-1'))->toBeFalse()
+        ->and($provider->isAvailable('unknown'))->toBeFalse();
+
+    $provider->endClassroom('meeting-1');
+
+    expect($provider->isAvailable('meeting-1'))->toBeFalse();
+});
+
 it('is resolved from the configured provider binding', function (): void {
     config(['virtual-classroom.default' => 'null']);
     app()->forgetInstance(VirtualClassroomProvider::class);
 
-    expect(app(VirtualClassroomProvider::class))->toBeInstanceOf(NullProvider::class);
+    Assert::assertInstanceOf(NullProvider::class, app(VirtualClassroomProvider::class));
 });

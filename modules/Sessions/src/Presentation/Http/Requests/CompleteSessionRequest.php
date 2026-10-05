@@ -13,7 +13,7 @@ final class CompleteSessionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('sessions.session.complete');
+        return $this->user()->can('session.finalize');
     }
 
     /**
@@ -22,7 +22,7 @@ final class CompleteSessionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => ['nullable', 'string', 'max:1000'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }
 }

@@ -32,6 +32,7 @@ final class TeacherAvailabilityController extends Controller
             'defaultTimezone' => (string) ($user?->getAttribute('timezone') ?: 'UTC'),
             'storeUrl' => route('portal.teacher.availability.store'),
             'canManage' => $request->user()?->can('staff.availability.create') === true,
+            'approvalRequired' => (bool) config('scheduling.availability.teacher_requires_approval'),
         ]);
     }
 }

@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Services\VirtualClassroom\RecordingSynchronizer;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Modules\Recordings\Application\Actions\ExpireRecordingsAction;
+use Shared\Module\ModuleRegistry;
+use Symfony\Component\Console\Command\Command;
 
 /*
 |--------------------------------------------------------------------------
@@ -10,11 +15,6 @@ use Illuminate\Support\Facades\Schedule;
 |--------------------------------------------------------------------------
 | المهام المجدولة على مستوى المنصة. مهام الموديولات تُسجَّل داخل
 | ModuleServiceProvider الخاص بكل موديول.
-|
-| ملاحظة تسليمية: أوامر sessions:dispatch-reminders و
-| sessions:finalize-due و recordings:enforce-retention ليست موجودة
-| بعد — تُضاف مع أوامر موديولاتها (المهام 03) ويُعاد جدولتها هنا
-| عند إنشائها. جدولة أمر غير موجود تفشل كل دورة وتلوث السجل.
 */
 
 // إعادة محاولة الإشعارات الفاشلة
@@ -22,3 +22,48 @@ Schedule::command('notifications:retry-failed')->everyFifteenMinutes()->withoutO
 
 // توزيع الإشعارات التي حان موعدها إلى عمال قناة الإرسال
 Schedule::command('notifications:dispatch-due')->everyMinute()->withoutOverlapping();
+
+/*
+ * حملات واتساب: شبكة أمان تلتقط ما فات موعده من رسائل الحملات الجارية، ومنظّف
+ * يتلف مرفقاتها بعد مدة الاحتفاظ. التباعد نفسه لا يعتمد على المجدول — لكل
+ * رسالة مهمة مؤجلة إلى موعدها بالثانية.
+ */
+Schedule::command('whatsapp:campaigns-sweep')->everyMinute()->withoutOverlapping();
+Schedule::command('whatsapp:campaigns-prune-media')->hourly()->withoutOverlapping();
+
+Schedule::command('sessions:dispatch-reminders')->everyMinute()->withoutOverlapping();
+Schedule::command('sessions:search-substitutes')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('sessions:end-elapsed')->everyMinute()->withoutOverlapping();
+Schedule::command('sessions:finalize-due')->everyFifteenMinutes()->withoutOverlapping();
+
+Artisan::command('classroom:sync-recordings', function (RecordingSynchronizer $synchronizer): int {
+    $this->info(__('virtualclassroom::messages.recordings_synced', [
+        'count' => $synchronizer->syncKnownClassrooms(),
+    ]));
+
+    return Command::SUCCESS;
+})->purpose('Synchronize ready BigBlueButton recordings');
+
+Schedule::command('classroom:sync-recordings')->everyTenMinutes()->withoutOverlapping();
+Schedule::command('classroom:provision-upcoming')->everyMinute()->withoutOverlapping();
+
+Artisan::command('recordings:enforce-retention', function (ExpireRecordingsAction $action): int {
+    $processed = $action->execute(limit: max(1, (int) config('recordings.retention_batch_size', 100)));
+    $this->info(__('recordings::messages.retention_summary', ['count' => count($processed)]));
+
+    return Command::SUCCESS;
+})->purpose('Archive or expire recordings that passed their retention period');
+
+Schedule::command('recordings:enforce-retention')->hourly()->withoutOverlapping();
+
+// التقرير الشهري المجمَّع لكل برنامج — آخر يوم من الشهر بتوقيت المؤسسة الافتراضي.
+// الأمر نفسه يُشغَّل يدويًا بنطاق تاريخ مخصَّص عبر --from/--to.
+Schedule::command('reporting:send-monthly-program-digests')
+    ->lastDayOfMonth('23:50')
+    ->timezone((string) config('academic.default_timezone'))
+    ->withoutOverlapping();
+
+// تقليم أرشيف بوت الدعم حسب support_bot.conversation.retention_days (صفر = بلا حذف).
+if (ModuleRegistry::isEnabled('SupportBot')) {
+    Schedule::command('support-bot:prune')->dailyAt('02:30')->withoutOverlapping();
+}

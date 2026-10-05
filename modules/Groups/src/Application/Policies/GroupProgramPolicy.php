@@ -11,29 +11,40 @@ use Modules\Groups\Domain\Models\GroupProgram;
  */
 final class GroupProgramPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
-        return $user->can('groups.view_any');
+        return $user->can('group.view');
     }
 
-    public function view($user, GroupProgram $link): bool
+    public function view(mixed $user, GroupProgram $link): bool
     {
-        return $user->can('groups.view_any');
+        return $user->can('group.view') && $this->sameOrganization($user, $link);
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
-        return $user->can('groups.attach_program');
+        return $user->can('group.manage');
     }
 
-    public function update($user, GroupProgram $link): bool
+    public function update(mixed $user, GroupProgram $link): bool
     {
-        return $user->can('groups.attach_program');
+        return $user->can('group.manage') && $this->sameOrganization($user, $link);
     }
 
     /** فك الربط — إزالة الرابط فقط. */
-    public function delete($user, GroupProgram $link): bool
+    public function delete(mixed $user, GroupProgram $link): bool
     {
-        return $user->can('groups.detach_program');
+        return $user->can('group.manage') && $this->sameOrganization($user, $link);
+    }
+
+    private function sameOrganization(mixed $user, GroupProgram $link): bool
+    {
+        $organizationId = data_get($user, 'organization_id');
+        $group = $link->group;
+
+        return is_string($organizationId)
+            && $organizationId !== ''
+            && $group !== null
+            && hash_equals($organizationId, (string) $group->organization_id);
     }
 }

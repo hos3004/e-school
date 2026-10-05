@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\AccessControl\Application\Actions\AssignRoleAction;
 use Modules\AccessControl\Application\Actions\RevokeRoleAction;
@@ -11,7 +12,9 @@ use Modules\AccessControl\Domain\Events\RoleAssigned;
 use Modules\AccessControl\Domain\Events\RoleRevoked;
 use Modules\AccessControl\Domain\Models\ModelHasRole;
 use Modules\AccessControl\Domain\Models\Role;
+use PHPUnit\Framework\Assert;
 use Shared\Support\BusinessRuleViolation;
+use Shared\Testing\Fixtures;
 
 const AC_USER_TYPE = 'users';
 const AC_USER_ID = '01USER0000000000000000000';
@@ -82,7 +85,7 @@ it('refuses revoking a role that was never assigned', function (): void {
 
     try {
         app(RevokeRoleAction::class)->execute((string) $role->getKey(), AC_USER_TYPE, AC_USER_ID);
-        self::fail('Expected BusinessRuleViolation was not thrown.');
+        Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('accesscontrol.role.not_assigned');
     }
@@ -103,4 +106,45 @@ it('lists assigned roles for a model through the querier', function (): void {
     expect(count($roles))->toBe(1)
         ->and($roles[0]->name)->toBe('queried-assignment')
         ->and($roles[0]->toArray()['guard_name'])->toBe('web');
+});
+
+it('audits role assignment and revocation with the written reasons', function (): void {
+    $organizationId = Fixtures::organizationId();
+    $actorId = Fixtures::userId();
+    $targetId = Fixtures::userId();
+    $role = Role::query()->create([
+        'organization_id' => $organizationId,
+        'name' => 'audited-operator',
+        'guard_name' => GuardName::Web,
+        'is_system' => false,
+    ]);
+
+    app(AssignRoleAction::class)->execute(
+        (string) $role->getKey(),
+        AC_USER_TYPE,
+        $targetId,
+        $actorId,
+        $organizationId,
+        'approved access request AC-2026-104',
+    );
+
+    app(RevokeRoleAction::class)->execute(
+        (string) $role->getKey(),
+        AC_USER_TYPE,
+        $targetId,
+        $actorId,
+        $organizationId,
+        'access request expired at the end of assignment',
+    );
+
+    expect(DB::table('audit_log')->where([
+        'action' => 'accesscontrol.role_assigned',
+        'auditable_id' => $targetId,
+        'reason' => 'approved access request AC-2026-104',
+    ])->exists())->toBeTrue()
+        ->and(DB::table('audit_log')->where([
+            'action' => 'accesscontrol.role_revoked',
+            'auditable_id' => $targetId,
+            'reason' => 'access request expired at the end of assignment',
+        ])->exists())->toBeTrue();
 });

@@ -15,7 +15,8 @@ final class TeacherDashboardPolicy
     /** @param Authenticatable&object{organization_id: string} $user */
     public function viewAny(Authenticatable $user): bool
     {
-        return $user->can('reporting.teacher.view_any');
+        return $user->can('report.view')
+            && $user->can('staff.view.any');
     }
 
     /** @param Authenticatable&object{organization_id: string} $user */

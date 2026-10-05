@@ -5,21 +5,24 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Controllers\Learning\LearningLoginResponse;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
+use Laravel\Fortify\Contracts\LoginResponse;
 use Laravel\Fortify\Contracts\LoginViewResponse;
 use Laravel\Fortify\Contracts\RequestPasswordResetLinkViewResponse;
 use Laravel\Fortify\Contracts\ResetPasswordViewResponse;
 use Laravel\Fortify\Contracts\TwoFactorChallengeViewResponse;
+use Laravel\Fortify\Contracts\TwoFactorLoginResponse;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Http\Responses\SimpleViewResponse;
+use Modules\Identity\Application\Actions\AuthenticateWithCredentials;
 use Modules\Identity\Application\Actions\RecordUserLogin;
 use Modules\Identity\Domain\Models\User;
 
@@ -36,6 +39,8 @@ final class AuthServiceProvider extends ServiceProvider
         // حقلا username/email يُقرآن من config/fortify.php ('login' و'email').
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
+        app()->bind(LoginResponse::class, LearningLoginResponse::class);
+        app()->bind(TwoFactorLoginResponse::class, LearningLoginResponse::class);
         $this->bindViews();
         $this->authenticateByIdentifier();
         $this->recordSuccessfulLogins();
@@ -45,8 +50,10 @@ final class AuthServiceProvider extends ServiceProvider
     private function bindViews(): void
     {
         app()->singleton(LoginViewResponse::class, static fn (): LoginViewResponse => new SimpleViewResponse(
-            static fn (Request $request) => Inertia::render('Auth/Login', [
+            static fn (Request $request) => Inertia::render(config('console.enabled') ? 'Auth/LearningLogin' : 'Auth/Login', [
+                'portal' => in_array($request->query('portal'), ['student', 'teacher'], true) ? $request->query('portal') : 'student',
                 'action' => route('login'),
+                'status' => $request->session()->get('status'),
                 'flash' => [
                     'success' => $request->session()->get('success'),
                     'error' => $request->session()->get('error'),
@@ -56,20 +63,20 @@ final class AuthServiceProvider extends ServiceProvider
         ));
 
         app()->singleton(RequestPasswordResetLinkViewResponse::class, static fn (): RequestPasswordResetLinkViewResponse => new SimpleViewResponse(
-            static fn (Request $request) => Inertia::render('Auth/ForgotPassword', [
+            static fn (Request $request) => Inertia::render(config('console.enabled') ? 'Auth/LearningForgotPassword' : 'Auth/ForgotPassword', [
                 'status' => $request->session()->get('status'),
             ]),
         ));
 
         app()->singleton(ResetPasswordViewResponse::class, static fn (): ResetPasswordViewResponse => new SimpleViewResponse(
-            static fn (Request $request) => Inertia::render('Auth/ResetPassword', [
+            static fn (Request $request) => Inertia::render(config('console.enabled') ? 'Auth/LearningResetPassword' : 'Auth/ResetPassword', [
                 'token' => (string) $request->route('token', ''),
                 'email' => (string) $request->input('email', ''),
             ]),
         ));
 
         app()->singleton(TwoFactorChallengeViewResponse::class, static fn (): TwoFactorChallengeViewResponse => new SimpleViewResponse(
-            static fn () => Inertia::render('Auth/TwoFactorChallenge'),
+            static fn () => Inertia::render(config('console.enabled') ? 'Auth/LearningTwoFactorChallenge' : 'Auth/TwoFactorChallenge'),
         ));
 
         /*
@@ -91,48 +98,21 @@ final class AuthServiceProvider extends ServiceProvider
     private function authenticateByIdentifier(): void
     {
         Fortify::authenticateUsing(function (Request $request): ?User {
-            $identifier = trim((string) $request->input(Fortify::username(), ''));
+            $identifier = (string) $request->input(Fortify::username(), '');
             $password = (string) $request->input('password', '');
 
-            if ($identifier === '' || $password === '') {
+            $user = app(AuthenticateWithCredentials::class)->execute($identifier, $password);
+
+            if ($user === null) {
                 return null;
             }
 
-            $user = $this->findByIdentifier($identifier);
-
-            if ($user === null || !$user->canLogIn()) {
-                return null;
+            if ((bool) config('console.enabled') && in_array($request->input('portal'), ['student', 'teacher'], true)) {
+                $request->session()->put('learning.portal', $request->input('portal'));
             }
 
-            /** @var string $hash */
-            $hash = (string) $user->getAuthPassword();
-
-            return Hash::check($password, $hash) ? $user : null;
+            return $user;
         });
-    }
-
-    private function findByIdentifier(string $identifier): ?User
-    {
-        $isPhoneNumber = preg_match('/^\+?[0-9]{7,15}$/', $identifier) === 1;
-
-        /** @var User|null */
-        return User::query()
-            ->where(static function ($query) use ($identifier, $isPhoneNumber): void {
-                $query->where('username', $identifier)
-                    ->orWhere('email', $identifier);
-
-                if ($isPhoneNumber) {
-                    $query->orWhere(function ($phoneQuery) use ($identifier): void {
-                        $digits = ltrim($identifier, '+');
-
-                        $phoneQuery->where(function ($inner) use ($identifier, $digits): void {
-                            $inner->where('phone', $identifier)
-                                ->orWhere('phone', '+'.$digits);
-                        });
-                    });
-                }
-            })
-            ->first();
     }
 
     private function recordSuccessfulLogins(): void
@@ -158,6 +138,13 @@ final class AuthServiceProvider extends ServiceProvider
             $identifier = trim((string) $request->input(Fortify::username(), ''));
 
             // ٥ محاولات لكل ١٥ دقيقة لكل (معرّف + IP) وفق docs/15-security-model.md.
+            return Limit::perMinutes(15, 5)->by($identifier.'|'.$request->ip());
+        });
+
+        // نفس السياسة لتسجيل دخول الموبايل، بحقل identifier بدل حقل Fortify::username().
+        RateLimiter::for('mobile-login', static function (Request $request): Limit {
+            $identifier = trim((string) $request->input('identifier', ''));
+
             return Limit::perMinutes(15, 5)->by($identifier.'|'.$request->ip());
         });
     }

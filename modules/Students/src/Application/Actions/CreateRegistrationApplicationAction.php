@@ -16,7 +16,7 @@ final readonly class CreateRegistrationApplicationAction
     /**
      * @param array<string, mixed> $data
      */
-    public function execute(array $data, string $organizationId, string $userId): RegistrationApplication
+    public function execute(array $data, string $organizationId, ?string $userId): RegistrationApplication
     {
         return $this->transaction->run(function () use ($data, $organizationId, $userId): RegistrationApplication {
             $application = new RegistrationApplication;

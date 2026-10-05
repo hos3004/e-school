@@ -25,6 +25,7 @@ final class StoreRoleController
             guard: GuardName::from((string) ($validated['guard_name'] ?? 'web')),
             organizationId: ActorOrganization::from($request),
             actorId: (string) $request->user()?->getAuthIdentifier(),
+            reason: (string) $validated['reason'],
         );
 
         return new RoleResource($role);

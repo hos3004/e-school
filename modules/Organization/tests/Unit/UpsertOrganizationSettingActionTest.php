@@ -8,8 +8,10 @@ use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Events\OrganizationSettingUpdated;
 use Modules\Organization\Domain\Models\OrganizationSetting;
 use Shared\Support\BusinessRuleViolation;
+use Tests\TestCase;
 
 it('creates then updates the same setting key without duplicating rows', function (): void {
+    /** @var TestCase $this */
     Event::fake([OrganizationSettingUpdated::class]);
 
     $organization = OrganizationFactory::new()->create();
@@ -26,6 +28,7 @@ it('creates then updates the same setting key without duplicating rows', functio
 });
 
 it('rejects a setting key longer than the configured maximum', function (): void {
+    /** @var TestCase $this */
     config()->set('organization.limits.setting_key_max_length', 8);
 
     $organization = OrganizationFactory::new()->create();

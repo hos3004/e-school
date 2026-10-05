@@ -31,5 +31,34 @@ interface TeacherRateResolver
         ?string $programId = null,
         ?string $courseId = null,
         ?string $sessionType = null,
+        ?int $durationMinutes = null,
+    ): ?array;
+
+    /**
+     * يحل قيمة الخصم للحصة. في العقد الشهري يمكن اشتقاقها من
+     * الراتب الأساسي والهدف الشهري عندما لا يوجد سعر مستقل للحصة.
+     *
+     * @return array{money: Money, scope: RateScope, rate_id: string, contract_id: string, contract_basis: string}|null
+     */
+    public function resolveDeduction(
+        string $staffProfileId,
+        CarbonImmutable $sessionDate,
+        ?string $programId = null,
+        ?string $courseId = null,
+        ?string $sessionType = null,
+        ?int $durationMinutes = null,
+    ): ?array;
+
+    /**
+     * العقد الساري لهذا المعلم بتاريخ الحصة، دون أي بحث عن سعر.
+     *
+     * يستعمله مستهلك يملك مبلغًا يدويًا جاهزًا (سعر مخصّص لحصة بعينها) ويحتاج
+     * فقط معرفة العقد المنسوب إليه القيدة وأساسه، دون قراءة جداول هذا الموديول.
+     *
+     * @return array{contract_id: string, contract_basis: string}|null
+     */
+    public function activeContract(
+        string $staffProfileId,
+        CarbonImmutable $sessionDate,
     ): ?array;
 }

@@ -14,7 +14,7 @@ final class LogRecordingViewRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('recordings.recording.watch');
+        return $this->user()->can('recording.view') || $this->user()->can('recording.view.any');
     }
 
     /**

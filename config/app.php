@@ -17,7 +17,7 @@ return [
 
     'supported_locales' => array_map(
         'trim',
-        explode(',', (string) env('APP_SUPPORTED_LOCALES', 'ar,en,fr')),
+        explode(',', (string) env('APP_SUPPORTED_LOCALES', 'ar,en')),
     ),
 
     'rtl_locales' => ['ar'],

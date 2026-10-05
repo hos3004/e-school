@@ -104,6 +104,36 @@ it('escalates to freeze at the configured third threshold exactly once', functio
     Event::assertDispatchedTimes(DisciplineActionApplied::class, 1);
 });
 
+it('counts only violations inside the configured rolling window', function (): void {
+    config()->set([
+        'discipline.counter_window' => 'rolling',
+        'discipline.counter_window_days' => 30,
+        'discipline.ladder' => [
+            ['threshold' => 2, 'action' => 'warning'],
+        ],
+    ]);
+
+    Event::fake([DisciplineActionApplied::class]);
+
+    $enrollmentId = (string) str()->ulid();
+    $action = app(RecordViolationAction::class);
+
+    $action->execute(violationData([
+        'enrollment_id' => $enrollmentId,
+        'occurred_at' => now()->subDays(31)->toIso8601String(),
+    ]));
+
+    $current = $action->execute(violationData([
+        'enrollment_id' => $enrollmentId,
+        'occurred_at' => now()->toIso8601String(),
+    ]));
+
+    expect($action->countInWindow($current))->toBe(1)
+        ->and(DisciplineAction::query()->count())->toBe(0);
+
+    Event::assertNotDispatched(DisciplineActionApplied::class);
+});
+
 it('rejects a violation type that is unknown to the enum', function (): void {
     app(RecordViolationAction::class)->execute(violationData([
         'type' => 'mystery_type',

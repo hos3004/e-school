@@ -22,7 +22,12 @@ final class UpdateLevelController extends Controller
 
     public function __invoke(UpdateLevelRequest $request, Level $level): JsonResponse
     {
-        $level = $this->action->execute($level, $request->validated());
+        $level = $this->action->execute(
+            $level,
+            $request->validated(),
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return LevelResource::make($level)->response();
     }

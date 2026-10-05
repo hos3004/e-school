@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -15,8 +14,7 @@ use Modules\Notifications\Domain\Models\NotificationCategorySetting;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationCategorySettingResource;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
+use Tests\TestCase;
 
 function categorySettingRecipient(): string
 {
@@ -34,6 +32,7 @@ function categorySettingRecipient(): string
 }
 
 beforeEach(function (): void {
+    /** @var TestCase $this */
     config([
         'notifications.channels' => [
             'in_app' => ['enabled' => true],
@@ -49,6 +48,7 @@ beforeEach(function (): void {
 });
 
 it('falls back to the configuration when the organization has no override', function (): void {
+    /** @var TestCase $this */
     $resolver = new NotificationCategorySettingsResolver;
     $orgId = (string) Str::ulid();
 
@@ -59,6 +59,7 @@ it('falls back to the configuration when the organization has no override', func
 });
 
 it('returns the organization override instead of the configuration when present', function (): void {
+    /** @var TestCase $this */
     $orgId = Fixtures::organizationId();
 
     NotificationCategorySetting::query()->create([
@@ -77,6 +78,7 @@ it('returns the organization override instead of the configuration when present'
 });
 
 it('routes an event to only the channels the organization configured', function (): void {
+    /** @var TestCase $this */
     $userId = categorySettingRecipient();
 
     NotificationCategorySetting::query()->create([
@@ -107,6 +109,7 @@ it('routes an event to only the channels the organization configured', function 
 });
 
 it('keeps the configured channels when no organization override exists', function (): void {
+    /** @var TestCase $this */
     $userId = categorySettingRecipient();
 
     app(NotificationDispatcher::class)->dispatch(
@@ -129,6 +132,7 @@ it('keeps the configured channels when no organization override exists', functio
 });
 
 it('synchronizes a row for every configured category without overwriting customizations', function (): void {
+    /** @var TestCase $this */
     $orgId = Fixtures::organizationId();
     $configuredCount = count((array) config('notifications.categories'));
 
@@ -151,6 +155,7 @@ it('synchronizes a row for every configured category without overwriting customi
 });
 
 it('scopes the settings resource to the users organization and opens the edit page', function (): void {
+    /** @var TestCase $this */
     Gate::before(static fn (): bool => true);
     Filament::setCurrentPanel('admin');
 

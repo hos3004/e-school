@@ -23,10 +23,9 @@ final class QueueNotificationRequest extends FormRequest
      */
     public function rules(): array
     {
-        $enabledChannels = (array) config('notifications.channels.enabled', Channel::values());
-
         return [
-            'organization_id' => ['required', 'string', 'size:26'],
+            // المؤسسة تُشتق من المستخدم المصادق عليه ولا تُقبل من العميل.
+            'organization_id' => ['prohibited'],
             'user_id' => ['required', 'string', 'size:26'],
             'category' => ['required', 'string', 'max:64'],
             'channel' => ['required', 'string', Rule::in(Channel::values())],

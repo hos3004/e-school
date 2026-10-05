@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace Modules\Discipline\Presentation\Filament\Resources;
 
+use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Modules\Discipline\Application\Actions\CancelReactivationAction;
+use Modules\Discipline\Application\Actions\DecideReactivationAction;
 use Modules\Discipline\Domain\Enums\ReactivationStatus;
 use Modules\Discipline\Domain\Models\ReactivationRequest;
 use Modules\Discipline\Presentation\Filament\Resources\ReactivationRequestFilamentResource\Pages;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد طلبات إعادة التفعيل — مراجعة إدارية بلا نصوص مكتوبة مباشرة.
@@ -29,7 +35,9 @@ final class ReactivationRequestFilamentResource extends Resource
 
     protected static ?int $navigationSort = 60;
 
-    public static function getNavigationGroup(): ?string
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-lock-open';
+
+    public static function getNavigationGroup(): string
     {
         return __('discipline::filament.navigation_group');
     }
@@ -84,7 +92,11 @@ final class ReactivationRequestFilamentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'discipline::origin.reactivation',
+            'heroicon-o-lock-open',
+        )
             ->columns([
                 TextColumn::make('enrollment_id')
                     ->label(__('discipline::attributes.enrollment_id'))
@@ -121,8 +133,100 @@ final class ReactivationRequestFilamentResource extends Resource
                         ->mapWithKeys(fn (ReactivationStatus $s): array => [$s->value => $s->label()])
                         ->all()),
             ])
-            ->actions([])
+            ->recordActions([
+                ViewAction::make(),
+                ...self::decisionActions(),
+            ])
             ->bulkActions([]);
+    }
+
+    /**
+     * أزرار حسم الطلب — تُركَّب في صف الجدول وفي رأس صفحة الطلب من مصدر واحد.
+     *
+     * كانت `DecideReactivationAction` مكتوبة ومختبَرة ولها سياسة `decide`، ولا
+     * يصل إليها أحد من اللوحة: الطالب المجمَّد يقدّم طلبًا، ولوحة المعلومات تعرض
+     * «طلبات فك تجميد معلّقة»، ولا زرَّ يغلق البند. والحسم قرار يومي فمكانه
+     * الجدول لا صفحةً داخلية وحدها.
+     *
+     * @return list<Action>
+     */
+    public static function decisionActions(): array
+    {
+        return [
+            self::decisionAction(ReactivationStatus::Approved, 'approve', 'approved', 'heroicon-m-check', 'primary'),
+            self::decisionAction(ReactivationStatus::Rejected, 'reject', 'rejected', 'heroicon-m-x-mark', 'danger'),
+            self::cancelAction(),
+        ];
+    }
+
+    private static function decisionAction(
+        ReactivationStatus $decision,
+        string $name,
+        string $successKey,
+        string $icon,
+        string $color,
+    ): Action {
+        return Action::make($name)
+            ->label(__('discipline::filament.reactivations.'.$name))
+            ->icon($icon)
+            ->color($color)
+            ->authorize('decide')
+            ->form([
+                // السبب إلزامي بحكم البند 7: لا تغيير حسّاس بلا سبب مكتوب.
+                Textarea::make('decision_note')
+                    ->label(__('discipline::attributes.decision_note'))
+                    ->required()
+                    ->minLength(3)
+                    ->maxLength(2000),
+
+                /*
+                 * القبول وحده يشترط محاولة اختبار الجدية حين تكون
+                 * `discipline.reactivation.requires_assessment` مفعّلة، وإلا رمى
+                 * الإجراءُ `reactivation_assessment_required`. يُطلب المعرّف نصًّا
+                 * لا من قائمة، لأن Discipline لا يملك عقد قراءة معلنًا نحو
+                 * Assessments، واستيراد نماذجه يكسر حدود الموديولات.
+                 */
+                TextInput::make('assessment_attempt_id')
+                    ->label(__('discipline::attributes.assessment_attempt_id'))
+                    ->helperText(__('discipline::filament.reactivations.assessment_hint'))
+                    ->default(fn (ReactivationRequest $record): ?string => $record->assessment_attempt_id)
+                    ->length(26)
+                    ->visible($decision === ReactivationStatus::Approved)
+                    ->required(
+                        $decision === ReactivationStatus::Approved
+                        && (bool) config('discipline.reactivation.requires_assessment', true),
+                    ),
+            ])
+            ->action(function (ReactivationRequest $record, array $data) use ($decision, $successKey): void {
+                app(DecideReactivationAction::class)->execute($record, [
+                    'decision' => $decision,
+                    'decision_note' => (string) $data['decision_note'],
+                    'assessment_attempt_id' => $data['assessment_attempt_id'] ?? null,
+                ]);
+
+                Notification::make()
+                    ->title(__('discipline::filament.reactivations.'.$successKey))
+                    ->success()
+                    ->send();
+            });
+    }
+
+    private static function cancelAction(): Action
+    {
+        return Action::make('cancel_request')
+            ->label(__('discipline::filament.reactivations.cancel'))
+            ->icon('heroicon-m-arrow-uturn-left')
+            ->color('gray')
+            ->authorize('cancel')
+            ->requiresConfirmation()
+            ->action(function (ReactivationRequest $record): void {
+                app(CancelReactivationAction::class)->execute($record);
+
+                Notification::make()
+                    ->title(__('discipline::filament.reactivations.cancelled'))
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function getPages(): array

@@ -6,13 +6,17 @@ use Modules\Notifications\Application\Services\TemplateRenderer;
 use Modules\Notifications\Database\Seeders\NotificationTemplateSeeder;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Models\NotificationTemplate;
+use PHPUnit\Framework\Assert;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
+use Tests\TestCase;
 
 it('seeds Arabic and English templates for all phase-one events and channels', function (): void {
+    /** @var TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
 
     $configuredEvents = array_keys((array) config('notifications.events'));
+    $eventCount = count($configuredEvents);
     sort($configuredEvents);
     $seededEvents = NotificationTemplate::query()
         ->distinct()
@@ -20,10 +24,10 @@ it('seeds Arabic and English templates for all phase-one events and channels', f
         ->all();
     sort($seededEvents);
 
-    expect(NotificationTemplate::query()->distinct()->count('event_key'))->toBe(26)
+    expect(NotificationTemplate::query()->distinct()->count('event_key'))->toBe($eventCount)
         ->and(NotificationTemplate::query()->distinct()->count('channel'))->toBe(3)
         ->and(NotificationTemplate::query()->distinct()->count('locale'))->toBe(2)
-        ->and(NotificationTemplate::query()->count())->toBe(156)
+        ->and(NotificationTemplate::query()->count())->toBe($eventCount * 3 * 2)
         ->and($seededEvents)->toBe($configuredEvents);
 });
 
@@ -46,6 +50,7 @@ it('keeps template placeholders declared and identical in Arabic and English', f
 });
 
 it('falls back from an unavailable locale to Arabic before English', function (): void {
+    /** @var TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
 
     $rendered = app(TemplateRenderer::class)->render(
@@ -62,6 +67,7 @@ it('falls back from an unavailable locale to Arabic before English', function ()
 });
 
 it('prefers an organization template over the global template in the same locale', function (): void {
+    /** @var TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
     $organizationId = Fixtures::organizationId();
 
@@ -90,6 +96,7 @@ it('prefers an organization template over the global template in the same locale
 });
 
 it('rejects a template when an announced parameter is absent from the event payload', function (): void {
+    /** @var TestCase $this */
     $this->seed(NotificationTemplateSeeder::class);
 
     try {
@@ -100,7 +107,7 @@ it('rejects a template when an announced parameter is absent from the event payl
             organizationId: Fixtures::organizationId(),
             payload: [],
         );
-        $this->fail('Expected BusinessRuleViolation was not thrown.');
+        Assert::fail('Expected BusinessRuleViolation was not thrown.');
     } catch (BusinessRuleViolation $violation) {
         expect($violation->rule)->toBe('notifications.template_parameter_missing');
     }

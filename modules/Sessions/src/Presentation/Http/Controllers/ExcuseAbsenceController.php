@@ -26,7 +26,11 @@ final class ExcuseAbsenceController extends Controller
 
         Gate::authorize('excuse', $sessionModel);
 
-        $this->action->execute($sessionModel, (string) $request->validated('reason'));
+        $this->action->execute(
+            $sessionModel,
+            (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
+        );
 
         return new SessionResource($sessionModel->refresh());
     }

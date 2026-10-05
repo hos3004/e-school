@@ -7,6 +7,7 @@ namespace Modules\Attendance\Domain\Models;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Shared\Concerns\HasModuleFactory;
@@ -30,11 +31,13 @@ use Shared\Concerns\HasUlid;
  * @property string|null $override_reason
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  */
 final class Attendance extends Model
 {
     use HasModuleFactory;
     use HasUlid;
+    use SoftDeletes;
 
     protected $table = 'attendances';
 

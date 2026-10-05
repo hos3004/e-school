@@ -1,7 +1,9 @@
+import BrandLogo from "@/Components/BrandLogo";
+import { useI18n } from "@/lib/i18n";
 import { usePage } from '@inertiajs/react';
 import { useEffect, type ReactNode } from 'react';
 
-type SupportedLocale = 'ar' | 'en' | 'fr';
+import { useSupportedLocales } from '@/lib/format';
 
 interface GuestLayoutProps {
     children: ReactNode;
@@ -16,18 +18,18 @@ interface GuestSharedProps {
     };
 }
 
-function isSupportedLocale(locale: unknown): locale is SupportedLocale {
-    return locale === 'ar' || locale === 'en' || locale === 'fr';
-}
-
 export default function GuestLayout({ children }: GuestLayoutProps) {
     const { props } = usePage();
+    const t = useI18n();
     const sharedProps = props as typeof props & GuestSharedProps;
+    const supportedLocales: readonly string[] = useSupportedLocales();
     const requestedLocale =
         sharedProps.locale ?? sharedProps.auth?.user?.locale;
-    const locale = isSupportedLocale(requestedLocale)
-        ? requestedLocale
-        : 'ar';
+    const locale =
+        typeof requestedLocale === 'string' &&
+        supportedLocales.includes(requestedLocale)
+            ? requestedLocale
+            : 'ar';
     const direction = locale === 'ar' ? 'rtl' : 'ltr';
 
     useEffect(() => {
@@ -37,15 +39,26 @@ export default function GuestLayout({ children }: GuestLayoutProps) {
 
     return (
         <div
-            className="min-h-dvh bg-[var(--surface)] text-[var(--ink)]"
+            className="relative min-h-dvh overflow-hidden bg-[var(--surface-subtle)] text-[var(--ink)]"
             dir={direction}
         >
-            <main className="flex min-h-dvh w-full items-center justify-center py-8 ps-4 pe-4 sm:ps-6 sm:pe-6">
-                <div className="w-full max-w-md rounded-2xl border border-[color:color-mix(in_srgb,var(--ink)_14%,transparent)] bg-[var(--surface)] p-6 shadow-[0_24px_64px_color-mix(in_srgb,var(--ink)_12%,transparent)] sm:p-8">
-                    <div
-                        className="mb-6 h-1 w-12 rounded-full bg-[var(--brand)]"
-                        aria-hidden="true"
-                    />
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[var(--brand)]"
+            />
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute start-[8%] top-[10%] size-48 rounded-full border border-[var(--line)] opacity-60 sm:size-72"
+            />
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-[8%] end-[6%] h-44 w-28 border-e border-b border-[var(--line)] opacity-70 sm:h-64 sm:w-40"
+            />
+            <main className="relative flex min-h-dvh w-full items-center justify-center px-4 py-10 sm:px-6">
+                <div className="w-full max-w-md rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--surface-raised)] p-6 shadow-[var(--shadow-float)] sm:p-8">
+                    <a href="/" className="mb-7 block w-40">
+                        <BrandLogo label={t('app.name')} />
+                    </a>
                     {children}
                 </div>
             </main>

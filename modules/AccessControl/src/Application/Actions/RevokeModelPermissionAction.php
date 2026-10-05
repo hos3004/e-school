@@ -8,6 +8,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Domain\Events\ModelPermissionRevoked;
 use Modules\AccessControl\Domain\Models\ModelHasPermission;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -19,6 +20,7 @@ final readonly class RevokeModelPermissionAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(
@@ -26,6 +28,8 @@ final readonly class RevokeModelPermissionAction
         string $modelType,
         string $modelId,
         ?string $actorId = null,
+        ?string $organizationId = null,
+        ?string $reason = null,
     ): void {
         /** @var ModelHasPermission|null $grant */
         $grant = ModelHasPermission::query()
@@ -42,12 +46,29 @@ final readonly class RevokeModelPermissionAction
             );
         }
 
-        DB::transaction(function () use ($grant, $modelType, $modelId): void {
+        DB::transaction(function () use ($grant, $permissionName, $modelType, $modelId, $actorId, $organizationId, $reason): void {
             ModelHasPermission::query()
                 ->where('permission_id', $grant->permission_id)
                 ->where('model_type', $modelType)
                 ->where('model_id', $modelId)
                 ->delete();
+
+            if ($actorId !== null && $organizationId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: $organizationId,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'accesscontrol.permission_revoked_directly',
+                    auditableType: $modelType,
+                    auditableId: $modelId,
+                    oldValues: [
+                        'permission_id' => (string) $grant->permission_id,
+                        'permission_name' => $permissionName,
+                    ],
+                    newValues: null,
+                    reason: $reason,
+                );
+            }
         });
 
         $this->events->dispatch(new ModelPermissionRevoked(

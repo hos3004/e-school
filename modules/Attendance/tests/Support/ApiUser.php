@@ -16,8 +16,10 @@ final class ApiUser extends Authenticatable
 {
     public function __construct(
         private readonly string $identifier = '',
+        ?string $organizationId = null,
     ) {
         parent::__construct();
+        $this->setAttribute('organization_id', $organizationId);
     }
 
     public function getAuthIdentifierName(): string

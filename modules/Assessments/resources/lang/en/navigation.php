@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'Assessments & Evaluation',
+    'group' => 'Learning',
     'assessment' => [
         'label' => 'Assessment',
         'plural' => 'Assessments',

@@ -28,6 +28,7 @@ final class GradeSubmissionRequest extends FormRequest
         return [
             'score' => ['required', 'integer', 'min:0'],
             'feedback' => ['nullable', 'string', 'max:5000'],
+            'reason' => ['required', 'string', 'max:1000'],
         ];
     }
 
@@ -50,6 +51,7 @@ final class GradeSubmissionRequest extends FormRequest
         return [
             'score' => __('assignments::attributes.score'),
             'feedback' => __('assignments::attributes.feedback'),
+            'reason' => __('assignments::attributes.reason'),
         ];
     }
 }

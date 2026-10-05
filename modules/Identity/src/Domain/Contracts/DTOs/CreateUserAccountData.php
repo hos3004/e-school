@@ -17,5 +17,7 @@ final readonly class CreateUserAccountData
         public ?string $phoneCountry = null,
         public string $locale = 'ar',
         public string $timezone = 'Africa/Cairo',
+        /** حساب ينشئه الإداري قبل معرفة بيانات التواصل؛ يكملها صاحبه عند أول دخول. */
+        public bool $contactOptional = false,
     ) {}
 }

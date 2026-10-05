@@ -33,4 +33,18 @@ return [
     'dispatch_due_done' => 'Dispatched :count due notifications to sender jobs.',
 
     'retry_failed_done' => 'Rescheduled :count failed notifications.',
+    'not_available' => 'Not available',
+    'no_audit_entries' => 'No manual decisions have been recorded for this notification.',
+    'system_actor' => 'System',
+    'manual_reason_help' => 'State the administrative reason. It is audited and is not shown to recipients.',
+    'manual_preview_empty' => 'Enter a subject or message to see the preview.',
+    'manual_preview_count' => 'The notification will be queued for :count recipients.',
+    'manual_send_failed' => 'The notification could not be queued.',
+    'manual_already_processed' => 'This send request was already processed; no duplicate messages were created.',
+    'manual_queued' => ':queued notifications were queued for :recipients recipients.',
+    'undeliverable_none' => 'No queued messages are addressed to undeliverable domains.',
+    'undeliverable_dry_run' => ':count message(s) addressed to undeliverable domains would be cancelled.',
+    'undeliverable_cancelled' => ':count message(s) addressed to undeliverable domains were cancelled.',
+    'undeliverable_domains_unset' => 'No undeliverable domains are configured; nothing to check.',
+    'undeliverable_cancel_reason' => 'The recipient address is on a reserved domain that can never receive mail; cancelling stops the endless retry.',
 ];

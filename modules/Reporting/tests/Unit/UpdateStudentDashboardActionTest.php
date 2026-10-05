@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Reporting\Application\Actions\UpdateStudentDashboardAction;
 use Modules\Reporting\Domain\Events\StudentDashboardUpdated;
 use Modules\Reporting\Domain\Models\StudentDashboard;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 /**
  * دلتا إسقاط صالحة — تُنشئ اللوحة عند أول استدعاء.

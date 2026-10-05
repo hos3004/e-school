@@ -32,6 +32,8 @@ final class RecordAttendanceRequest extends FormRequest
     {
         $maxAttended = (int) config('attendance.limits.max_attended_minutes', 600);
         $maxOffset = (int) config('attendance.limits.max_offset_minutes', 240);
+        $reasonMin = (int) config('attendance.record.reason_min_chars', 5);
+        $reasonMax = (int) config('attendance.record.reason_max_chars', 1000);
 
         return [
             'session_participant_id' => [
@@ -44,6 +46,7 @@ final class RecordAttendanceRequest extends FormRequest
             'session_minutes' => ['required', 'integer', 'min:1', 'max:'.$maxAttended],
             'joined_after_minutes' => ['sometimes', 'integer', 'min:0', 'max:'.$maxOffset],
             'left_before_minutes' => ['sometimes', 'integer', 'min:0', 'max:'.$maxOffset],
+            'reason' => ['required', 'string', 'min:'.$reasonMin, 'max:'.$reasonMax],
         ];
     }
 
@@ -66,6 +69,9 @@ final class RecordAttendanceRequest extends FormRequest
             'joined_after_minutes.min' => __('attendance::validation.minutes_min'),
             'left_before_minutes.integer' => __('attendance::validation.minutes_integer'),
             'left_before_minutes.min' => __('attendance::validation.minutes_min'),
+            'reason.required' => __('attendance::validation.reason_required'),
+            'reason.min' => __('attendance::validation.reason_min'),
+            'reason.max' => __('attendance::validation.reason_max'),
         ];
     }
 
@@ -80,6 +86,7 @@ final class RecordAttendanceRequest extends FormRequest
             'session_minutes' => __('attendance::attributes.session_minutes'),
             'joined_after_minutes' => __('attendance::attributes.joined_after_minutes'),
             'left_before_minutes' => __('attendance::attributes.left_before_minutes'),
+            'reason' => __('attendance::attributes.reason'),
         ];
     }
 }

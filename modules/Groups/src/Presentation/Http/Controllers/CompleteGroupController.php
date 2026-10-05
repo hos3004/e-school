@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Modules\Groups\Application\Actions\CompleteGroupAction;
 use Modules\Groups\Domain\Models\Group;
+use Modules\Groups\Presentation\Http\Requests\ChangeGroupStatusRequest;
 use Modules\Groups\Presentation\Http\Resources\GroupResource;
 
 /**
@@ -19,14 +20,13 @@ final class CompleteGroupController extends Controller
         private readonly CompleteGroupAction $action,
     ) {}
 
-    public function __invoke(Group $group): JsonResponse
+    public function __invoke(ChangeGroupStatusRequest $request, Group $group): JsonResponse
     {
-        abort_unless(
-            request()->user()?->can('complete', $group) ?? false,
-            403,
+        $group = $this->action->execute(
+            $group,
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
         );
-
-        $group = $this->action->execute($group);
 
         return GroupResource::make($group)->response();
     }

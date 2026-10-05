@@ -28,9 +28,29 @@ final class CreateAdminUser extends Command
             return self::FAILURE;
         }
 
-        $email = $this->option('email') ?? $this->ask('البريد الإلكتروني', 'admin@demo.local');
-        $password = $this->option('password') ?? $this->secret('كلمة المرور') ?? 'password';
-        $name = $this->option('name') ?? $this->ask('الاسم', 'Admin');
+        $email = (string) ($this->option('email') ?? $this->ask('البريد الإلكتروني'));
+        $password = (string) ($this->option('password') ?? $this->secret('كلمة المرور (16 محرفًا على الأقل)'));
+        $name = (string) ($this->option('name') ?? $this->ask('الاسم', 'Platform Administrator'));
+
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $this->error('البريد الإلكتروني غير صالح.');
+
+            return self::FAILURE;
+        }
+
+        if (mb_strlen($password) < 16) {
+            $this->error('كلمة المرور يجب أن تكون 16 محرفًا على الأقل ولا توجد قيمة افتراضية.');
+
+            return self::FAILURE;
+        }
+
+        $roleId = DB::table('roles')->where('name', 'platform_admin')->value('id');
+
+        if ($roleId === null) {
+            $this->error('الدور platform_admin غير موجود — شغّل بذرة الصلاحيات المرجعية أولًا.');
+
+            return self::FAILURE;
+        }
 
         $user = User::query()->firstOrCreate(
             ['email' => $email],
@@ -45,23 +65,16 @@ final class CreateAdminUser extends Command
             $this->warn('المستخدم موجود مسبقًا — سيُستخدم الحساب الحالي.');
         }
 
-        $roleId = DB::table('roles')->where('name', 'platform_admin')->value('id');
-
-        if ($roleId !== null) {
-            DB::table('model_has_roles')->updateOrInsert(
-                [
-                    'role_id' => $roleId,
-                    'model_type' => User::class,
-                    'model_id' => $user->id,
-                ],
-            );
-            $this->info('أُسند الدور platform_admin.');
-        } else {
-            $this->warn('الدور platform_admin غير موجود — لم يُسند أي دور.');
-        }
+        DB::table('model_has_roles')->updateOrInsert(
+            [
+                'role_id' => $roleId,
+                'model_type' => User::class,
+                'model_id' => $user->id,
+            ],
+        );
+        $this->info('أُسند الدور platform_admin.');
 
         $this->info('Email: '.$user->email);
-        $this->info('Password: '.$password);
 
         return self::SUCCESS;
     }

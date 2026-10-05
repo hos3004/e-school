@@ -21,6 +21,8 @@ final class LinkStudentController
             $guardianProfile,
             (string) $request->validated('student_profile_id'),
             $request->validated(),
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
         );
 
         return GuardianLinkResource::make($link)

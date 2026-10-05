@@ -7,6 +7,7 @@ namespace Modules\Assignments\Database\Factories;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Assignments\Domain\Enums\AssignmentSubmissionStatus;
+use Modules\Assignments\Domain\Models\Assignment;
 use Modules\Assignments\Domain\Models\AssignmentSubmission;
 use Shared\Testing\Fixtures;
 

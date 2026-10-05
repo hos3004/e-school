@@ -3,17 +3,30 @@
 declare(strict_types=1);
 
 return [
+    'schedule.created' => [
+        'subject' => 'تم اعتماد الجدول الدراسي',
+        'body' => 'تم اعتماد جدول {{target_name}} في كورس {{course_name}} ({{course_code}}) مع المعلم {{teacher_name}}. مدة الحصة {{duration_minutes}} دقيقة. المواعيد الأسبوعية: {{weekly_pattern}}.',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'duration_minutes', 'weekly_pattern'],
+    ],
+    'schedule.times_changed' => [
+        'subject' => 'تم تعديل مواعيد الحصص الدائمة',
+        'body' => 'تم تعديل مواعيد الحصص الدائمة لجدول {{target_name}} في كورس {{course_name}} ({{course_code}}) مع المعلم {{teacher_name}} لتكون: {{weekly_pattern}}، اعتبارًا من {{effective_from}}.',
+        'parameters' => ['target_name', 'course_name', 'course_code', 'teacher_name', 'weekly_pattern', 'effective_from'],
+    ],
     'registration.submitted' => [
         'subject' => 'تم استلام طلب التسجيل',
-        'body' => 'تم استلام طلب التسجيل، وسيصلك إشعار عند اكتمال المراجعة.',
+        'body' => 'استلمنا طلب التحاق {{full_name}}. الكورس المطلوب: {{course_name}} — تاريخ التقديم: {{submitted_at}}. الطلب الآن قيد مراجعة الإدارة، وسيصلك إشعار بالقرار فور اكتمالها.',
+        'parameters' => ['full_name', 'course_name', 'submitted_at'],
     ],
     'registration.approved' => [
         'subject' => 'تم اعتماد التسجيل',
-        'body' => 'تم اعتماد طلب التسجيل بنجاح. يمكنك الآن متابعة خطوات البدء.',
+        'body' => 'تم قبول طلب التحاق {{student_name}}. الكورس: {{course_name}} — كود الطالب: {{student_code}}. الخطوة التالية عند الإدارة: تحديد المعلم ومواعيد الحصص، وسيصلك إشعار بالجدول فور اعتماده، ولا يلزمك أي إجراء الآن.',
+        'parameters' => ['student_name', 'course_name', 'student_code'],
     ],
     'registration.rejected' => [
         'subject' => 'تحديث طلب التسجيل',
-        'body' => 'تعذّر اعتماد طلب التسجيل. راجع تفاصيل الطلب أو تواصل مع الإدارة.',
+        'body' => 'تعذّر قبول طلب التحاق {{student_name}}. الكورس: {{course_name}} — السبب: {{reason}}. يمكنك التواصل مع الإدارة لمعرفة التفاصيل أو تقديم طلب جديد.',
+        'parameters' => ['student_name', 'course_name', 'reason'],
     ],
     'teacher.availability.approved' => [
         'subject' => 'تم اعتماد الإتاحة',
@@ -39,11 +52,38 @@ return [
     ],
     'teacher.apology.submitted' => [
         'subject' => 'تم استلام اعتذار المعلم',
-        'body' => 'تم استلام طلب الاعتذار وسيُراجع من المشرف.',
+        'body' => 'تم تسجيل اعتذار المعلم واعتماده، وبدأ البحث عن بديل.',
+    ],
+    'student.apology.submitted' => [
+        'subject' => 'تم تسجيل اعتذار الطالب',
+        'body' => 'تم تسجيل اعتذار الطالب عن الحصة وإخطار الأطراف المعنية.',
+    ],
+    'session.ready_ping' => [
+        'subject' => 'الطالب مستعد الآن',
+        'body' => 'أعلن الطالب استعداده لبدء الحصة الآن. إذا لم يدخل الطالب بعد فتحك للفصل، لن تُحتسب الحصة ضمن مستحقاتك.',
+    ],
+    'postponement.requested' => [
+        'subject' => 'طلب تأجيل حصة',
+        'body' => 'تم تسجيل طلب تأجيل الحصة إلى {{proposed_start}} وإخطار الأطراف المعنية.',
+        'parameters' => ['proposed_start'],
+    ],
+    'postponement.alternative_proposed' => [
+        'subject' => 'اقترح المعلم موعدًا بديلًا',
+        'body' => 'اقترح المعلم موعدًا بديلًا للحصة في {{teacher_proposed_start}}.',
+        'parameters' => ['teacher_proposed_start'],
+    ],
+    'postponement.scheduled' => [
+        'subject' => 'تم تأجيل الحصة',
+        'body' => 'تم اعتماد الموعد البديل للحصة في {{agreed_start}}.',
+        'parameters' => ['agreed_start'],
+    ],
+    'postponement.rejected' => [
+        'subject' => 'رُفض طلب التأجيل',
+        'body' => 'رُفض طلب تأجيل الحصة. راجع السبب المسجل في المنصة.',
     ],
     'teacher.apology.approved' => [
         'subject' => 'تم اعتماد الاعتذار',
-        'body' => 'اعتمد المشرف اعتذار المعلم وبدأت متابعة توفير البديل.',
+        'body' => 'تم اعتماد اعتذار المعلم تلقائيًا وبدأ البحث عن بديل.',
     ],
     'teacher.apology.rejected' => [
         'subject' => 'لم يُعتمد الاعتذار',
@@ -58,6 +98,11 @@ return [
         'body' => 'تم تعيين معلم بديل للحصة المقررة في {{scheduled_start}}.',
         'parameters' => ['scheduled_start'],
     ],
+    'session.substitute.candidates_updated' => [
+        'subject' => 'تحديث مرشحي المعلم البديل',
+        'body' => 'وجد البحث التلقائي {{candidate_count}} مرشحًا متاحًا ومؤهلًا للحصة.',
+        'parameters' => ['candidate_count'],
+    ],
     'session.substitute.changed' => [
         'subject' => 'تغيّر المعلم البديل',
         'body' => 'تم تحديث المعلم البديل للحصة المقررة في {{scheduled_start}}.',
@@ -65,12 +110,8 @@ return [
     ],
     'session.approaching' => [
         'subject' => 'موعد الحصة يقترب',
-        'body' => 'تذكير: تبدأ الحصة في {{scheduled_start}}.',
-        'parameters' => ['scheduled_start'],
-    ],
-    'session.joinable' => [
-        'subject' => 'يمكنك دخول الحصة الآن',
-        'body' => 'فُتحت نافذة الدخول إلى الحصة. استخدم رابط الدخول الآمن من جدولك.',
+        'body' => 'تذكير: تبدأ حصة {{course_name}} في {{scheduled_start}}، ومدتها {{duration_minutes}} دقيقة.',
+        'parameters' => ['course_name', 'scheduled_start', 'duration_minutes'],
     ],
     'classroom.guest_invited' => [
         'subject' => 'دعوة ضيف إلى الفصل',
@@ -112,5 +153,40 @@ return [
         'subject' => 'تم رصد درجة الواجب',
         'body' => 'تم رصد درجتك: {{score}} من {{max_score}}. اطّلع على الملاحظات من خلال حسابك.',
         'parameters' => ['score', 'max_score'],
+    ],
+    'message.sent' => [
+        'subject' => 'رسالة جديدة من {{sender_name}}',
+        'body' => '{{sender_name}}: {{message_preview}}',
+        'parameters' => ['sender_name', 'message_preview'],
+    ],
+    'schedule.change.requested' => [
+        'subject' => 'طلب تغيير الموعد الدائم للحصص',
+        'body' => 'طلب المعلم {{teacher_name}} تغيير موعد حصص {{course_name}} من {{current_schedule}} إلى {{proposed_schedule}}. لا يسري الموعد الجديد قبل قبول كل الطلاب، وتنتهي مهلة الرد في {{expires_at}}.',
+        'parameters' => ['teacher_name', 'course_name', 'current_schedule', 'proposed_schedule', 'expires_at'],
+    ],
+    'schedule.change.applied' => [
+        'subject' => 'اعتُمد الموعد الدائم الجديد للحصص',
+        'body' => 'قبل كل الطلاب الموعد الجديد لحصص {{course_name}}: {{proposed_schedule}}. يسري على الحصص اعتبارًا من {{effective_from}}.',
+        'parameters' => ['course_name', 'proposed_schedule', 'effective_from'],
+    ],
+    'schedule.change.rejected' => [
+        'subject' => 'لم يُعتمد تغيير الموعد الدائم للحصص',
+        'body' => 'انتهى طلب تغيير موعد حصص {{course_name}} إلى {{proposed_schedule}} دون اعتماد، والموعد الحالي مستمر كما هو.',
+        'parameters' => ['course_name', 'proposed_schedule'],
+    ],
+    'session.join_link.teacher' => [
+        'subject' => 'اقترب موعد حصتك — رابط الدخول',
+        'body' => 'تبدأ حصة {{course_name}} بعد {{minutes_until_start}} دقيقة، في {{scheduled_start}}. افتح صفحة الحصة وسجّل دخولك منها ليحتسب النظام حضورك ويضيف مستحقات الحصة إلى رصيدك: {{join_url}}',
+        'parameters' => ['course_name', 'minutes_until_start', 'scheduled_start', 'join_url'],
+    ],
+    'session.join_link.student' => [
+        'subject' => 'اقترب موعد حصتك — رابط الدخول',
+        'body' => 'تبدأ حصة {{course_name}} بعد {{minutes_until_start}} دقيقة، في {{scheduled_start}}. ادخل الفصل مباشرة من هذا الرابط: {{join_url}}',
+        'parameters' => ['course_name', 'minutes_until_start', 'scheduled_start', 'join_url'],
+    ],
+    'discipline.absence_recorded' => [
+        'subject' => 'تسجيل غياب عن الحصة',
+        'body' => 'سُجِّل غياب {{student_name}} عن حصة {{course_name}} بتاريخ {{scheduled_start}}. بلغ عدد مرات الغياب {{absence_count}} خلال الفترة الحالية. رجاء العلم أن النظام مبرمج للقيام بتجميد القيد تلقائيًا وإتاحة المقعد لطالب آخر في حال بلوغ الغياب {{freeze_threshold}} مرات بدون عذر مسبق.',
+        'parameters' => ['student_name', 'course_name', 'scheduled_start', 'absence_count', 'freeze_threshold'],
     ],
 ];

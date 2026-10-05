@@ -72,6 +72,7 @@ sessions.finalized (status=NoShow)
 | `scheduling.postponement_scheduled` | requestId, sessionId, makeupSessionId, agreedStart | **Sessions** · **Payroll** (تأجيل القيدة) · Notifications |
 | `scheduling.postponement_rejected` | requestId, reason | Notifications |
 | `scheduling.postponement_expired` | requestId | Notifications (تصعيد للإدارة) |
+| أحداث التأجيل الأربعة | organizationId, studentUserIds, teacherUserId | Notifications (الطرفان + الإشراف + الإدارة، للإحاطة لا الموافقة) |
 
 ---
 
@@ -86,6 +87,8 @@ sessions.finalized (status=NoShow)
 | **`sessions.finalized`** | sessionId, status, outcome, teacherId, substituteForTeacherId, participants[] | **Payroll · Discipline · AcademicReports · Reporting · Notifications** |
 | `sessions.cancelled` | sessionId, cancelledBy, actorRole, reason, noticeMinutes | Payroll · Discipline · Notifications · Reporting |
 | `sessions.postponed` | sessionId, makeupSessionId | Payroll · Notifications |
+| `sessions.student_apologized` | sessionId, participantId, studentUserId, teacherUserId, groupSession | Attendance · Notifications |
+| `sessions.substitute_candidates_updated` | sessionId, apologyId, candidateIds, candidateCount | Notifications (الإشراف + الإدارة) |
 | `sessions.substitute_assigned` | sessionId, originalTeacherId, substituteTeacherId | **Payroll** · Notifications |
 | `sessions.makeup_completed` | makeupSessionId, originalSessionId | **Payroll** (تحرير المؤجَّل) |
 
@@ -121,7 +124,7 @@ final class SessionFinalized extends DomainEvent
 | الحدث | الحمولة | المستمعون |
 |-------|---------|-----------|
 | `attendance.computed` | sessionId, derived[] | Notifications (تنبيه المعلم) |
-| `attendance.confirmed` | sessionId, confirmedBy, records[] | **Sessions** (يسمح بالإقفال) · Reporting |
+| `attendance.confirmed` | attendanceId, participantId, status, confirmedBy | Discipline (فقط إذا كان المعتمد هو المعلم المعيّن) · Reporting |
 | `attendance.overridden` | attendanceId, from, to, reason, actorId | **Audit** · Notifications |
 | `classroom.created` | sessionId, provider, externalId | — |
 | `classroom.started` | sessionId, startedAt | **Sessions** |

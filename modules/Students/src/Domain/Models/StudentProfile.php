@@ -37,6 +37,7 @@ use Shared\Concerns\HasUlid;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property CarbonImmutable|null $deleted_at
+ * @property-read RegistrationApplication|null $registrationApplication
  */
 final class StudentProfile extends Model
 {
@@ -60,6 +61,7 @@ final class StudentProfile extends Model
         'country_id',
         'region_id',
         'city',
+        'region_name',
         'preferred_language',
         'joined_at',
         'notes',

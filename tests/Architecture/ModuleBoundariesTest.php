@@ -135,7 +135,20 @@ foreach ($modules as $module) {
         continue; // Reporting (الطبقة 7) لا يوجد فوقه أحد — القاعدة فارغة عليه.
     }
 
+    /*
+     * عقد المستودع يسمح بالاعتماد العابر للطبقات عبر Public Contracts فقط.
+     * القاعدة السابقة كانت تمنع namespace الموديول كاملًا هنا، فتناقض القاعدة
+     * 2 أعلاه وتُسقط الاعتماد المشروع على Domain\Contracts.
+     */
+    $publicContractNamespaces = [];
+    foreach ($forbiddenModules as $name) {
+        $publicContractNamespaces[] = "Modules\\{$name}\\Domain\\Contracts";
+        // عقود القراءة تعيد DTOs عامة بلا نماذج Eloquent.
+        $publicContractNamespaces[] = "Modules\\{$name}\\Domain\\ValueObjects";
+    }
+
     arch("اتجاه الطبقات: موديول «{$module}» في الطبقة {$layerOfModule} لا يعتمد على نفس طبقته أو ما فوقها")
         ->expect("Modules\\{$module}")
-        ->not->toUse($namespacesOf($forbiddenModules));
+        ->not->toUse($namespacesOf($forbiddenModules))
+        ->ignoring($publicContractNamespaces);
 }

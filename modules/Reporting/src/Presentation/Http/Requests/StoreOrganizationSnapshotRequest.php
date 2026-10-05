@@ -22,7 +22,6 @@ final class StoreOrganizationSnapshotRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'organization_id' => ['required', 'string', 'size:26'],
             'snapshot_date' => ['required', 'date'],
             'students_active' => ['required', 'integer', 'min:0'],
             'students_frozen' => ['required', 'integer', 'min:0'],
@@ -39,7 +38,6 @@ final class StoreOrganizationSnapshotRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'organization_id' => __('reporting::fields.organization'),
             'snapshot_date' => __('reporting::fields.snapshot_date'),
             'students_active' => __('reporting::fields.students_active'),
             'students_frozen' => __('reporting::fields.students_frozen'),

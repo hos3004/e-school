@@ -8,7 +8,7 @@ declare(strict_types=1);
 */
 
 return [
-    'group' => 'التشغيل',
+    'group' => 'اليوم الدراسي',
     'recording' => [
         'label' => 'تسجيل',
         'plural' => 'التسجيلات',

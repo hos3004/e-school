@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Modules\Payroll\Infrastructure\Providers;
 
+use Modules\Payroll\Application\Console\BackfillPostponements;
 use Modules\Payroll\Application\Listeners\RecordSessionPayrollEntry;
 use Modules\Payroll\Application\Policies\PayrollAdjustmentPolicy;
 use Modules\Payroll\Application\Policies\PayrollEntryPolicy;
 use Modules\Payroll\Application\Policies\PayrollPeriodPolicy;
+use Modules\Payroll\Application\Queries\TeacherDuesQueryService;
 use Modules\Payroll\Application\Queries\TeacherEarningsQueryService;
+use Modules\Payroll\Application\Services\TeacherDuesOperationService;
+use Modules\Payroll\Domain\Contracts\TeacherDuesOperations;
+use Modules\Payroll\Domain\Contracts\TeacherDuesQueries;
 use Modules\Payroll\Domain\Contracts\TeacherEarningsQueries;
 use Modules\Payroll\Domain\Models\PayrollAdjustment;
 use Modules\Payroll\Domain\Models\PayrollEntry;
@@ -18,6 +23,7 @@ use Modules\Sessions\Domain\Events\SessionCompleted;
 use Modules\Sessions\Domain\Events\SessionExcused;
 use Modules\Sessions\Domain\Events\SessionNoShowRecorded;
 use Modules\Sessions\Domain\Events\SessionPostponed;
+use Modules\Sessions\Domain\Events\TeacherApologyDecided;
 use Shared\Module\BaseModuleServiceProvider;
 
 final class PayrollServiceProvider extends BaseModuleServiceProvider
@@ -25,6 +31,13 @@ final class PayrollServiceProvider extends BaseModuleServiceProvider
     protected function moduleName(): string
     {
         return 'Payroll';
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->commands([BackfillPostponements::class]);
     }
 
     /**
@@ -50,6 +63,7 @@ final class PayrollServiceProvider extends BaseModuleServiceProvider
             SessionExcused::class => [$accrual],
             SessionCancelled::class => [$accrual],
             SessionPostponed::class => [$accrual],
+            TeacherApologyDecided::class => [$accrual],
         ];
     }
 
@@ -60,6 +74,8 @@ final class PayrollServiceProvider extends BaseModuleServiceProvider
     {
         return [
             TeacherEarningsQueries::class => TeacherEarningsQueryService::class,
+            TeacherDuesQueries::class => TeacherDuesQueryService::class,
+            TeacherDuesOperations::class => TeacherDuesOperationService::class,
         ];
     }
 

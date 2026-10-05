@@ -10,15 +10,16 @@ use Modules\Reporting\Domain\Models\StudentDashboard;
 /**
  * سياسة لوحات الطلاب — لا فحص لأسماء الأدوار إطلاقًا.
  *
- * القراءة عبر بوابة reporting.student.view_any مع مقارنة ملكية السجل
- * للمؤسسة، والتصحيح عبر صلاحية خاصة منفصلة.
+ * قائمة المؤسسة تحتاج report.view مع student.view.any معًا، والتصحيح
+ * يبقى عبر صلاحية خاصة منفصلة ومقارنة ملكية السجل للمؤسسة.
  */
 final class StudentDashboardPolicy
 {
     /** @param Authenticatable&object{organization_id: string} $user */
     public function viewAny(Authenticatable $user): bool
     {
-        return $user->can('reporting.student.view_any');
+        return $user->can('report.view')
+            && $user->can('student.view.any');
     }
 
     /** @param Authenticatable&object{organization_id: string} $user */

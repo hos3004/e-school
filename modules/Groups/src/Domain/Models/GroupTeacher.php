@@ -12,6 +12,17 @@ use Modules\Groups\Domain\Enums\GroupTeacherRole;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $group_id
+ * @property string $staff_profile_id
+ * @property string|null $course_id
+ * @property GroupTeacherRole $role
+ * @property CarbonImmutable $assigned_from
+ * @property CarbonImmutable|null $assigned_to
+ * @property CarbonImmutable|null $created_at
+ * @property-read Group|null $group
+ */
 final class GroupTeacher extends Model
 {
     use HasModuleFactory;

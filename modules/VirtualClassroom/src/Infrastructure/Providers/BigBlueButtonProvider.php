@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Modules\VirtualClassroom\Domain\Contracts\SupportsWebhookRegistration;
 use Modules\VirtualClassroom\Domain\Contracts\VirtualClassroomProvider;
 use Modules\VirtualClassroom\Domain\Enums\ClassroomEventType;
 use Modules\VirtualClassroom\Domain\Enums\ClassroomHealthStatus;
@@ -22,6 +23,7 @@ use Modules\VirtualClassroom\Domain\ValueObjects\ClassroomSpec;
 use Modules\VirtualClassroom\Domain\ValueObjects\JoinRequest;
 use Modules\VirtualClassroom\Domain\ValueObjects\ParticipantSnapshot;
 use Modules\VirtualClassroom\Domain\ValueObjects\RecordingHandle;
+use Modules\VirtualClassroom\Domain\ValueObjects\RegisteredWebhook;
 use Modules\VirtualClassroom\Domain\ValueObjects\RemoteClassroom;
 use Modules\VirtualClassroom\Domain\ValueObjects\WebhookEvent;
 use SimpleXMLElement;
@@ -30,7 +32,7 @@ use Throwable;
 /**
  * محوّل BigBlueButton الرسمي. لا يسرّب XML أو استثناءات HTTP خارج الموديول.
  */
-final class BigBlueButtonProvider implements VirtualClassroomProvider
+final class BigBlueButtonProvider implements SupportsWebhookRegistration, VirtualClassroomProvider
 {
     /** @param array<string, mixed> $configuration */
     public function __construct(
@@ -88,6 +90,12 @@ final class BigBlueButtonProvider implements VirtualClassroomProvider
             $params['userID'] = $request->externalUserId;
         }
 
+        // logoutURL على مستوى join وليس create: الوجهة تختلف بين المعلم والطالب
+        // في نفس الحصة، وقيمة create واحدة للجميع فلا تصلح للتفريق بينهما.
+        if ($request->returnUrl !== null && $request->returnUrl !== '') {
+            $params['logoutURL'] = $request->returnUrl;
+        }
+
         return $this->buildUrl('join', $params);
     }
 
@@ -97,6 +105,21 @@ final class BigBlueButtonProvider implements VirtualClassroomProvider
         $this->assertSuccess($response, 'isMeetingRunning');
 
         return filter_var($this->xmlValue($response, 'running'), FILTER_VALIDATE_BOOL);
+    }
+
+    public function isAvailable(string $externalId): bool
+    {
+        $response = $this->call('getMeetingInfo', ['meetingID' => $externalId]);
+
+        if ($this->isNotFound($response)) {
+            return false;
+        }
+
+        $this->assertSuccess($response, 'getMeetingInfo');
+        $endTime = $this->xmlValue($response, 'endTime');
+
+        return !filter_var($this->xmlValue($response, 'hasBeenForciblyEnded'), FILTER_VALIDATE_BOOL)
+            && ($endTime === null || $endTime === '0');
     }
 
     public function participants(string $externalId): array
@@ -119,9 +142,15 @@ final class BigBlueButtonProvider implements VirtualClassroomProvider
         return $participants;
     }
 
-    public function endClassroom(string $externalId): void
+    public function endClassroom(string $externalId, ?string $moderatorSecret = null): void
     {
-        $response = $this->call('end', ['meetingID' => $externalId]);
+        $parameters = ['meetingID' => $externalId];
+
+        if ($moderatorSecret !== null && $moderatorSecret !== '') {
+            $parameters['password'] = $moderatorSecret;
+        }
+
+        $response = $this->call('end', $parameters);
 
         if (!$this->isNotFound($response)) {
             $this->assertSuccess($response, 'end');
@@ -200,13 +229,37 @@ final class BigBlueButtonProvider implements VirtualClassroomProvider
 
         $payload = json_decode($encodedEvent, true);
 
+        /*
+         * bbb-webhooks 3 يلفّ كل حدث في مصفوفة: event=[{...}] (انظر
+         * callback-emitter.js). قراءة الجذر مباشرة أسقطت كل التسليمات بصمت
+         * بردّ 204، فلم يُسجَّل أي دخول ولم يُثبت حضور أي معلم.
+         */
+        if (is_array($payload) && array_is_list($payload)) {
+            if (count($payload) > 1) {
+                Log::warning('virtualclassroom.webhook_batch_truncated', [
+                    'count' => count($payload),
+                ]);
+            }
+
+            $payload = $payload[0] ?? null;
+        }
+
         if (!is_array($payload)) {
+            Log::warning('virtualclassroom.webhook_unparseable', [
+                'reason' => 'invalid_event_json',
+            ]);
+
             return null;
         }
 
         $eventName = data_get($payload, 'data.id') ?? data_get($payload, 'header.event.name');
 
         if (!is_string($eventName)) {
+            Log::warning('virtualclassroom.webhook_unparseable', [
+                'reason' => 'missing_event_name',
+                'keys' => array_slice(array_map('strval', array_keys($payload)), 0, 10),
+            ]);
+
             return null;
         }
 
@@ -229,7 +282,7 @@ final class BigBlueButtonProvider implements VirtualClassroomProvider
             ?? data_get($payload, 'header.meeting_id');
 
         if (!is_string($externalId) || $externalId === '') {
-            throw ClassroomProviderException::rejected(['action' => 'webhook']);
+            return null;
         }
 
         $externalUserId = data_get($payload, 'data.attributes.user.external-user-id')
@@ -248,6 +301,68 @@ final class BigBlueButtonProvider implements VirtualClassroomProvider
                 ?? CarbonImmutable::now('UTC'),
             payload: $payload,
         );
+    }
+
+    public function registerWebhook(string $callbackUrl, ?string $externalId = null): RegisteredWebhook
+    {
+        $params = ['callbackURL' => $callbackUrl];
+
+        if ($externalId !== null && $externalId !== '') {
+            $params['meetingID'] = $externalId;
+        }
+
+        $response = $this->call('hooks/create', $params);
+        $this->assertSuccess($response, 'hooks/create');
+        $hookId = $this->xmlValue($response, 'hookID');
+
+        if ($hookId === null) {
+            throw ClassroomProviderException::rejected([
+                'action' => 'hooks/create',
+                'code' => 'missing_hook_id',
+            ]);
+        }
+
+        return new RegisteredWebhook(
+            hookId: $hookId,
+            callbackUrl: $callbackUrl,
+            externalId: $externalId,
+            permanent: filter_var($this->xmlValue($response, 'permanentHook'), FILTER_VALIDATE_BOOL),
+        );
+    }
+
+    public function registeredWebhooks(?string $externalId = null): array
+    {
+        $params = [];
+
+        if ($externalId !== null && $externalId !== '') {
+            $params['meetingID'] = $externalId;
+        }
+
+        $response = $this->call('hooks/list', $params);
+        $this->assertSuccess($response, 'hooks/list');
+        $hooks = [];
+
+        foreach ($response->hooks->hook ?? [] as $hook) {
+            $meetingId = trim((string) ($hook->meetingID ?? ''));
+
+            $hooks[] = new RegisteredWebhook(
+                hookId: trim((string) ($hook->hookID ?? '')),
+                callbackUrl: trim((string) ($hook->callbackURL ?? '')),
+                externalId: $meetingId === '' ? null : $meetingId,
+                permanent: filter_var((string) ($hook->permanentHook ?? ''), FILTER_VALIDATE_BOOL),
+            );
+        }
+
+        return $hooks;
+    }
+
+    public function removeWebhook(string $hookId): void
+    {
+        $response = $this->call('hooks/destroy', ['hookID' => $hookId]);
+
+        if (!$this->isNotFound($response)) {
+            $this->assertSuccess($response, 'hooks/destroy');
+        }
     }
 
     public function healthCheck(): ClassroomHealth
@@ -345,7 +460,7 @@ final class BigBlueButtonProvider implements VirtualClassroomProvider
         }
 
         $query = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
-        $checksum = sha1($action.$query.(string) ($this->configuration['secret'] ?? ''));
+        $checksum = $this->checksum($action.$query.(string) ($this->configuration['secret'] ?? ''));
 
         return $baseUrl.'/'.$action.'?'.$query
             .($query === '' ? '' : '&')
@@ -415,7 +530,21 @@ final class BigBlueButtonProvider implements VirtualClassroomProvider
             $callbackUrl = $request->url();
         }
 
-        return hash_equals(sha1($callbackUrl.$rawBody.$secret), strtolower($provided));
+        return hash_equals($this->checksum($callbackUrl.$rawBody.$secret), strtolower($provided));
+    }
+
+    private function checksum(string $value): string
+    {
+        $algorithm = strtolower((string) ($this->configuration['checksum_algorithm'] ?? 'sha1'));
+
+        if (!in_array($algorithm, hash_algos(), true)) {
+            throw ClassroomProviderException::configuration([
+                'provider' => $this->name(),
+                'reason' => 'unsupported_checksum_algorithm',
+            ]);
+        }
+
+        return hash($algorithm, $value);
     }
 
     private function isTransient(Throwable $exception): bool

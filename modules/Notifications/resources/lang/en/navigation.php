@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 return [
 
-    'group' => 'Notifications',
+    'group' => 'Communication',
 
     'outbox' => [
         'label' => 'Outbox',
@@ -28,5 +28,10 @@ return [
     'category_setting' => [
         'label' => 'Category setting',
         'plural' => 'Categories & channels',
+    ],
+
+    'popup' => [
+        'label' => 'Popup campaign',
+        'plural' => 'Popup campaigns',
     ],
 ];

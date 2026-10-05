@@ -1,0 +1,71 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Http\Controllers\Console\BoardController;
+use App\Http\Controllers\Console\GroupScheduleController;
+use App\Http\Controllers\Console\LiveBoardController;
+use App\Http\Controllers\Console\SessionObserveController;
+use App\Http\Controllers\Console\SessionReportController;
+use App\Http\Controllers\Console\SessionReviewController;
+use App\Http\Controllers\Console\SessionsController;
+use Illuminate\Support\Facades\Route;
+
+/*
+ * اللوحة: أول ما يفتحه المالك. مسار ثابت قبل أي مسار يلتقط {session}.
+ */
+Route::get('/board', BoardController::class)
+    ->middleware(['can:session.view', 'can:student.view.any'])->name('board');
+
+/*
+ * شاشة المتابعة: مسار ثابت قبل أي مسار يلتقط {session}.
+ */
+Route::get('/live', LiveBoardController::class)
+    ->middleware(['can:session.view', 'can:student.view.any'])->name('live');
+
+Route::get('/sessions', SessionsController::class)->middleware(['can:session.view', 'can:student.view.any'])->name('sessions');
+
+/*
+ * اعتماد الحصص: مسار ثابت، فيُسجَّل قبل أي مسار يلتقط {session} حتى لا تُقرأ
+ * كلمة review معرّفًا لحصة.
+ */
+Route::get('/sessions/review', [SessionReviewController::class, 'index'])
+    ->middleware(['can:session.view', 'can:session.finalize'])
+    ->name('sessions.review');
+Route::post('/sessions/{session}/review', [SessionReviewController::class, 'finalize'])
+    ->whereUlid('session')
+    ->middleware('can:session.view')
+    ->name('sessions.review.decide');
+
+/*
+ * الاعتماد السريع: نفس قرار «اعتماد» ونفس الخدمة، بلا سبب مكتوب لأن الدليل
+ * مرصود في البيانات فيُولَّد منه. صلاحيته هي صلاحية الاعتماد نفسها، والأهلية
+ * تُفحص في الكنترولر لا في الواجهة.
+ */
+Route::post('/sessions/{session}/approve', [SessionReviewController::class, 'approve'])
+    ->whereUlid('session')
+    ->middleware(['can:session.view', 'can:session.finalize'])
+    ->name('sessions.review.approve');
+Route::get('/sessions/{session}/report', SessionReportController::class)
+    ->whereUlid('session')
+    ->middleware(['can:session.view', 'can:report.view'])
+    ->name('sessions.report');
+
+/*
+ * دخول الأدمن بصفة رقابية — منفصل تمامًا عن بوابة المعلم/الطالب
+ * (ClassroomJoinController). لا تحقّق من ملكية الحصة هنا، فقط صلاحية
+ * classroom.observe. كل دخول يُسجَّل في سجل التدقيق داخل الكنترولر نفسه.
+ */
+Route::get('/sessions/{session}/observe', SessionObserveController::class)
+    ->whereUlid('session')
+    ->middleware('can:classroom.observe')
+    ->name('sessions.observe');
+
+Route::middleware('can:schedule.manage')->group(function (): void {
+    Route::get('/schedules/create', [GroupScheduleController::class, 'create'])->name('schedules.create');
+    Route::get('/schedules/availability', [GroupScheduleController::class, 'availability'])->name('schedules.availability');
+    Route::get('/schedules/rate', [GroupScheduleController::class, 'rate'])->name('schedules.rate');
+    Route::post('/schedules', [GroupScheduleController::class, 'store'])->name('schedules.store');
+    Route::get('/schedules/{schedule}/edit', [GroupScheduleController::class, 'edit'])->whereUlid('schedule')->name('schedules.edit');
+    Route::patch('/schedules/{schedule}', [GroupScheduleController::class, 'update'])->whereUlid('schedule')->name('schedules.update');
+});

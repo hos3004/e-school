@@ -8,7 +8,7 @@ Modular Monolith يفشل بطريقة واحدة: أن يصبح Monolith فيه
 ## 1. الطبقات وقاعدة الاتجاه
 
 ```
-الطبقة 7   Reporting                          ← يقرأ من الجميع، لا أحد يقرأ منه
+الطبقة 7   Reporting · SupportBot             ← يقرأ من الجميع، لا أحد يقرأ منه
 الطبقة 6   Payroll · Billing
 الطبقة 5   Discipline · Messaging
 الطبقة 4   Assignments · Assessments · AcademicReports · Certificates
@@ -110,14 +110,14 @@ interface StudentDirectory
 | AccessControl | `roles` · `permissions` · `*_has_*` |
 | Audit | `audit_log` |
 | Integrations | `integration_providers` · `integration_connections` · `integration_webhook_deliveries` |
-| Students | `student_profiles` · `registration_applications` |
+| Students | `student_profiles` · `registration_applications` · `registration_forms` |
 | Guardians | `guardian_profiles` · `guardian_links` |
 | Staff | `staff_profiles` · `teacher_contracts` · `teacher_rates` · `teacher_availability` · `teacher_leaves` · `teacher_courses` |
 | Academics | `programs` · `levels` · `courses` |
 | Groups | `groups` · `group_programs` · `group_teachers` · `group_memberships` |
 | Enrollments | `enrollments` · `enrollment_status_history` |
 | Content | `course_materials` |
-| Scheduling | `schedules` · `postponement_requests` |
+| Scheduling | `schedules` · `schedule_weekly_slots` · `postponement_requests` |
 | Sessions | `sessions` · `session_status_history` · `session_participants` |
 | Attendance | `attendances` |
 | VirtualClassroom | `classrooms` · `classroom_events` |
@@ -132,6 +132,7 @@ interface StudentDirectory
 | Payroll | `payroll_periods` · `payroll_entries` · `payroll_adjustments` · `staff_obligations` |
 | Billing | `invoices` · `payments` · `student_packages` · `coupons` · `refunds` |
 | Reporting | `report_*` (Read Models فقط) |
+| SupportBot | `support_bot_entries` · `support_bot_rules` · `support_bot_conversations` · `support_bot_messages` · `support_bot_account_access` · `support_bot_usage` |
 
 ---
 

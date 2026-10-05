@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'الحصص',
+    'group' => 'اليوم الدراسي',
     'participant' => [
         'label' => 'مشارك في حصة',
         'plural' => 'مشاركو الحصص',

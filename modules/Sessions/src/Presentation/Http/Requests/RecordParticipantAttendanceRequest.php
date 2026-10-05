@@ -14,7 +14,7 @@ final class RecordParticipantAttendanceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('sessions.participant.record_attendance');
+        return $this->user()->can('attendance.record');
     }
 
     /**

@@ -2,17 +2,20 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\Identity\Application\Actions\ChangeUserStatus;
 use Modules\Identity\Domain\Enums\UserStatus;
 use Modules\Identity\Domain\Events\UserStatusChanged;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
+use Modules\Identity\Tests\Support\IdentityPestContext;
 use Shared\Support\BusinessRuleViolation;
 
 uses(CreatesTestOrganization::class);
 
 beforeEach(function (): void {
+    /** @var IdentityPestContext $this */
     $this->createTestOrganization();
 
 });
@@ -28,6 +31,7 @@ function statusTarget(string $organizationId, UserStatus $status): User
 }
 
 it('suspends an active user and records the reason', function (): void {
+    /** @var IdentityPestContext $this */
     Event::fake([UserStatusChanged::class]);
 
     $admin = statusTarget($this->organizationId, UserStatus::Active);
@@ -37,7 +41,12 @@ it('suspends an active user and records the reason', function (): void {
     $updated = $action->execute($target, UserStatus::Suspended, 'تكرار المخالفات', $admin->id);
 
     expect($updated->status)->toBe(UserStatus::Suspended)
-        ->and($updated->fresh()->status)->toBe(UserStatus::Suspended);
+        ->and($updated->fresh()->status)->toBe(UserStatus::Suspended)
+        ->and(DB::table('audit_log')->where([
+            'action' => 'identity.user_status_changed',
+            'auditable_id' => (string) $target->id,
+            'reason' => 'تكرار المخالفات',
+        ])->exists())->toBeTrue();
 
     Event::assertDispatched(UserStatusChanged::class, fn (UserStatusChanged $e): bool => $e->userId === $target->id
         && $e->from === 'active'
@@ -46,6 +55,7 @@ it('suspends an active user and records the reason', function (): void {
 });
 
 it('rejects an empty reason', function (): void {
+    /** @var IdentityPestContext $this */
     $target = statusTarget($this->organizationId, UserStatus::Active);
 
     app(ChangeUserStatus::class)
@@ -53,6 +63,7 @@ it('rejects an empty reason', function (): void {
 })->throws(BusinessRuleViolation::class);
 
 it('rejects a user changing their own status', function (): void {
+    /** @var IdentityPestContext $this */
     $self = statusTarget($this->organizationId, UserStatus::Active);
 
     app(ChangeUserStatus::class)
@@ -60,6 +71,7 @@ it('rejects a user changing their own status', function (): void {
 })->throws(BusinessRuleViolation::class);
 
 it('rejects transitions outside the state machine', function (): void {
+    /** @var IdentityPestContext $this */
     $admin = statusTarget($this->organizationId, UserStatus::Active);
     // الموقوف لا ينتقل إلى نفسه — انتقال غير معرَّف في الآلة.
     $target = statusTarget($this->organizationId, UserStatus::Suspended);
@@ -73,6 +85,4 @@ it('rejects transitions outside the state machine', function (): void {
 
         return;
     }
-
-    $this->fail('Unreachable.');
 });

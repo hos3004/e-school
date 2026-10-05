@@ -37,13 +37,14 @@ final class AttendanceApiTest extends TestCase
 
         $participantId = $this->createSessionParticipant();
 
-        $response = $this->actingAs(new ApiUser(self::ACTOR_ID))
+        $response = $this->actingAs(new ApiUser(self::ACTOR_ID, $this->organizationId))
             ->postJson('/api/attendances', [
                 'session_participant_id' => $participantId,
                 'attended_minutes' => 55,
                 'session_minutes' => 60,
                 'joined_after_minutes' => 2,
                 'left_before_minutes' => 0,
+                'reason' => 'مزامنة حضور الطالب من الفصل الافتراضي',
             ]);
 
         $response->assertCreated()
@@ -81,7 +82,7 @@ final class AttendanceApiTest extends TestCase
 
         $participantId = $this->createSessionParticipant();
 
-        $this->actingAs(new ApiUser(self::ACTOR_ID))
+        $this->actingAs(new ApiUser(self::ACTOR_ID, $this->organizationId))
             ->postJson('/api/attendances', [
                 'session_participant_id' => $participantId,
                 'attended_minutes' => -1,
@@ -115,12 +116,12 @@ final class AttendanceApiTest extends TestCase
             'attended_minutes' => 58,
         ]);
 
-        $this->actingAs(new ApiUser(self::ACTOR_ID))
+        $this->actingAs(new ApiUser(self::ACTOR_ID, $this->organizationId))
             ->getJson('/api/attendances?status=late')
             ->assertOk()
             ->assertJsonPath('data.0.id', (string) $record->getKey());
 
-        $this->actingAs(new ApiUser(self::ACTOR_ID))
+        $this->actingAs(new ApiUser(self::ACTOR_ID, $this->organizationId))
             ->getJson('/api/attendances/'.$record->getKey())
             ->assertOk()
             ->assertJsonPath('data.status', 'late');
@@ -144,7 +145,7 @@ final class AttendanceApiTest extends TestCase
             'derived_status' => 'no_show',
         ]);
 
-        $this->actingAs(new ApiUser($actorId))
+        $this->actingAs(new ApiUser($actorId, $this->organizationId))
             ->patchJson('/api/attendances/'.$record->getKey(), [
                 'status' => 'excused',
                 'reason' => 'عذر طبي موثق بمستشفى معتمد',
@@ -167,7 +168,7 @@ final class AttendanceApiTest extends TestCase
             'derived_status' => 'no_show',
         ]);
 
-        $this->actingAs(new ApiUser(self::ACTOR_ID))
+        $this->actingAs(new ApiUser(self::ACTOR_ID, $this->organizationId))
             ->patchJson('/api/attendances/'.$record->getKey(), [
                 'status' => 'excused',
             ])->assertUnprocessable()
@@ -186,8 +187,10 @@ final class AttendanceApiTest extends TestCase
             'derived_status' => 'present',
         ]);
 
-        $this->actingAs(new ApiUser($actorId))
-            ->postJson('/api/attendances/'.$record->getKey().'/confirm')
+        $this->actingAs(new ApiUser($actorId, $this->organizationId))
+            ->postJson('/api/attendances/'.$record->getKey().'/confirm', [
+                'reason' => 'اعتماد سجل الحضور بعد مراجعة المعلم',
+            ])
             ->assertOk()
             ->assertJsonPath('data.is_confirmed', true)
             ->assertJsonPath('data.confirmed_by', $actorId);

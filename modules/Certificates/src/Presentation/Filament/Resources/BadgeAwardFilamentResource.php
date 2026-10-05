@@ -10,9 +10,13 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+// كان هذا الاستيراد ناقصًا فترمي table() خطأ «Class TextColumn not found».
+// لم يظهر العطب قط لأن المورد كان بلا صفحة فهرس، فلم تُنفَّذ الدالة أبدًا.
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Modules\Certificates\Domain\Models\BadgeAward;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد عرض منح الشارات في لوحة الإدارة.
@@ -29,7 +33,12 @@ final class BadgeAwardFilamentResource extends Resource
 
     protected static ?int $navigationSort = 53;
 
-    public static function getNavigationGroup(): ?string
+    // الخانة معلنة هنا لا في الصنف الأب: `$navigationParentItem` في Filament
+    // مشتركة بين كل الموارد، فبلا إعادة إعلانها يدهس آخرُ إسناد ما قبله.
+    // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?string $navigationParentItem = null;
+
+    public static function getNavigationGroup(): string
     {
         return __('certificates::navigation.group');
     }
@@ -72,7 +81,11 @@ final class BadgeAwardFilamentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'certificates::origin.badge_award',
+            'heroicon-o-star',
+        )
             ->columns([
                 TextColumn::make('badge_id')
                     ->label(__('certificates::navigation.badge.label'))
@@ -90,5 +103,15 @@ final class BadgeAwardFilamentResource extends Resource
                     ->sortable(),
             ])
             ->defaultSort('awarded_at', direction: 'desc');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => BadgeAwardFilamentResource\Pages\ListBadgeAwards::route('/'),
+        ];
     }
 }

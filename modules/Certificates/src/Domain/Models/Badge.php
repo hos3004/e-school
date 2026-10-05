@@ -12,6 +12,16 @@ use Modules\Certificates\Domain\Enums\BadgeTier;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
+/**
+ * @property string $id
+ * @property string $organization_id
+ * @property string $code
+ * @property array<string, string> $name
+ * @property array<string, string>|null $description
+ * @property string|null $icon_path
+ * @property BadgeTier $tier
+ * @property bool $is_active
+ */
 final class Badge extends Model
 {
     use HasModuleFactory;
@@ -40,16 +50,25 @@ final class Badge extends Model
         ];
     }
 
+    /** @return HasMany<BadgeAward, $this> */
     public function awards(): HasMany
     {
         return $this->hasMany(BadgeAward::class);
     }
 
+    /**
+     * @param Builder<Badge> $query
+     * @return Builder<Badge>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * @param Builder<Badge> $query
+     * @return Builder<Badge>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);

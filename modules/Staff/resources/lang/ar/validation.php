@@ -22,6 +22,7 @@ return [
     'scope_required' => 'نطاق السعر مطلوب.',
     'staff_code_required' => 'الرقم الوظيفي مطلوب.',
     'staff_code_unique' => 'الرقم الوظيفي مستخدم لموظف آخر.',
+    'hire_before_birth_invalid' => 'تاريخ التعيين يجب أن يكون بعد تاريخ الميلاد.',
     'staff_profile_required' => 'ملف الموظف مطلوب.',
     'ulid' => 'معرّف المستخدم غير صالح.',
     'user_id_required' => 'حساب المستخدم مطلوب.',

@@ -10,6 +10,7 @@
 
 ## 1. الأدوار
 
+|  (مستلم التقرير الشهري المجمَّع) | ● | ● | — | — | — | — | — | — | — |
 | الدور | الوصف | العدد اليوم |
 |-------|-------|-------------|
 | `platform_admin` | المدير — يرى كل شيء ويضبط السياسات | 1 |
@@ -20,6 +21,7 @@
 | `teacher` | معلم | 16 |
 | `student` | طالب | ~200 |
 | `guardian` | ولي أمر | ~100 |
+| `supervisor` | مشرف الجودة والمتابعة — يرى ويصدّر التقارير، بلا أي إجراء | حسب الحاجة |
 | `auditor` | مراجع — قراءة فقط شاملة، بلا أي تعديل | حسب الحاجة |
 
 **التركيب مسموح:** شخص قد يحمل `teacher` و `guardian` معًا. الصلاحيات تُجمع.
@@ -64,11 +66,16 @@
 | `staff.view.any` | ● | ● | ○ | ○ | — | — | — | — | ○ |
 | `staff.contract.view` | ● | ○ | ● | — | — | ◐own | — | — | ○ |
 | `staff.contract.update` | ● | — | — | — | — | — | — | — | — |
+| `staff.availability.create` | ● | — | — | — | — | ◐own | — | — | — |
+| `staff.availability.approve` | ● | ● | — | — | — | — | — | — | — |
 | `enrollment.view` | ● | ● | ○ | ● | ○ | ◐ | ◐own | ◐children | ○ |
 | `enrollment.create` | ● | ● | — | ● | — | — | — | — | — |
 | `enrollment.pause` | ● | ● | — | ● | — | — | ◐request | ◐request | — |
 | `enrollment.freeze` | ● | ● | — | — | — | — | — | — | — |
 | **`enrollment.reactivate`** | ● | ● | — | — | — | — | — | — | — |
+
+> تشمل `student.create` إنشاء نماذج التسجيل العامة وتعديل أسئلتها داخل مؤسسة
+> المستخدم. النماذج نفسها لا تُحذف؛ تُعطّل للحفاظ على مصدر الطلبات التاريخية.
 
 ### الأكاديمي
 
@@ -87,6 +94,8 @@
 |----------|:-----:|:--------:|:-------:|:---------:|:-----:|:-------:|:-------:|:--------:|:-------:|
 | `schedule.view` | ● | ● | — | ● | ○ | ◐ | ◐own | ◐children | ○ |
 | `schedule.manage` | ● | ● | — | ● | — | — | — | — | — |
+| `schedule.change.request` | ● | ● | — | ● | — | ◐assigned | — | — | — |
+| `schedule.change.respond` | — | — | — | — | — | — | **◐own** | — | — |
 | `session.view` | ● | ● | ○ | ● | ○ | ◐ | ◐own | ◐children | ○ |
 | `session.create` | ● | ● | — | ● | — | ◐assigned | — | — | — |
 | `session.cancel` | ● | ● | — | ● | — | ◐assigned | — | — | — |
@@ -123,6 +132,7 @@
 | `grade.view` | ● | ● | — | ○ | — | ◐assigned | ◐own | ◐children | ○ |
 | `session_report.create` | ● | ● | — | — | — | **◐assigned** | — | — | — |
 | `session_report.view` | ● | ● | — | ○ | — | ◐own | ◐own | ◐children | ○ |
+| `monthly_report.create` | ● | ● | — | — | — | — | — | — | — |
 | `monthly_report.approve` | ● | **●** | — | — | — | — | — | — | — |
 | `certificate.issue` | ● | ● | — | — | — | ◐assigned | — | — | — |
 | `badge.award` | ● | ● | — | — | — | ◐assigned | — | — | — |
@@ -149,16 +159,29 @@
 | الصلاحية | admin | acad.sup | fin.sup | registrar | comms | teacher | student | guardian | auditor |
 |----------|:-----:|:--------:|:-------:|:---------:|:-----:|:-------:|:-------:|:--------:|:-------:|
 | `message.send` | ● | ● | ● | ● | ● | ◐assigned | ◐ | ◐ | — |
+| `notifications.outbox.create` | ● | — | — | — | ● | — | — | — | — |
 | `message.moderate` | ● | ● | — | — | ● | — | — | — | — |
 | **`messaging.inbound.view`** | ● | ● | — | — | ● | — | — | — | — |
 | `announcement.publish` | ● | ● | — | ○ | ● | — | — | — | — |
+| `popup_campaign.view_any` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.view` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.view_analytics` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.create` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.update` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.publish` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.pause` | ● | — | — | — | ● | — | — | — | — |
+| `popup_campaign.archive` | ● | — | — | — | ● | — | — | — | — |
 | `class_wall.post` | ● | ● | — | — | — | ◐assigned | ◐own | — | — |
 | `report.view` | ● | ● | ◐finance | ◐ops | ○ | ◐own | — | — | ○ |
 | `report.export` | ● | ● | ◐finance | ◐ops | — | — | — | — | ● |
 | `audit.view` | ● | ○ | ○ | — | — | — | — | — | **●** |
 | `settings.manage` | ● | — | — | — | — | — | — | — | — |
+| `integrations.connection.update` (Green API settings) | ● | — | — | — | — | — | — | — | — |
+| `reporting.settings.manage` (مستلم التقرير الشهري المجمَّع) | ● | ● | — | — | — | — | — | — | — |
 | `user.impersonate` | ● | — | — | — | — | — | — | — | — |
 | `system.alerts` | ● | ● | — | — | — | — | — | — | — |
+| `support_bot.manage` (قسم المساعد الذكي: التشغيل والنصوص والحدود والوصول) | ● | — | — | — | — | — | — | — | — |
+| `support_bot.archive.view` (قراءة محادثات الناس مع البوت) | ● | — | — | — | — | — | — | — | — |
 
 ---
 
@@ -219,3 +242,179 @@ if ($user->hasRole('teacher')) { ... }
 
 كل مورد **ممنوع افتراضيًا**. الوصول يحتاج صلاحية صريحة.
 `Gate::before` مخصص لـ `platform_admin` فقط، ومع ذلك تُسجَّل أفعاله في التدقيق.
+
+## 6. مسارات اللوحة المستقلة Console v2
+
+جميع `/manage/*` تتطلب ميزة console وتسجيل دخول وحسابًا نشطًا و`admin.panel.access`، إضافةً إلى صلاحية المورد أدناه. لا صلاحيات جديدة ولا فحص باسم الدور.
+
+| المورد / العملية | الحارس الإضافي |
+|---|---|
+| تقرير اليوم والتقارير | `report.view`؛ ملخص الصفحة لا يُرسل دونها |
+| PDF التقرير | `report.view` + `report.export` |
+| الطلاب: قراءة / إنشاء / تعديل | `student.view.any` / `student.create` / `student.update` مع Policy المورد والمؤسسة |
+| المعلمون: قراءة / إنشاء وتعديل الملف | `staff.view.any` / `staff.contract.update` مع Policy المورد والمؤسسة |
+| تعديل اسم/هاتف/توقيت حساب مرتبط | `UserPolicy::update` فوق صلاحية الملف؛ حقول الحساب للقراءة دونها |
+| العقود والأسعار في الملف | `staff.contract.view`؛ لا تُرسل للخادم العميل دونها |
+| البرامج والمستويات | `program.manage` مع نطاق المؤسسة |
+| الكورسات | `course.manage` مع نطاق المؤسسة |
+| المجموعات قراءة / كتابة وإسناد وتفعيل | `group.view` / `group.manage` مع Policies والإجراءات القائمة |
+| القرآن الفردي قراءة / تسكين واقتراح الإتاحة | `student.view.any` / إضافة `schedule.manage` |
+| الإعدادات قراءة / تعديل | `organizations.view` / `organizations.update` للمؤسسة الحالية فقط |
+
+`/learn/*` تتطلب ميزة console وتسجيل الدخول والحساب النشط وملف الطالب/المعلم الخاص. صفحة الحصة تعتمد Policy الحصة، الحضور `attendance.record`، التقرير `session_report.create`، دخول الفصل `session.join`. ملف الطالب للمعلم يتطلب `student.view` وإسنادًا نشطًا مؤسسيًا؛ لا تمنح معرفة المعرّف الوصول. تعديل الحساب الذاتي يمر بطلبات وسياسات الهوية الحالية.
+
+### توسعة إعدادات اللوحة الجديدة
+
+كل المسارات التالية تحتاج الدخول للوحة الجديدة وقراءة المؤسسة، وتتحقق من مؤسسة المستخدم في الخادم:
+- بادئة اسم المستخدم: organizations.manage_settings + OrganizationPolicy::manageSettings.
+- توجيه أنواع التنبيه: settings.manage + NotificationCategorySettingPolicy.
+- عرض التقويمات وإنشاؤها واعتمادها وإغلاقها: academic_calendars.view_any مع الصلاحية الخاصة بالفعل وسياسة التقويم.
+- عرض العطلات وإنشاؤها وإزالتها: holidays.view_any مع الصلاحية الخاصة بالفعل وسياسة العطلة. ربط تقويم يتطلب قراءته والتحقق من المؤسسة.
+
+### مركز المتابعة الجديد `/manage/followup`
+
+هذا المركز يركّب الموارد القائمة ولا ينشئ صلاحيات بديلة. يشترط الدخول صلاحيات `admin.panel.access` و`student.view.any` و`enrollment.view` و`attendance.view` و`discipline.view_any`، مع علم تفعيل Console وحساب نشط.
+
+| العملية | الحراسة الإضافية |
+|---|---|
+| تعليق القيد مؤقتًا | `EnrollmentPolicy::pause` |
+| تجميد القيد | `EnrollmentPolicy::freeze` |
+| استئناف التعليق | `EnrollmentPolicy::reactivate` |
+| تقديم طلب عودة | `EnrollmentPolicy::requestReactivation` و`ReactivationRequestPolicy::create` |
+| مراجعة التقييم وحسم الطلب | `EnrollmentPolicy::reactivate` و`ReactivationRequestPolicy::decide` |
+| تصحيح الحضور وقبول العذر | `AttendancePolicy::override`، و`ViolationEventPolicy::waive` لكل مخالفة غياب مرتبطة قبل حفظ أي تغيير |
+
+جميع معرّفات الموارد مقيدة بمؤسسة المستخدم، والقرارات تتحقق من الحالة الحالية تحت قفل ومعاملة. لا تمنح صلاحية قراءة المركز أي قدرة كتابة.
+
+
+### التسجيل والتسكين والمستحقات في Console
+
+| المسار / الفعل | الصلاحيات والقيود |
+|---|---|
+| نماذج التسجيل والطلبات وقبولها | student.create مع سياسات النماذج والطلب، وتأكيد ربط هوية الحساب الموجود، ونطاق المؤسسة |
+| جدول التسكين وفحصه وحفظه | student.view.any + enrollment.create + group.manage؛ مراجعة الأهلية والسعة والمعلم عبر إجراء التسكين الحالي ومعاملة واحدة |
+| كشف حصص المعلمين ومستحقاتهم | payroll.view مع تفعيل features.payroll، ومؤسسة المعلم والفترة |
+| اقتراح مكافأة أو تسوية | payroll.view + الصلاحية المحددة في payroll.adjustments.propose_permission وسياسة التسوية |
+| اعتماد أو رفض التسوية | payroll.view + payroll.adjustments.approve_permission؛ فصل المقترح عن المعتمد وحماية الفترة المدفوعة |
+
+لا تمنح هذه الصفحات صلاحية صرف أو تغيير حالة الفترة المالية. التصحيح قيد مستقل، والقيمة التاريخية للحصة لا تتغير بتغيير السعر الحالي.
+
+### تقويم الحصص والجداول والقرآن والإتاحة في Console
+
+هذه واجهات للموارد الحالية، دون صلاحيات أو أدوار جديدة:
+
+| المسار / العملية | الصلاحيات والسياسة والنطاق |
+|---|---|
+| GET /manage/sessions | session.view + student.view.any؛ حصص ومشاركو مؤسسة المستخدم فقط، وتوقيت الحساب وبداية أسبوع المؤسسة |
+| جداول المجموعة داخل التقويم | schedule.view + SchedulePolicy::viewAny؛ القوالب الجماعية للمؤسسة فقط |
+| GET /manage/schedules/create وPOST /manage/schedules | schedule.manage + SchedulePolicy::create؛ تحقق وجهة المجموعة والكورس والمعلم والإسناد في CreateScheduleAction |
+| GET /manage/schedules/{schedule}/edit وPATCH /manage/schedules/{schedule} | schedule.manage + SchedulePolicy::update؛ جدول جماعي من المؤسسة، قفل قبل التعديل، ومنع تبديل المجموعة أو الكورس أثناء تحريره |
+| POST /learn/teacher/schedules/{schedule}/change-requests | `schedule.change.request` + ScheduleChangeRequestPolicy::create؛ RequestScheduleChange يتحقق أن القالب نشط ومسند لنفس المعلم، ويصنع صف قبول لكل طالب نشط في الكورس. لا يتغير الجدول عند الطلب. |
+| POST /learn/student/schedule-changes/{change}/respond | `schedule.change.respond` + ScheduleChangeRequestPolicy::respond؛ الرد مقصور على صف القبول المعلّق لهذا الطالب. رفض واحد ينهي الطلب، واكتمال القبول يطبّق الموعد عبر UpdateScheduleAction. |
+| POST /learn/teacher/schedule-changes/{change}/withdraw | `schedule.change.request` أو `schedule.manage` + ScheduleChangeRequestPolicy::withdraw؛ ومطابقة staff_profile_id لصاحب الطلب. |
+| GET /manage/schedules/availability | schedule.manage؛ مجموعة وكورس ومعلم صالحون من المؤسسة، واستثناء جدول موجود يتطلب SchedulePolicy::update وتطابق الوجهة |
+| PATCH /manage/quran/{student}/schedules/{schedule} | student.view.any + schedule.manage + SchedulePolicy::update؛ تطابق الطالب والكورس الفردي والمؤسسة وحساب الطالب النشط. `apply_immediately=true` (17 سبتمبر 2026) يتجاوز مهلة `scheduling.recurrence.edit_lock_hours` ويمس حصصًا قريبة أو حصة اليوم؛ يحتاج `override_reason` صريحًا، محصور بنفس صلاحية schedule.manage (platform_admin/academic_supervisor)، ويُسجَّل في التدقيق ويصل سببه للمعلم والطالب ضمن إشعار تغيّر الموعد |
+| تسكين طلب قرآن مقبول جديد | student.view.any + schedule.manage + enrollment.create + RegistrationApplicationPolicy::scheduleIndividual؛ قفل الطلب المختار، تحقق الأهلية والحالة، معاملة واحدة للقيد والجدول وحالة الطلب |
+| GET /manage/teachers/{teacher}/availability | staff.view + StaffProfilePolicy::view؛ ملف المعلم المسموح من المؤسسة فقط |
+| إضافة نافذة إتاحة | staff.view + staff.availability.create وسياسة إضافة إتاحة الملف؛ المعلم وحسابه نشطان |
+| اعتماد/رفض نافذة إتاحة | staff.view + staff.availability.approve + TeacherAvailabilityPolicy::approve؛ نافذة المعلم المحدد والحالة المسموحة |
+| إزالة نافذة إتاحة | staff.view + TeacherAvailabilityPolicy::delete؛ إداري المؤسسة يحتاج staff.contract.update، وصاحب النافذة يحتاج staff.availability.create عند تعطيل المراجعة؛ لا تتغير الحصص المحجوزة |
+
+لا تنفذ واجهة التقويم تعديلًا مباشرًا على حصة أو حضور أو دفتر مستحقات. إجراء UpdateScheduleAction يحافظ على الماضي والمهلة المحمية، ويعيد توليد المستقبل داخل معاملة وتدقيق. معرفة معرّف مورد أو إرساله من المتصفح لا تمنح الوصول إلى مؤسسة أخرى.
+
+
+### استكمال الملف وأجر الحصة — 2026-09-09
+
+- مسارات /profile/complete: صاحب الحساب فقط عبر UserPolicy::update، وبوجود ملف طالب أو معلم داخل مؤسسته. لا يقبل معرّف مستخدم من الطلب.
+- قراءة وتعديل جدول مدد وأجور الحصص في الإعدادات: organizations.manage_settings وOrganizationPolicy::manageSettings، مع سبب مكتوب وفحص نسخة متزامنة وسجل تدقيق.
+- الحساب ذو الملف غير المكتمل يُمنع من صفحات الموقع وواجهات API؛ استكمال الملف والخروج وتغيير اللغة متاحة فقط حتى يؤكد البيانات.
+
+Pending teaching assignments: administrative read uses schedule.view; changes use schedule.manage scoped to organization. Teacher learning roster exposes only assigned students via the Scheduling public DTO query. Links are soft-deleted and audited; no lesson time is fabricated.
+
+Teacher financial visibility: console teacher profile PUT /manage/teachers/{profile}/financial-visibility requires admin.panel.access, staff.contract.update and organization-scoped StaffProfilePolicy::update, with reason and audit. Hidden teacher accounts are denied payroll.view, payroll.export and staff.contract.view; admin.panel.access holders retain their authorized administrative financial access. No new role or permission is introduced.
+
+---
+
+## 7. دور المشرف `supervisor` — قراءة وتصدير بلا إجراء — 2026-09-12
+
+دور لإدارة الجودة والمتابعة. يرى حالة المنصة ويصدّر التقارير، ولا يملك أي صلاحية
+فعل: لا إنشاء ولا تعديل ولا اعتماد ولا حذف، ولا `session.join` فلا يدخل الاجتماعات
+الافتراضية إطلاقًا وإن رأى بيانات الحصة ومن حضرها وتقاريرها.
+
+**الحزمة القاعدية للدور:**
+
+`admin.panel.access` · `student.view` · `student.view.any` · `guardian.view` ·
+`staff.view` · `staff.view.any` · `enrollment.view` · `group.view` · `content.view` ·
+`schedule.view` · `session.view` · `attendance.view` · `grade.view` ·
+`session_report.view` · `discipline.view_any` · `report.view` · `report.export`
+
+**ثلاث صلاحيات اختيارية تُمنح للحساب نفسه لا للدور**، حسب حاجة كل مشرف، عبر منح
+صلاحية مباشرة (`accesscontrol.permissions.grant_direct`) وقت إنشاء الحساب أو بعده:
+
+| الصلاحية | ما تفتحه |
+|---|---|
+| `payroll.view` | الجانب المالي وصفحة مستحقات المعلمين `/manage/teacher-dues` |
+| `contact.pii.view` | بيانات التواصل الشخصية: هاتف وبريد الطالب والمعلم وولي الأمر |
+| `recording.view` | تسجيلات الحصص |
+
+هذا التركيب مقصود: الدور يبقى حزمة صلاحيات ثابتة، والتخصيص لكل حساب يتم بالمنح
+المباشر، فلا يحتاج مشرف جديد بصلاحيات مختلفة دورًا جديدًا ولا نشرًا برمجيًا.
+
+### `contact.pii.view` — صلاحية جديدة
+
+تحكم ظهور **بيانات التواصل الشخصية** فقط: `phone` و `email`. لا تحكم الجنسية ولا
+الدولة ولا تاريخ الانضمام، فتلك أبعاد تقارير مطلوبة لإدارة الجودة.
+
+الحجب يتم **على الخادم** في `PeopleController`: الحقول لا تُرسل إلى العميل أصلًا
+بدل إخفائها في الواجهة، فلا تظهر في حمولة Inertia ولا في أدوات المطور. يشمل ذلك
+قائمة الأشخاص وصفحة الملف وبطاقة الحساب وبيانات أولياء الأمور داخلها.
+
+مُنحت للأدوار التي كانت ترى هذه البيانات قبل إضافتها — `platform_admin` و
+`academic_supervisor` و `finance_supervisor` و `registrar` و
+`communications_officer` و `auditor` — فلا يتغير سلوك أي حساب قائم. ولم تُمنح
+لدور `supervisor`، لأنها اختيارية فيه بالتصميم.
+
+مسارات التعديل (`edit` / `update`) لا تُحجب: من يملك صلاحية التعديل يحتاج القيمة
+الحقيقية، وهو يملك `contact.pii.view` أصلًا في كل الأدوار أعلاه.
+
+### تشغيل المفاتيح الاختيارية من اللوحة — 2026-09-12
+
+القائمة مصدرها `config('accesscontrol.optional_direct_permissions')` لا الكود، فإضافة
+مفتاح جديد لا تحتاج نشرًا برمجيًا.
+
+الشاشة: صفحة المستخدم في لوحة الإدارة ← زر **«تعديل الصلاحيات الاختيارية»**، وتبويب
+«الأدوار والصلاحيات» يعرض حالة كل مفتاح (مُفعّلة / محجوبة).
+
+القناة بين الموديولين هي عقد `Modules\AccessControl\Domain\Contracts\DirectPermissionGateway`
+— موديول `Identity` في الطبقة 0 مثل `AccessControl`، فلا يجوز له استيراد Actions أو
+Models منه، والعقد هو المنفذ الوحيد الذي تسمح به قاعدة اتجاه الطبقات.
+
+الحراس المفروضة:
+
+| الحارس | السبب |
+|---|---|
+| `accesscontrol.permissions.grant_direct` | لا يظهر الزر بدونها |
+| لا يعدّل المسؤول صلاحياته هو | وإلا صارت البوابة تصعيدًا ذاتيًا لمن يملك المنح فقط |
+| الاسم ضمن القائمة المعلنة | وإلا صارت الشاشة منحًا لأي صلاحية والتفافًا على الأدوار |
+| سبب نصي إلزامي | كل تغيير صلاحية يُسجَّل في `audit_log` بالفاعل والقيمة والسبب |
+
+المنح والسحب يمران بـ `GrantModelPermissionAction` و`RevokeModelPermissionAction`
+القائمتين، فتُنشر أحداث المجال ويُكتب التدقيق كما في أي تغيير صلاحيات آخر. العملية
+idempotent: المفتاح الذي لم تتغير حالته لا يُنشئ قيدًا ولا سطر تدقيق.
+
+## 8. بوت الدعم `SupportBot` — 2026-09-22
+
+الموديول **يعمل بالبوابات وحدها** دون Policy لكل كيان: لا يوجد مورد يملكه مستخدم
+بعينه ويُحرَّر من خارج قسم البوت، وكل مسار محروس بـ`can:` مع فحص المؤسسة داخل
+المتحكّم.
+
+- `support_bot.manage` و`support_bot.archive.view` منفصلتان عمدًا: من يضبط نصوص
+  البوت ليس بالضرورة من يجوز له قراءة ما كتبه الناس.
+- **من يستخدم البوت لا تحدده صلاحية** بل ثلاث طبقات: حالة الاتصال بالمزوّد (المفتاح
+  العام)، والفئات المفعّلة في إعداد المؤسسة، واستثناء الحساب في
+  `support_bot_account_access` الذي يغلب الفئة في الاتجاهين.
+- **ما يراه البوت يحدده `$user->can()` للمستخدم نفسه**: مصدر البيانات لا يقرأ إلا
+  ما يملك المستخدم رؤيته من الموقع، فالفئة تحدد النبرة لا الوصول.
+- الصلاحيتان الجديدتان تحتاجان تشغيل `AccessControlSeeder` ثم إعادة تحميل التطبيق،
+  لأن البوابات تُبنى من جدول الصلاحيات عند الإقلاع.
+

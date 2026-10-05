@@ -24,18 +24,26 @@ final class CourseMaterialResource extends JsonResource
             'id' => $this->id,
             'course_id' => $this->course_id,
             'title' => $this->title,
+            'description' => $this->description,
             'type' => [
                 'value' => $this->type->value,
                 'label' => $this->type->label(),
             ],
-            'disk' => $this->disk,
-            'path' => $this->path,
-            'external_url' => $this->external_url,
+            'status' => [
+                'value' => $this->status->value,
+                'label' => $this->status->label(),
+            ],
+            'revision' => $this->revision,
+            'display_order' => $this->display_order,
+            'source' => $this->type->requiresExternalUrl()
+                ? ['external_url' => $this->external_url]
+                : ['file_name' => basename((string) $this->path)],
             'size_bytes' => $this->size_bytes,
             'visible_from' => $this->visible_from?->toIso8601String(),
             'visible_to' => $this->visible_to?->toIso8601String(),
             'uploaded_by' => $this->uploaded_by,
             'is_currently_visible' => $this->isCurrentlyVisible(),
+            'published_at' => $this->published_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

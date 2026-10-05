@@ -7,7 +7,7 @@ declare(strict_types=1);
 */
 
 return [
-    'navigation_group' => 'Identity & Accounts',
+    'navigation_group' => 'Reports & Administration',
 
     'user' => [
         'label' => 'User',

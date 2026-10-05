@@ -47,4 +47,11 @@ return [
     'value' => 'New value',
     'reason' => 'Correction reason',
 
+    'capture_snapshot' => 'Capture snapshot now',
+    'snapshot_captured' => 'Organization snapshot captured.',
+    'correct' => 'Correct counter',
+    'correction_column' => 'Counter to correct',
+    'correction_value' => 'Correct value',
+    'correction_reason' => 'Reason for correction',
+    'corrected' => 'Counter corrected and attendance rate recomputed.',
 ];

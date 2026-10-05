@@ -7,6 +7,10 @@ declare(strict_types=1);
 */
 
 return [
+    'recipient_selection' => ':count مستلمًا مختارًا',
+    'recipient_all_students' => 'كل الطلاب (:count)',
+    'recipient_all_teachers' => 'كل المعلمين (:count)',
+    'recipient_all_guardians' => 'كل أولياء الأمور (:count)',
 
     'id' => 'المعرّف',
     'organization_id' => 'المؤسسة',
@@ -53,4 +57,33 @@ return [
     'parameters' => 'المتغيّرات',
     'provider_template_name' => 'اسم قالب المزوّد',
     'scope' => 'النطاق',
+    'recipient' => 'المستلم',
+    'retry_reason' => 'سبب إعادة الإرسال',
+    'cancel_reason' => 'سبب الإلغاء',
+    'attempts_history' => 'سجل محاولات التسليم',
+    'result' => 'النتيجة',
+    'audit_history' => 'سجل القرارات والتدقيق',
+    'action' => 'الإجراء',
+    'actor' => 'نفّذ بواسطة',
+    'recipient_type' => 'نوع المستلم',
+    'recipient_count' => 'عدد المستلمين',
+    'preview' => 'معاينة الإشعار',
+    'recipient_types' => [
+        'people' => 'قائمة أشخاص أختارهم',
+        'students_all' => 'كل الطلاب',
+        'teachers_all' => 'كل المعلمين',
+        'guardians_all' => 'كل أولياء الأمور',
+        'student' => 'طالب',
+        'teacher' => 'معلم',
+        'guardian' => 'ولي أمر',
+        'group' => 'مجموعة',
+        'course' => 'كورس',
+        'schedule' => 'جدول',
+    ],
+
+    'audiences' => [
+        'students' => 'الطلاب فقط',
+        'teacher' => 'المعلم فقط',
+        'all' => 'جميع الأطراف',
+    ],
 ];

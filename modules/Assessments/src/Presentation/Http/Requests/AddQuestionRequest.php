@@ -15,7 +15,7 @@ final class AddQuestionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('assessments.question.create');
+        return $this->user()?->can('assessment.manage') ?? false;
     }
 
     /**
@@ -33,6 +33,7 @@ final class AddQuestionRequest extends FormRequest
             'correct_answer' => ['nullable', 'array'],
             'score' => ['required', 'integer', 'min:1'],
             'sort_order' => ['nullable', 'integer', 'min:1'],
+            'reason' => ['required', 'string', 'max:'.(int) config('assessments.reason_max_length', 1000)],
         ];
     }
 

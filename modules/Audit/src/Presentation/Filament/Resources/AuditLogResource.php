@@ -19,6 +19,7 @@ use Modules\Audit\Domain\Enums\AuditActorType;
 use Modules\Audit\Domain\Models\AuditLog;
 use Modules\Audit\Presentation\Filament\Resources\AuditLogResource\Pages;
 use Shared\Concerns\ScopesFilamentToOrganization;
+use Shared\Filament\RecordOriginGuide;
 
 /**
  * مورد Filament لقيود التدقيق — قراءة فقط.
@@ -32,9 +33,21 @@ final class AuditLogResource extends Resource
 
     protected static ?string $model = AuditLog::class;
 
-    public static function getNavigationIcon(): ?string
+    // الترتيب داخل قسمه — يُضبط مركزيًا في App\Filament\AdminNavigation.
+    protected static ?int $navigationSort = 570;
+
+    public static function getNavigationIcon(): string
     {
         return 'heroicon-o-shield-check';
+    }
+
+    /**
+     * كان `audit::labels.nav_group` معرّفًا بلا مستدعٍ، فيسقط سجل التدقيق خارج
+     * كل الأقسام ويظهر وحيدًا أعلى الشريط بلا عنوان.
+     */
+    public static function getNavigationGroup(): string
+    {
+        return __('audit::labels.nav_group');
     }
 
     public static function getModelLabel(): string
@@ -92,7 +105,11 @@ final class AuditLogResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordOriginGuide::for(
+            $table,
+            'audit::origin',
+            'heroicon-o-shield-check',
+        )
             ->columns([
                 TextColumn::make('created_at')
                     ->label(__('audit::labels.fields.created_at'))

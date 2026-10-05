@@ -1,0 +1,17 @@
+/* People pages keep the approved setup and records composition. */
+.console-people-form .registration-mode{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px;border-bottom:1px solid #dfe7e9}
+.console-people-form .people-summary-heading{font-size:13px;font-weight:600;color:#61747b;padding-top:21px;margin-top:20px;border-top:1px solid #e7edef}
+.console-people-form .people-section-links{display:flex;flex-direction:column;gap:12px;margin-top:13px;font-size:12px}
+.console-people-form .people-section-links a{color:#116958}
+.console-people-form .definition dd{overflow-wrap:anywhere}
+.console-people-directory .people-directory-filters{display:flex;gap:14px;align-items:end;flex-wrap:wrap;padding:20px 24px;border-bottom:1px solid #e5ebee}
+.console-people-directory .people-directory-search{min-width:220px;flex:1}
+.console-people-directory .people-directory-filters label{display:block;font-size:12px;font-weight:500;color:#61747b;margin-bottom:7px}
+.console-people-directory .people-directory-name{display:flex;align-items:center;gap:11px}
+.console-people-directory .people-directory-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#ecf3ef;color:#477461;flex:none;font-size:14px}
+.console-people-directory .people-directory-meta{font-size:11px;color:#78908a;line-height:1.9;margin-top:4px}
+.console-people-directory .people-directory-meta bdi{margin-inline-end:10px}
+.console-people-directory .people-directory-footer{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:1px solid #e5ebee;padding:16px 24px;color:#61747b;font-size:12px}
+.console-people-directory .people-row-actions{display:flex;align-items:center;gap:16px}
+.console-people-directory .people-directory-empty{padding:50px 24px;text-align:center;color:#61747b;font-size:13px;line-height:1.9}
+@media(max-width:600px){.console-people-form .registration-mode{padding:18px;flex-wrap:wrap}.console-people-directory .people-directory-filters{padding:18px}.console-people-directory .people-directory-search{min-width:100%}.console-people-directory .people-directory-footer{padding:16px;flex-wrap:wrap}}

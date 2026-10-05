@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'Sessions',
+    'group' => 'Daily Operations',
     'participant' => [
         'label' => 'Session participant',
         'plural' => 'Session participants',

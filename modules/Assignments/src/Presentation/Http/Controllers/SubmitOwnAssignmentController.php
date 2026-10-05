@@ -55,7 +55,11 @@ final class SubmitOwnAssignmentController extends Controller
         );
 
         return new AssignmentSubmissionResource(
-            $this->submit->execute($submission, $request->validated()),
+            $this->submit->execute(
+                $submission,
+                $request->validated(),
+                (string) $request->user()->getAuthIdentifier(),
+            ),
         );
     }
 }

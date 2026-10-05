@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Domain\Events\RoleRevoked;
 use Modules\AccessControl\Domain\Models\ModelHasRole;
 use Modules\AccessControl\Domain\Models\Role;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -21,6 +22,7 @@ final readonly class RevokeRoleAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(
@@ -29,6 +31,7 @@ final readonly class RevokeRoleAction
         string $modelId,
         ?string $actorId = null,
         ?string $organizationId = null,
+        ?string $reason = null,
     ): void {
         $roleExists = Role::query()
             ->when($organizationId !== null, fn (Builder $query): Builder => $query->includingGlobal($organizationId))
@@ -56,12 +59,26 @@ final readonly class RevokeRoleAction
             );
         }
 
-        DB::transaction(function () use ($roleId, $modelType, $modelId): void {
+        DB::transaction(function () use ($roleId, $modelType, $modelId, $actorId, $organizationId, $reason): void {
             ModelHasRole::query()
                 ->where('role_id', $roleId)
                 ->where('model_type', $modelType)
                 ->where('model_id', $modelId)
                 ->delete();
+
+            if ($actorId !== null && $organizationId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: $organizationId,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'accesscontrol.role_revoked',
+                    auditableType: $modelType,
+                    auditableId: $modelId,
+                    oldValues: ['role_id' => $roleId],
+                    newValues: null,
+                    reason: $reason,
+                );
+            }
         });
 
         $this->events->dispatch(new RoleRevoked(

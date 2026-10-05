@@ -22,7 +22,12 @@ final class UpdateCourseController extends Controller
 
     public function __invoke(UpdateCourseRequest $request, Course $course): JsonResponse
     {
-        $course = $this->action->execute($course, $request->validated());
+        $course = $this->action->execute(
+            $course,
+            $request->validated(),
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
+        );
 
         return CourseResource::make($course)->response();
     }

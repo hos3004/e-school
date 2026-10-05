@@ -13,6 +13,7 @@ use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Domain\Models\NotificationPreference;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
+use Tests\TestCase;
 
 function notificationsDispatcherRecipient(string $locale = 'ar', string $timezone = 'UTC'): string
 {
@@ -27,6 +28,7 @@ function notificationsDispatcherRecipient(string $locale = 'ar', string $timezon
 }
 
 beforeEach(function (): void {
+    /** @var TestCase $this */
     config([
         'notifications.channels' => [
             'in_app' => ['enabled' => true],
@@ -48,10 +50,12 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
+    /** @var TestCase $this */
     CarbonImmutable::setTestNow();
 });
 
 it('writes one outbox row for every recipient and enabled category channel', function (): void {
+    /** @var TestCase $this */
     $recipients = [
         notificationsDispatcherRecipient(),
         notificationsDispatcherRecipient('en'),
@@ -72,6 +76,7 @@ it('writes one outbox row for every recipient and enabled category channel', fun
 });
 
 it('records repeated deliveries as suppressed without announcing them again', function (): void {
+    /** @var TestCase $this */
     Event::fake([NotificationQueued::class]);
 
     $recipient = notificationsDispatcherRecipient();
@@ -88,6 +93,7 @@ it('records repeated deliveries as suppressed without announcing them again', fu
 });
 
 it('allows a still-queued event to be queued again after the idempotency window', function (): void {
+    /** @var TestCase $this */
     CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-22 10:00:00', 'UTC'));
     config(['notifications.channels' => ['in_app' => ['enabled' => true]]]);
 
@@ -105,6 +111,7 @@ it('allows a still-queued event to be queued again after the idempotency window'
 });
 
 it('respects non-critical preferences but keeps in-app and critical channels enabled', function (): void {
+    /** @var TestCase $this */
     $recipient = notificationsDispatcherRecipient();
     $organizationId = Fixtures::organizationId();
 
@@ -136,6 +143,7 @@ it('respects non-critical preferences but keeps in-app and critical channels ena
 });
 
 it('delays non-critical notifications until quiet hours end in recipient time', function (): void {
+    /** @var TestCase $this */
     CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-22 20:30:00', 'UTC'));
 
     config([
@@ -163,6 +171,7 @@ it('delays non-critical notifications until quiet hours end in recipient time', 
 });
 
 it('uses the fallback locale when the recipient has no locale', function (): void {
+    /** @var TestCase $this */
     config(['notifications.localization.fallback_locale' => 'en']);
     $recipient = notificationsDispatcherRecipient('');
 
@@ -174,6 +183,7 @@ it('uses the fallback locale when the recipient has no locale', function (): voi
 });
 
 it('rejects categories that are absent from configuration', function (): void {
+    /** @var TestCase $this */
     try {
         app(NotificationDispatcher::class)->dispatch('missing_category', [], []);
         $this->fail('Expected BusinessRuleViolation was not thrown.');
@@ -185,6 +195,7 @@ it('rejects categories that are absent from configuration', function (): void {
 });
 
 it('requires the source event id when recipients are present', function (): void {
+    /** @var TestCase $this */
     $recipient = notificationsDispatcherRecipient();
 
     try {
@@ -198,6 +209,7 @@ it('requires the source event id when recipients are present', function (): void
 });
 
 it('can exempt configured categories from quiet hours', function (): void {
+    /** @var TestCase $this */
     CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-22 23:00:00', 'UTC'));
     config([
         'notifications.channels' => ['in_app' => ['enabled' => true]],

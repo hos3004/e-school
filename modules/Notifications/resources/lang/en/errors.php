@@ -44,4 +44,12 @@ return [
     'email_recipient_invalid' => 'The recipient does not have a valid email address for delivery.',
 
     'mail_transport_failed' => 'The email transport is temporarily unavailable.',
+    'manual_retry_reason_required' => 'A clear reason is required for a manual resend.',
+    'cancel_reason_required' => 'A clear reason is required to cancel the notification.',
+    'manual_recipient_not_found' => 'The selected recipient is missing or inactive in your organization.',
+    'manual_empty_audience' => 'The selected group has no active recipients in the organization.',
+    'manual_fields_required' => 'Subject, message, and send reason are required.',
+    'manual_request_invalid' => 'The send request ID is invalid. Reopen the form and try again.',
+    'manual_schedule_past' => 'The chosen send time is already past in your timezone. Pick a future time.',
+    'email_domain_undeliverable' => 'The recipient email domain is reserved and can never receive mail; no send was attempted.',
 ];

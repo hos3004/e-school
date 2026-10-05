@@ -12,6 +12,18 @@ use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 use Shared\ValueObjects\Money;
 
+/**
+ * @property string $id
+ * @property string $teacher_contract_id
+ * @property RateScope $scope
+ * @property string|null $program_id
+ * @property string|null $course_id
+ * @property string|null $session_type
+ * @property int $amount
+ * @property string $currency
+ * @property CarbonImmutable $effective_from
+ * @property CarbonImmutable|null $effective_to
+ */
 final class TeacherRate extends Model
 {
     use HasModuleFactory;

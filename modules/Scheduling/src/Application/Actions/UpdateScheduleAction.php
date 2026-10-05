@@ -1,0 +1,201 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Scheduling\Application\Actions;
+
+use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Scheduling\Application\Services\ScheduleDefinitionValidator;
+use Modules\Scheduling\Application\Services\ScheduleMaterializer;
+use Modules\Scheduling\Application\Services\ScheduleNotificationPayloadFactory;
+use Modules\Scheduling\Domain\Events\ScheduleChanged;
+use Modules\Scheduling\Domain\Events\ScheduleTimesChanged;
+use Modules\Scheduling\Domain\Models\Schedule;
+use Modules\Scheduling\Domain\ValueObjects\WeeklyRecurrence;
+use Modules\Sessions\Domain\Contracts\SessionSchedulingGateway;
+use Shared\Support\BusinessRuleViolation;
+use Shared\Support\Transaction;
+
+final readonly class UpdateScheduleAction
+{
+    public function __construct(
+        private Transaction $transaction,
+        private Dispatcher $events,
+        private AuditRecorder $audit,
+        private ScheduleDefinitionValidator $validator,
+        private ScheduleMaterializer $materializer,
+        private SessionSchedulingGateway $sessions,
+        private ScheduleNotificationPayloadFactory $notificationPayload,
+    ) {}
+
+    /**
+     * @param array<string, mixed> $data
+     *
+     * $applyImmediately يتجاوز مهلة حماية الحصص القريبة (recurrence.edit_lock_hours)
+     * فيسري الموعد الجديد من الآن، بما يشمل حصة اليوم إن لم تبدأ بعد. استثنائي
+     * ومحصور بمن يملك schedule.manage أصلًا؛ $reason يصف السبب في كل الحالات،
+     * ويُعرَض على المعلم والطالب ضمن إشعار تغيّر الموعد عند التطبيق الفوري.
+     */
+    public function execute(Schedule $schedule, array $data, string $actorId, string $reason, bool $applyImmediately = false): Schedule
+    {
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw BusinessRuleViolation::make('scheduling.reason_required', 'scheduling::errors.reason_required');
+        }
+        if (!$schedule->is_active) {
+            throw BusinessRuleViolation::make('scheduling.schedule_inactive', 'scheduling::errors.schedule_inactive');
+        }
+
+        $data = $this->normalized($data);
+        $this->validator->validate((string) $schedule->organization_id, $data);
+        $weeklySlots = array_key_exists('weekly_slots', $data) ? (array) $data['weekly_slots'] : null;
+        unset($data['weekly_slots']);
+        // الدقيقة الفاصلة تمنع سباقًا نظريًا: ScheduleMaterializer يعيد حساب
+        // now() الخاصة به بعد كتابات هذه المعاملة (الإلغاء ثم حفظ الجدول
+        // والخانات)، فحصة توشك أن تبدأ الآن تمامًا قد تُلغى هنا ولا تُعاد
+        // توليدها هناك. هامش دقيقة كافٍ عمليًا ولا يمس معنى «فورًا».
+        $cutoff = $applyImmediately
+            ? CarbonImmutable::now('UTC')->addMinute()
+            : CarbonImmutable::now('UTC')->addHours((int) config('scheduling.recurrence.edit_lock_hours'));
+        $tracked = [
+            'group_id', 'student_profile_id', 'course_id', 'staff_profile_id', 'session_type',
+            'flexible_start', 'rrule', 'start_time', 'duration_minutes', 'timezone', 'starts_on', 'ends_on',
+        ];
+        $old = collect($schedule->getAttributes())->only($tracked)->all();
+        $old['weekly_slots'] = $schedule->weeklySlots()->get(['weekday', 'start_time'])
+            ->map(static fn ($slot): array => [
+                'weekday' => $slot->weekday,
+                'start_time' => (string) $slot->start_time,
+            ])->all();
+
+        $schedule = $this->transaction->run(function () use ($schedule, $data, $weeklySlots, $actorId, $reason, $cutoff, $old, $tracked, $applyImmediately): Schedule {
+            $superseded = $this->sessions->supersedeFutureForSchedule(
+                (string) $schedule->organization_id,
+                (string) $schedule->getKey(),
+                $cutoff,
+                $actorId,
+                $reason,
+            );
+
+            $schedule->fill($data);
+            $schedule->save();
+            if ($weeklySlots !== null) {
+                $schedule->weeklySlots()->delete();
+                $schedule->weeklySlots()->createMany(array_map(
+                    static fn (array $slot): array => [
+                        'organization_id' => (string) $schedule->organization_id,
+                        'weekday' => $slot['weekday'],
+                        'start_time' => $slot['start_time'],
+                    ],
+                    $weeklySlots,
+                ));
+            }
+            $materialized = $this->materializer->materialize($schedule, $actorId, $cutoff);
+
+            $this->audit->record(
+                organizationId: (string) $schedule->organization_id,
+                actorId: $actorId,
+                actorType: 'user',
+                action: 'scheduling.schedule_updated',
+                auditableType: 'schedules',
+                auditableId: (string) $schedule->getKey(),
+                oldValues: $old,
+                newValues: [
+                    ...collect($schedule->getAttributes())->only($tracked)->all(),
+                    'weekly_slots' => $weeklySlots ?? $old['weekly_slots'],
+                    'superseded_sessions' => $superseded,
+                    'created_sessions' => $materialized->created,
+                    'availability_warnings' => $materialized->outsideAvailabilityWarnings,
+                    'applied_immediately' => $applyImmediately,
+                ],
+                reason: $reason,
+            );
+
+            return $schedule;
+        });
+
+        $this->events->dispatch(new ScheduleChanged(
+            scheduleId: (string) $schedule->getKey(),
+            effectiveFrom: $cutoff->toIso8601String(),
+            actorId: $actorId,
+        ));
+
+        /*
+         * رسالة واحدة تحمل المواعيد الجديدة. الحصص المولّدة من هذا التعديل لا
+         * تُشعِر كلٌّ عن نفسها، وإلا وصل للمعلم عشرون إشعارًا عن موعد واحد.
+         */
+        $this->events->dispatch(new ScheduleTimesChanged(
+            ...$this->notificationPayload->forSchedule($schedule->refresh()),
+            effectiveFrom: $cutoff->toIso8601String(),
+            actorId: $actorId,
+        ));
+
+        return $schedule;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function normalized(array $data): array
+    {
+        $targetType = (string) ($data['target_type'] ?? 'group');
+        $hasWeeklySlots = array_key_exists('weekly_slots', $data);
+        $weeklySlots = $hasWeeklySlots ? $this->normalizeWeeklySlots($data['weekly_slots']) : [];
+        $weekdays = $weeklySlots === []
+            ? (array) ($data['weekdays'] ?? [])
+            : array_column($weeklySlots, 'weekday');
+
+        $normalized = [
+            'group_id' => $targetType === 'group' ? ($data['group_id'] ?? null) : null,
+            'student_profile_id' => $targetType === 'student' ? ($data['student_profile_id'] ?? null) : null,
+            'course_id' => $data['course_id'] ?? null,
+            'staff_profile_id' => $data['staff_profile_id'] ?? null,
+            'session_type' => $targetType === 'group' ? 'group' : 'individual',
+            // نفس قيد الإنشاء: الجماعي لا يحمل مرونة أبدًا، والفردي يحملها
+            // فقط إن أرسلها المستدعي صريحًا — لا افتراض ضمني.
+            'flexible_start' => $targetType === 'group' ? false : (bool) ($data['flexible_start'] ?? false),
+            'rrule' => WeeklyRecurrence::fromWeekdays(
+                $weekdays,
+                (int) ($data['interval_weeks'] ?? 1),
+            )->toRRule(),
+            'start_time' => $weeklySlots[0]['start_time'] ?? ($data['start_time'] ?? null),
+            'duration_minutes' => (int) ($data['duration_minutes'] ?? config('scheduling.default_duration_minutes')),
+            'timezone' => $data['timezone'] ?? config('app.timezone'),
+            'starts_on' => $data['starts_on'] ?? null,
+            'ends_on' => $data['ends_on'] ?? null,
+        ];
+
+        if ($hasWeeklySlots) {
+            $normalized['weekly_slots'] = $weeklySlots;
+        }
+
+        return $normalized;
+    }
+
+    /** @return list<array{weekday: int, start_time: string}> */
+    private function normalizeWeeklySlots(mixed $slots): array
+    {
+        if (!is_array($slots) || $slots === []) {
+            throw BusinessRuleViolation::make('scheduling.weekly_slots_invalid', 'scheduling::errors.weekly_slots_invalid');
+        }
+
+        $normalized = [];
+        foreach ($slots as $slot) {
+            if (!is_array($slot) || !isset($slot['weekday'], $slot['start_time'])) {
+                throw BusinessRuleViolation::make('scheduling.weekly_slots_invalid', 'scheduling::errors.weekly_slots_invalid');
+            }
+
+            $normalized[] = [
+                'weekday' => (int) $slot['weekday'],
+                'start_time' => is_string($slot['start_time']) ? $slot['start_time'] : '',
+            ];
+        }
+
+        usort($normalized, static fn (array $left, array $right): int => $left['weekday'] <=> $right['weekday']);
+
+        return $normalized;
+    }
+}

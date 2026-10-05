@@ -21,6 +21,14 @@ final class ApprovePayrollAdjustmentRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [];
+        return [
+            'reason' => ['required', 'string', 'min:3', 'max:2000'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return ['reason' => __('payroll::fields.reason')];
     }
 }

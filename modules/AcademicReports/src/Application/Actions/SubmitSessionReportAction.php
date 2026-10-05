@@ -9,6 +9,10 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Modules\AcademicReports\Domain\Events\SessionReportSubmitted;
 use Modules\AcademicReports\Domain\Models\SessionReport;
 use Modules\AcademicReports\Domain\Models\SessionReportStudent;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
+use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
+use Modules\Sessions\Domain\Enums\SessionStatus;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -22,7 +26,134 @@ final readonly class SubmitSessionReportAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private SessionAdministrationQueries $sessions,
+        private SessionParticipantAdministrationQueries $participants,
+        private AuditRecorder $audit,
     ) {}
+
+    /**
+     * Secure entry point for a teacher portal submission. Actor and tenant identifiers
+     * are derived by the HTTP boundary and verified here through public Sessions contracts.
+     *
+     * @param list<array<string, mixed>> $students
+     */
+    public function executeForTeacher(
+        string $organizationId,
+        string $sessionId,
+        string $staffProfileId,
+        string $actorId,
+        array $students,
+        ?string $topicsCovered = null,
+        ?string $generalNotes = null,
+    ): SessionReport {
+        $session = $this->sessions->findForOrganization($organizationId, $sessionId);
+
+        if ($session === null) {
+            throw BusinessRuleViolation::make(
+                'academicreports.session_report.session_not_found',
+                'academicreports::errors.session_report_session_not_found',
+            );
+        }
+
+        if (!in_array($staffProfileId, array_filter([
+            $session->staffProfileId,
+            $session->originalStaffProfileId,
+        ]), true)) {
+            throw BusinessRuleViolation::make(
+                'academicreports.session_report.teacher_not_assigned',
+                'academicreports::errors.session_report_teacher_not_assigned',
+            );
+        }
+
+        /*
+         * الحالات التي تقبل تقريرًا ثلاث مجموعات لا واحدة:
+         *
+         *   in_progress / awaiting_review / completed
+         *       المسار الطبيعي — الحصة فُتحت من المنصة.
+         *
+         *   scheduled / confirmed بعد انتهاء موعدها
+         *       الحصة التي لم يفتح المعلم غرفتها من المنصة تبقى `scheduled`
+         *       إلى الأبد ولا يحركها شيء آلي، بينما قد تكون دُرِّست على وسيط
+         *       خارجي. منع التقرير عنها كان يعني أن الدليل الوحيد الذي يملكه
+         *       المعلم لا مكان له في النظام. التقرير هنا إقرار لا قرار: حالة
+         *       الحصة لا تتغير، فيبقى اعتماد الإدارة الطريق الوحيد إلى قيدة
+         *       المستحقات.
+         *
+         *   ما عدا ذلك (مؤجلة، معتذر عنها، ملغاة، متجاوَزة)
+         *       قرار موثَّق بأن الحصة لم تُقَم كما جُدولت، فالتقرير عنها يناقضه.
+         */
+        $awaitingDecision = in_array($session->status, [
+            SessionStatus::Scheduled->value,
+            SessionStatus::Confirmed->value,
+        ], true);
+
+        if ($awaitingDecision) {
+            if (CarbonImmutable::parse($session->scheduledEnd, 'UTC')->isFuture()) {
+                throw BusinessRuleViolation::make(
+                    'academicreports.session_report.session_not_ended',
+                    'academicreports::errors.session_report_session_not_ended',
+                );
+            }
+        } elseif (!in_array($session->status, [
+            SessionStatus::InProgress->value,
+            SessionStatus::AwaitingReview->value,
+            SessionStatus::Completed->value,
+        ], true)) {
+            throw BusinessRuleViolation::make(
+                'academicreports.session_report.invalid_session_state',
+                'academicreports::errors.session_report_invalid_session_state',
+                ['status' => $session->status],
+            );
+        }
+
+        $expectedStudentIds = collect($this->participants->forSession($organizationId, $sessionId))
+            ->filter(static fn ($participant): bool => $participant->invitationActive)
+            ->pluck('studentProfileId')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->sort()
+            ->values()
+            ->all();
+        $submittedStudentIds = collect($students)
+            ->pluck('student_profile_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->sort()
+            ->values()
+            ->all();
+
+        if ($expectedStudentIds === [] || $submittedStudentIds !== $expectedStudentIds) {
+            throw BusinessRuleViolation::make(
+                'academicreports.session_report.students_mismatch',
+                'academicreports::errors.session_report_students_mismatch',
+            );
+        }
+
+        $report = $this->execute(
+            sessionId: $sessionId,
+            staffProfileId: $staffProfileId,
+            students: $students,
+            sessionEndedAt: CarbonImmutable::parse($session->actualEnd ?? $session->scheduledEnd, 'UTC'),
+            topicsCovered: $topicsCovered,
+            generalNotes: $generalNotes,
+        );
+
+        $this->audit->record(
+            organizationId: $organizationId,
+            actorId: $actorId,
+            actorType: 'user',
+            action: 'academicreports.session_report_submitted',
+            auditableType: 'session_reports',
+            auditableId: (string) $report->getKey(),
+            oldValues: null,
+            newValues: [
+                'session_id' => $sessionId,
+                'staff_profile_id' => $staffProfileId,
+                'student_count' => count($students),
+            ],
+            reason: (string) __('academicreports::messages.session_report_submitted'),
+        );
+
+        return $report;
+    }
 
     /**
      * @param  list<array{

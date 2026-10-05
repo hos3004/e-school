@@ -10,14 +10,14 @@ import Card, {
 import EmptyState from '@/Components/EmptyState';
 import ErrorState from '@/Components/ErrorState';
 import LoadingState from '@/Components/LoadingState';
-import PageHeader from '@/Components/PageHeader';
 import StatusPill from '@/Components/StatusPill';
 import AppLayout from '@/Layouts/AppLayout';
 import {
-    formatDateTime,
-    formatPercent,
-    useLocale,
-} from '@/lib/format';
+    StudentMetric,
+    StudentPageHero,
+    StudentSectionHeading,
+} from '@/Pages/Student/Partials/StudentUi';
+import { formatDateTime, formatPercent, useLocale } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import type {
     Assignment,
@@ -69,10 +69,7 @@ export default function Dashboard({
     const content = (() => {
         if (loading) {
             return (
-                <LoadingState
-                    label={t('student.dashboard.loading')}
-                    rows={4}
-                />
+                <LoadingState label={t('student.dashboard.loading')} rows={4} />
             );
         }
 
@@ -95,18 +92,24 @@ export default function Dashboard({
         }
 
         return (
-            <div className="space-y-6">
+            <div className="space-y-9">
                 <section
                     aria-labelledby="student-next-session-heading"
-                    className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]"
+                    className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)]"
                 >
                     {nextSession ? (
-                        <Card as="article" padding="lg">
+                        <Card
+                            as="article"
+                            className="overflow-hidden border-[color:var(--brand)]/30 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--brand)_9%,var(--surface)),var(--surface)_55%)] shadow-md"
+                            padding="lg"
+                        >
                             <CardHeader>
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div className="min-w-0">
                                         <p className="text-sm font-semibold text-[var(--brand)]">
-                                            {t('student.dashboard.next_session')}
+                                            {t(
+                                                'student.dashboard.next_session',
+                                            )}
                                         </p>
                                         <CardTitle
                                             as="h2"
@@ -153,9 +156,10 @@ export default function Dashboard({
                                     </div>
                                 </dl>
 
-                                <div className="mt-6 flex flex-wrap gap-3">
+                                <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                                     <Button
                                         as="link"
+                                        className="sm:min-w-40"
                                         href={
                                             '/student/sessions/' +
                                             encodeURIComponent(nextSession.id)
@@ -166,7 +170,7 @@ export default function Dashboard({
                                     <Button
                                         as="link"
                                         href="/student/schedule"
-                                        variant="secondary"
+                                        variant="ghost"
                                     >
                                         {t('student.dashboard.view_schedule')}
                                     </Button>
@@ -198,31 +202,18 @@ export default function Dashboard({
                     )}
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                        <Card as="article">
-                            <CardHeader>
-                                <CardDescription>
-                                    {t('student.dashboard.attendance_rate')}
-                                </CardDescription>
-                                <CardTitle as="h2" className="text-3xl">
-                                    {attendanceRate === null
-                                        ? t('common.not_available')
-                                        : formatPercent(attendanceRate, locale)}
-                                </CardTitle>
-                            </CardHeader>
-                        </Card>
+                        <StudentMetric
+                            label={t('student.dashboard.attendance_rate')}
+                            tone="success"
+                            value={
+                                attendanceRate === null
+                                    ? t('common.not_available')
+                                    : formatPercent(attendanceRate, locale)
+                            }
+                        />
 
-                        <Card as="article">
-                            <CardHeader>
-                                <CardDescription>
-                                    {t('student.dashboard.open_assignments')}
-                                </CardDescription>
-                                <CardTitle as="h2" className="text-3xl">
-                                    {new Intl.NumberFormat(locale).format(
-                                        openAssignments.length,
-                                    )}
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="mt-4">
+                        <StudentMetric
+                            detail={
                                 <Button
                                     as="link"
                                     fullWidth
@@ -231,50 +222,52 @@ export default function Dashboard({
                                 >
                                     {t('student.dashboard.view_assignments')}
                                 </Button>
-                            </CardContent>
-                        </Card>
+                            }
+                            label={t('student.dashboard.open_assignments')}
+                            tone={
+                                openAssignments.length > 0
+                                    ? 'warning'
+                                    : 'neutral'
+                            }
+                            value={new Intl.NumberFormat(locale).format(
+                                openAssignments.length,
+                            )}
+                        />
                     </div>
                 </section>
 
                 <section aria-labelledby="student-week-sessions-heading">
-                    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                            <h2
-                                className="text-xl font-bold text-[var(--ink)]"
-                                id="student-week-sessions-heading"
+                    <StudentSectionHeading
+                        action={
+                            <Button
+                                as="link"
+                                href="/student/schedule"
+                                size="sm"
+                                variant="ghost"
                             >
-                                {t('student.dashboard.week_sessions')}
-                            </h2>
-                            <p className="mt-1 text-sm text-[var(--ink-muted)]">
-                                {t(
-                                    'student.dashboard.week_sessions_description',
-                                )}
-                            </p>
-                        </div>
-                        <Button
-                            as="link"
-                            href="/student/schedule"
-                            size="sm"
-                            variant="ghost"
-                        >
-                            {t('actions.view_all')}
-                        </Button>
-                    </div>
+                                {t('actions.view_all')}
+                            </Button>
+                        }
+                        description={t(
+                            'student.dashboard.week_sessions_description',
+                        )}
+                        id="student-week-sessions-heading"
+                        title={t('student.dashboard.week_sessions')}
+                    />
 
                     {weekSessions.length === 0 ? (
                         <EmptyState
                             description={t(
                                 'student.dashboard.no_week_sessions_description',
                             )}
-                            title={t(
-                                'student.dashboard.no_week_sessions',
-                            )}
+                            title={t('student.dashboard.no_week_sessions')}
                         />
                     ) : (
                         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                             {weekSessions.map((session) => (
                                 <Card
                                     as="article"
+                                    className="border-[color:var(--ink-muted)]/15 transition-[border-color,box-shadow] duration-150 hover:border-[color:var(--brand)]/35 hover:shadow-md"
                                     key={session.id}
                                     padding="sm"
                                 >
@@ -287,9 +280,7 @@ export default function Dashboard({
                                                 {session.title}
                                             </CardTitle>
                                             <StatusPill
-                                                colorMap={
-                                                    sessionStatusColors
-                                                }
+                                                colorMap={sessionStatusColors}
                                                 status={session.status}
                                             />
                                         </div>
@@ -319,9 +310,7 @@ export default function Dashboard({
                                             size="sm"
                                             variant="secondary"
                                         >
-                                            {t(
-                                                'student.sessions.view_details',
-                                            )}
+                                            {t('student.sessions.view_details')}
                                         </Button>
                                     </CardContent>
                                 </Card>
@@ -331,44 +320,37 @@ export default function Dashboard({
                 </section>
 
                 <section aria-labelledby="student-open-assignments-heading">
-                    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                            <h2
-                                className="text-xl font-bold text-[var(--ink)]"
-                                id="student-open-assignments-heading"
+                    <StudentSectionHeading
+                        action={
+                            <Button
+                                as="link"
+                                href="/student/assignments"
+                                size="sm"
+                                variant="ghost"
                             >
-                                {t('student.dashboard.open_assignments')}
-                            </h2>
-                            <p className="mt-1 text-sm text-[var(--ink-muted)]">
-                                {t(
-                                    'student.dashboard.open_assignments_description',
-                                )}
-                            </p>
-                        </div>
-                        <Button
-                            as="link"
-                            href="/student/assignments"
-                            size="sm"
-                            variant="ghost"
-                        >
-                            {t('actions.view_all')}
-                        </Button>
-                    </div>
+                                {t('actions.view_all')}
+                            </Button>
+                        }
+                        description={t(
+                            'student.dashboard.open_assignments_description',
+                        )}
+                        id="student-open-assignments-heading"
+                        title={t('student.dashboard.open_assignments')}
+                    />
 
                     {openAssignments.length === 0 ? (
                         <EmptyState
                             description={t(
                                 'student.dashboard.no_open_assignments_description',
                             )}
-                            title={t(
-                                'student.dashboard.no_open_assignments',
-                            )}
+                            title={t('student.dashboard.no_open_assignments')}
                         />
                     ) : (
                         <div className="grid gap-3 md:grid-cols-2">
                             {openAssignments.slice(0, 4).map((assignment) => (
                                 <Card
                                     as="article"
+                                    className="border-[color:var(--ink-muted)]/15 transition-[border-color,box-shadow] duration-150 hover:border-[color:var(--warning)]/40 hover:shadow-md"
                                     key={assignment.id}
                                     padding="sm"
                                 >
@@ -409,6 +391,18 @@ export default function Dashboard({
                                                 </dd>
                                             </div>
                                         </dl>
+                                        <Button
+                                            as="link"
+                                            className="mt-4"
+                                            fullWidth
+                                            href="/student/assignments"
+                                            size="sm"
+                                            variant="secondary"
+                                        >
+                                            {t(
+                                                'student.dashboard.view_assignments',
+                                            )}
+                                        </Button>
                                     </CardContent>
                                 </Card>
                             ))}
@@ -423,8 +417,8 @@ export default function Dashboard({
         <AppLayout role="student">
             <Head title={t('student.dashboard.title')} />
 
-            <PageHeader
-                className="mb-6"
+            <StudentPageHero
+                className="mb-8"
                 subtitle={t('student.dashboard.subtitle')}
                 title={t('student.dashboard.title')}
             />

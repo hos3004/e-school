@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\AccessControl\Domain\Events\ModelPermissionGranted;
 use Modules\AccessControl\Domain\Models\ModelHasPermission;
 use Modules\AccessControl\Domain\Models\Permission;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Shared\Support\BusinessRuleViolation;
 
 /**
@@ -22,6 +23,7 @@ final readonly class GrantModelPermissionAction
 {
     public function __construct(
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(
@@ -29,6 +31,8 @@ final readonly class GrantModelPermissionAction
         string $modelType,
         string $modelId,
         ?string $actorId = null,
+        ?string $organizationId = null,
+        ?string $reason = null,
     ): ModelHasPermission {
         /** @var Permission|null $permission */
         $permission = Permission::query()
@@ -44,15 +48,39 @@ final readonly class GrantModelPermissionAction
 
         $this->guardDuplicate((string) $permission->getKey(), $modelType, $modelId);
 
+        $permissionId = (string) $permission->getKey();
+
         /** @var ModelHasPermission $grant */
-        $grant = DB::transaction(fn (): ModelHasPermission => ModelHasPermission::query()->create([
-            'permission_id' => (string) $permission->getKey(),
-            'model_type' => $modelType,
-            'model_id' => $modelId,
-        ]));
+        $grant = DB::transaction(function () use ($permissionId, $permissionName, $modelType, $modelId, $actorId, $organizationId, $reason): ModelHasPermission {
+            /** @var ModelHasPermission $created */
+            $created = ModelHasPermission::query()->create([
+                'permission_id' => $permissionId,
+                'model_type' => $modelType,
+                'model_id' => $modelId,
+            ]);
+
+            if ($actorId !== null && $organizationId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: $organizationId,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'accesscontrol.permission_granted_directly',
+                    auditableType: $modelType,
+                    auditableId: $modelId,
+                    oldValues: null,
+                    newValues: [
+                        'permission_id' => $permissionId,
+                        'permission_name' => $permissionName,
+                    ],
+                    reason: $reason,
+                );
+            }
+
+            return $created;
+        });
 
         $this->events->dispatch(new ModelPermissionGranted(
-            permissionId: (string) $permission->getKey(),
+            permissionId: $permissionId,
             modelName: $modelType,
             modelId: $modelId,
             actorId: $actorId,

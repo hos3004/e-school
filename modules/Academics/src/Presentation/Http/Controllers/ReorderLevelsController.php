@@ -23,6 +23,8 @@ final class ReorderLevelsController extends Controller
         $this->action->execute(
             (string) $request->validated('program_id'),
             array_values((array) $request->validated('level_ids')),
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $request->validated('reason'),
         );
 
         return response()->json(status: 204);

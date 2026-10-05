@@ -34,7 +34,7 @@ final readonly class UserAccountProvisioningService implements UserAccountProvis
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email:rfc', 'max:255'],
             'username' => ['required', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', 'string', 'max:32'],
             'password' => ['required', Password::defaults()],
         ])->validate();
 
@@ -59,6 +59,7 @@ final readonly class UserAccountProvisioningService implements UserAccountProvis
             'phone_country' => $data->phoneCountry,
             'locale' => $data->locale,
             'timezone' => $data->timezone,
+            'contact_optional' => $data->contactOptional,
         ]);
 
         return self::toDto($user);

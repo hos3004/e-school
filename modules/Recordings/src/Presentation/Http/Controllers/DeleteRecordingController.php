@@ -29,6 +29,7 @@ final class DeleteRecordingController extends Controller
         $this->action->execute(
             $recordingModel,
             (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
         );
 
         return response()->json(null, 204);

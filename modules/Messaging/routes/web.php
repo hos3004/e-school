@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
-/*
-|--------------------------------------------------------------------------
-| مسارات موديول Messaging — الويب
-|--------------------------------------------------------------------------
-|
-| يُحمَّل هذا الملف تلقائيًا من ModuleRegistry::loadRoutes() ضمن مجموعة
-| middleware «web» عند إقلاع التطبيق. واجهات الويب للموديول تعمل عبر
-| لوحة Filament ومسارات API — لا مسارات ويب إضافية حاليًا.
-*/
+use Illuminate\Support\Facades\Route;
+use Modules\Messaging\Presentation\Http\Controllers\PortalMessagingController;
+
+Route::middleware(['auth', 'auth.session', 'can:message.send'])->group(function (): void {
+    Route::get('/messages', [PortalMessagingController::class, 'index'])
+        ->name('portal.messaging.index');
+    Route::get('/messages/create', [PortalMessagingController::class, 'create'])
+        ->name('portal.messaging.create');
+    Route::get('/messages/{conversation}', [PortalMessagingController::class, 'show'])
+        ->whereUlid('conversation')
+        ->name('portal.messaging.show');
+});

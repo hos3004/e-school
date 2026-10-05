@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Modules\Groups\Application\Actions\DetachProgramAction;
 use Modules\Groups\Domain\Models\GroupProgram;
+use Modules\Groups\Presentation\Http\Requests\DetachProgramRequest;
 
 /**
  * فك ربط برنامج عن مجموعة.
@@ -18,14 +19,13 @@ final class DetachProgramController extends Controller
         private readonly DetachProgramAction $action,
     ) {}
 
-    public function __invoke(GroupProgram $link): JsonResponse
+    public function __invoke(DetachProgramRequest $request, GroupProgram $link): JsonResponse
     {
-        abort_unless(
-            request()->user()?->can('delete', $link) ?? false,
-            403,
+        $this->action->execute(
+            $link,
+            (string) $request->validated('reason'),
+            (string) $request->user()->getAuthIdentifier(),
         );
-
-        $this->action->execute($link);
 
         return response()->json(null, 204);
     }

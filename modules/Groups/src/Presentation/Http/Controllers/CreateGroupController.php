@@ -21,7 +21,14 @@ final class CreateGroupController extends Controller
 
     public function __invoke(CreateGroupRequest $request): JsonResponse
     {
-        $group = $this->action->execute($request->validated());
+        $data = $request->validated();
+        $data['organization_id'] = (string) $request->user()->getAttribute('organization_id');
+
+        $group = $this->action->execute(
+            $data,
+            (string) $request->user()->getAuthIdentifier(),
+            (string) $data['reason'],
+        );
 
         return GroupResource::make($group)
             ->response()

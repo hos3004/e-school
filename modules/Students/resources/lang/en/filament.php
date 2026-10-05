@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
 
     'navigation_label' => 'Students',
-    'navigation_group' => 'Academic Affairs',
+    'navigation_group' => 'People',
     'model_label' => 'Student',
     'plural_model_label' => 'Students',
 

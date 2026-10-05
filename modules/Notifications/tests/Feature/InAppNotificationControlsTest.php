@@ -8,6 +8,7 @@ use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Tests\Support\ApiUser;
 use Shared\Testing\Fixtures;
+use Tests\TestCase;
 
 function notificationControlsOrganization(): string
 {
@@ -25,12 +26,14 @@ function notificationControlsOrganization(): string
 }
 
 it('protects the in-app notification endpoints with authentication', function (): void {
-    test()->getJson('/api/notifications')->assertUnauthorized();
-    test()->getJson('/api/notifications/unread-count')->assertUnauthorized();
-    test()->postJson('/api/notifications/mark-all-as-read')->assertUnauthorized();
+    /** @var TestCase $this */
+    $this->getJson('/api/notifications')->assertUnauthorized();
+    $this->getJson('/api/notifications/unread-count')->assertUnauthorized();
+    $this->postJson('/api/notifications/mark-all-as-read')->assertUnauthorized();
 });
 
 it('lists and counts only delivered in-app notifications owned by the current tenant user', function (): void {
+    /** @var TestCase $this */
     $organizationId = Fixtures::organizationId();
     $ownerId = Fixtures::userId();
     $otherUserId = Fixtures::userId();
@@ -61,20 +64,21 @@ it('lists and counts only delivered in-app notifications owned by the current te
 
     $actor = new ApiUser($ownerId, $organizationId);
 
-    test()->actingAs($actor)
+    $this->actingAs($actor)
         ->getJson('/api/notifications')
         ->assertOk()
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.id', $visible->id)
         ->assertJsonPath('data.0.is_read', false);
 
-    test()->actingAs($actor)
+    $this->actingAs($actor)
         ->getJson('/api/notifications/unread-count')
         ->assertOk()
         ->assertJsonPath('data.unread_count', 1);
 });
 
 it('marks one notification idempotently and hides records owned by another user', function (): void {
+    /** @var TestCase $this */
     $organizationId = Fixtures::organizationId();
     $ownerId = Fixtures::userId();
     $otherUserId = Fixtures::userId();
@@ -89,20 +93,20 @@ it('marks one notification idempotently and hides records owned by another user'
         ->sent()
         ->create(['organization_id' => $organizationId, 'user_id' => $otherUserId]);
 
-    test()->actingAs($actor)
+    $this->actingAs($actor)
         ->postJson("/api/notifications/{$owned->id}/mark-as-read")
         ->assertOk()
         ->assertJsonPath('data.is_read', true);
 
     $firstReadAt = $owned->refresh()->read_at;
 
-    test()->actingAs($actor)
+    $this->actingAs($actor)
         ->postJson("/api/notifications/{$owned->id}/mark-as-read")
         ->assertOk();
 
     expect($owned->refresh()->read_at?->equalTo($firstReadAt))->toBeTrue();
 
-    test()->actingAs($actor)
+    $this->actingAs($actor)
         ->postJson("/api/notifications/{$other->id}/mark-as-read")
         ->assertNotFound();
 
@@ -110,6 +114,7 @@ it('marks one notification idempotently and hides records owned by another user'
 });
 
 it('marks all and updates only unread delivered in-app records in the current user organization', function (): void {
+    /** @var TestCase $this */
     $organizationId = Fixtures::organizationId();
     $ownerId = Fixtures::userId();
     $otherUserId = Fixtures::userId();
@@ -136,7 +141,7 @@ it('marks all and updates only unread delivered in-app records in the current us
         ->sent()
         ->create(['organization_id' => $foreignOrganizationId, 'user_id' => $ownerId]);
 
-    test()->actingAs(new ApiUser($ownerId, $organizationId))
+    $this->actingAs(new ApiUser($ownerId, $organizationId))
         ->postJson('/api/notifications/mark-all-as-read')
         ->assertOk()
         ->assertJsonPath('data.marked_count', 2);

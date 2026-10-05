@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Sessions\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
-use Modules\Sessions\Application\Concerns\TransitionsSessionStatus;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Events\SessionConfirmed;
 use Modules\Sessions\Domain\Models\Session;
@@ -15,17 +14,20 @@ use Modules\Sessions\Domain\Models\Session;
  */
 final readonly class ConfirmSessionAction
 {
-    use TransitionsSessionStatus;
-
     public function __construct(
         private Dispatcher $events,
+        private TransitionSessionStatusAction $transition,
     ) {}
 
-    public function execute(Session $session, ?string $actorId = null): Session
+    public function execute(Session $session, string $actorId, string $reason): Session
     {
-        $this->guardNotTerminal($session);
-
-        $this->applyTransition($session, SessionStatus::Confirmed);
+        $session = $this->transition->execute(
+            $session,
+            SessionStatus::Confirmed,
+            $actorId,
+            $reason,
+            'sessions.session_confirmed',
+        );
 
         $this->events->dispatch(new SessionConfirmed(
             sessionId: $session->id,
@@ -34,6 +36,6 @@ final readonly class ConfirmSessionAction
             staffProfileId: $session->staff_profile_id,
         ));
 
-        return $session->refresh();
+        return $session;
     }
 }

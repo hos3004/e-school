@@ -1,8 +1,19 @@
 includes:
     - vendor/larastan/larastan/extension.neon
+    - vendor/pestphp/pest-plugin-phpstan/extension.neon
+    - vendor/phpstan/phpstan-mockery/extension.neon
 
 parameters:
     level: 6
+    parseModelCastsMethod: true
+
+    configDirectories:
+        - config
+        - modules/*/config
+
+    databaseMigrationsPath:
+        - database/migrations
+        - modules/*/database/migrations
 
     paths:
         - app

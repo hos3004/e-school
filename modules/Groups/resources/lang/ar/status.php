@@ -14,12 +14,13 @@ return [
         'completed' => 'مُختمة',
     ],
     'membership' => [
+        'pending' => 'معلّق',
         'active' => 'منتسب',
         'left' => 'غادر',
     ],
     'teacher_role' => [
         'lead' => 'معلم أساسي',
         'assistant' => 'معلم مساعد',
-        'substitute' => 'معلم تلافي',
+        'substitute' => 'معلم بديل',
     ],
 ];

@@ -24,6 +24,9 @@ use Shared\Concerns\HasUlid;
  * @property string|null $ip_address
  * @property string|null $user_agent
  * @property string $action
+ * @property-read int|string $view_count
+ * @property-read int|string $download_count
+ * @property-read string|null $last_viewed_at
  * @property-read Recording $recording
  */
 final class RecordingView extends Model

@@ -47,4 +47,11 @@ return [
     'value' => 'القيمة الجديدة',
     'reason' => 'سبب التصحيح',
 
+    'capture_snapshot' => 'التقاط لقطة الآن',
+    'snapshot_captured' => 'التُقطت اللقطة التنظيمية.',
+    'correct' => 'تصحيح عدّاد',
+    'correction_column' => 'العدّاد المراد تصحيحه',
+    'correction_value' => 'القيمة الصحيحة',
+    'correction_reason' => 'سبب التصحيح',
+    'corrected' => 'صُحِّح العدّاد وأُعيد حساب نسبة الحضور.',
 ];

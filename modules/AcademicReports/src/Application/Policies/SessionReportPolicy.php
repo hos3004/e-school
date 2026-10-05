@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\AcademicReports\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\AcademicReports\Domain\Models\SessionReport;
 
 /**
@@ -14,35 +16,35 @@ use Modules\AcademicReports\Domain\Models\SessionReport;
  */
 final class SessionReportPolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('academicreports.session_report.view_any');
+        return $user->can('session_report.view');
     }
 
-    public function view($user, SessionReport $report): bool
+    public function view(Authenticatable&Authorizable $user, SessionReport $report): bool
     {
-        return $user->can('academicreports.session_report.view');
+        return $user->can('session_report.view');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
-        return $user->can('academicreports.session_report.create');
+        return $user->can('session_report.create');
     }
 
-    public function update($user, SessionReport $report): bool
+    public function update(Authenticatable&Authorizable $user, SessionReport $report): bool
     {
-        return $user->can('academicreports.session_report.update')
-            && $report->staff_profile_id === (string) $user->staff_profile_id;
+        return $user->can('session_report.create')
+            && $report->staff_profile_id === (string) data_get($user, 'staff_profile_id');
     }
 
-    public function delete($user, SessionReport $report): bool
+    public function delete(Authenticatable&Authorizable $user, SessionReport $report): bool
     {
-        return $user->can('academicreports.session_report.delete');
+        return false;
     }
 
     /** من يملك إضافة الملاحظة الخاصة بالمشرف على التقرير. */
-    public function annotate($user, SessionReport $report): bool
+    public function annotate(Authenticatable&Authorizable $user, SessionReport $report): bool
     {
-        return $user->can('academicreports.session_report.annotate');
+        return false;
     }
 }

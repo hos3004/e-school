@@ -8,7 +8,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Messaging\Domain\Events\WhatsappMessageReceived;
 use Modules\Messaging\Domain\Models\WhatsappInbound;
-use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
 /**
@@ -33,17 +32,6 @@ final readonly class RecordWhatsappInboundAction
         ?array $media = null,
         ?string $matchedUserId = null,
     ): WhatsappInbound {
-        $exists = WhatsappInbound::query()
-            ->where('message_id', $messageId)
-            ->exists();
-
-        if ($exists) {
-            throw BusinessRuleViolation::make(
-                'messaging.whatsapp_duplicate_message',
-                'messaging::errors.whatsapp_duplicate_message',
-            );
-        }
-
         $inbound = $this->transaction->run(function () use (
             $organizationId,
             $fromPhone,
@@ -53,22 +41,25 @@ final readonly class RecordWhatsappInboundAction
             $media,
             $matchedUserId,
         ): WhatsappInbound {
-            $record = new WhatsappInbound([
-                'organization_id' => $organizationId,
-                'from_phone' => $fromPhone,
-                'message_id' => $messageId,
-                'body' => $body,
-                'media' => $media,
-                'received_at' => $receivedAt ?? CarbonImmutable::now('UTC'),
-                'matched_user_id' => $matchedUserId,
-                'handled_by' => null,
-                'handled_at' => null,
-                'created_at' => now(),
-            ]);
-            $record->save();
-
-            return $record;
+            return WhatsappInbound::query()->firstOrCreate(
+                ['message_id' => $messageId],
+                [
+                    'organization_id' => $organizationId,
+                    'from_phone' => $fromPhone,
+                    'body' => $body,
+                    'media' => $media,
+                    'received_at' => $receivedAt ?? CarbonImmutable::now('UTC'),
+                    'matched_user_id' => $matchedUserId,
+                    'handled_by' => null,
+                    'handled_at' => null,
+                    'created_at' => now('UTC'),
+                ],
+            );
         });
+
+        if (!$inbound->wasRecentlyCreated) {
+            return $inbound;
+        }
 
         $this->events->dispatch(new WhatsappMessageReceived(
             inboundId: (string) $inbound->id,

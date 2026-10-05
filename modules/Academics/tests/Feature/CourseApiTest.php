@@ -2,31 +2,30 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Events\CourseArchived;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Identity\Domain\Models\User;
-use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Gate::define('academics.courses.create', fn ($user) => true);
-    Gate::define('academics.courses.update', fn ($user) => true);
-    Gate::define('academics.courses.archive', fn ($user) => true);
+    Gate::define('course.manage', fn ($user) => true);
 });
 
+/**
+ * @param array<string, mixed> $overrides
+ * @return array<string, mixed>
+ */
 function coursePayload(array $overrides = []): array
 {
     return array_merge([
-        'organization_id' => Fixtures::organizationId(),
         'level_id' => Level::factory()->create()->getKey(),
         'code' => 'CRS-'.strtoupper(str()->random(5)),
         'name' => ['ar' => 'كورس جديد', 'en' => 'New Course'],
         'total_sessions' => 10,
+        'session_mode' => 'both',
+        'reason' => 'إنشاء كورس للاختبار',
     ], $overrides);
 }
 
@@ -60,6 +59,7 @@ it('updates a course through the API', function (): void {
         ->putJson("/api/academics/courses/{$course->getKey()}", [
             'total_sessions' => 18,
             'completion_rules' => ['min_attendance_percent' => 75],
+            'reason' => 'تحديث قواعد الإكمال',
         ])
         ->assertOk()
         ->assertJsonPath('data.total_sessions', 18);

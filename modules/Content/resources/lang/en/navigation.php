@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'group' => 'Learning Content',
+    'group' => 'Learning',
     'material' => [
         'label' => 'Course material',
         'plural' => 'Course materials',

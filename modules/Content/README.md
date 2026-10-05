@@ -2,19 +2,37 @@
 
 ## يملك
 
-`course_materials`
+`course_materials` · `course_material_versions`
 
 ## ينشر
 
-- لا أحداث مسجّلة له في `docs/09` حاليًا.
+- `content.material_uploaded`
+- `content.material_updated`
+- `content.material_removed`
 
 ## يعتمد على
 
 - `Academics` (الكورس المالك للمادة).
-- `Enrollments` عبر أحداثه: يستقبل `enrollments.frozen` فيقطع الوصول، و`enrollments.reactivated` فيعيده.
+- `Identity` عبر دليل الحسابات لعرض فاعل كل إصدار.
 
 ## قواعد خاصة
 
-- الوصول إلى المواد مرهون بحالة القيد: `EnrollmentStatus::grantsCourseAccess()` — الطالب المجمّد لا يرى المحتوى مهما كان الوقت.
-- `visible_from` / `visible_to` تحكم ظهور المادة زمنيًا.
-- أنواع المواد: `pdf | video | link | worksheet`.
+- مورد الإدارة محصور بالمؤسسة ويستدعي Actions؛ لا يقبل `organization_id` من الموظف.
+- حالة المادة `draft | published | unpublished` عبر Enum، و`visible_from` /
+  `visible_to` تضبط النافذة الزمنية بعد النشر.
+- كل إنشاء أو تعديل أو نشر يحفظ snapshot جديدًا في `course_material_versions`؛
+  الأرشفة SoftDelete ولا تمحو الإصدارات أو الملفات.
+- النوعان المدعومان هما `file | link`، والامتدادات والأحجام من `config/content.php`.
+- API الإدارة لا يكشف disk أو path. مكتبة بوابات التعلم تستخدم CourseMaterialLibraryQueries
+  الذي يعيد DTO للمواد المنشورة داخل نافذة الإتاحة والكورسات المصرح بها فقط دون قرص أو مسار أو رابط تخزين.
+- تطبيق App يركب نطاق الطالب من القيد النشط، ونطاق المعلم من تكليف المجموعات
+  أو الجدول الفردي الجاري؛ Content لا يعتمد على موديول Assignments.
+- CourseMaterialPolicy::viewForLearning يحرس فتح/تنزيل كل مادة وفق صلاحية
+  content.view والمؤسسة والكورس والنشر والنافذة. لا تُقبل قائمة الكورسات من الطلب.
+- تنزيل /learn/{kind}/library/{material}/open يعيد فحص الوصول عند كل طلب،
+  ولا يصدر URL تخزين دائمًا. الملفات تُرسل كمرفقات خاصة والرابط الخارجي يقبل HTTP(S) فقط.
+- مع CONSOLE_ENABLED=true يصبح قرص الرفع الافتراضي local الخاص، مع بقاء
+  CONTENT_DISK إعدادًا صريحًا. تظل metadata القديمة وأقراصها محفوظة؛ تغيير عنوان
+  مادة قديمة لا يغير قرصها، واستبدال ملفها يحفظ النسخة الجديدة على القرص الافتراضي.
+- لا يرحل هذا التغيير ملفات الإنتاج العامة القديمة أو يلغي روابطها المنشورة سابقًا؛
+  نقلها للتخزين الخاص أو حجب مسارها العام يحتاج خطة انتقال مستقلة.

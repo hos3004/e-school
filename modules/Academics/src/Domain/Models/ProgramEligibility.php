@@ -9,6 +9,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Academics\Domain\Enums\TargetGender;
 
+/**
+ * @property string $id
+ * @property string $program_id
+ * @property list<string> $countries
+ * @property list<string> $regions
+ * @property int|null $age_from
+ * @property int|null $age_to
+ * @property TargetGender|null $gender
+ * @property bool $manual_approval_required
+ * @property string $teacher_gender_rule
+ * @property bool $requires_individual_sessions
+ * @property-read Program|null $program
+ */
 final class ProgramEligibility extends Model
 {
     use HasUlids;
@@ -40,6 +53,7 @@ final class ProgramEligibility extends Model
         ];
     }
 
+    /** @return BelongsTo<Program, $this> */
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id');

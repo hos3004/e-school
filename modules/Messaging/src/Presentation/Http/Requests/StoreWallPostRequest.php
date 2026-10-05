@@ -21,6 +21,10 @@ final class StoreWallPostRequest extends FormRequest
      */
     public function rules(): array
     {
+        $maxKilobytes = (int) config('messaging.wall.attachments.max_size_kilobytes');
+        /** @var list<string> $allowedMimes */
+        $allowedMimes = config('messaging.wall.attachments.allowed_mime_types', []);
+
         return [
             'group_id' => ['required', 'string', 'size:26'],
             'body' => [
@@ -28,8 +32,16 @@ final class StoreWallPostRequest extends FormRequest
                 'string',
                 'max:'.(int) config('messaging.limits.wall_post_body_max'),
             ],
-            'attachments' => ['sometimes', 'array'],
-            'attachments.*' => ['array'],
+            // ممنوع صراحة: attachments حرّ الشكل بلا مُنتِج شرعي عدا الرفع
+            // الفعلي عبر image أدناه. السماح بقيمة عميل هنا كان يفتح منفذ
+            // حقن disk/path تعسفيَّين يخدمهما ShowWallAttachmentController.
+            'attachments' => ['prohibited'],
+            'image' => [
+                'sometimes',
+                'file',
+                'max:'.$maxKilobytes,
+                'mimetypes:'.implode(',', $allowedMimes),
+            ],
             'is_pinned' => ['sometimes', 'boolean'],
         ];
     }

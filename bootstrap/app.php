@@ -2,8 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\ApplySessionPayDurations;
+use App\Http\Middleware\EnsureConsoleEnabled;
+use App\Http\Middleware\EnsureProfileCompleted;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\MeasureRequestPerformance;
 use App\Http\Middleware\SetLocale;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -11,9 +16,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 use Shared\Module\ModuleRegistry;
 use Shared\Support\BusinessRuleViolation;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -27,15 +34,44 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Portal pages authenticate with the web session while their JSON
+        // controls use the API routes. Sanctum must restore that session for
+        // configured first-party domains before auth:sanctum is evaluated.
+        $middleware->statefulApi();
+        $middleware->append(MeasureRequestPerformance::class);
+
         $middleware->web(append: [
             SetLocale::class,
             HandleInertiaRequests::class,
+            EnsureProfileCompleted::class,
+            ApplySessionPayDurations::class,
         ]);
+
+        $middleware->api(append: [EnsureProfileCompleted::class, ApplySessionPayDurations::class]);
+        $middleware->prependToPriorityList(AuthenticatesRequests::class, EnsureConsoleEnabled::class);
+        $middleware->appendToPriorityList(AuthenticatesRequests::class, EnsureProfileCompleted::class);
+        $middleware->appendToPriorityList(EnsureProfileCompleted::class, ApplySessionPayDurations::class);
 
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReport(BusinessRuleViolation::class);
+        $exceptions->dontFlash(['token']);
+
+        /*
+         * صفحة 404 العامة تخدم الزائر. لوحة Filament ومسارات JSON لها
+         * معالجتها الخاصة، ولا تمرّ عبر HandleInertiaRequests، فلو رُدَّت
+         * صفحة Inertia هناك لظهرت مفاتيح الترجمة خامًا بدل النص.
+         */
+        $exceptions->render(function (NotFoundHttpException $exception, Request $request): ?Response {
+            if ($request->expectsJson() || $request->is('admin/*', 'admin', 'v2/*', 'v2', 'api/*')) {
+                return null;
+            }
+
+            return Inertia::render('Errors/404')
+                ->toResponse($request)
+                ->setStatusCode(Response::HTTP_NOT_FOUND);
+        });
 
         $exceptions->render(function (BusinessRuleViolation $violation, Request $request): JsonResponse|RedirectResponse {
             $correlationId = (string) ($request->header('X-Correlation-Id') ?: Str::ulid());

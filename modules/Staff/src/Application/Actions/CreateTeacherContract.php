@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Staff\Domain\Enums\ContractBasis;
 use Modules\Staff\Domain\Events\TeacherContractCreated;
 use Modules\Staff\Domain\Models\StaffProfile;
@@ -17,6 +18,16 @@ use Shared\ValueObjects\Money;
 
 final readonly class CreateTeacherContract
 {
+    public function __construct(
+        private AuditRecorder $audit,
+    ) {}
+
+    /**
+     * إنشاء عقد جديد فقط — التعديل يعني إنهاء هذا العقد وإنشاء غيره؛
+     * السجلات التاريخية لا تُعدَّل إطلاقًا.
+     *
+     * @param array<string, mixed>|null $terms
+     */
     public function execute(
         StaffProfile $profile,
         ContractBasis $basis,
@@ -27,6 +38,8 @@ final readonly class CreateTeacherContract
         ?int $targetAdminTasks = null,
         ?int $targetTrainingSessions = null,
         ?array $terms = null,
+        ?string $actorId = null,
+        ?string $reason = null,
     ): TeacherContract {
         $from = $effectiveFrom instanceof CarbonImmutable ? $effectiveFrom : CarbonImmutable::parse($effectiveFrom);
         $to = $effectiveTo === null ? null : ($effectiveTo instanceof CarbonImmutable ? $effectiveTo : CarbonImmutable::parse($effectiveTo));
@@ -39,7 +52,7 @@ final readonly class CreateTeacherContract
             );
         }
 
-        if ($basis->requiresRates() && $baseAmount !== null) {
+        if (!$basis->requiresBaseAmount() && $baseAmount !== null) {
             throw BusinessRuleViolation::make(
                 'staff.contract_base_not_allowed',
                 'staff::errors.contract_base_not_allowed',
@@ -47,7 +60,7 @@ final readonly class CreateTeacherContract
             );
         }
 
-        if (!$basis->requiresRates() && $baseAmount === null) {
+        if ($basis->requiresBaseAmount() && $baseAmount === null) {
             throw BusinessRuleViolation::make(
                 'staff.contract_base_required',
                 'staff::errors.contract_base_required',
@@ -106,6 +119,25 @@ final readonly class CreateTeacherContract
             effectiveFrom: $from->toDateString(),
             effectiveTo: $to?->toDateString(),
         ));
+
+        if ($actorId !== null) {
+            $this->audit->record(
+                organizationId: (string) $profile->organization_id,
+                actorId: $actorId,
+                actorType: 'user',
+                action: 'staff.contract_created',
+                auditableType: 'teacher_contract',
+                auditableId: (string) $contract->getKey(),
+                oldValues: null,
+                newValues: [
+                    'basis' => $basis->value,
+                    'effective_from' => $from->toDateString(),
+                    'effective_to' => $to?->toDateString(),
+                    'currency' => $baseAmount?->currency,
+                ],
+                reason: trim((string) $reason) === '' ? null : trim((string) $reason),
+            );
+        }
 
         return $contract;
     }

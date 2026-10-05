@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Gate;
 use Modules\Organization\Database\Factories\OrganizationFactory;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Organization\Tests\Support\ApiUser;
+use Tests\TestCase;
 
 function organizationApiUser(): ApiUser
 {
@@ -13,6 +14,7 @@ function organizationApiUser(): ApiUser
 }
 
 it('stores an organization over the api and returns 201', function (): void {
+    /** @var TestCase $this */
     Gate::after(fn (): bool => true);
     $slug = 'peace-'.strtolower((string) str()->ulid());
 
@@ -36,6 +38,7 @@ it('stores an organization over the api and returns 201', function (): void {
 it('rejects an invalid payload with a validation error', function (): void {
     Gate::after(fn (): bool => true);
 
+    /** @var TestCase $this */
     $this->actingAs(organizationApiUser())
         ->postJson('/api/organizations', [
             'name' => ['en' => 'No Arabic Name'],
@@ -51,6 +54,7 @@ it('rejects an invalid payload with a validation error', function (): void {
 it('forbids storing an organization without permission', function (): void {
     Gate::define('organizations.create', fn (): bool => false);
 
+    /** @var TestCase $this */
     $this->actingAs(organizationApiUser())
         ->postJson('/api/organizations', [
             'name' => ['ar' => 'مدرسة'],
@@ -70,6 +74,7 @@ it('shows an existing organization', function (): void {
         'slug' => 'visible-'.strtolower((string) str()->ulid()),
     ]);
 
+    /** @var TestCase $this */
     $this->actingAs(organizationApiUser())
         ->getJson("/api/organizations/{$organization->id}")
         ->assertOk()
@@ -81,6 +86,7 @@ it('rejects changing the immutable slug on update', function (): void {
 
     $organization = OrganizationFactory::new()->create();
 
+    /** @var TestCase $this */
     $this->actingAs(organizationApiUser())
         ->patchJson("/api/organizations/{$organization->id}", [
             'slug' => 'new-slug',
@@ -92,5 +98,6 @@ it('rejects changing the immutable slug on update', function (): void {
 });
 
 it('requires authentication for organization routes', function (): void {
+    /** @var TestCase $this */
     $this->postJson('/api/organizations', [])->assertUnauthorized();
 });

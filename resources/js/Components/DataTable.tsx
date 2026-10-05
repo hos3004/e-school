@@ -42,14 +42,14 @@ export default function DataTable<Row>({
 }: DataTableProps<Row>) {
     const t = useI18n();
     const containerClassName = [
-        'overflow-hidden rounded-xl border border-[var(--ink-muted)] bg-[var(--surface)]',
+        'overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-raised)] shadow-[var(--shadow-card)]',
         className,
     ]
         .filter(Boolean)
         .join(' ');
     const stateCaption =
         caption === undefined || caption === null ? null : (
-            <div className="border-b border-[var(--ink-muted)] bg-[var(--surface-muted)] ps-4 pe-4 py-3 text-start text-sm font-semibold text-[var(--ink)]">
+            <div className="border-b border-[var(--line)] bg-[var(--surface-subtle)] px-5 py-3.5 text-start text-sm font-semibold text-[var(--ink)]">
                 {caption}
             </div>
         );
@@ -101,16 +101,16 @@ export default function DataTable<Row>({
             <div className="overflow-x-auto">
                 <table className="w-full min-w-[40rem] border-collapse text-sm">
                     {caption === undefined || caption === null ? null : (
-                        <caption className="caption-top border-b border-[var(--ink-muted)] bg-[var(--surface-muted)] ps-4 pe-4 py-3 text-start font-semibold text-[var(--ink)]">
+                        <caption className="caption-top border-b border-[var(--line)] bg-[var(--surface-subtle)] px-5 py-3.5 text-start font-semibold text-[var(--ink)]">
                             {caption}
                         </caption>
                     )}
-                    <thead className="bg-[var(--surface-muted)]">
+                    <thead className="bg-[var(--surface-subtle)]">
                         <tr>
                             {columns.map((column) => (
                                 <th
                                     className={[
-                                        'border-b border-[var(--ink-muted)] ps-4 pe-4 py-3 text-start font-semibold text-[var(--ink)]',
+                                        'border-b border-[var(--line)] px-5 py-3.5 text-start text-xs font-semibold uppercase tracking-[0.04em] text-[var(--ink-soft)]',
                                         column.headerClassName,
                                     ]
                                         .filter(Boolean)
@@ -126,13 +126,13 @@ export default function DataTable<Row>({
                     <tbody>
                         {rows.map((row) => (
                             <tr
-                                className="transition-colors hover:bg-[var(--surface-muted)] focus-within:bg-[var(--surface-muted)] [&_*:focus-visible]:outline-2 [&_*:focus-visible]:outline-offset-2 [&_*:focus-visible]:outline-[var(--brand)]"
+                                className="transition-colors duration-150 hover:bg-[var(--surface-subtle)] focus-within:bg-[var(--brand-soft)] [&_*:focus-visible]:outline-2 [&_*:focus-visible]:outline-offset-2 [&_*:focus-visible]:outline-[var(--focus-ring)]"
                                 key={rowKey(row)}
                             >
                                 {columns.map((column) => (
                                     <td
                                         className={[
-                                            'border-b border-[var(--surface-muted)] ps-4 pe-4 py-3 align-top text-[var(--ink)]',
+                                        'border-b border-[var(--line)] px-5 py-4 align-top text-[var(--ink)] last:[&]:border-b-0',
                                             column.cellClassName,
                                         ]
                                             .filter(Boolean)

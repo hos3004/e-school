@@ -20,6 +20,11 @@ enum ContractBasis: string
         return in_array($this, [self::PerSession, self::Hybrid], true);
     }
 
+    public function requiresBaseAmount(): bool
+    {
+        return in_array($this, [self::Salary, self::Hybrid], true);
+    }
+
     public function label(): string
     {
         return __('staff::enums.contract_basis.'.$this->value);

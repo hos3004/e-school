@@ -12,6 +12,20 @@ use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 use Shared\ValueObjects\Money;
 
+/**
+ * @property string $id
+ * @property string $organization_id
+ * @property string $staff_profile_id
+ * @property ContractBasis $basis
+ * @property CarbonImmutable $effective_from
+ * @property CarbonImmutable|null $effective_to
+ * @property int|null $base_amount
+ * @property string|null $currency
+ * @property int|null $monthly_target_sessions
+ * @property int|null $target_admin_tasks
+ * @property int|null $target_training_sessions
+ * @property array<string, mixed>|null $terms
+ */
 final class TeacherContract extends Model
 {
     use HasModuleFactory;

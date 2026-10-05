@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'course' => 'Cours',
+    'academic_context' => 'Contexte académique et ordre',
+    'identity' => 'Identité et description',
+    'source' => 'Source de la ressource',
+    'visibility' => 'Publication et fenêtre de visibilité',
+    'created_at' => 'Créée le',
+    'disk' => 'Disque de stockage',
+    'external_url' => 'URL externe',
+    'file' => 'Fichier',
+    'path' => 'Chemin du fichier',
+    'reason' => 'Motif',
+    'size_bytes' => 'Taille du fichier',
+    'title' => 'Titre',
+    'title_ar' => 'Titre arabe',
+    'title_en' => 'Titre anglais',
+    'title_fr' => 'Titre français',
+    'description' => 'Description',
+    'description_ar' => 'Description arabe',
+    'description_en' => 'Description anglaise',
+    'description_fr' => 'Description française',
+    'type' => 'Type',
+    'visible_from' => 'Visible à partir de',
+    'visible_now' => 'Visible actuellement',
+    'visible_to' => 'Visible jusqu’au',
+    'status' => 'Statut de publication',
+    'revision' => 'Révision',
+    'display_order' => 'Ordre d’affichage',
+    'published_at' => 'Publiée le',
+    'source_reference' => 'Fichier ou lien',
+    'changed_by' => 'Modifiée par',
+    'changed_at' => 'Modifiée le',
+];

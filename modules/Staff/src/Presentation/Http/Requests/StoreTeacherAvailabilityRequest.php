@@ -5,12 +5,37 @@ declare(strict_types=1);
 namespace Modules\Staff\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Staff\Domain\Models\StaffProfile;
 
 final class StoreTeacherAvailabilityRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('staff.availability.create') ?? false;
+        $user = $this->user();
+
+        if ($user === null || !$user->can('staff.availability.create')) {
+            return false;
+        }
+
+        $organizationId = data_get($user, 'organization_id');
+        $staffProfileId = $this->input('staff_profile_id');
+
+        if (!is_string($organizationId) || !is_string($staffProfileId)) {
+            return false;
+        }
+
+        /** @var StaffProfile|null $profile */
+        $profile = StaffProfile::query()
+            ->whereKey($staffProfileId)
+            ->where('organization_id', $organizationId)
+            ->first();
+
+        if ($profile === null) {
+            return false;
+        }
+
+        return (string) $profile->user_id === (string) $user->getAuthIdentifier()
+            || $user->can('staff.view.any');
     }
 
     /**

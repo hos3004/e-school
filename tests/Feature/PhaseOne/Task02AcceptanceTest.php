@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PhaseOne;
 
-use App\Application\Actions\AssignStudentToGroupAction;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +27,6 @@ use Modules\Groups\Domain\Models\GroupTeacher;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Database\Seeders\GeographySeeder;
 use Modules\Organization\Domain\Models\Organization;
-use Modules\Staff\Application\Actions\ApproveTeacherAvailabilityAction;
 use Modules\Staff\Application\Actions\SetTeacherAvailability;
 use Modules\Staff\Domain\Enums\EmploymentType;
 use Modules\Staff\Domain\Enums\StaffGender;
@@ -45,6 +43,7 @@ use Modules\Students\Domain\Events\RegistrationSubmitted;
 use Modules\Students\Domain\Events\StudentAssignedToTeacher;
 use Modules\Students\Domain\Models\RegistrationApplication;
 use Modules\Students\Domain\Models\StudentProfile;
+use Shared\Testing\Fixtures;
 use Tests\TestCase;
 
 final class Task02AcceptanceTest extends TestCase
@@ -54,11 +53,12 @@ final class Task02AcceptanceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        \Shared\Testing\Fixtures::flush();
+        Fixtures::flush();
     }
 
     public function test_public_registration_acceptance_and_placement_are_tenant_safe_and_atomic(): void
     {
+        config()->set('scheduling.availability.teacher_requires_approval', false);
         (new GeographySeeder)->run();
 
         $organization = Organization::factory()->create();
@@ -145,16 +145,10 @@ final class Task02AcceptanceTest extends TestCase
             timezone: 'UTC',
             effectiveFrom: CarbonImmutable::today('UTC'),
         );
-        $approvedAvailability = app(ApproveTeacherAvailabilityAction::class)->execute(
-            $availability,
-            (string) $reviewer->id,
-        );
-        app(ApproveTeacherAvailabilityAction::class)->execute($approvedAvailability, (string) $reviewer->id);
-
-        self::assertSame(TeacherAvailabilityApprovalStatus::Approved, $approvedAvailability->approval_status);
-        self::assertSame((string) $reviewer->id, $approvedAvailability->approved_by);
-        self::assertNotNull($approvedAvailability->approved_at);
-        Event::assertDispatchedTimes(TeacherAvailabilityApproved::class, 1);
+        self::assertSame(TeacherAvailabilityApprovalStatus::Approved, $availability->approval_status);
+        self::assertNull($availability->approved_by);
+        self::assertNotNull($availability->approved_at);
+        Event::assertNotDispatched(TeacherAvailabilityApproved::class);
 
         $payload = [
             'full_name' => 'طالب المرحلة الأولى',
@@ -189,8 +183,9 @@ final class Task02AcceptanceTest extends TestCase
         Event::assertDispatched(RegistrationSubmitted::class);
 
         $acceptUrl = '/api/registration-applications/'.$applicationId.'/accept';
-        $this->actingAs($otherReviewer, 'sanctum')->postJson($acceptUrl)->assertForbidden();
-        $this->actingAs($reviewer, 'sanctum')->postJson($acceptUrl)
+        $acceptancePayload = ['reason' => 'استيفاء شروط القبول الأكاديمي'];
+        $this->actingAs($otherReviewer, 'sanctum')->postJson($acceptUrl, $acceptancePayload)->assertForbidden();
+        $this->actingAs($reviewer, 'sanctum')->postJson($acceptUrl, $acceptancePayload)
             ->assertOk()
             ->assertJsonPath('data.status', RegistrationStatus::WaitingAssignment->value);
 
@@ -203,7 +198,15 @@ final class Task02AcceptanceTest extends TestCase
             'student_profile_id' => (string) $application->student_profile_id,
             'program_id' => (string) $program->id,
             'course_id' => (string) $course->id,
+            'reason' => 'تسكين الطالب حسب البرنامج والكورس المقبولين',
         ];
+
+        $payloadWithoutReason = $placementPayload;
+        unset($payloadWithoutReason['reason']);
+        $this->actingAs($reviewer, 'sanctum')->postJson($placementUrl, $payloadWithoutReason)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+        $this->assertPlacementWasRolledBack($application);
 
         $this->actingAs($reviewer, 'sanctum')->postJson($placementUrl, $placementPayload)
             ->assertUnprocessable()
@@ -238,6 +241,16 @@ final class Task02AcceptanceTest extends TestCase
         self::assertSame(RegistrationStatus::Assigned, $application->status);
         self::assertSame(1, DB::table('group_memberships')->where('student_profile_id', $application->student_profile_id)->count());
         self::assertSame(1, DB::table('enrollments')->where('student_profile_id', $application->student_profile_id)->count());
+        self::assertTrue(DB::table('audit_log')->where([
+            'action' => 'academic_status.registration_accepted',
+            'auditable_id' => $applicationId,
+            'reason' => $acceptancePayload['reason'],
+        ])->exists());
+        self::assertTrue(DB::table('audit_log')->where([
+            'action' => 'enrollment.placed',
+            'auditable_id' => (string) $application->student_profile_id,
+            'reason' => $placementPayload['reason'],
+        ])->exists());
         Event::assertDispatchedTimes(StudentAssignedToTeacher::class, 1);
         Event::assertDispatchedTimes(StudentAssignedToGroup::class, 1);
     }

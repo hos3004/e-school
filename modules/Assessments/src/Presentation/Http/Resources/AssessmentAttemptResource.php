@@ -31,9 +31,9 @@ final class AssessmentAttemptResource extends JsonResource
             'passed' => $this->passed,
             'graded_by' => $this->graded_by,
             'graded_at' => $this->graded_at?->toIso8601String(),
-            // الإجابات تُعرض لصاحب المحاولة أو المصحح فقط — عبر صلاحية التصحيح هنا.
+            // الإجابات تُخفى بعد التسليم عمن لا يملك صلاحية إدارة التصحيح.
             'answers' => $this->when(
-                $request->user()?->can('assessments.attempt.grade'),
+                $request->user()?->can('assessment.manage'),
                 $this->answers,
             ),
         ];

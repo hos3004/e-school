@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Modules\Assessments\Domain\Enums\AssessmentOperationalStatus;
 use Modules\Assessments\Domain\Enums\AssessmentType;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
@@ -92,5 +93,32 @@ final class Assessment extends Model
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);
+    }
+
+    public function allocatedQuestionScore(): int
+    {
+        return (int) $this->questions()->sum('score');
+    }
+
+    public function hasCompleteQuestionBank(): bool
+    {
+        return $this->questions()->exists() && $this->allocatedQuestionScore() === $this->total_score;
+    }
+
+    public function operationalStatus(): AssessmentOperationalStatus
+    {
+        if (!$this->hasCompleteQuestionBank()) {
+            return AssessmentOperationalStatus::Draft;
+        }
+
+        $now = now('UTC');
+
+        if ($now->lt($this->available_from)) {
+            return AssessmentOperationalStatus::Scheduled;
+        }
+
+        return $now->lte($this->available_to)
+            ? AssessmentOperationalStatus::Open
+            : AssessmentOperationalStatus::Closed;
     }
 }

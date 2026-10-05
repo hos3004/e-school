@@ -1,0 +1,82 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'title' => 'AI assistant',
+    'description' => 'Run the academy assistant, edit its texts and limits, and review its archive.',
+    'reason' => 'Reason',
+    'save' => 'Save',
+    'cancel' => 'Close',
+    'edit' => 'Edit',
+    'tab' => [
+        'status' => 'Status',
+        'entries' => 'Texts',
+        'rules' => 'Limits',
+        'access' => 'Access',
+        'archive' => 'Archive',
+    ],
+    'status' => [
+        'heading' => 'Assistant status',
+        'on' => 'The assistant is running.',
+        'off' => 'The assistant is off.',
+        'no_key' => 'No provider key yet. It is entered by a script on the server, not from this screen.',
+        'turn_on' => 'Turn on',
+        'turn_off' => 'Turn off now',
+    ],
+    'audiences' => [
+        'heading' => 'Who uses the assistant',
+        'hint' => 'Pick the audiences that see the assistant. A per-account exception overrides this.',
+    ],
+    'usage' => [
+        'heading' => 'Usage and limits',
+        'today' => 'Spent today',
+        'per_day' => 'Messages per user per day',
+        'per_minute' => 'Messages per user per minute',
+    ],
+    'entries' => [
+        'kind' => 'Kind',
+        'key' => 'Key',
+        'scope' => 'Scope',
+        'body' => 'Text',
+        'audiences' => 'Audiences',
+        'global' => 'Global (shipped)',
+        'organization' => 'Academy specific',
+        'global_hint' => 'This is a shipped global row. Saving creates an academy copy that shadows it.',
+    ],
+    'rules' => [
+        'hint' => 'Per topic and audience: answer, guide without figures, or decline. Money topics are locked to guide in code.',
+        'topic' => 'Topic',
+        'mode' => 'Behaviour',
+        'reply_key' => 'Prepared reply key',
+        'editing' => 'Edit rule',
+        'money_locked' => 'Money topic: never states figures',
+    ],
+    'access' => [
+        'heading' => 'Open or close for one account',
+        'hint' => 'This exception overrides the audience setting in both directions.',
+        'user_id' => 'Account id',
+        'enabled' => 'Open for this account',
+        'account' => 'Account',
+        'state' => 'State',
+        'open' => 'Open',
+        'closed' => 'Closed',
+    ],
+    'archive' => [
+        'person' => 'User',
+        'messages' => 'Messages',
+        'blocked' => 'Withheld replies',
+        'last' => 'Last message',
+        'view' => 'View',
+        'empty' => 'No conversations yet.',
+        'loading' => 'Loading…',
+        'transcript' => 'Transcript',
+    ],
+    'flash' => [
+        'toggled' => 'Assistant status changed.',
+        'audiences_saved' => 'Audiences saved.',
+        'entry_saved' => 'Text saved.',
+        'rule_saved' => 'Rule saved.',
+        'access_saved' => 'Account setting saved.',
+    ],
+];

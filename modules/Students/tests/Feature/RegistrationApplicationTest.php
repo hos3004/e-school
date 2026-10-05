@@ -56,7 +56,11 @@ final class RegistrationApplicationTest extends TestCase
         $application = app(SubmitRegistrationApplicationAction::class)->execute($application);
         $this->assertSame(RegistrationStatus::Submitted, $application->status);
 
-        $application = app(AcceptRegistrationApplicationAction::class)->execute($application, Fixtures::userId());
+        $application = app(AcceptRegistrationApplicationAction::class)->execute(
+            $application,
+            Fixtures::userId(),
+            'Meets the configured admission requirements.',
+        );
         $this->assertSame(RegistrationStatus::WaitingAssignment, $application->status);
         $this->assertNotNull($application->student_profile_id);
 
@@ -92,6 +96,21 @@ final class RegistrationApplicationTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors('reason');
 
+        $this->assertDatabaseCount('student_profiles', 0);
+    }
+
+    public function test_accepted_application_without_reason_fails(): void
+    {
+        $application = $this->submittedApplication('accept-without-reason@example.test');
+        $reviewer = User::factory()->create(['organization_id' => $application->organization_id]);
+        Gate::define('student.create', fn (): bool => true);
+
+        $this->actingAs($reviewer)
+            ->postJson("/api/registration-applications/{$application->id}/accept", [])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        self::assertSame(RegistrationStatus::Submitted, $application->fresh()->status);
         $this->assertDatabaseCount('student_profiles', 0);
     }
 
@@ -167,11 +186,51 @@ final class RegistrationApplicationTest extends TestCase
         Event::fake([RegistrationAccepted::class]);
         $application = $this->submittedApplication('accepted-event@example.test');
 
-        app(AcceptRegistrationApplicationAction::class)->execute($application, Fixtures::userId());
+        app(AcceptRegistrationApplicationAction::class)->execute(
+            $application,
+            Fixtures::userId(),
+            'Meets the configured admission requirements.',
+        );
 
         Event::assertDispatched(
             RegistrationAccepted::class,
             fn (RegistrationAccepted $event): bool => $event->studentUserId === $application->user_id,
+        );
+    }
+
+    /*
+     * رسالة القبول تعرض الطالب والكورس وكوده؛ الحدث مصدرها الوحيد. طلب بلا
+     * كورس مفضّل يأخذ النص البديل المترجم — ولا يخرج بقيمة فارغة تُسقط الإشعار.
+     */
+    public function test_acceptance_event_carries_the_message_details(): void
+    {
+        Event::fake([RegistrationAccepted::class]);
+        $application = $this->submittedApplication('accepted-details@example.test');
+
+        app(AcceptRegistrationApplicationAction::class)->execute(
+            $application,
+            Fixtures::userId(),
+            'Meets the configured admission requirements.',
+        );
+
+        Event::assertDispatched(
+            RegistrationAccepted::class,
+            function (RegistrationAccepted $event) use ($application): bool {
+                $this->assertSame($application->full_name, $event->studentName);
+                $this->assertNotSame('', $event->studentCode);
+                $this->assertSame(
+                    (string) StudentProfile::query()->firstOrFail()->student_code,
+                    $event->studentCode,
+                );
+                $this->assertNotSame([], $event->courseName);
+
+                foreach ($event->courseName as $name) {
+                    $this->assertNotSame('', trim($name));
+                    $this->assertStringNotContainsString('students::', $name);
+                }
+
+                return true;
+            },
         );
     }
 

@@ -6,6 +6,7 @@ namespace Modules\Guardians\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Guardians\Domain\Events\GuardianLinkVerified;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Shared\Support\BusinessRuleViolation;
@@ -17,10 +18,17 @@ use Shared\Support\BusinessRuleViolation;
  */
 final readonly class VerifyGuardianLink
 {
-    public function execute(string $guardianLinkId): GuardianLink
-    {
+    public function __construct(
+        private AuditRecorder $audit,
+    ) {}
+
+    public function execute(
+        string $guardianLinkId,
+        ?string $actorId = null,
+        ?string $reason = null,
+    ): GuardianLink {
         /** @var GuardianLink $link */
-        $link = GuardianLink::query()->findOrFail($guardianLinkId);
+        $link = GuardianLink::query()->with('guardian')->findOrFail($guardianLinkId);
 
         if ($link->verified_at !== null) {
             throw BusinessRuleViolation::make(
@@ -30,8 +38,22 @@ final readonly class VerifyGuardianLink
             );
         }
 
-        DB::transaction(function () use ($link): void {
+        DB::transaction(function () use ($link, $actorId, $reason): void {
             $link->forceFill(['verified_at' => CarbonImmutable::now('UTC')])->save();
+
+            if ($actorId !== null && $reason !== null && trim($reason) !== '') {
+                $this->audit->record(
+                    organizationId: (string) $link->guardian->organization_id,
+                    actorId: $actorId,
+                    actorType: 'user',
+                    action: 'guardians.link_verified',
+                    auditableType: 'guardian_link',
+                    auditableId: (string) $link->getKey(),
+                    oldValues: ['verified_at' => null],
+                    newValues: ['verified_at' => $link->verified_at?->toIso8601String()],
+                    reason: $reason,
+                );
+            }
         });
 
         event(new GuardianLinkVerified(

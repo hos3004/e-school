@@ -9,10 +9,16 @@ import Card, {
 import EmptyState from '@/Components/EmptyState';
 import ErrorState from '@/Components/ErrorState';
 import LoadingState from '@/Components/LoadingState';
-import PageHeader from '@/Components/PageHeader';
+import SessionEmailPreference from '@/Components/SessionEmailPreference';
 import AppLayout from '@/Layouts/AppLayout';
-import { formatDateTime, formatPercent, useLocale } from '@/lib/format';
+import {
+    formatDateTime,
+    formatPercent,
+    useLocale,
+    useSupportedLocales,
+} from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
+import { StudentPageHero } from '@/Pages/Student/Partials/StudentUi';
 import type { LoadablePageProps } from '@/types';
 
 interface StudentSummary {
@@ -46,11 +52,9 @@ interface Props extends LoadablePageProps {
     passwordUrl?: string;
 }
 
-const localeOptions = ['ar', 'en', 'fr'] as const;
-
 const fieldClasses =
-    'mt-1 min-h-11 w-full rounded-lg border border-[var(--ink-muted)] bg-[var(--surface)] px-3 text-[var(--ink)] ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]';
+    'mt-2 min-h-12 w-full rounded-xl border border-[color:var(--ink-muted)]/45 bg-[var(--surface)] px-3 text-base text-[var(--ink)] shadow-sm ' +
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2';
 
 export default function Profile({
     student = null,
@@ -64,6 +68,7 @@ export default function Profile({
 }: Props) {
     const t = useI18n();
     const locale = useLocale();
+    const localeOptions = useSupportedLocales();
 
     const profileForm = useForm({
         name: account?.name ?? '',
@@ -92,8 +97,8 @@ export default function Profile({
     return (
         <AppLayout role="student">
             <Head title={t('student.profile.title')} />
-            <PageHeader
-                className="mb-6"
+            <StudentPageHero
+                className="mb-8"
                 title={t('student.profile.title')}
                 subtitle={t('student.profile.subtitle')}
             />
@@ -108,8 +113,11 @@ export default function Profile({
                     description={t('student.profile.empty_description')}
                 />
             ) : (
-                <div className="space-y-6">
-                    <Card>
+                <div className="grid gap-6 xl:grid-cols-[minmax(17rem,0.8fr)_minmax(0,1.6fr)]">
+                    <Card
+                        className="self-start border-[color:var(--brand)]/25 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--brand)_8%,var(--surface)),var(--surface)_60%)] shadow-md"
+                        padding="lg"
+                    >
                         <CardHeader className="mb-5">
                             <CardTitle>
                                 {t('student.profile.summary_title')}
@@ -121,7 +129,10 @@ export default function Profile({
 
                         <dl className="grid gap-4 sm:grid-cols-2">
                             {readOnlyFields.map(([key, value]) => (
-                                <div key={key}>
+                                <div
+                                    className="rounded-xl bg-[var(--surface)]/80 px-4 py-3 shadow-sm"
+                                    key={key}
+                                >
                                     <dt className="text-xs text-[var(--ink-muted)]">
                                         {t(`student.profile.fields.${key}`)}
                                     </dt>
@@ -130,9 +141,11 @@ export default function Profile({
                                     </dd>
                                 </div>
                             ))}
-                            <div>
+                            <div className="rounded-xl bg-[var(--surface)]/80 px-4 py-3 shadow-sm">
                                 <dt className="text-xs text-[var(--ink-muted)]">
-                                    {t('student.profile.fields.attendance_rate')}
+                                    {t(
+                                        'student.profile.fields.attendance_rate',
+                                    )}
                                 </dt>
                                 <dd className="mt-1 font-semibold text-[var(--ink)]">
                                     {attendanceRate === null
@@ -141,7 +154,7 @@ export default function Profile({
                                 </dd>
                             </div>
                             {account?.lastLoginAt ? (
-                                <div>
+                                <div className="rounded-xl bg-[var(--surface)]/80 px-4 py-3 shadow-sm">
                                     <dt className="text-xs text-[var(--ink-muted)]">
                                         {t('account.last_login')}
                                     </dt>
@@ -156,11 +169,12 @@ export default function Profile({
                         </dl>
                     </Card>
 
-                    <Card>
+                    <Card
+                        className="border-[color:var(--ink-muted)]/15 shadow-md"
+                        padding="lg"
+                    >
                         <CardHeader className="mb-5">
-                            <CardTitle>
-                                {t('account.edit_title')}
-                            </CardTitle>
+                            <CardTitle>{t('account.edit_title')}</CardTitle>
                             <CardDescription>
                                 {t('account.edit_description')}
                             </CardDescription>
@@ -175,7 +189,7 @@ export default function Profile({
                                 });
                             }}
                         >
-                            <label className="text-sm">
+                            <label className="text-sm font-semibold">
                                 {t('account.fields.name')}
                                 <input
                                     className={fieldClasses}
@@ -196,7 +210,7 @@ export default function Profile({
                                 ) : null}
                             </label>
 
-                            <label className="text-sm">
+                            <label className="text-sm font-semibold">
                                 {t('account.fields.phone')}
                                 <input
                                     className={fieldClasses}
@@ -217,7 +231,7 @@ export default function Profile({
                                 ) : null}
                             </label>
 
-                            <label className="text-sm">
+                            <label className="text-sm font-semibold">
                                 {t('common.language')}
                                 <select
                                     className={fieldClasses}
@@ -237,7 +251,7 @@ export default function Profile({
                                 </select>
                             </label>
 
-                            <label className="text-sm">
+                            <label className="text-sm font-semibold">
                                 {t('account.fields.timezone')}
                                 <select
                                     className={fieldClasses}
@@ -259,6 +273,7 @@ export default function Profile({
 
                             <div className="sm:col-span-2">
                                 <Button
+                                    className="w-full sm:w-auto"
                                     disabled={profileForm.processing}
                                     type="submit"
                                 >
@@ -274,11 +289,12 @@ export default function Profile({
                         </p>
                     </Card>
 
-                    <Card>
+                    <Card
+                        className="border-[color:var(--ink-muted)]/15 shadow-md xl:col-start-2"
+                        padding="lg"
+                    >
                         <CardHeader className="mb-5">
-                            <CardTitle>
-                                {t('account.password_title')}
-                            </CardTitle>
+                            <CardTitle>{t('account.password_title')}</CardTitle>
                             <CardDescription>
                                 {t('account.password_description')}
                             </CardDescription>
@@ -294,7 +310,7 @@ export default function Profile({
                                 });
                             }}
                         >
-                            <label className="text-sm">
+                            <label className="text-sm font-semibold">
                                 {t('account.fields.current_password')}
                                 <input
                                     autoComplete="current-password"
@@ -316,7 +332,7 @@ export default function Profile({
                                 ) : null}
                             </label>
 
-                            <label className="text-sm">
+                            <label className="text-sm font-semibold">
                                 {t('account.fields.new_password')}
                                 <input
                                     autoComplete="new-password"
@@ -338,7 +354,7 @@ export default function Profile({
                                 ) : null}
                             </label>
 
-                            <label className="text-sm">
+                            <label className="text-sm font-semibold">
                                 {t('account.fields.confirm_password')}
                                 <input
                                     autoComplete="new-password"
@@ -359,6 +375,7 @@ export default function Profile({
 
                             <div className="sm:col-span-3">
                                 <Button
+                                    className="w-full sm:w-auto"
                                     disabled={passwordForm.processing}
                                     type="submit"
                                     variant="secondary"
@@ -370,6 +387,9 @@ export default function Profile({
                             </div>
                         </form>
                     </Card>
+                    <div className='xl:col-start-2'>
+                        <SessionEmailPreference />
+                    </div>
                 </div>
             )}
         </AppLayout>

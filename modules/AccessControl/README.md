@@ -10,6 +10,7 @@
 
 - `access_control.role_assigned`
 - `access_control.permission_changed`
+- `RoleAssignmentGateway` لإسناد دور مسمى بطريقة idempotent من منسقات الطبقات الأعلى.
 
 ## يعتمد على
 

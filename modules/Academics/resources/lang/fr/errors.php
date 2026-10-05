@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'program_code_taken' => 'Le code programme « :code » est déjà utilisé.',
+    'level_code_taken' => 'Le code niveau « :code » est déjà utilisé dans ce programme.',
+    'course_code_taken' => 'Le code cours « :code » est déjà utilisé.',
+    'program_not_found' => 'Le programme demandé est introuvable.',
+    'level_not_found' => 'Le niveau demandé est introuvable.',
+    'rate_negative' => 'Le tarif par défaut ne peut pas être négatif.',
+    'total_sessions_invalid' => 'Le cours doit comporter au moins une séance.',
+    'program_has_active_courses' => 'Le programme « :code » contient des cours actifs ; archivez-les d’abord.',
+    'level_not_in_program' => 'Un niveau ne fait pas partie du programme indiqué.',
+    'reason_required' => 'Le motif du changement est obligatoire.',
+    'fixed_program_dates_required' => 'Un programme à durée déterminée exige des dates de début et de fin.',
+    'ongoing_program_end_forbidden' => 'Un programme continu ne peut pas avoir de date de fin.',
+    'program_end_before_start' => 'La date de fin ne peut pas précéder la date de début.',
+    'age_range_invalid' => 'L’âge maximal ne peut pas être inférieur à l’âge minimal.',
+    'category_code_taken' => 'Le code catégorie « :code » est déjà utilisé.',
+    'category_parent_invalid' => 'La catégorie parente est invalide.',
+    'category_outside_course_program' => 'Une catégorie ne correspond pas au programme ou à l’organisation du cours.',
+    'organization_required' => 'Une organisation est obligatoire pour cette opération académique.',
+    'program_already_closed' => 'Le programme :code est deja cloture.',
+    'program_not_closed' => 'Le programme :code n\'est pas cloture, il n\'y a donc rien a rouvrir.',
+    'program_closure_blocked' => 'Le programme :code ne peut pas encore etre cloture car il contient :blockers. Terminez ou cloturez ce qui s\'y trouve, puis reessayez. La cloture ne supprime rien et peut etre annulee par une reouverture.',
+    'course_already_closed' => 'Le cours :code est deja cloture.',
+    'course_not_closed' => 'Le cours :code n\'est pas cloture, il n\'y a donc rien a rouvrir.',
+    'course_closure_blocked' => 'Le cours :code ne peut pas encore etre cloture car il contient :blockers. Terminez ou annulez les seances restantes, puis reessayez. La cloture ne supprime rien et peut etre annulee par une reouverture.',
+    'closure_blocker_courses_active' => ':count cours actif(s)',
+    'closure_blocker_enrollments_live' => ':count inscription(s) encore ouverte(s)',
+    'closure_blocker_sessions_open' => ':count seance(s) pas encore dans un etat final',
+    'level_already_closed' => 'Le niveau :code est deja cloture.',
+    'level_not_closed' => 'Le niveau :code n\'est pas cloture, il n\'y a donc rien a rouvrir.',
+    'level_closure_blocked' => 'Le niveau :code ne peut pas encore etre cloture car il contient :blockers. Terminez ou cloturez ses cours, puis reessayez. La cloture ne supprime rien et peut etre annulee par une reouverture.',
+    'level_closed_parent' => 'Le niveau :code est archive : il n\'accepte ni nouveau cours ni cours deplace vers lui. Rouvrez-le depuis les archives.',
+    'program_closed_parent' => 'Le programme :code est archive : il n\'accepte pas de nouveau niveau. Rouvrez-le depuis les archives.',
+];

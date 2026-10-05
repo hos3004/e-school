@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Modules\Students\Application\Actions;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Students\Application\Services\RegistrationNotificationDetails;
 use Modules\Students\Domain\Enums\RegistrationStatus;
 use Modules\Students\Domain\Events\RegistrationAccepted;
 use Modules\Students\Domain\Models\RegistrationApplication;
 use Modules\Students\Domain\Models\StudentProfile;
+use Shared\Codes\EntityCodeGenerator;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -17,19 +20,35 @@ final readonly class AcceptRegistrationApplicationAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
+        private EntityCodeGenerator $codes,
+        private RegistrationNotificationDetails $details,
     ) {}
 
-    public function execute(RegistrationApplication $application, string $reviewerUserId): RegistrationApplication
-    {
-        /** @var array{0: RegistrationApplication, 1: bool} $result */
-        $result = $this->transaction->run(function () use ($application, $reviewerUserId): array {
+    public function execute(
+        RegistrationApplication $application,
+        string $reviewerUserId,
+        ?string $reason = null,
+    ): RegistrationApplication {
+        $reason = $reason === null ? null : trim($reason);
+
+        if ((bool) config('admission.application.acceptance_requires_reason', true)
+            && ($reason === null || $reason === '')) {
+            throw BusinessRuleViolation::make(
+                'registration.acceptance_reason_required',
+                'students::errors.registration_acceptance_reason_required',
+            );
+        }
+
+        /** @var array{0: RegistrationApplication, 1: bool, 2: string|null} $result */
+        $result = $this->transaction->run(function () use ($application, $reviewerUserId, $reason): array {
             /** @var RegistrationApplication $locked */
             $locked = RegistrationApplication::query()
                 ->lockForUpdate()
                 ->findOrFail($application->getKey());
 
             if ($locked->status === RegistrationStatus::WaitingAssignment && $locked->student_profile_id !== null) {
-                return [$locked, false];
+                return [$locked, false, null];
             }
 
             if ($locked->status !== RegistrationStatus::Accepted
@@ -55,16 +74,20 @@ final readonly class AcceptRegistrationApplicationAction
                 );
             }
 
+            $fromStatus = $locked->status->value;
+
             // حفظ حالة accepted داخل المعاملة يجعل التسلسل صريحًا قبل إنشاء الملف.
             $locked->status = RegistrationStatus::Accepted;
             $locked->reviewed_by = $reviewerUserId;
             $locked->reviewed_at = now()->utc();
+            $locked->decision_reason = $reason;
             $locked->save();
 
             $profile = new StudentProfile;
             $profile->organization_id = (string) $locked->organization_id;
             $profile->user_id = $locked->user_id;
-            $profile->student_code = (string) $locked->getKey();
+            // كود عرض قصير (E001) داخل نفس المعاملة المقفولة — لا ULID كامل.
+            $profile->student_code = $this->codes->next('student');
             $profile->date_of_birth = $locked->date_of_birth;
             $profile->gender = $locked->gender;
             $profile->country_id = $locked->country_id;
@@ -76,10 +99,25 @@ final readonly class AcceptRegistrationApplicationAction
             $locked->status = RegistrationStatus::WaitingAssignment;
             $locked->save();
 
-            return [$locked, true];
+            $this->audit->record(
+                organizationId: (string) $locked->organization_id,
+                actorId: $reviewerUserId,
+                actorType: 'user',
+                action: 'academic_status.registration_accepted',
+                auditableType: 'registration_application',
+                auditableId: (string) $locked->getKey(),
+                oldValues: ['status' => $fromStatus],
+                newValues: [
+                    'status' => RegistrationStatus::WaitingAssignment->value,
+                    'student_profile_id' => (string) $profile->getKey(),
+                ],
+                reason: $reason,
+            );
+
+            return [$locked, true, (string) $profile->student_code];
         });
 
-        [$application, $created] = $result;
+        [$application, $created, $studentCode] = $result;
 
         if ($created) {
             $this->events->dispatch(new RegistrationAccepted(
@@ -87,6 +125,12 @@ final readonly class AcceptRegistrationApplicationAction
                 organizationId: (string) $application->organization_id,
                 studentProfileId: (string) $application->student_profile_id,
                 studentUserId: (string) $application->user_id,
+                studentName: $application->full_name,
+                courseName: $this->details->courseName(
+                    (string) $application->organization_id,
+                    $application->preferred_course_id,
+                ),
+                studentCode: (string) $studentCode,
                 actorId: $reviewerUserId,
             ));
         }

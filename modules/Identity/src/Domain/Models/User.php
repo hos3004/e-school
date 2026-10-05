@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Modules\Identity\Database\Factories\UserFactory;
 use Modules\Identity\Domain\Enums\UserStatus;
 use Shared\Concerns\HasUlid;
@@ -37,6 +38,8 @@ use Shared\Concerns\RecordsDomainEvents;
  * @property CarbonImmutable|null $phone_verified_at
  * @property string|null $avatar_path
  * @property UserStatus $status
+ * @property CarbonImmutable|null $profile_completed_at
+ * @property bool $must_change_password
  * @property CarbonImmutable|null $last_login_at
  * @property string|null $last_login_ip
  * @property CarbonImmutable|null $created_at
@@ -45,6 +48,8 @@ use Shared\Concerns\RecordsDomainEvents;
  */
 final class User extends Authenticatable implements FilamentUser
 {
+    use HasApiTokens;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory;
 
@@ -66,6 +71,8 @@ final class User extends Authenticatable implements FilamentUser
         'avatar_path' => null,
         'email_verified_at' => null,
         'last_login_at' => null,
+        'profile_completed_at' => null,
+        'must_change_password' => false,
         'status' => UserStatus::Active->value,
     ];
 
@@ -115,6 +122,8 @@ final class User extends Authenticatable implements FilamentUser
             'two_factor_confirmed_at' => 'immutable_datetime',
             'status' => UserStatus::class,
             'last_login_at' => 'immutable_datetime',
+            'profile_completed_at' => 'immutable_datetime',
+            'must_change_password' => 'boolean',
             'password' => 'hashed',
         ];
     }

@@ -10,6 +10,7 @@ use Modules\Integrations\Domain\Contracts\ChannelGateway;
 use Modules\Integrations\Domain\ValueObjects\GatewayMessage;
 use Modules\Integrations\Domain\ValueObjects\GatewayResult;
 use Modules\Notifications\Application\Services\TemplateRenderer;
+use Modules\Notifications\Application\Services\UndeliverableEmailDomains;
 use Modules\Notifications\Domain\Enums\Channel;
 use Modules\Notifications\Infrastructure\Mail\NotificationMail;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
@@ -23,6 +24,7 @@ final readonly class MailChannelGateway implements ChannelGateway
     public function __construct(
         private Mailer $mailer,
         private TemplateRenderer $templates,
+        private UndeliverableEmailDomains $undeliverable,
     ) {}
 
     public function send(GatewayMessage $message): GatewayResult
@@ -43,6 +45,22 @@ final readonly class MailChannelGateway implements ChannelGateway
             return GatewayResult::rejected(
                 (string) __('notifications::errors.email_recipient_invalid'),
                 false,
+            );
+        }
+
+        /*
+         * العنوان البديل (‎@…​.invalid وأخواته) صحيح الشكل ولا وجود لنطاقه.
+         *
+         * بلا هذا الحارس يُفتح حوار SMTP فيردّ الخادم 450 «Domain not found»،
+         * وهو رمز مؤقت فتُعاد المحاولة إلى الأبد: عشرات آلاف المحاولات تحجز
+         * عمال الطابور أربع ثوانٍ لكل واحدة وتُجوّع بقية القنوات. النطاقات
+         * محجوزة بنص RFC 2606/6761 فلا تُسلَّم أبدًا؛ الرفض هنا نهائي لا مؤقت.
+         */
+        if ($this->undeliverable->isUndeliverable($email)) {
+            return GatewayResult::rejected(
+                (string) __('notifications::errors.email_domain_undeliverable'),
+                false,
+                ['status' => 'failed', 'failure_reason' => 'email_domain_undeliverable'],
             );
         }
 

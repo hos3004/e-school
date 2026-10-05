@@ -1,0 +1,213 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+
+    'status' => [
+        'draft' => 'Brouillon',
+        'published' => 'Publiée',
+        'paused' => 'En pause',
+        'archived' => 'Archivée',
+    ],
+
+    'effective_status' => [
+        'scheduled' => 'Programmée',
+        'active' => 'Active maintenant',
+        'expired' => 'Expirée',
+    ],
+
+    'type' => [
+        'urgent_announcement' => 'Annonce urgente',
+        'program_promotion' => 'Promotion de programme',
+        'reminder' => 'Rappel',
+        'administrative' => 'Avis administratif',
+        'general' => 'Annonce générale',
+    ],
+
+    'audience' => [
+        'student' => 'Élèves',
+        'guardian' => 'Parents',
+        'teacher' => 'Enseignants',
+        'supervisor' => 'Superviseurs',
+        'administrator' => 'Administrateurs',
+        'all_authenticated' => 'Tous les utilisateurs connectés',
+    ],
+
+    'placement' => [
+        'after_login' => 'Après connexion',
+        'dashboard' => 'Tableau de bord',
+        'specific_page' => 'Page spécifique',
+        'all_authenticated_pages' => 'Première page éligible',
+    ],
+
+    'display_mode' => [
+        'bottom_banner' => 'Bandeau bas',
+        'fullscreen' => 'Plein écran',
+    ],
+
+    'frequency' => [
+        'once' => 'Une fois',
+        'once_per_login' => 'Une fois par connexion',
+        'once_per_day' => 'Une fois par jour',
+        'until_acknowledged' => "Jusqu'à accusé de réception",
+        'every_eligible_visit' => 'Chaque visite (usage limité)',
+    ],
+
+    'frequency_help' => [
+        'once' => 'Affichée une seule fois par utilisateur',
+        'once_per_login' => 'Affichée une fois après chaque connexion',
+        'once_per_day' => 'Une fois par jour en UTC',
+        'until_acknowledged' => "Continue jusqu'à l'accusé de réception",
+        'every_eligible_visit' => 'À chaque visite — à utiliser avec prudence',
+    ],
+
+    'pages' => [
+        'student_dashboard' => 'Tableau de bord élève',
+        'student_schedule' => 'Emploi du temps élève',
+        'guardian_dashboard' => 'Tableau de bord parent',
+        'teacher_dashboard' => 'Tableau de bord enseignant',
+        'admin_dashboard' => 'Panneau admin',
+    ],
+
+    'tabs' => [
+        'content' => 'Contenu',
+        'audience' => 'Public',
+        'display' => 'Affichage',
+        'scheduling' => 'Planification',
+        'review' => 'Révision et aperçu',
+    ],
+
+    'fields' => [
+        'internal_name' => 'Nom interne',
+        'type' => 'Type de popup',
+        'title_ar' => 'Titre (arabe)',
+        'title_en' => 'Titre (anglais)',
+        'title_fr' => 'Titre (français)',
+        'body_ar' => 'Texte (arabe)',
+        'body_en' => 'Texte (anglais)',
+        'body_fr' => 'Texte (français)',
+        'arabic_content' => 'Contenu arabe (obligatoire)',
+        'optional_translations' => 'Traductions optionnelles',
+        'plain_text_help' => 'Texte brut uniquement — pas de HTML ni de code. Toujours affiché échappé.',
+        'cta_section' => 'Bouton d’action (optionnel)',
+        'action_type' => "Type d'action",
+        'internal_page' => 'Page interne approuvée',
+        'external_url' => 'Lien externe (HTTPS uniquement)',
+        'external_url_help' => 'S’ouvre dans un nouvel onglet en toute sécurité. Les liens non HTTPS sont refusés.',
+        'action_label_ar' => 'Libellé du bouton (arabe)',
+        'audiences' => 'Publics cibles',
+        'audiences_help' => 'Choisissez au moins un public. « Tout le monde » couvre tous les utilisateurs authentifiés.',
+        'excluded_audiences' => 'Publics exclus',
+        'excluded_audiences_help' => 'L’exclusion l’emporte toujours : ces utilisateurs ne verront jamais la campagne, même si le public cible les inclut aussi.',
+        'placement' => 'Emplacement',
+        'display_mode' => 'Mode d’affichage',
+        'page_key' => 'Page cible',
+        'frequency' => 'Règle de fréquence',
+        'is_dismissible' => 'Fermeture possible par l’utilisateur',
+        'requires_acknowledgement' => 'Accusé de réception obligatoire',
+        'acknowledgement_label' => 'Libellé du bouton d’accusé',
+        'auto_dismiss_seconds' => 'Fermeture automatique après (secondes)',
+        'links' => 'Liens dans le texte',
+        'priority' => 'Priorité (la plus haute s’affiche en premier)',
+        'starts_at' => 'Début d’affichage (UTC)',
+        'ends_at' => 'Fin d’affichage (UTC) — optionnel',
+        'reason' => 'Motif de la modification',
+        'reason_help' => 'Un motif clair enregistré dans le journal d’audit.',
+        'media_kind' => 'Type de média',
+        'media_file' => 'Fichier',
+    ],
+
+    'options' => [
+        'no_action' => 'Sans bouton',
+    ],
+
+    'actions' => [
+        'create' => 'Nouvelle campagne',
+        'view' => 'Voir',
+        'edit' => 'Modifier',
+        'publish' => 'Publier',
+        'pause' => 'Mettre en pause',
+        'resume' => 'Reprendre',
+        'duplicate' => 'Dupliquer en brouillon',
+        'archive' => 'Archiver',
+    ],
+
+    'confirm' => [
+        'publish_description' => 'La campagne devient visible pour le public choisi dès l’ouverture de sa fenêtre, selon la fréquence et la priorité.',
+        'archive_description' => 'L’archivage est définitif : la campagne ne réapparaît plus. Dupliquer en brouillon reste l’alternative sûre.',
+    ],
+
+    'messages' => [
+        'status_changed' => 'Statut de la campagne mis à jour.',
+        'duplicated' => 'Une nouvelle copie brouillon a été créée.',
+        'media_uploaded' => 'Fichier téléversé avec succès.',
+    ],
+
+    'errors' => [
+        'reason_required' => 'Un motif est requis et est enregistré dans le journal d’audit.',
+        'foreign_tenant' => 'Une campagne appartenant à une autre organisation ne peut pas être enregistrée.',
+        'invalid_configuration' => 'Les données de la campagne sont incomplètes ou contiennent une valeur non prise en charge.',
+        'invalid_action' => 'Le bouton ou la cible est invalide. Les liens externes doivent utiliser HTTPS.',
+        'invalid_transition' => 'Cette transition de statut n’est pas autorisée.',
+        'arabic_content_required' => 'Le titre et le texte arabes sont obligatoires avant publication.',
+        'audience_required' => 'Sélectionnez au moins un public.',
+        'unsafe_exit' => 'Un popup ni fermable ni soumis à accusé piégerait l’utilisateur.',
+        'invalid_page_key' => 'La page choisie n’est pas dans le registre approuvé.',
+        'invalid_window' => 'La fin doit venir après le début.',
+        'locked_while_published' => 'Les campagnes publiées sont verrouillées — mettez en pause ou dupliquez.',
+        'not_available' => 'Cette campagne n’est pas disponible actuellement.',
+        'not_dismissible' => 'Cette campagne ne peut pas être fermée.',
+        'no_acknowledgement' => 'Cette campagne ne demande pas d’accusé.',
+        'no_action' => 'Cette campagne n’a pas de bouton d’action.',
+        'invalid_interaction' => 'Interaction inconnue.',
+        'invalid_media_kind' => 'Type de média non pris en charge.',
+        'media_not_found' => 'Ce fichier n’appartient pas à cette campagne.',
+        'media_belongs_to_foreign_campaign' => 'Un fichier ne peut pas être associé à une campagne d’une autre organisation.',
+        'download_link_expired' => 'Ce lien de téléchargement a expiré ou est invalide.',
+        'contradictory_audience' => 'Le même public ne peut pas être à la fois ciblé et exclu.',
+        'invalid_auto_dismiss' => 'La durée de fermeture automatique est hors des limites autorisées.',
+        'invalid_link_url' => 'Le lien est invalide. Utilisez un lien externe HTTPS ou un fichier déposé sur cette campagne.',
+        'link_text_not_in_body' => 'Le texte du lien doit apparaître réellement dans le corps du message pour chaque langue renseignée (manquant dans : :locale).',
+        'invalid_media_link' => 'Le fichier référencé n’appartient pas aux médias de cette campagne ou n’est pas un fichier téléchargeable.',
+    ],
+
+    'filters' => [
+        'active_now' => 'Active maintenant',
+    ],
+
+    'view' => [
+        'overview' => 'Aperçu général',
+        'analytics' => 'Statistiques',
+        'audit_note' => 'Origine et audit',
+        'created_by' => 'Créée par',
+        'updated_by' => 'Dernière modification par',
+        'published_by' => 'Publiée par',
+        'published_at' => 'Publiée le',
+        'created_at' => 'Créée le',
+        'updated_at' => 'Mise à jour le',
+    ],
+
+    'analytics' => [
+        'seen_users' => 'Utilisateurs uniques vus',
+        'impressions' => 'Impressions',
+        'acknowledgements' => 'Accusés de réception',
+        'dismissals' => 'Fermetures',
+        'clicks' => 'Clics CTA',
+        'ctr' => 'Taux de clic (CTR)',
+    ],
+
+    'preview' => [
+        'action' => 'Aperçu',
+        'banner' => 'Aperçu — ce n’est pas un popup réel ; aucune statistique n’est enregistrée',
+        'no_tracking_note' => 'Les aperçus n’enregistrent jamais impressions, clics ni accusés.',
+        'unsafe_exit_warning' => 'Alerte : cette campagne serait refusée à la publication car elle piège l’utilisateur.',
+    ],
+
+    'frontend' => [
+        'acknowledge_default' => 'Compris',
+        'dismiss' => 'Fermer',
+    ],
+
+    'duplicate_suffix' => 'copie',
+];

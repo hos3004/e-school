@@ -27,7 +27,7 @@ it('exposes stable names, the owning module and primitive payloads', function ()
 
     expect($registered->name())->toBe('recordings.registered')
         ->and($registered->module())->toBe('Recordings')
-        ->and($registered->payload())->toBeArray()
+        ->and($registered->payload())->toMatchArray(['recording_id' => '01R0000000000000000000000', 'external_recording_id' => 'ext-1'])
         ->and($payloadOnlyPrimitives($registered->payload()))->toBeTrue();
 
     $ready = new RecordingBecameReady('01R', '01O', '01S', 1800, 100_000_000);

@@ -14,6 +14,7 @@ use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
 
 /**
+ * @property bool $financials_visible
  * @property string $id
  * @property string $organization_id
  * @property string $user_id
@@ -21,6 +22,7 @@ use Shared\Concerns\HasUlid;
  * @property EmploymentType $employment_type
  * @property StaffGender|null $gender
  * @property string|null $country_id
+ * @property string|null $city
  * @property string|null $region_id
  * @property CarbonImmutable|null $date_of_birth
  * @property string|null $phone
@@ -45,6 +47,8 @@ final class StaffProfile extends Model
         'gender',
         'country_id',
         'region_id',
+        'city',
+        'region_name',
         'date_of_birth',
         'phone',
         'hired_at',
@@ -56,6 +60,7 @@ final class StaffProfile extends Model
     protected function casts(): array
     {
         return [
+            'financials_visible' => 'boolean',
             'employment_type' => EmploymentType::class,
             'gender' => StaffGender::class,
             'date_of_birth' => 'immutable_date',

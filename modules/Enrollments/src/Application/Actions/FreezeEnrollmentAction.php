@@ -6,6 +6,7 @@ namespace Modules\Enrollments\Application\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Enrollments\Application\Concerns\TransitionsEnrollmentStatus;
 use Modules\Enrollments\Domain\Enums\EnrollmentStatus;
 use Modules\Enrollments\Domain\Events\EnrollmentFrozen;
@@ -27,6 +28,7 @@ final readonly class FreezeEnrollmentAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private AuditRecorder $audit,
     ) {}
 
     public function execute(Enrollment $enrollment, string $reason, ?string $freezeType = null, ?string $actorId = null): Enrollment
@@ -50,7 +52,7 @@ final readonly class FreezeEnrollmentAction
             $enrollment->freeze_type = $type;
             $enrollment->expected_return_date = null;
 
-            $this->applyTransition($enrollment, EnrollmentStatus::Frozen, $reason, $actorId);
+            $this->applyTransition($enrollment, EnrollmentStatus::Frozen, $reason, $this->audit, $actorId);
 
             return [new EnrollmentFrozen(
                 enrollmentId: $enrollment->id,

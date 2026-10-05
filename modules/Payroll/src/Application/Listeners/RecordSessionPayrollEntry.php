@@ -7,9 +7,13 @@ namespace Modules\Payroll\Application\Listeners;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Modules\Academics\Domain\Contracts\ProgramRulesQueries;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
 use Modules\Payroll\Application\Actions\RecordPayrollEntryAction;
+use Modules\Payroll\Application\Actions\SettleMakeupSessionAction;
 use Modules\Payroll\Application\Services\PayrollPeriodResolver;
 use Modules\Sessions\Domain\Contracts\SessionFactsQueries;
+use Modules\Sessions\Domain\Events\SessionPostponed;
+use Modules\Sessions\Domain\Events\TeacherApologyDecided;
 use Modules\Sessions\Domain\ValueObjects\SessionPayrollFacts;
 use Modules\Staff\Domain\Contracts\TeacherRateResolver;
 use Modules\Staff\Domain\Enums\RateScope;
@@ -41,6 +45,8 @@ final readonly class RecordSessionPayrollEntry
         private TeacherRateResolver $rates,
         private PayrollPeriodResolver $periods,
         private RecordPayrollEntryAction $record,
+        private SettleMakeupSessionAction $settleMakeup,
+        private AuditRecorder $audit,
     ) {}
 
     public function handle(DomainEvent $event): void
@@ -57,25 +63,102 @@ final readonly class RecordSessionPayrollEntry
             return;
         }
 
-        $outcomeKey = $this->outcomeKeyFor($facts);
-
-        if ($outcomeKey === null) {
+        /*
+         * قرار إداري وقت إنشاء الحصة: لا مستحقات لها إطلاقًا مهما كانت
+         * نتيجتها. غالبًا حصة إضافية اتُّفق أن يؤديها المعلم دون أجر.
+         */
+        if ($facts->payrollExempt) {
             return;
         }
 
-        $teacherEffect = (string) config("payroll.outcomes.{$outcomeKey}.teacher", 'none');
+        $isApprovedApology = $event instanceof TeacherApologyDecided
+            && $event->substituteRequired
+            && $event->decision === 'approved';
 
-        if ($teacherEffect === 'none') {
+        if (!$isApprovedApology
+            && $facts->hasApprovedTeacherApology
+            && !$facts->hasSubstitute()) {
             return;
         }
 
-        $entryType = config("payroll.entry_types.{$teacherEffect}");
+        $outcomeKey = $isApprovedApology
+            ? config('payroll.teacher_apology.approved_outcome')
+            : $this->outcomeKeyFor($facts);
 
-        if (!is_string($entryType)) {
+        if (!is_string($outcomeKey)) {
             return;
         }
 
-        $rate = $this->resolveRate($facts);
+        $configuredEffect = (string) config("payroll.outcomes.{$outcomeKey}.teacher", 'none');
+
+        if ($configuredEffect === 'none') {
+            return;
+        }
+
+        $staffProfileId = $isApprovedApology
+            ? $event->staffProfileId
+            : $facts->staffProfileId;
+
+        /*
+         * الحصة المؤجَّلة وحصتها التعويضية عمل واحد، فأجره واحد. التسوية تسبق
+         * أي احتساب: إن حرّرت قيدة الأصلية — أو وجدتها محرَّرة من قبل — فلا
+         * قيدة ثانية إطلاقًا. `FALLBACK_REQUIRED` وحدها تكمل إلى الاحتساب،
+         * وتُسعَّر بالأصلية لا بالتعويضية.
+         */
+        $makeupFallback = false;
+
+        if (!$isApprovedApology && $facts->isMakeup() && $this->settlesMakeupPair($outcomeKey)) {
+            $settlement = $this->settleMakeup->execute(
+                organizationId: $facts->organizationId,
+                makeupSessionId: $facts->sessionId,
+                staffProfileId: $staffProfileId,
+                actorId: $event->actorId,
+                reason: (string) __('payroll::actions.settle_makeup.released'),
+            );
+
+            if ($settlement === SettleMakeupSessionAction::MANUAL_REQUIRED) {
+                Log::warning('payroll.makeup.manual_settlement_required', [
+                    'session_id' => $facts->sessionId,
+                    'staff_profile_id' => $staffProfileId,
+                ]);
+
+                $this->audit->record(
+                    organizationId: $facts->organizationId,
+                    actorId: $event->actorId,
+                    actorType: 'system',
+                    action: 'payroll.makeup.manual_settlement_required',
+                    auditableType: 'sessions',
+                    auditableId: $facts->sessionId,
+                    oldValues: null,
+                    newValues: [
+                        'original_session_id' => $facts->makeupForSessionId,
+                        'performed_by' => $staffProfileId,
+                    ],
+                    reason: (string) __('payroll::actions.settle_makeup.manual'),
+                );
+
+                return;
+            }
+
+            if ($settlement !== SettleMakeupSessionAction::FALLBACK_REQUIRED) {
+                return;
+            }
+
+            $makeupFallback = true;
+        }
+
+        /*
+         * سعر التعويضية هو سعر الأصلية: نوعها ومدتها وتاريخها ومقررها. نوع
+         * `makeup` نفسه لا يطابق أي preset في كتالوج المؤسسة، فتسعيره بذاته
+         * كان ينتهي دائمًا إلى `rate_unresolved`.
+         */
+        $rateFacts = $facts;
+
+        if ($facts->isMakeup() && $facts->makeupForSessionId !== null) {
+            $rateFacts = $this->sessions->payrollFactsFor($facts->makeupForSessionId) ?? $facts;
+        }
+
+        $rate = $this->resolveRate($rateFacts, $staffProfileId, $configuredEffect === 'deduct');
 
         if ($rate === null) {
             /*
@@ -85,10 +168,49 @@ final readonly class RecordSessionPayrollEntry
              */
             Log::warning('payroll.entry.rate_unresolved', [
                 'session_id' => $facts->sessionId,
-                'staff_profile_id' => $facts->staffProfileId,
+                'staff_profile_id' => $staffProfileId,
                 'outcome' => $outcomeKey,
             ]);
 
+            /*
+             * التحذير في اللوج وحده يجعل النقص غير مرئي لمن يدير المدرسة:
+             * الحصة تُقفل، ولا يظهر للمعلم مستحق، ولا يعرف أحد السبب. القيد
+             * في سجل التدقيق يجعلها واقعة قابلة للعرض والمراجعة.
+             */
+            $this->audit->record(
+                organizationId: $facts->organizationId,
+                actorId: $event->actorId,
+                actorType: 'system',
+                action: 'payroll.entry.rate_unresolved',
+                auditableType: 'sessions',
+                auditableId: $facts->sessionId,
+                oldValues: null,
+                newValues: [
+                    'staff_profile_id' => $staffProfileId,
+                    'outcome' => $outcomeKey,
+                    'session_type' => $rateFacts->sessionType,
+                    'duration_minutes' => (int) round(
+                        $rateFacts->scheduledStart->diffInMinutes($rateFacts->scheduledEnd),
+                    ),
+                ],
+                reason: (string) __('payroll::actions.rate_unresolved.reason'),
+            );
+
+            return;
+        }
+
+        $teacherEffect = config(
+            "payroll.contract_basis_effects.{$rate['contract_basis']}.{$configuredEffect}",
+            $configuredEffect,
+        );
+
+        if (!is_string($teacherEffect) || $teacherEffect === 'none') {
+            return;
+        }
+
+        $entryType = config("payroll.entry_types.{$teacherEffect}");
+
+        if (!is_string($entryType)) {
             return;
         }
 
@@ -96,31 +218,93 @@ final readonly class RecordSessionPayrollEntry
             ? $rate['money']->negated()
             : $rate['money'];
 
+        /*
+         * القيدة المؤجَّلة تُعلَّق على **الحصة التعويضية** لا على الأصلية:
+         * `deferred_until_session_id` تعني «مؤجَّلة حتى تُقام هذه الحصة»، وهو
+         * ما يبحث به مسار التحرير. كان الكود يخزّن معرّف الأصلية نفسها، فلا
+         * يطابقه أي بحث تحرير أبدًا وتبقى القيدة مؤجَّلة إلى الأبد.
+         *
+         * معرّف التعويضية لا يحمله `SessionPayrollFacts` للأصلية، بل يحمله
+         * حدث التأجيل وحده. فإن غاب الحدث لا تُنشأ قيدة معلّقة بلا مفتاح
+         * تحرير: يُسجَّل تحذير ليعالجه الإشراف.
+         */
+        $deferredUntilSessionId = null;
+
+        if ($teacherEffect === 'deferred') {
+            if (!$event instanceof SessionPostponed) {
+                Log::warning('payroll.entry.deferral_target_unknown', [
+                    'session_id' => $facts->sessionId,
+                    'event' => $event::class,
+                ]);
+
+                return;
+            }
+
+            $deferredUntilSessionId = $event->makeupSessionId;
+        }
+
         $period = $this->periods->forDate($facts->organizationId, $facts->scheduledStart);
 
         try {
             $this->record->execute(
                 organizationId: $facts->organizationId,
                 payrollPeriodId: (string) $period->getKey(),
-                staffProfileId: $facts->staffProfileId,
+                staffProfileId: $staffProfileId,
                 teacherContractId: $rate['contract_id'],
                 entryType: $entryType,
                 outcomeKey: $outcomeKey,
                 amount: $amount,
                 sessionTime: TimeRange::of($facts->scheduledStart, $facts->scheduledEnd),
                 sessionId: $facts->sessionId,
-                deferredUntilSessionId: $teacherEffect === 'deferred' ? $facts->sessionId : null,
+                deferredUntilSessionId: $deferredUntilSessionId,
                 resolvedVia: $rate['scope']->value,
                 description: [
+                    'makeup_fallback' => $makeupFallback ?: null,
+                    'priced_from_session_id' => $makeupFallback ? $facts->makeupForSessionId : null,
                     'session_type' => $facts->sessionType,
                     'course_id' => $facts->courseId,
                     'group_id' => $facts->groupId,
                     'rate_id' => $rate['rate_id'],
+                    'duration_minutes' => (int) round($facts->scheduledStart->diffInMinutes($facts->scheduledEnd)),
+                    /*
+                     * التعويضية تُسعَّر بالأصلية، فنوعها ومدتها لا يفسّران
+                     * مبلغها. تُذكر خصائص مصدر السعر كي تبقى القيدة مفهومة
+                     * بذاتها لمن يراجع الدفتر لاحقًا.
+                     */
+                    'priced_as_session_type' => $rateFacts->sessionType,
+                    'priced_as_duration_minutes' => (int) round(
+                        $rateFacts->scheduledStart->diffInMinutes($rateFacts->scheduledEnd),
+                    ),
                     'contract_basis' => $rate['contract_basis'],
                     'substituted' => $facts->hasSubstitute(),
                 ],
                 actorId: $event->actorId,
             );
+
+            /*
+             * قيدة fallback تعني تأجيلًا سبق هذا الإصلاح فلم تُنشأ له قيدة
+             * مؤجَّلة. تُوسم في `description` وتُسجَّل هنا صراحةً كي يميّزها من
+             * يراجع الدفتر عن مسار التحرير الطبيعي.
+             */
+            if ($makeupFallback) {
+                $this->audit->record(
+                    organizationId: $facts->organizationId,
+                    actorId: $event->actorId,
+                    actorType: 'system',
+                    action: 'payroll.entry.makeup_fallback',
+                    auditableType: 'payroll_entries',
+                    auditableId: null,
+                    oldValues: null,
+                    newValues: [
+                        'makeup_session_id' => $facts->sessionId,
+                        'original_session_id' => $facts->makeupForSessionId,
+                        'amount' => $amount->minorUnits,
+                        'currency' => $amount->currency,
+                        'resolved_via' => $rate['scope']->value,
+                    ],
+                    reason: (string) __('payroll::actions.settle_makeup.fallback'),
+                );
+            }
         } catch (BusinessRuleViolation $violation) {
             /*
              * تكرار القيدة أو فترة مقفلة ليسا خطأ برمجيًا: الأول يعني أن
@@ -132,6 +316,12 @@ final readonly class RecordSessionPayrollEntry
                 'rule' => $violation->rule,
             ]);
         }
+    }
+
+    /** هل تعني هذه النتيجة أن المعلم أدّى عمله، فتُسوَّى بها قيدة الأصلية؟ */
+    private function settlesMakeupPair(string $outcomeKey): bool
+    {
+        return in_array($outcomeKey, (array) config('payroll.makeup.releasing_outcomes'), true);
     }
 
     /**
@@ -152,6 +342,17 @@ final readonly class RecordSessionPayrollEntry
             $makeup = config('payroll.makeup_outcome');
 
             return is_string($makeup) ? $makeup : $mapped;
+        }
+
+        $studentApology = config('payroll.student_apology');
+        if (
+            $facts->hasStudentApology
+            && is_array($studentApology)
+            && ($studentApology['applies_to_status'] ?? null) === $facts->status
+        ) {
+            $individualOutcome = $studentApology['individual_outcome'] ?? null;
+
+            return is_string($individualOutcome) ? $individualOutcome : $mapped;
         }
 
         return $this->applyLateCancellation($facts, $mapped);
@@ -190,18 +391,47 @@ final readonly class RecordSessionPayrollEntry
     /**
      * @return array{money: Money, scope: RateScope, rate_id: string, contract_id: string, contract_basis: string}|null
      */
-    private function resolveRate(SessionPayrollFacts $facts): ?array
-    {
+    private function resolveRate(
+        SessionPayrollFacts $facts,
+        string $staffProfileId,
+        bool $forDeduction,
+    ): ?array {
+        /*
+         * سعر يدوي أُقرّ وقت إنشاء الحصة (حصة إضافية بسعر مختلف عن الافتراضي)
+         * يحل محل محلّل السعر كليًا. العقد الساري ما زال لازمًا: القيدة تُنسب
+         * إليه وتُحدَّد آثار الحسم/التأجيل بحسب أساسه، تمامًا كأي قيدة أخرى.
+         */
+        if ($facts->payrollRateOverrideMinorUnits !== null) {
+            $contract = $this->rates->activeContract($staffProfileId, $facts->scheduledStart);
+
+            if ($contract === null) {
+                return null;
+            }
+
+            return [
+                'money' => Money::of($facts->payrollRateOverrideMinorUnits, (string) config('payroll.currency')),
+                'scope' => RateScope::Default,
+                'rate_id' => 'manual_override',
+                'contract_id' => $contract['contract_id'],
+                'contract_basis' => $contract['contract_basis'],
+            ];
+        }
+
         $programIds = $this->programs->programIdsOfCourse($facts->courseId);
         $programId = $programIds === [] ? null : (string) reset($programIds);
 
-        return $this->rates->resolve(
-            staffProfileId: $facts->staffProfileId,
-            sessionDate: $facts->scheduledStart,
-            programId: $programId,
-            courseId: $facts->courseId,
-            sessionType: $facts->sessionType,
-        );
+        $arguments = [
+            'staffProfileId' => $staffProfileId,
+            'sessionDate' => $facts->scheduledStart,
+            'programId' => $programId,
+            'courseId' => $facts->courseId,
+            'sessionType' => $facts->sessionType,
+            'durationMinutes' => (int) round($facts->scheduledStart->diffInMinutes($facts->scheduledEnd)),
+        ];
+
+        return $forDeduction
+            ? $this->rates->resolveDeduction(...$arguments)
+            : $this->rates->resolve(...$arguments);
     }
 
     private function sessionIdOf(DomainEvent $event): ?string

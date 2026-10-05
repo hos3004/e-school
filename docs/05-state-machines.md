@@ -38,6 +38,8 @@ stateDiagram-v2
     Confirmed --> CancelledBySchool
     Confirmed --> NoShow
     Confirmed --> Excused
+    Scheduled --> Superseded : تعديل قالب بعد نافذة الحماية
+    Confirmed --> Superseded : تعديل قالب بعد نافذة الحماية
 
     InProgress --> AwaitingReview : إغلاق الفصل
     InProgress --> CancelledBySchool : عطل تقني
@@ -53,6 +55,7 @@ stateDiagram-v2
     NoShow --> [*]
     Excused --> [*]
     Postponed --> [*]
+    Superseded --> [*]
 ```
 
 ### ما يترتب على كل حالة نهائية
@@ -69,6 +72,7 @@ stateDiagram-v2
 | `CancelledByTeacher` | **خصم حصة** | لا | **استرداد** | لا |
 | `CancelledBySchool` | لا شيء | لا | لا تُخصم | لا |
 | `Postponed` | **مؤجَّل** | لا | لا تُخصم | **نعم** |
+| `Superseded` | لا قيدة — حدث مستقبلي استُبدل | لا | لا تتغير | لا |
 
 ### الانتقالات الآلية
 
@@ -154,10 +158,11 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Requested : الطالب يطلب (قبل 15 دقيقة على الأقل)
+    [*] --> Requested : الطالب يطلب (قبل 60 دقيقة على الأقل)
+    [*] --> Scheduled : المعلم يؤجل مباشرة ويحدد الموعد
     Requested --> Scheduled : المعلم يؤكد الموعد المقترح
     Requested --> AlternativeProposed : المعلم يرشّح موعدًا آخر
-    Requested --> Rejected : المعلم أو الإدارة ترفض
+    Requested --> Rejected : المعلم يرفض بسبب مكتوب
     Requested --> Withdrawn : الطالب يسحب الطلب
     Requested --> Expired : انقضت مهلة رد المعلم (12 ساعة)
 

@@ -18,12 +18,13 @@ final class NotificationOutboxPolicy
 {
     public function viewAny(mixed $user): bool
     {
-        return $user->can('settings.manage');
+        return $user->can('settings.manage')
+            || $user->can('notifications.outbox.create');
     }
 
     public function view(mixed $user, NotificationOutbox $outbox): bool
     {
-        return $user->can('settings.manage')
+        return ($user->can('settings.manage') || $user->can('notifications.outbox.create'))
             && $outbox->organization_id === $user->organization_id;
     }
 

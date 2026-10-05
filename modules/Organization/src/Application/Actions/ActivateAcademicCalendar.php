@@ -42,15 +42,14 @@ final readonly class ActivateAcademicCalendar
                 ->blockingScheduling()
                 ->get()
                 ->each(static function (Holiday $holiday) use ($calendar): void {
-                    Holiday::query()->create([
+                    Holiday::query()->firstOrCreate([
                         'organization_id' => $calendar->organization_id,
                         'academic_calendar_id' => $calendar->id,
-                        'name' => $holiday->name,
                         'starts_on' => $holiday->starts_on,
                         'ends_on' => $holiday->ends_on,
                         'source' => HolidaySource::Manual,
                         'blocks_scheduling' => true,
-                    ]);
+                    ], ['name' => $holiday->name]);
                 });
         });
 

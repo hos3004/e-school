@@ -6,12 +6,13 @@ namespace Modules\Identity\Application\Services;
 
 use Illuminate\Support\Str;
 use Modules\Identity\Domain\Contracts\OrganizationUsernamePrefixProvider;
+use Modules\Identity\Domain\Contracts\UsernameSuggestionGateway;
 use Modules\Identity\Domain\Models\User;
 
 /**
  * يولّد أسماء دخول قابلة للاستخدام دون معرفة Identity بجدول إعدادات المؤسسة.
  */
-final readonly class UsernameSuggester
+final readonly class UsernameSuggester implements UsernameSuggestionGateway
 {
     public function __construct(
         private OrganizationUsernamePrefixProvider $organizationUsernamePrefix,

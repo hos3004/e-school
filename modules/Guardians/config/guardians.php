@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Illuminate\Support\Env;
 
 /*
 | إعدادات موديول Guardians — كل رقم سياسة يعيش هنا لا في الكود.
@@ -8,12 +9,19 @@ declare(strict_types=1);
 
 return [
 
-    'limits' => [
-        // أقصى عدد روابط (أوصياء) مسموح لطالب واحد.
-        'max_links_per_student' => 4,
+    'account' => [
+        'guardian_role' => Env::get('GUARDIAN_ACCOUNT_ROLE', 'guardian'),
+    ],
 
-        // أقصى عدد طلاب مرتبطين بوصي واحد.
-        'max_students_per_guardian' => 15,
+    'limits' => [
+        // أقصى عدد روابط (أوصياء) مسموح لطالب واحد. رُفع من 4 إلى 10 ليتسع
+        // لحالات أب وأم وأجداد وولي أمر قانوني معًا بلا احتكاك، مع إبقاء سقف
+        // معقول يمنع إدخالًا خاطئًا متكررًا.
+        'max_links_per_student' => 10,
+
+        // أقصى عدد طلاب مرتبطين بوصي واحد. سقف حماية تقني بعيد لا حد عمل
+        // فعلي — طلب المالك صراحة عدم تقييد عدد الأبناء.
+        'max_students_per_guardian' => 1000,
     ],
 
     'links' => [

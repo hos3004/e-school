@@ -19,6 +19,7 @@ final class AccessControlPolicyActor extends Authenticatable
         $this->forceFill(['organization_id' => $organizationId]);
     }
 
+    /** @param string|iterable<string> $abilities */
     public function can($abilities, $arguments = []): bool
     {
         foreach ((array) $abilities as $ability) {
@@ -31,6 +32,7 @@ final class AccessControlPolicyActor extends Authenticatable
     }
 }
 
+/** @param list<string> $abilities */
 function acPolicyActor(array $abilities = [], string $organizationId = '01ORGAAAAAAAAAAAAAAAAAAAAA'): AccessControlPolicyActor
 {
     return new AccessControlPolicyActor($organizationId, $abilities);
@@ -38,7 +40,7 @@ function acPolicyActor(array $abilities = [], string $organizationId = '01ORGAAA
 
 function acPolicyRole(?string $organizationId, bool $system = false): Role
 {
-    return Role::make()->forceFill([
+    return (new Role)->forceFill([
         'organization_id' => $organizationId,
         'is_system' => $system,
         'name' => $system ? 'system-role' : 'custom-role',
@@ -87,7 +89,7 @@ it('allows global permission definitions to be viewed but never mutated over ten
         'accesscontrol.permissions.view_any',
         'accesscontrol.permissions.grant_direct',
     ]);
-    $permission = Permission::make(['name' => 'student.view']);
+    $permission = new Permission(['name' => 'student.view']);
     $policy = new PermissionPolicy;
 
     expect($policy->viewAny($actor))->toBeTrue()

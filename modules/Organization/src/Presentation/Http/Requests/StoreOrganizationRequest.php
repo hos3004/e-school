@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Modules\Organization\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\Organization\Domain\Enums\Weekday;
 use Modules\Organization\Domain\Models\Organization;
+use Shared\Support\Locales;
 
 /**
  * @property-read array{name?: string}|mixed $name
@@ -31,9 +33,9 @@ final class StoreOrganizationRequest extends FormRequest
             'logo_path' => ['nullable', 'string', 'max:512'],
             'default_timezone' => ['required', 'string', 'timezone'],
             'default_currency' => ['required', 'string', 'size:3', 'alpha'],
-            'default_locale' => ['required', 'string', 'in:ar,en,fr'],
+            'default_locale' => ['required', 'string', Rule::in(Locales::supported())],
             'supported_locales' => ['nullable', 'array'],
-            'supported_locales.*' => ['string', 'in:ar,en,fr'],
+            'supported_locales.*' => ['string', Rule::in(Locales::supported())],
             'week_starts_on' => ['required', 'string', 'in:'.implode(',', array_column(Weekday::cases(), 'value'))],
         ];
     }

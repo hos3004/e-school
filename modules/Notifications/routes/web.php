@@ -3,11 +3,18 @@
 declare(strict_types=1);
 
 /*
-|--------------------------------------------------------------------------
-| مسارات موديول Notifications — الويب
-|--------------------------------------------------------------------------
-|
-| يُحمَّل هذا الملف تلقائيًا من ModuleRegistry::loadRoutes() ضمن مجموعة
-| middleware «web» عند إقلاع التطبيق. لا مسارات معرّفة بعد؛ ستُضاف هنا
-| مسارات طبقة Presentation للموديول عند بنائها.
-*/
+ | نقاط النافذة المنبثقة — مصادقة جلسة، بلا تسجيل لأي شيء لغير المصادق.
+ */
+
+use App\Http\Controllers\Portal\PopupController;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware(['auth', 'auth.session'])->group(function (): void {
+    Route::get('/popups/active', [PopupController::class, 'active'])
+        ->name('popups.active');
+
+    Route::post('/popups/{campaign}/{interaction}', [PopupController::class, 'interact'])
+        ->whereUlid('campaign')
+        ->whereIn('interaction', ['impression', 'dismiss', 'acknowledge', 'click'])
+        ->name('popups.interact');
+});

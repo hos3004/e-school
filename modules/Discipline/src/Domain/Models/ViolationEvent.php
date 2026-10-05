@@ -22,6 +22,7 @@ use Shared\Concerns\HasUlid;
  * @property string $enrollment_id
  * @property string $student_profile_id
  * @property string|null $session_id
+ * @property string|null $source_event_id
  * @property ViolationType $type
  * @property CarbonImmutable $occurred_at
  * @property string $window_key
@@ -44,6 +45,7 @@ final class ViolationEvent extends Model
         'enrollment_id',
         'student_profile_id',
         'session_id',
+        'source_event_id',
         'type',
         'occurred_at',
         'window_key',

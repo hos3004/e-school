@@ -34,11 +34,7 @@ final class IsolatedTestRunner
         }
 
         /** @var array<string, string> $processEnvironment */
-        $processEnvironment = array_filter(
-            $rawProcessEnvironment,
-            static fn (mixed $value, mixed $key): bool => is_string($key) && is_string($value),
-            ARRAY_FILTER_USE_BOTH,
-        );
+        $processEnvironment = $rawProcessEnvironment;
 
         /** @var array<string, string> $fileEnvironment */
         $fileEnvironment = array_filter(
@@ -210,6 +206,11 @@ final class IsolatedTestRunner
         return array_replace($this->environment, [
             'APP_ENV' => 'testing',
             'APP_DEBUG' => 'false',
+            // Test defaults must not inherit production-only routing and registration switches.
+            'CONSOLE_ENABLED' => 'false',
+            'CONSOLE_PRIMARY' => 'false',
+            'ADMISSION_SELF_REGISTRATION' => 'true',
+            'ADMISSION_DEFAULT_REGISTRATION_FORM_SLUG' => '(null)',
             'DB_CONNECTION' => 'pgsql',
             'DB_DATABASE' => $database,
             'DB_URL' => '',

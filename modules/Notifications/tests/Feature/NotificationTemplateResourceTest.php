@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -11,8 +10,7 @@ use Modules\Identity\Domain\Models\User;
 use Modules\Notifications\Application\Policies\NotificationTemplatePolicy;
 use Modules\Notifications\Domain\Models\NotificationTemplate;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationTemplateResource;
-
-uses(RefreshDatabase::class);
+use Tests\TestCase;
 
 function templateOrganizationId(string $seed): string
 {
@@ -49,6 +47,7 @@ function makeTemplate(
 }
 
 it('shows global and own-organization templates but never another organization', function (): void {
+    /** @var TestCase $this */
     $mineOrg = templateOrganizationId('MINE');
     $otherOrg = templateOrganizationId('OTHER');
 
@@ -67,12 +66,14 @@ it('shows global and own-organization templates but never another organization',
 });
 
 it('returns nothing when the session has no resolvable organization', function (): void {
+    /** @var TestCase $this */
     makeTemplate(null);
 
     expect(NotificationTemplateResource::getEloquentQuery()->count())->toBe(0);
 });
 
 it('denies template management without the settings.manage permission', function (): void {
+    /** @var TestCase $this */
     $org = templateOrganizationId('DENY');
     $user = User::factory()->inOrganization($org)->create();
     $template = makeTemplate($org);
@@ -85,6 +86,7 @@ it('denies template management without the settings.manage permission', function
 });
 
 it('lets a settings manager edit organization templates but never the shared global default', function (): void {
+    /** @var TestCase $this */
     Gate::before(static fn (): bool => true);
 
     $mineOrg = templateOrganizationId('EDIT');
@@ -107,6 +109,7 @@ it('lets a settings manager edit organization templates but never the shared glo
 });
 
 it('opens the create and edit form pages for a settings manager', function (): void {
+    /** @var TestCase $this */
     Gate::before(static fn (): bool => true);
     Filament::setCurrentPanel('admin');
 
@@ -121,6 +124,7 @@ it('opens the create and edit form pages for a settings manager', function (): v
 });
 
 it('marks templates without an organization as the shared global default', function (): void {
+    /** @var TestCase $this */
     $org = templateOrganizationId('SCOPE');
 
     expect(makeTemplate(null)->isGlobal())->toBeTrue()

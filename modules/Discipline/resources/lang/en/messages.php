@@ -9,4 +9,5 @@ declare(strict_types=1);
 
 return [
     'demo_reactivation_statement' => 'I commit to regular attendance and punctuality, and I submit this reactivation request after the freeze period.',
+    'absence_without_session' => 'an unspecified session',
 ];

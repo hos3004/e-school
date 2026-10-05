@@ -7,6 +7,10 @@ declare(strict_types=1);
 */
 
 return [
+    'recipient_selection' => ':count selected recipients',
+    'recipient_all_students' => 'All students (:count)',
+    'recipient_all_teachers' => 'All teachers (:count)',
+    'recipient_all_guardians' => 'All guardians (:count)',
 
     'id' => 'ID',
     'organization_id' => 'Organization',
@@ -53,4 +57,33 @@ return [
     'parameters' => 'Parameters',
     'provider_template_name' => 'Provider template name',
     'scope' => 'Scope',
+    'recipient' => 'Recipient',
+    'retry_reason' => 'Resend reason',
+    'cancel_reason' => 'Cancellation reason',
+    'attempts_history' => 'Delivery attempts history',
+    'result' => 'Result',
+    'audit_history' => 'Decision and audit history',
+    'action' => 'Action',
+    'actor' => 'Performed by',
+    'recipient_type' => 'Recipient type',
+    'recipient_count' => 'Recipient count',
+    'preview' => 'Notification preview',
+    'recipient_types' => [
+        'people' => 'People I pick',
+        'students_all' => 'All students',
+        'teachers_all' => 'All teachers',
+        'guardians_all' => 'All guardians',
+        'student' => 'Student',
+        'teacher' => 'Teacher',
+        'guardian' => 'Guardian',
+        'group' => 'Group',
+        'course' => 'Course',
+        'schedule' => 'Schedule',
+    ],
+
+    'audiences' => [
+        'students' => 'Students only',
+        'teacher' => 'Teacher only',
+        'all' => 'Everyone on the class',
+    ],
 ];

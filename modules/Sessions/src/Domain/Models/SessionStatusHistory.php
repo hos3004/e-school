@@ -6,6 +6,7 @@ namespace Modules\Sessions\Domain\Models;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Shared\Concerns\HasModuleFactory;
 use Shared\Concerns\HasUlid;
@@ -26,7 +27,7 @@ final class SessionStatusHistory extends Model
     use HasModuleFactory;
     use HasUlid;
 
-    public const UPDATED_AT = null;
+    public $timestamps = false;
 
     protected $table = 'session_status_history';
 
@@ -46,5 +47,11 @@ final class SessionStatusHistory extends Model
             'changed_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
+    }
+
+    /** @return BelongsTo<Session, $this> */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(Session::class);
     }
 }

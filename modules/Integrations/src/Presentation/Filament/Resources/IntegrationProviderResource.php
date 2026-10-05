@@ -28,7 +28,7 @@ final class IntegrationProviderResource extends Resource
 
     protected static ?int $navigationSort = 104;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('integrations::navigation.group');
     }
@@ -112,5 +112,15 @@ final class IntegrationProviderResource extends Resource
                     ->label(__('integrations::fields.category')),
             ])
             ->defaultSort('key');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getPages(): array
+    {
+        return [
+            'index' => IntegrationProviderResource\Pages\ListIntegrationProviders::route('/'),
+        ];
     }
 }

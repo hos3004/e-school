@@ -7,6 +7,8 @@ namespace Modules\Assessments\Infrastructure\Providers;
 use Modules\Assessments\Application\Policies\AssessmentAttemptPolicy;
 use Modules\Assessments\Application\Policies\AssessmentPolicy;
 use Modules\Assessments\Application\Policies\QuestionPolicy;
+use Modules\Assessments\Application\Queries\ReactivationAssessmentQueryService;
+use Modules\Assessments\Domain\Contracts\ReactivationAssessmentQueries;
 use Modules\Assessments\Domain\Models\Assessment;
 use Modules\Assessments\Domain\Models\AssessmentAttempt;
 use Modules\Assessments\Domain\Models\Question;
@@ -51,6 +53,7 @@ final class AssessmentsServiceProvider extends BaseModuleServiceProvider
     protected function bindings(): array
     {
         return [
+            ReactivationAssessmentQueries::class => ReactivationAssessmentQueryService::class,
             Transaction::class => DatabaseTransaction::class,
         ];
     }

@@ -16,26 +16,26 @@ export default function PageHeader({
     return (
         <header
             className={[
-                'flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between',
+                'flex flex-col gap-5 border-b border-[var(--line)] pb-5 sm:flex-row sm:items-start sm:justify-between sm:pb-6',
                 className,
             ]
                 .filter(Boolean)
                 .join(' ')}
         >
             <div className="min-w-0">
-                <h1 className="break-words text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
+                <h1 className="break-words text-2xl font-semibold leading-tight tracking-[-0.02em] text-[var(--ink)] [text-wrap:balance] sm:text-3xl">
                     {title}
                 </h1>
 
                 {subtitle && (
-                    <div className="mt-2 max-w-3xl text-sm leading-6 text-[var(--ink-muted)] sm:text-base">
+                    <div className="mt-2 max-w-3xl text-sm leading-6 text-[var(--ink-muted)] [text-wrap:pretty] sm:text-base">
                         {subtitle}
                     </div>
                 )}
             </div>
 
             {action && (
-                <div className="flex w-full shrink-0 items-center sm:w-auto sm:justify-end">
+                <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                     {action}
                 </div>
             )}

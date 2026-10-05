@@ -58,6 +58,24 @@ enum GroupStatus: string
         return $this === self::Active;
     }
 
+    /**
+     * هل تقبل المجموعة تسكينًا معلّقًا؟
+     *
+     * المجموعة «قيد التخطيط» تُنشأ بالحد الأدنى من البيانات ويُسكَّن فيها الطلاب
+     * بانتساب `MembershipStatus::Pending` — يشغل مقعدًا ولا يمنح وصولًا. يترقّى
+     * الانتساب إلى Active عند تفعيل المجموعة بعد اكتمال المعلم والمواعيد والسعة.
+     */
+    public function acceptsPendingEnrollment(): bool
+    {
+        return $this === self::Planning;
+    }
+
+    /** هل تقبل المجموعة تسكين طلاب بأي صورة — نشطة كانت أم قيد التخطيط؟ */
+    public function acceptsPlacement(): bool
+    {
+        return $this->acceptsEnrollment() || $this->acceptsPendingEnrollment();
+    }
+
     public function label(): string
     {
         return __('groups::status.group.'.$this->value);

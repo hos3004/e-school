@@ -43,12 +43,21 @@ return [
 
         'rate_limit_per_minute' => (int) env('ADMISSION_REGISTRATION_RATE_LIMIT', 6),
 
+        // يُستخدم فقط لمسار التسجيل القديم بلا slug؛ روابط الحملات تحمل slug النموذج.
+        'default_form_slug' => env('ADMISSION_DEFAULT_REGISTRATION_FORM_SLUG'),
+
         // منع الطلبات المكررة لنفس الشخص.
         'duplicate_detection' => [
             'enabled' => true,
             'match_on' => ['email', 'phone'],
             'block_or_flag' => 'flag',   // flag = يُعرض للإدارة، block = يُرفض
         ],
+    ],
+
+    // الإنشاء الإداري: الإداري قد لا يملك بيانات الطالب وقت فتح الحساب،
+    // وصاحب الحساب يُلزم بإكمالها في أول دخول عبر صفحة استكمال البيانات.
+    'admin_creation' => [
+        'required_fields' => ['full_name'],
     ],
 
     /*
@@ -70,7 +79,7 @@ return [
 
         // الرفض بلا سبب مكتوب مرفوض على مستوى الـFormRequest.
         'rejection_requires_reason' => true,
-        'acceptance_requires_reason' => false,
+        'acceptance_requires_reason' => true,
 
         // مهلة مراجعة الطلب قبل تنبيه الإدارة (بالساعات) — 0 يعني بلا تنبيه.
         'review_sla_hours' => (int) env('ADMISSION_REVIEW_SLA_HOURS', 48),
@@ -188,6 +197,8 @@ return [
      * ربط الحساب واستعادته.
      */
     'account' => [
+        'student_role' => env('ADMISSION_STUDENT_ROLE', 'student'),
+
         // أحدهما على الأقل مطلوب للاستعادة.
         'allow_email_link' => true,
         'allow_phone_link' => true,
@@ -197,5 +208,11 @@ return [
         'recovery_channels' => ['email', 'whatsapp'],
         'recovery_token_ttl_minutes' => 60,
         'generated_password_length' => (int) env('ADMISSION_GENERATED_PASSWORD_LENGTH', 24),
+
+        /*
+         * كلمة المرور المؤقتة تُقرأ من رسالة ويُعاد كتابتها يدويًا، فطولها
+         * أقصر من المولّدة آليًا عند إنشاء الحساب. لا تنزل عن 8 في أي حال.
+         */
+        'temporary_password_length' => (int) env('ADMISSION_TEMPORARY_PASSWORD_LENGTH', 12),
     ],
 ];

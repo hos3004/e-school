@@ -37,16 +37,25 @@ final class CertificateTemplate extends Model
         ];
     }
 
+    /** @return HasMany<Certificate, $this> */
     public function certificates(): HasMany
     {
         return $this->hasMany(Certificate::class);
     }
 
+    /**
+     * @param Builder<CertificateTemplate> $query
+     * @return Builder<CertificateTemplate>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * @param Builder<CertificateTemplate> $query
+     * @return Builder<CertificateTemplate>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);

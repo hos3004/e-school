@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Modules\Integrations\Infrastructure\Gateways\GreenApiGateway;
 use Modules\Integrations\Infrastructure\Gateways\WhatsAppCloudGateway;
 use Modules\Notifications\Infrastructure\Gateways\InAppChannelGateway;
 use Modules\Notifications\Infrastructure\Gateways\MailChannelGateway;
@@ -33,27 +34,75 @@ return [
             'driver' => env('MAIL_MAILER', 'smtp'),
             'gateway' => MailChannelGateway::class,
             'rate_limit_per_minute' => 120,
+
+            /*
+             * نطاقات محجوزة لا تُسلَّم إليها رسالة أبدًا (RFC 2606 و RFC 6761).
+             * الحسابات المستوردة بلا بريد حقيقي تحمل عناوين على هذه النطاقات،
+             * وخادم البريد يردّ عليها 450 المؤقت فتُعاد المحاولة بلا نهاية.
+             * وجودها هنا يجعل الرفض نهائيًا قبل فتح أي اتصال.
+             */
+            'undeliverable_domains' => ['invalid', 'test', 'example', 'localhost', 'local'],
         ],
         'push' => [
-            // خارج قنوات المرحلة الأولى حتى يُسجّل Gateway حقيقي لـ FCM.
+            /*
+             * ليست قناة مُهيّأة بـ gateway مستقل هنا عمدًا: لا قوالب push
+             * خاصة موجودة، والمالك اختار تمرير نفس محتوى in_app بالضبط بدل
+             * كتابة نصوص push منفصلة. الإرسال الفعلي من
+             * Modules\Notifications\Infrastructure\Gateways\InAppChannelGateway
+             * عبر PushMirrorDispatcher — enabled/credentials_path هنا فقط
+             * إعداد يقرأه ذلك المسار، لا مسار توزيع قنوات منفصل.
+             */
             'enabled' => env('PUSH_ENABLED', false),
             'driver' => 'fcm',
+            'credentials_path' => env('FIREBASE_CREDENTIALS_PATH'),
         ],
         'whatsapp' => [
             // قرار العميل: إرسال فقط. الردود الواردة تُعرض للإدارة والمشرف
             // فقط ولا تُوجَّه آليًا لأي مستخدم آخر.
             'enabled' => env('WHATSAPP_ENABLED', false),
             'mode' => env('WHATSAPP_MODE', 'outbound_only'),
-            'driver' => 'meta_cloud_api',
-            'gateway' => WhatsAppCloudGateway::class,
+
+            /*
+             * المزوّد يحدد البوابة وقواعد المحتوى معًا:
+             *   green_api  → نص حر، فلا يحتاج اعتماد قالب عند المزوّد.
+             *   meta_cloud → قوالب معتمدة فقط خارج نافذة الرد (24 ساعة).
+             * تغيير المزوّد قرار إعداد واحد، لا تعديل كود في أي موديول.
+             */
+            'provider' => env('WHATSAPP_PROVIDER', 'green_api'),
+            'driver' => env('WHATSAPP_PROVIDER', 'green_api'),
+            'gateway' => match (env('WHATSAPP_PROVIDER', 'green_api')) {
+                'meta_cloud', 'meta_cloud_api' => WhatsAppCloudGateway::class,
+                default => GreenApiGateway::class,
+            },
+
+            /*
+             * القالب المعتمد عند المزوّد شرط عند Meta فقط. مع Green API يُركَّب
+             * النص من قوالب المنصة نفسها ويُرسل كما هو.
+             */
+            'requires_template' => env('WHATSAPP_PROVIDER', 'green_api') !== 'green_api',
+
+            'green_api' => [
+                'api_url' => env('GREEN_API_URL', 'https://api.green-api.com'),
+                /*
+                 * رفع الوسائط عند Green API له مضيف مستقل عن مضيف الـAPI في
+                 * سحابتهم العامة. تركه فارغًا يستنتجه من api_url؛ والنشر الخاص
+                 * الذي يوحّد المضيفين يضبطه صراحةً.
+                 */
+                'media_url' => env('GREEN_API_MEDIA_URL'),
+                'instance_id' => env('GREEN_API_INSTANCE_ID'),
+                'token' => env('GREEN_API_TOKEN'),
+                'timeout_seconds' => (int) env('GREEN_API_TIMEOUT_SECONDS', 15),
+                'max_message_length' => (int) env('GREEN_API_MAX_MESSAGE_LENGTH', 20000),
+                'retry_delays_milliseconds' => [200, 500],
+            ],
+
             'token' => env('WHATSAPP_TOKEN', env('WHATSAPP_ACCESS_TOKEN')),
             'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
             'api_version' => env('WHATSAPP_API_VERSION', 'v23.0'),
             'timeout_seconds' => (int) env('WHATSAPP_TIMEOUT_SECONDS', 10),
             'retry_delays_milliseconds' => [200, 500],
             'inbound_visible_to_permissions' => ['messaging.inbound.view'],
-            'requires_template' => true,
-            'rate_limit_per_minute' => 60,
+            'rate_limit_per_minute' => (int) env('WHATSAPP_RATE_LIMIT_PER_MINUTE', 60),
         ],
         'sms' => [
             'enabled' => false,
@@ -62,31 +111,69 @@ return [
 
     'default_channels' => ['in_app', 'email'],
 
+    // حل جمهور العمليات إلى الأدوار النظامية؛ التصفية بالمؤسسة تتم عبر Identity.
+    'audience_roles' => [
+        'supervisor' => ['academic_supervisor', 'registrar'],
+        'admin' => ['platform_admin'],
+        'administrator' => ['platform_admin'],
+    ],
+
     /*
      * تصنيف الإشعارات وقنواتها الافتراضية.
      * ما هو critical لا يخضع لساعات الهدوء ولا يستطيع المستخدم إيقافه.
      */
     'categories' => [
+        'schedule_summary' => [
+            'channels' => ['in_app', 'email', 'whatsapp'],
+            'critical' => false,
+            'respects_quiet_hours' => false,
+        ],
         'session_reminder' => [
             'channels' => ['in_app', 'email', 'whatsapp'],
             'critical' => false,
             'respects_quiet_hours' => false,
         ],
-        'session_changed' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => true],
-        'postponement_request' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => true],
+        /*
+         * تغيّر الحصة والتأجيل وطلب تغيير الجدول لم تعد حرجة: الحرج يتجاوز
+         * ساعات الهدوء، فوصلت دفعة تعديل جدول بعد منتصف الليل. موعد يبعد أيامًا
+         * يحتمل الانتظار إلى الصباح.
+         */
+        'session_changed' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => false, 'respects_quiet_hours' => true],
+        'postponement_request' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => false, 'respects_quiet_hours' => true],
+        'schedule_change_request' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => false, 'respects_quiet_hours' => true],
         'registration_update' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'assignment_update' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'teacher_workflow' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'classroom_invitation' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'session_report' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => false],
         'attendance_recorded' => ['channels' => ['in_app'], 'critical' => false],
+
+        /*
+         * تنبيه «الطالب مستعد» للمعلم فقط — لا واتساب بقرار صاحب المنصة.
+         * يتجاوز ساعات الهدوء لأن الغرض منه إخطار فوري وقت الحصة، لا رسالة
+         * تنتظر الصباح.
+         */
+        'session_readiness' => ['channels' => ['in_app', 'email'], 'critical' => false, 'respects_quiet_hours' => false],
+
+        /*
+         * إخطار الغياب يقع مع كل غياب مُحتسَب لا عند العتبة وحدها، ويحمل
+         * تذكيرًا بعتبة التجميد. فئة مستقلة عن discipline_notice كي تستطيع
+         * الإدارة توجيه الاثنين إلى قنوات مختلفة دون أن يجرّ أحدهما الآخر.
+         */
+        'absence_notice' => ['channels' => ['in_app', 'whatsapp', 'email'], 'critical' => true],
+
         'discipline_notice' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
         'enrollment_frozen' => ['channels' => ['in_app', 'email', 'whatsapp'], 'critical' => true],
-        'assignment_due' => ['channels' => ['in_app', 'push'], 'critical' => false],
+        // 'push' أُزيلت هنا عمدًا: push ليست قناة مُهيّأة بـ gateway مستقل
+        // (انظر تعليق config('notifications.channels.push') أعلاه) — أي
+        // سطر outbox بقناة 'push' يُرفض دومًا بـ gateway_unconfigured.
+        // الإشعار الفعلي يصل تلقائيًا عبر PushMirrorDispatcher كصدى لقناة
+        // in_app، فوجود 'push' هنا كان عالة بلا أثر.
+        'assignment_due' => ['channels' => ['in_app'], 'critical' => false],
         'grade_published' => ['channels' => ['in_app', 'email'], 'critical' => false],
         'monthly_report' => ['channels' => ['in_app', 'email'], 'critical' => false],
         'payroll_period' => ['channels' => ['in_app', 'email'], 'critical' => true],
-        'message_received' => ['channels' => ['in_app', 'push'], 'critical' => false],
+        'message_received' => ['channels' => ['in_app'], 'critical' => false],
         'system_alert' => ['channels' => ['in_app', 'email'], 'critical' => true],
     ],
 
@@ -95,6 +182,18 @@ return [
      * التواصل حدثيًا؛ الحقول المدرجة يجب أن تحمل user IDs لا profile IDs.
      */
     'events' => [
+        'schedule.created' => [
+            'category' => 'schedule_summary',
+            'audiences' => ['student', 'teacher'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\Scheduling\Domain\Events\ScheduleCreated'],
+        ],
+        'schedule.times_changed' => [
+            'category' => 'schedule_summary',
+            'audiences' => ['student', 'teacher'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\ScheduleTimesChanged'],
+        ],
         'registration.submitted' => [
             'category' => 'registration_update',
             'audiences' => ['student', 'guardian', 'admin'],
@@ -136,6 +235,12 @@ return [
             'audiences' => ['student', 'guardian', 'teacher'],
             'recipient_fields' => ['student_user_ids', 'guardian_user_ids', 'teacher_user_id'],
             'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionScheduled'],
+            /*
+             * الحصة المولّدة ضمن تفريغ جدول متكرر لا تُشعِر وحدها: تعديل جدول
+             * واحد يولّد عشرات الحصص، فيصل للمعلم عشرون رسالة عن موعد واحد.
+             * جمهور الجدول يأخذ ملخّصًا واحدًا عبر schedule.created وschedule.times_changed.
+             */
+            'payload_match' => ['generated_from_schedule' => false],
         ],
         'session.rescheduled' => [
             'category' => 'session_changed',
@@ -152,23 +257,86 @@ return [
             'recipient_fields' => ['teacher_user_id', 'supervisor_user_ids', 'admin_user_ids'],
             'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologySubmitted'],
         ],
+        'student.apology.submitted' => [
+            'category' => 'session_changed',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_id', 'teacher_user_id'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\StudentSessionApologized'],
+        ],
+        'session.ready_ping' => [
+            'category' => 'session_readiness',
+            'audiences' => ['teacher'],
+            'recipient_fields' => ['teacher_user_id'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\StudentPingedReady'],
+        ],
+        'postponement.requested' => [
+            'category' => 'postponement_request',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\PostponementRequested'],
+        ],
+        'postponement.alternative_proposed' => [
+            'category' => 'postponement_request',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\PostponementAlternativeProposed'],
+        ],
+        'postponement.scheduled' => [
+            'category' => 'session_changed',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\PostponementScheduled'],
+        ],
+        'postponement.rejected' => [
+            'category' => 'postponement_request',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\PostponementRejected'],
+        ],
+        'schedule.change.requested' => [
+            'category' => 'schedule_change_request',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\ScheduleChangeRequested'],
+        ],
+        'schedule.change.applied' => [
+            'category' => 'session_changed',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\ScheduleChangeApplied'],
+        ],
+        'schedule.change.rejected' => [
+            'category' => 'schedule_change_request',
+            'audiences' => ['student', 'teacher', 'supervisor', 'admin'],
+            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
+            'source_events' => ['Modules\\Scheduling\\Domain\\Events\\ScheduleChangeRejected'],
+        ],
         'teacher.apology.approved' => [
             'category' => 'teacher_workflow',
-            'audiences' => ['teacher', 'supervisor'],
+            'audiences' => ['teacher', 'supervisor', 'admin'],
             'recipient_fields' => ['teacher_user_id', 'supervisor_user_ids'],
-            'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologyApproved'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologyDecided'],
+            'payload_match' => ['decision' => 'approved'],
         ],
         'teacher.apology.rejected' => [
             'category' => 'teacher_workflow',
             'audiences' => ['teacher', 'supervisor'],
             'recipient_fields' => ['teacher_user_id', 'supervisor_user_ids'],
-            'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologyRejected'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologyDecided'],
+            'payload_match' => ['decision' => 'rejected'],
         ],
         'session.substitute.required' => [
             'category' => 'teacher_workflow',
             'audiences' => ['supervisor', 'admin'],
             'recipient_fields' => ['supervisor_user_ids', 'admin_user_ids'],
-            'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionSubstituteRequired'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\TeacherApologyDecided'],
+            'payload_match' => ['substitute_required' => true],
+        ],
+        'session.substitute.candidates_updated' => [
+            'category' => 'teacher_workflow',
+            'audiences' => ['supervisor', 'admin'],
+            'recipient_fields' => [],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\SubstituteCandidatesUpdated'],
         ],
         'session.substitute.assigned' => [
             'category' => 'session_changed',
@@ -200,11 +368,36 @@ return [
             'recipient_fields' => ['student_user_ids', 'guardian_user_ids', 'teacher_user_id'],
             'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionApproaching'],
         ],
-        'session.joinable' => [
+        /*
+         * روابط الدخول قبل الحصة — مفتاحان لا مفتاح واحد.
+         *
+         * الرابط يختلف بالمستلم: المعلم يُوجَّه إلى صفحة الحصة داخل النظام كي
+         * يسجّل دخوله فيُحتسب حضوره وتُقيَّد مستحقاته، والطالب يأخذ رابط دخول
+         * موقّعًا باسمه وحده. المصدر حدث واحد، وpayload_match هو ما يفرزه.
+         */
+        'session.join_link.teacher' => [
             'category' => 'session_reminder',
-            'audiences' => ['student', 'teacher'],
-            'recipient_fields' => ['student_user_ids', 'teacher_user_id'],
-            'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionJoinable'],
+            'audiences' => ['teacher'],
+            'recipient_fields' => ['teacher_user_id'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionJoinWindowOpened'],
+            'payload_match' => ['audience' => 'teacher'],
+        ],
+        'session.join_link.student' => [
+            'category' => 'session_reminder',
+            'audiences' => ['student'],
+            'recipient_fields' => ['student_user_ids'],
+            'source_events' => ['Modules\\Sessions\\Domain\\Events\\SessionJoinWindowOpened'],
+            'payload_match' => ['audience' => 'student'],
+        ],
+
+        /*
+         * غياب الطالب — إخطار في كل مرة كما قررت المدرسة، لا عند العتبة وحدها.
+         */
+        'discipline.absence_recorded' => [
+            'category' => 'absence_notice',
+            'audiences' => ['student', 'guardian'],
+            'recipient_fields' => ['student_user_id', 'guardian_user_ids'],
+            'source_events' => ['Modules\\Discipline\\Domain\\Events\\StudentAbsenceRecorded'],
         ],
         'classroom.guest_invited' => [
             'category' => 'classroom_invitation',
@@ -266,6 +459,12 @@ return [
             'recipient_fields' => ['student_user_id', 'guardian_user_ids'],
             'source_events' => ['Modules\\Assignments\\Domain\\Events\\SubmissionGraded'],
         ],
+        'message.sent' => [
+            'category' => 'message_received',
+            'audiences' => [],
+            'recipient_fields' => ['recipient_user_ids'],
+            'source_events' => ['Modules\\Messaging\\Domain\\Events\\MessageSent'],
+        ],
     ],
 
     // Permission-based operational audiences. No role names are inspected.
@@ -304,12 +503,16 @@ return [
         'store_payload_days' => 90,
     ],
 
+    'admin_hub' => [
+        'max_items' => env('NOTIFY_ADMIN_HUB_MAX_ITEMS', 100),
+    ],
+
     /*
      * اللغة: لغة المستلم، ثم لغة المؤسسة، ثم الافتراضية.
      */
     'localization' => [
         'fallback_locale' => 'ar',
-        'supported' => ['ar', 'en', 'fr'],
+        'supported' => array_map('trim', explode(',', (string) env('APP_SUPPORTED_LOCALES', 'ar,en'))),
         'datetime_format' => 'Y-m-d H:i T',
         'datetime_parameters' => [
             'scheduled_start',
@@ -318,7 +521,13 @@ return [
             'makeup_end',
             'expires_at',
             'due_at',
+            'submitted_at',
+            'effective_from',
+            'proposed_start',
+            'agreed_start',
         ],
+        'datetime_list_parameters' => ['schedule_times'],
+        'localized_parameters' => ['course_name', 'target_name', 'current_schedule', 'proposed_schedule', 'weekly_pattern'],
     ],
 
     /*

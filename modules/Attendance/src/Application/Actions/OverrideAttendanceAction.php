@@ -8,6 +8,8 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Modules\Attendance\Domain\Enums\AttendanceStatus;
 use Modules\Attendance\Domain\Events\AttendanceOverridden;
 use Modules\Attendance\Domain\Models\Attendance;
+use Modules\Audit\Domain\Contracts\AuditRecorder;
+use Modules\Sessions\Domain\Contracts\SessionParticipantAdministrationQueries;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 
@@ -25,23 +27,78 @@ final readonly class OverrideAttendanceAction
     public function __construct(
         private Transaction $transaction,
         private Dispatcher $events,
+        private SessionParticipantAdministrationQueries $participants,
+        private AuditRecorder $audit,
     ) {}
 
-    public function execute(Attendance $attendance, AttendanceStatus $newStatus, string $reason): Attendance
-    {
+    public function execute(
+        Attendance $attendance,
+        AttendanceStatus $newStatus,
+        string $reason,
+        ?string $actorId = null,
+        ?string $organizationId = null,
+    ): Attendance {
         $this->assertReasonSufficient($reason);
-        $this->assertActualChange($attendance, $newStatus);
 
-        /** @var AttendanceStatus $fromStatus */
-        $fromStatus = $attendance->status;
+        [$attendance, $fromStatus] = $this->transaction->run(function () use (
+            $attendance,
+            $newStatus,
+            $reason,
+            $actorId,
+            $organizationId,
+        ): array {
+            /** @var Attendance $locked */
+            $locked = Attendance::query()->lockForUpdate()->findOrFail((string) $attendance->getKey());
+            $participant = $organizationId === null
+                ? $this->participants->find((string) $locked->session_participant_id)
+                : $this->participants->findForOrganization(
+                    $organizationId,
+                    (string) $locked->session_participant_id,
+                );
+            if ($participant === null || !$participant->invitationActive) {
+                throw BusinessRuleViolation::make(
+                    'attendance.participant_not_active',
+                    'attendance::errors.participant_not_active',
+                );
+            }
 
-        $this->transaction->run(function () use ($attendance, $newStatus, $reason): void {
-            $attendance->forceFill([
+            $this->assertActualChange($locked, $newStatus);
+            /** @var AttendanceStatus $fromStatus */
+            $fromStatus = $locked->status;
+            $before = [
+                'status' => $fromStatus->value,
+                'derived_status' => $locked->derived_status->value,
+                'confirmed_by' => $locked->confirmed_by,
+                'confirmed_at' => $locked->confirmed_at?->toIso8601String(),
+                'override_reason' => $locked->override_reason,
+            ];
+
+            $locked->forceFill([
                 'status' => $newStatus,
                 'override_reason' => trim($reason),
                 'confirmed_at' => now()->utc(),
-                'confirmed_by' => $attendance->confirmed_by ?? auth()->id(),
+                'confirmed_by' => $locked->confirmed_by ?? $actorId,
             ])->save();
+
+            $this->audit->record(
+                organizationId: $participant->organizationId,
+                actorId: $actorId,
+                actorType: $actorId === null ? 'system' : 'user',
+                action: 'attendance.overridden',
+                auditableType: 'attendances',
+                auditableId: (string) $locked->getKey(),
+                oldValues: $before,
+                newValues: [
+                    'status' => $newStatus->value,
+                    'derived_status' => $locked->derived_status->value,
+                    'confirmed_by' => $locked->confirmed_by,
+                    'confirmed_at' => $locked->confirmed_at?->toIso8601String(),
+                    'override_reason' => trim($reason),
+                ],
+                reason: trim($reason),
+            );
+
+            return [$locked, $fromStatus];
         });
 
         $this->events->dispatch(new AttendanceOverridden(

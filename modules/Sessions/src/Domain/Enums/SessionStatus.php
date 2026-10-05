@@ -52,6 +52,9 @@ enum SessionStatus: string
     /** أُجّلت وأُنشئت حصة تلافي مرتبطة بها. */
     case Postponed = 'postponed';
 
+    /** حدث مستقبلي استُبدل عند تعديل قالب الجدول، بلا أثر مالي. */
+    case Superseded = 'superseded';
+
     /**
      * الانتقالات المسموحة. أي انتقال غير مذكور هنا مرفوض.
      *
@@ -73,6 +76,7 @@ enum SessionStatus: string
                 self::CancelledBySchool,
                 self::NoShow,
                 self::Excused,
+                self::Superseded,
             ],
             self::Confirmed => [
                 self::InProgress,
@@ -82,6 +86,7 @@ enum SessionStatus: string
                 self::CancelledBySchool,
                 self::NoShow,
                 self::Excused,
+                self::Superseded,
             ],
             self::InProgress => [
                 self::AwaitingReview,
@@ -101,6 +106,7 @@ enum SessionStatus: string
             self::NoShow,
             self::Excused,
             self::Postponed => [],
+            self::Superseded => [],
         };
     }
 
@@ -126,6 +132,7 @@ enum SessionStatus: string
             self::CancelledByTeacher,
             self::CancelledBySchool,
             self::Postponed => true,
+            self::Superseded => false,
             default => false,
         };
     }
@@ -143,6 +150,7 @@ enum SessionStatus: string
             self::CancelledByTeacher => 'teacher_absent',
             self::CancelledBySchool => 'cancelled_by_school',
             self::Postponed => 'postponed',
+            self::Superseded => null,
             default => null,
         };
     }
@@ -175,6 +183,7 @@ enum SessionStatus: string
             self::Postponed => 'violet',
             self::Excused => 'sky',
             self::NoShow => 'red',
+            self::Superseded => 'gray',
             self::CancelledByStudent, self::CancelledByTeacher, self::CancelledBySchool => 'rose',
         };
     }
