@@ -6,8 +6,7 @@ namespace Modules\Notifications\Infrastructure\Push;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Modules\Identity\Domain\Models\User;
-use Modules\Identity\Domain\Models\UserDevice;
+use Modules\Identity\Domain\Contracts\UserPushGateway;
 use Modules\Integrations\Domain\ValueObjects\GatewayMessage;
 
 /**
@@ -27,7 +26,10 @@ use Modules\Integrations\Domain\ValueObjects\GatewayMessage;
  */
 final readonly class PushMirrorDispatcher
 {
-    public function __construct(private FcmSender $sender) {}
+    public function __construct(
+        private FcmSender $sender,
+        private UserPushGateway $recipients,
+    ) {}
 
     public function dispatch(GatewayMessage $message): void
     {
@@ -40,13 +42,9 @@ final readonly class PushMirrorDispatcher
             return;
         }
 
-        $devices = UserDevice::query()
-            ->forUser($message->recipientId)
-            ->active()
-            ->whereNotNull('push_token')
-            ->get();
+        $devices = $this->recipients->activeDevices($message->organizationId, $message->recipientId);
 
-        if ($devices->isEmpty()) {
+        if ($devices === []) {
             return;
         }
 
@@ -55,9 +53,8 @@ final readonly class PushMirrorDispatcher
         $data = $targetUrl === null ? [] : ['target_url' => $targetUrl];
 
         foreach ($devices as $device) {
-            /** @var UserDevice $device */
             $result = $this->sender->send(
-                deviceToken: (string) $device->push_token,
+                deviceToken: $device->token,
                 title: $title,
                 body: $body,
                 data: $data,
@@ -81,7 +78,7 @@ final readonly class PushMirrorDispatcher
             }
 
             if (!$result->success && $result->unregistered) {
-                $device->forceFill(['revoked_at' => now(), 'push_token' => null])->save();
+                $this->recipients->revokeUnregisteredDevice($message->organizationId, $message->recipientId, $device);
             }
         }
     }
@@ -115,7 +112,7 @@ final readonly class PushMirrorDispatcher
      * نفس منطق NotificationDeepLinkResolver بالضبط، لكن مبني على GatewayMessage
      * (لا يحمل نموذج NotificationOutbox عمدًا — عزل الحدود بين البوابات
      * والنموذج) بدل Request، فيُشتق المستخدم من recipientId مباشرة و
-     * can() يُستدعى على النموذج ذاته بلا حاجة لطلب HTTP.
+     * فحص الصلاحية يمر عبر عقد Identity بلا حاجة لطلب HTTP.
      */
     private function resolveTargetUrl(GatewayMessage $message): ?string
     {
@@ -124,31 +121,30 @@ final readonly class PushMirrorDispatcher
             return $configured;
         }
 
-        $user = null;
+        $can = fn (string $permission): bool => $this->recipients->can(
+            $message->organizationId, $message->recipientId, $permission,
+        );
 
         $sessionId = $message->payload['session_id'] ?? null;
         if (is_string($sessionId) && Str::isUlid($sessionId)) {
-            $user = User::find($message->recipientId);
 
-            if ($user?->can('attendance.record') === true || $user?->can('session_report.create') === true) {
+            if ($can('attendance.record') === true || $can('session_report.create') === true) {
                 return "/teacher/sessions/{$sessionId}";
             }
 
-            if ($user?->can('session.view') === true) {
+            if ($can('session.view') === true) {
                 return "/student/sessions/{$sessionId}";
             }
         }
 
         if (str_starts_with($message->eventName, 'assignment.') || $message->eventName === 'submission.graded') {
-            $user ??= User::find($message->recipientId);
 
-            return $user?->can('assignment.submit') === true ? '/student/assignments' : null;
+            return $can('assignment.submit') === true ? '/student/assignments' : null;
         }
 
         if (str_starts_with($message->eventName, 'registration.') || str_starts_with($message->eventName, 'discipline.')) {
-            $user ??= User::find($message->recipientId);
 
-            return $user?->can('enrollment.view') === true ? '/student/programs' : null;
+            return $can('enrollment.view') === true ? '/student/programs' : null;
         }
 
         return null;

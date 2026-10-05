@@ -11,7 +11,6 @@ final class SessionReportSubmitted extends AcademicReportsEvent
 {
     /**
      * @param list<string> $studentProfileIds
-     * @param array<string, int> $lateMinutesByRule محجوز للتوسعة — فارغ افتراضيًا
      */
     public function __construct(
         public readonly string $sessionReportId,

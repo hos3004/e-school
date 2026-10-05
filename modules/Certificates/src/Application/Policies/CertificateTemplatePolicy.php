@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Certificates\Application\Policies;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Certificates\Domain\Models\CertificateTemplate;
 
 /**
@@ -14,31 +16,31 @@ use Modules\Certificates\Domain\Models\CertificateTemplate;
  */
 final class CertificateTemplatePolicy
 {
-    public function viewAny($user): bool
+    public function viewAny(Authenticatable&Authorizable $user): bool
     {
         return $user->can('certificates.template.view_any');
     }
 
-    public function view($user, CertificateTemplate $template): bool
+    public function view(Authenticatable&Authorizable $user, CertificateTemplate $template): bool
     {
         return $user->can('certificates.template.view')
-            && $template->organization_id === $user->organization_id;
+            && $template->organization_id === data_get($user, 'organization_id');
     }
 
-    public function create($user): bool
+    public function create(Authenticatable&Authorizable $user): bool
     {
         return $user->can('certificates.template.create');
     }
 
-    public function update($user, CertificateTemplate $template): bool
+    public function update(Authenticatable&Authorizable $user, CertificateTemplate $template): bool
     {
         return $user->can('certificates.template.update')
-            && $template->organization_id === $user->organization_id;
+            && $template->organization_id === data_get($user, 'organization_id');
     }
 
-    public function delete($user, CertificateTemplate $template): bool
+    public function delete(Authenticatable&Authorizable $user, CertificateTemplate $template): bool
     {
         return $user->can('certificates.template.delete')
-            && $template->organization_id === $user->organization_id;
+            && $template->organization_id === data_get($user, 'organization_id');
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\AcademicReports\Application\Actions\SubmitSessionReportAction;
@@ -30,7 +29,6 @@ use Shared\Testing\Fixtures;
  * ينتهِ موعدها بعد لا تُروى قبل أن تقع، وحالة الحصة لا تتغير بالتقرير أبدًا
  * فيبقى اعتماد الإدارة وحده هو ما يفتح قيدة المستحقات.
  */
-uses(RefreshDatabase::class);
 
 /** @return array{0: array<string, mixed>, 1: string, 2: string, 3: string} */
 function offPlatformContext(): array
@@ -41,6 +39,9 @@ function offPlatformContext(): array
     return [$context, (string) $row->organization_id, (string) $row->course_id, Fixtures::userId()];
 }
 
+/**
+ * @param array<string, mixed> $context
+ */
 function offPlatformSession(
     array $context,
     string $organizationId,

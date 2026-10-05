@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -10,8 +9,6 @@ use Modules\Notifications\Domain\Enums\OutboxStatus;
 use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Students\Domain\Events\RegistrationAccepted;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 it('queues the real registration acceptance event for every enabled phase one channel', function (): void {
     config(['notifications.channels.whatsapp.enabled' => true]);

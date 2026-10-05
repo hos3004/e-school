@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
 use Modules\Guardians\Domain\Enums\ContactChannel;
@@ -240,7 +240,7 @@ final class ConsoleGuardianPeopleTest extends TestCase
 
         $this->actingAs($actor)->post('/manage/messages/guardians/'.$guardian->id, [
             'kind' => 'schedule', 'channel' => 'in_app', 'reason' => 'محاولة غير صحيحة',
-            'request_id' => (string) \Illuminate\Support\Str::ulid(),
+            'request_id' => (string) Str::ulid(),
         ])->assertSessionHasErrors('kind');
     }
 

@@ -11,8 +11,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Audit\Domain\Contracts\AuditRecorder;
@@ -452,7 +452,7 @@ final class SupportBotConsoleController extends Controller
             ->map(static fn (object $row): array => [
                 'id' => (string) $row->id,
                 'userId' => (string) $row->user_id,
-                'name' => (string) $row->name,
+                'name' => (string) data_get($row, 'name'),
                 'enabled' => (bool) $row->enabled,
                 'reason' => (string) $row->reason,
             ])
@@ -488,7 +488,7 @@ final class SupportBotConsoleController extends Controller
             ])
             ->map(static fn (object $row): array => [
                 'id' => (string) $row->id,
-                'name' => (string) $row->name,
+                'name' => (string) data_get($row, 'name'),
                 'audience' => (string) $row->audience,
                 'messages' => (int) $row->message_count,
                 'blocked' => (int) $row->blocked_count,

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
@@ -15,8 +14,6 @@ use Modules\Content\Domain\Enums\MaterialType;
 use Modules\Content\Presentation\Filament\Resources\CourseMaterialResource;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
-
-uses(RefreshDatabase::class);
 
 it('renders a real content library and never exposes storage internals through api', function (): void {
     Gate::before(static fn (): bool => true);

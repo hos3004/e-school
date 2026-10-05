@@ -231,7 +231,7 @@ final class RecipientSearchScopingTest extends TestCase
             ->getJson('/api/messaging/recipients?q=Needle')
             ->assertOk();
 
-        $ids = collect($response->json('data'))->pluck('id')->all();
+        $ids = collect((array) $response->json('data'))->pluck('id')->all();
 
         expect($ids)->toContain((string) $teacher->id)
             ->toContain((string) $classmate->id)
@@ -276,7 +276,7 @@ final class RecipientSearchScopingTest extends TestCase
             ->getJson('/api/messaging/recipients?q=Needle')
             ->assertOk();
 
-        $ids = collect($response->json('data'))->pluck('id')->all();
+        $ids = collect((array) $response->json('data'))->pluck('id')->all();
 
         expect($ids)->toContain((string) $teacher->id)
             ->not->toContain((string) $otherTeachersStudent->id);
@@ -307,7 +307,7 @@ final class RecipientSearchScopingTest extends TestCase
             ->getJson('/api/messaging/recipients?q=Needle')
             ->assertOk();
 
-        $ids = collect($response->json('data'))->pluck('id')->all();
+        $ids = collect((array) $response->json('data'))->pluck('id')->all();
 
         expect($ids)->toContain((string) $teacher->id)
             ->not->toContain((string) $unrelatedStudent->id);

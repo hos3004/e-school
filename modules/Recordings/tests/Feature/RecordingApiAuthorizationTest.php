@@ -2,18 +2,16 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Recordings\Domain\Models\Recording;
 use Modules\Recordings\Domain\Models\RecordingView;
-use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
-
-uses(RefreshDatabase::class, CreatesRecordingContext::class);
+use Modules\Recordings\Tests\RecordingTestContext;
 
 it('authorizes recording list show and view logging by assignment and download permission', function (): void {
+    /** @var RecordingTestContext $this */
     $context = $this->createSessionWithClassroom();
     $recording = Recording::factory()->ready()->create($context);
     $expired = Recording::factory()->pastRetention()->create($context);

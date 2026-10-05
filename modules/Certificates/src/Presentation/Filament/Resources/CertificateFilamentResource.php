@@ -32,7 +32,7 @@ final class CertificateFilamentResource extends Resource
 
     protected static ?int $navigationSort = 53;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('certificates::navigation.group');
     }
@@ -84,7 +84,7 @@ final class CertificateFilamentResource extends Resource
                         ->columnSpanFull(),
                     Textarea::make('metadata')
                         ->label(__('certificates::fields.metadata'))
-                        ->formatStateUsing(fn ($state): ?string => is_array($state)
+                        ->formatStateUsing(fn ($state): string => is_array($state)
                             ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
                             : (string) $state)
                         ->columnSpanFull(),

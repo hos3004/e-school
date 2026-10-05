@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Modules\Groups\Application\Actions\ActivateGroupAction;
@@ -10,8 +9,6 @@ use Modules\Groups\Database\Factories\GroupMembershipFactory;
 use Modules\Groups\Domain\Events\GroupCreated;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Identity\Domain\Models\User;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Gate::define('group.view', fn ($user) => true);
@@ -59,7 +56,7 @@ it('validates the create payload', function (): void {
 it('lists groups with active member counts', function (): void {
     $groups = Group::factory()->count(2)->create();
 
-    $ids = collect($this->actingAs($this->actor)
+    $ids = collect((array) $this->actingAs($this->actor)
         ->getJson('/api/groups')
         ->assertOk()
         ->json('data'))

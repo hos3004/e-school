@@ -21,10 +21,10 @@ final readonly class LlmRequest
 
     /**
      * @param list<LlmMessage> $messages
-     * @param list<string>     $stopSequences
-     * @param self::PURPOSE_*  $purpose غرض النداء — يفصل تكلفة التصنيف عن تكلفة
-     *                                  الرد في حساب الاستهلاك، ويختار الرد
-     *                                  المُعلَّب في المشغّل الوهمي.
+     * @param list<string> $stopSequences
+     * @param self::PURPOSE_* $purpose غرض النداء — يفصل تكلفة التصنيف عن تكلفة
+     *                                 الرد في حساب الاستهلاك، ويختار الرد
+     *                                 المُعلَّب في المشغّل الوهمي.
      */
     public function __construct(
         public string $organizationId,

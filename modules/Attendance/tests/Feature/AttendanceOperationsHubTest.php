@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -20,7 +19,7 @@ use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Presentation\Filament\Resources\SessionResource;
 use Shared\Support\BusinessRuleViolation;
 
-uses(RefreshDatabase::class, CreatesSessionParticipant::class);
+uses(CreatesSessionParticipant::class);
 
 it('renders a tenant isolated attendance hub with real operational context', function (): void {
     Gate::before(static fn (): bool => true);

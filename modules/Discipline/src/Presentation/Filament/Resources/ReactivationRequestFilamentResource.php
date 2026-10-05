@@ -37,7 +37,7 @@ final class ReactivationRequestFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-lock-open';
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('discipline::filament.navigation_group');
     }

@@ -11,6 +11,7 @@ use Modules\Identity\Domain\Events\UserRegistered;
 use Modules\Identity\Domain\Models\User;
 use Modules\Identity\Tests\Concerns\CreatesTestOrganization;
 use Modules\Identity\Tests\Support\IdentityPestContext;
+use PHPUnit\Framework\Assert;
 
 uses(CreatesTestOrganization::class);
 
@@ -44,14 +45,15 @@ it('registers a user and dispatches an after-commit UserRegistered event', funct
         ->and($user->username)->toBe('eschool.student');
 
     Event::assertDispatched(UserRegistered::class, fn (UserRegistered $event): bool => $event->userId === $user->id);
-    expect(new UserRegistered(
+    $registeredEvent = new UserRegistered(
         userId: $user->id,
         organizationId: $user->organization_id,
         email: $user->email,
         username: $user->username,
         phone: $user->phone,
         locale: $user->locale,
-    ))->toBeInstanceOf(ShouldDispatchAfterCommit::class);
+    );
+    Assert::assertInstanceOf(ShouldDispatchAfterCommit::class, $registeredEvent);
 });
 
 it('does not publish UserRegistered or retain the account when an outer transaction rolls back', function (): void {

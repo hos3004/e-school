@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Reporting\Application\Actions\RecordOrganizationSnapshotAction;
 use Modules\Reporting\Domain\Models\OrganizationSnapshot;
 use Shared\Testing\Fixtures;
 
-uses(RefreshDatabase::class);
-
+/**
+ * @return array<string, mixed>
+ */
 function snapshotData(): array
 {
     return [

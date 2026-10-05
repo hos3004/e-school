@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Modules\Assessments\Domain\Models\Assessment;
@@ -13,8 +12,6 @@ use Modules\Discipline\Domain\Enums\ReactivationStatus;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Gate::define('assessment.take', fn ($user): bool => false);

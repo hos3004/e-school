@@ -2,19 +2,17 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Modules\Identity\Domain\Models\User;
 use Modules\Recordings\Application\Policies\RecordingPolicy;
 use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Models\Recording;
-use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
+use Modules\Recordings\Tests\RecordingTestContext;
 use Modules\Recordings\Tests\Support\ApiUser;
 
-uses(RefreshDatabase::class, CreatesRecordingContext::class);
-
 beforeEach(function (): void {
+    /** @var RecordingTestContext $this */
     $this->context = $this->createSessionWithClassroom();
 });
 

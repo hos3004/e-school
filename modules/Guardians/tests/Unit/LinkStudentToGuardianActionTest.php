@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Guardians\Application\Actions\LinkStudentToGuardian;
 use Modules\Guardians\Domain\Enums\GuardianRelationship;
@@ -12,8 +11,6 @@ use Modules\Guardians\Domain\Models\GuardianProfile;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 use Tests\TestCase;
-
-uses(RefreshDatabase::class);
 
 it('links a student to a guardian and dispatches GuardianLinkedToStudent', function (): void {
     /** @var TestCase $this */

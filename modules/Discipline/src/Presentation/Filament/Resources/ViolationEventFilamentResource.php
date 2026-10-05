@@ -41,7 +41,7 @@ final class ViolationEventFilamentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-exclamation-triangle';
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('discipline::filament.navigation_group');
     }

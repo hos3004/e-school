@@ -13,10 +13,18 @@ use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
 | لمحت عملًا إداريًّا صامتًا. هذا ما يمنع استعمال AccessControlSeeder في النشر.
 */
 
-/** @return Migration */
-function supportBotGrantMigration(): object
+function supportBotGrantMigration(): Migration
 {
     return require base_path('modules/AccessControl/database/migrations/2026_09_22_180100_grant_support_bot_permissions.php');
+}
+
+function runSupportBotGrantMigration(Migration $migration, string $direction): void
+{
+    if (!method_exists($migration, $direction)) {
+        throw new LogicException("Missing migration method: {$direction}");
+    }
+
+    $migration->{$direction}();
 }
 
 beforeEach(function (): void {
@@ -41,7 +49,7 @@ it('grants both permissions to the platform admin without touching other grants'
 
     $teacherBefore = DB::table('role_has_permissions')->where('role_id', $teacherRole)->count();
 
-    supportBotGrantMigration()->up();
+    runSupportBotGrantMigration(supportBotGrantMigration(), 'up');
 
     foreach (['support_bot.manage', 'support_bot.archive.view'] as $name) {
         $id = DB::table('permissions')->where('name', $name)->value('id');
@@ -58,12 +66,12 @@ it('grants both permissions to the platform admin without touching other grants'
 it('is idempotent and reversible', function (): void {
     $migration = supportBotGrantMigration();
 
-    $migration->up();
-    $migration->up();
+    runSupportBotGrantMigration($migration, 'up');
+    runSupportBotGrantMigration($migration, 'up');
 
     expect(DB::table('permissions')->where('name', 'support_bot.manage')->count())->toBe(1);
 
-    $migration->down();
+    runSupportBotGrantMigration($migration, 'down');
 
     expect(DB::table('permissions')->whereIn('name', ['support_bot.manage', 'support_bot.archive.view'])->count())->toBe(0);
 });

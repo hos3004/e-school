@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\AcademicReports\Database\Factories\SessionReportFactory;
 use Modules\AcademicReports\Domain\Contracts\SessionReportBatchQueries;
 use Shared\Testing\Fixtures;
 
-uses(RefreshDatabase::class);
-
+/**
+ * @param array<string, mixed> $overrides
+ */
 function makeSessionReportRow(string $sessionId, string $staffProfileId, ?string $submittedAt, array $overrides = []): string
 {
     $reportId = (string) Str::ulid();

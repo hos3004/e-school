@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Enums\SessionMode;
 use Modules\Academics\Domain\Models\Course;
@@ -12,8 +11,6 @@ use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Scheduling\Application\Queries\SchedulingAdministrationQueryService;
 use Modules\Scheduling\Presentation\Filament\Resources\ScheduleResource;
-
-uses(RefreshDatabase::class);
 
 afterEach(function (): void {
     CarbonImmutable::setTestNow();

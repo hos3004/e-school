@@ -3,13 +3,10 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Identity\Domain\Models\User;
 use Modules\Sessions\Domain\Models\Session;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Gate::define('session.view', fn (): bool => true);
@@ -40,7 +37,7 @@ it('returns only the sessions scheduled on the requested day in the organization
     $response = $this->actingAs($user)->getJson('/api/sessions?date=2026-09-27');
 
     $response->assertOk();
-    $ids = collect($response->json('data'))->pluck('id');
+    $ids = collect((array) $response->json('data'))->pluck('id');
 
     expect($ids)->toHaveCount(1)->and($ids->first())->toBe($todaySession->id);
 });
@@ -57,7 +54,7 @@ it('returns everything when no date filter is given, unchanged from before', fun
     $response = $this->actingAs($user)->getJson('/api/sessions');
 
     $response->assertOk();
-    expect(collect($response->json('data')))->toHaveCount(2);
+    expect(collect((array) $response->json('data')))->toHaveCount(2);
 });
 
 it('accepts an explicit from/to range', function (): void {
@@ -73,7 +70,7 @@ it('accepts an explicit from/to range', function (): void {
     );
 
     $response->assertOk();
-    $ids = collect($response->json('data'))->pluck('id');
+    $ids = collect((array) $response->json('data'))->pluck('id');
 
     expect($ids)->toHaveCount(1)->and($ids->first())->toBe($inRange->id);
 });
@@ -110,5 +107,5 @@ it('a teacher never sees another teacher\'s session even inside the same day', f
     $response = $this->actingAs($user)->getJson('/api/sessions?date=2026-09-27');
 
     $response->assertOk();
-    expect(collect($response->json('data')))->toHaveCount(0);
+    expect(collect((array) $response->json('data')))->toHaveCount(0);
 });

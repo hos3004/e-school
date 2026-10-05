@@ -47,7 +47,7 @@ final class PayrollAdjustmentResource extends Resource
 
     protected static ?string $navigationParentItem = null;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('payroll::navigation.group');
     }

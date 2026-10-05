@@ -11,9 +11,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Audit\Domain\Contracts\AuditQueryService;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
+use Modules\Reporting\Domain\Contracts\ProgramDigestRecipientSettings;
 use Modules\Reporting\Domain\Models\ProgramDigestRecipientSetting;
 use Modules\Reporting\Presentation\Http\Requests\SaveProgramDigestRecipientSettingRequest;
-use Modules\Reporting\Domain\Contracts\ProgramDigestRecipientSettings;
 
 /**
  * شاشة إعداد مستلم التقرير الشهري المجمَّع — من يستلم بيانات الطلاب فعليًا،
@@ -39,13 +39,13 @@ final class ProgramSessionReportSettingsController extends Controller
         $lastChange = $this->audit->paginateForOrganization($organizationId, [
             'action' => self::AUDIT_ACTION,
             'auditable_type' => ProgramDigestRecipientSetting::class,
-        ], perPage: 1, page: 1)->first();
+        ], perPage: 1, page: 1)->items()[0] ?? null;
 
         $lastChangedBy = null;
         if ($lastChange !== null) {
             $actor = $lastChange->actorId === null ? null : $this->accounts->find($organizationId, $lastChange->actorId);
             $lastChangedBy = [
-                'name' => $actor?->name ?? __('console_reports.settings.unknown_actor'),
+                'name' => $actor->name ?? __('console_reports.settings.unknown_actor'),
                 'at' => $lastChange->createdAt,
                 'reason' => $lastChange->reason,
             ];

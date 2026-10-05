@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
 use Modules\AccessControl\Domain\Models\Permission;
 use Modules\AccessControl\Domain\Models\Role;
 use Modules\AccessControl\Presentation\Support\AccessControlLabels;
-
-uses(RefreshDatabase::class);
 
 it('seeds the base permission matrix and system roles idempotently', function (): void {
     $organizationId = (string) Str::ulid();

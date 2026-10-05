@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -13,8 +12,6 @@ use Modules\Notifications\Infrastructure\Gateways\InAppChannelGateway;
 use Modules\Notifications\Infrastructure\Push\PushMirrorDispatcher;
 use Modules\Notifications\Infrastructure\Push\ServiceAccountAccessTokenProvider;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Fixtures::flush();
@@ -34,6 +31,11 @@ beforeEach(function (): void {
     });
 });
 
+/**
+ * @param array<string, string> $subject
+ * @param array<string, string> $body
+ * @param array<string, mixed> $payload
+ */
 function makeGatewayMessage(
     string $recipientId,
     array $subject = ['ar' => 'عنوان الإشعار'],
@@ -253,4 +255,30 @@ it('falls back to the app name when the notification has no subject', function (
         return $body['message']['notification']['title'] === config('app.name')
             && $body['message']['notification']['body'] === 'نص فقط';
     });
+});
+
+it('does not send push to revoked devices', function (): void {
+    Http::fake();
+    $userId = Fixtures::userId();
+    UserDevice::factory()->create([
+        'user_id' => $userId, 'push_token' => 'revoked-token', 'revoked_at' => now(),
+    ]);
+
+    app(PushMirrorDispatcher::class)->dispatch(makeGatewayMessage($userId));
+
+    Http::assertNothingSent();
+});
+
+it('does not revoke a refreshed token after a delayed unregistered response', function (): void {
+    $userId = Fixtures::userId();
+    $device = UserDevice::factory()->create(['user_id' => $userId, 'push_token' => 'old-token']);
+    Http::fake(function () use ($device) {
+        $device->update(['push_token' => 'new-token']);
+
+        return Http::response(['error' => ['status' => 'UNREGISTERED']], 404);
+    });
+
+    app(PushMirrorDispatcher::class)->dispatch(makeGatewayMessage($userId));
+
+    expect($device->fresh())->revoked_at->toBeNull()->push_token->toBe('new-token');
 });

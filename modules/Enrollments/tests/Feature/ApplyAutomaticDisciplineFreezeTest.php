@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Listeners\ApplyAutomaticDisciplineFreeze;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\Academics\Domain\Models\Program;
@@ -15,8 +14,6 @@ use Modules\Enrollments\Domain\Models\Enrollment;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Students\Domain\Models\StudentProfile;
-
-uses(RefreshDatabase::class);
 
 it('freezes an active enrollment once for an automatic discipline action', function (): void {
     Event::fake([EnrollmentFrozen::class]);

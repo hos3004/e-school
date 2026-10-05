@@ -14,6 +14,7 @@ use Modules\VirtualClassroom\Domain\Exceptions\ClassroomProviderException;
 use Modules\VirtualClassroom\Domain\ValueObjects\ClassroomSpec;
 use Modules\VirtualClassroom\Domain\ValueObjects\JoinRequest;
 use Modules\VirtualClassroom\Infrastructure\Providers\BigBlueButtonProvider;
+use PHPUnit\Framework\Assert;
 
 /** @return array<string, mixed> */
 function bbbProviderTestConfiguration(): array
@@ -384,7 +385,7 @@ it('registers, lists, and removes provider webhooks through the BBB API', functi
 
     $provider = new BigBlueButtonProvider(bbbProviderTestConfiguration());
 
-    expect($provider)->toBeInstanceOf(SupportsWebhookRegistration::class);
+    Assert::assertInstanceOf(SupportsWebhookRegistration::class, $provider);
 
     $registered = $provider->registerWebhook('https://eschool.test/api/webhooks/classroom', 'meeting-1');
     $hooks = $provider->registeredWebhooks('meeting-1');

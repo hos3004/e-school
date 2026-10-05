@@ -25,7 +25,7 @@ interface AuditQueryService
      *     actor_id?: string,
      *     correlation_id?: string
      * }  $filters
-     * @return LengthAwarePaginator<AuditEntryData>
+     * @return LengthAwarePaginator<int, AuditEntryData>
      */
     public function paginateForOrganization(
         ?string $organizationId,

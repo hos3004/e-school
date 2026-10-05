@@ -6,8 +6,8 @@ use Modules\Messaging\Domain\Enums\ConversationType;
 use Modules\Messaging\Domain\Enums\ParticipantRole;
 
 it('exposes labels through translation files', function (): void {
-    expect(ConversationType::Direct->label())->toBeString()
-        ->and(ParticipantRole::Owner->label())->toBeString();
+    expect(ConversationType::Direct->label())->not->toBe('')
+        ->and(ParticipantRole::Owner->label())->not->toBe('');
 });
 
 it('knows which conversation types allow multiple participants', function (): void {

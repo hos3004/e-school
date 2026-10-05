@@ -15,7 +15,7 @@ use Modules\SupportBot\Domain\Enums\BotTopic;
 
 it('catches an amount whose currency word sits several Arabic words away', function (string $text): void {
     // النافذة كانت بالبايت، فتنكمش في العربية إلى نصف حجمها وتفلت هذه الجمل.
-    expect((new OutputFilter())->passes($text))->toBeFalse();
+    expect((new OutputFilter)->passes($text))->toBeFalse();
 })->with([
     'currency after a clause' => 'رصيدك الحالي 3125 وهو بالجنيه المصري.',
     'currency before a clause' => 'المبلغ بالجنيه المصري: 3125',
@@ -23,7 +23,7 @@ it('catches an amount whose currency word sits several Arabic words away', funct
 ]);
 
 it('catches spelled-out and lowercase amounts', function (string $text): void {
-    expect((new OutputFilter())->passes($text))->toBeFalse();
+    expect((new OutputFilter)->passes($text))->toBeFalse();
 })->with([
     'spelled out' => 'مستحقاتك ثلاثة آلاف جنيه تقريبًا.',
     'lowercase code' => 'your balance is 3125 egp',
@@ -32,14 +32,14 @@ it('catches spelled-out and lowercase amounts', function (string $text): void {
 ]);
 
 it('withholds a pay-relevant count even without any currency', function (string $text): void {
-    expect((new OutputFilter())->passes($text))->toBeFalse();
+    expect((new OutputFilter)->passes($text))->toBeFalse();
 })->with([
     'credited sessions' => 'الحصص المحتسبة لك هذا الشهر 12 حصة.',
     'dues without currency' => 'مستحقاتك هذا الشهر ٣١٢٥.',
 ]);
 
 it('still lets ordinary times, counts and durations through', function (string $text): void {
-    expect((new OutputFilter())->passes($text))->toBeTrue();
+    expect((new OutputFilter)->passes($text))->toBeTrue();
 })->with([
     'time' => 'حصتك القادمة الساعة 7 مساءً.',
     'count' => 'لديك 3 حصص مجدولة هذا الأسبوع.',
@@ -51,11 +51,11 @@ it('keeps filtering when the configured marker list is empty', function (): void
     // إعداد ناقص في كاش الإنتاج كان يعطّل الفلتر صامتًا.
     config(['support_bot.output_filter.currency_markers' => []]);
 
-    expect((new OutputFilter())->passes('الرصيد 3125 جنيه'))->toBeFalse();
+    expect((new OutputFilter)->passes('الرصيد 3125 جنيه'))->toBeFalse();
 });
 
 it('detects money intent in the raw question, whatever the classifier said', function (string $message, BotTopic $expected): void {
-    expect((new MoneyIntentDetector())->detect($message))->toBe($expected);
+    expect((new MoneyIntentDetector)->detect($message))->toBe($expected);
 })->with([
     'dues' => ['كم مستحقاتي هذا الشهر؟', BotTopic::PayrollDues],
     'with diacritics' => ['كم مُسْتَحَقَّاتي؟', BotTopic::PayrollDues],
@@ -68,7 +68,7 @@ it('detects money intent in the raw question, whatever the classifier said', fun
 
 it('does not mistake Quranic reward for pay', function (string $message): void {
     // «أجر» في هذا السياق ثواب لا راتب.
-    expect((new MoneyIntentDetector())->detect($message))->toBeNull();
+    expect((new MoneyIntentDetector)->detect($message))->toBeNull();
 })->with([
     'reward of memorising' => 'ما أجر حفظ سورة الملك؟',
     'reward of reciting' => 'هل للقراءة أجر مضاعف؟',

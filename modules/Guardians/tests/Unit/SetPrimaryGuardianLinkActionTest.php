@@ -2,12 +2,9 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Guardians\Application\Actions\SetPrimaryGuardianLink;
 use Modules\Guardians\Domain\Models\GuardianLink;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 it('moves primary guardianship to the chosen link', function (): void {
     $studentId = Fixtures::studentProfileId();

@@ -36,7 +36,7 @@ final class AuditLogResource extends Resource
     // الترتيب داخل قسمه — يُضبط مركزيًا في App\Filament\AdminNavigation.
     protected static ?int $navigationSort = 570;
 
-    public static function getNavigationIcon(): ?string
+    public static function getNavigationIcon(): string
     {
         return 'heroicon-o-shield-check';
     }

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Models\Level;
 use Modules\Academics\Domain\Models\Program;
@@ -14,8 +13,6 @@ use Modules\Enrollments\Presentation\Filament\Resources\EnrollmentResource;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Students\Domain\Models\StudentProfile;
-
-uses(RefreshDatabase::class);
 
 it('renders enrollment creation and a real operations hub with names and history', function (): void {
     Gate::before(static fn (): bool => true);

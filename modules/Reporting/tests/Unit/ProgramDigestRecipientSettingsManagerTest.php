@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Modules\Reporting\Domain\Contracts\ProgramDigestRecipientSettings;
 use Modules\Reporting\Domain\Enums\DigestRecipientType;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 it('has no setting configured before the first save', function (): void {
     $organizationId = Fixtures::organizationId();

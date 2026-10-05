@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Reporting\Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -14,8 +13,6 @@ use Modules\Reporting\Domain\Models\OrganizationSnapshot;
 use Modules\Reporting\Domain\Models\StudentDashboard;
 use Modules\Reporting\Tests\Support\ApiUser;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 const ACTOR_ID = '01REPORTINGACTOR0000000000';
 

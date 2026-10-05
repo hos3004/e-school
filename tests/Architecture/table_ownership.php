@@ -141,6 +141,9 @@ return [
     'messages' => 'Messaging',
     'class_wall_*' => 'Messaging',
     'whatsapp_inbound' => 'Messaging',
+    'whatsapp_campaigns' => 'Messaging',
+    'whatsapp_campaign_recipients' => 'Messaging',
+    'whatsapp_campaign_media' => 'Messaging',
 
     // Notifications
     'notification_outbox' => 'Notifications',
@@ -149,6 +152,7 @@ return [
     'notification_templates' => 'Notifications',
     'notification_category_settings' => 'Notifications',
     'popup_campaigns' => 'Notifications',
+    'popup_campaign_media' => 'Notifications',
     'popup_campaign_user_state' => 'Notifications',
 
     // Payroll
@@ -166,6 +170,7 @@ return [
 
     // Reporting — Read Models فقط
     'report_*' => 'Reporting',
+    'reporting_program_digest_recipients' => 'Reporting',
 
     // SupportBot
     'support_bot_entries' => 'SupportBot',

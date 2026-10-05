@@ -23,7 +23,7 @@ final class MonthlyProgramDigestMail extends Mailable
      * بالفعل — إعلان خاصية readonly بنفس الاسم في الابن قاتل (fatal) في PHP.
      *
      * @param array<string, string> $programName
-     * @param array<string, array{topics_covered: ?string, homework_assigned: ?string, general_notes: ?string, participation: ?int, performance: ?int, commitment: ?int, strengths: ?string, weaknesses: ?string, note: ?string, submitted_at: string}[]> $entriesByStudentName
+     * @param array<string, array{topics_covered: ?string, homework_assigned: ?string, participation: ?int, performance: ?int, commitment: ?int, note: ?string, submitted_at: string}[]> $entriesByStudentName
      */
     public function __construct(
         public readonly array $programName,

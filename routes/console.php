@@ -5,8 +5,8 @@ declare(strict_types=1);
 use App\Services\VirtualClassroom\RecordingSynchronizer;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-use Shared\Module\ModuleRegistry;
 use Modules\Recordings\Application\Actions\ExpireRecordingsAction;
+use Shared\Module\ModuleRegistry;
 use Symfony\Component\Console\Command\Command;
 
 /*

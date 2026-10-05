@@ -27,7 +27,7 @@ function assignedTeacherUserId(string $participantId): string
 it('records a confirmed no-show once even when the same event is delivered twice', function (): void {
     Event::fake([ViolationRecorded::class, DisciplineActionApplied::class]);
 
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $event = new AttendanceConfirmed(
         attendanceId: (string) str()->ulid(),
         sessionParticipantId: $participantId,
@@ -51,7 +51,7 @@ it('records a confirmed no-show once even when the same event is delivered twice
 it('records a confirmed unexcused absence', function (): void {
     Event::fake([ViolationRecorded::class, DisciplineActionApplied::class]);
 
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
 
     app(RecordConfirmedAbsenceViolation::class)->handle(new AttendanceConfirmed(
         attendanceId: (string) str()->ulid(),
@@ -66,7 +66,7 @@ it('records a confirmed unexcused absence', function (): void {
 it('does not penalize present excused or not-held attendance', function (AttendanceStatus $status): void {
     Event::fake([ViolationRecorded::class, DisciplineActionApplied::class]);
 
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
 
     app(RecordConfirmedAbsenceViolation::class)->handle(new AttendanceConfirmed(
         attendanceId: (string) str()->ulid(),
@@ -86,7 +86,7 @@ it('does not penalize present excused or not-held attendance', function (Attenda
 it('does not penalize the student when the assigned teacher was absent', function (): void {
     Event::fake([ViolationRecorded::class, DisciplineActionApplied::class]);
 
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
 
     app(RecordConfirmedAbsenceViolation::class)->handle(new AttendanceConfirmed(
         attendanceId: (string) str()->ulid(),

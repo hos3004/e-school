@@ -64,7 +64,7 @@ final class MessageNotificationAndEnrichmentTest extends TestCase
             ->count());
 
         $body = json_decode((string) json_encode($outboxForRecipient->first()->body), true);
-        $renderedText = collect($body)->implode(' ');
+        $renderedText = collect((array) $body)->implode(' ');
         self::assertStringContainsString('Sender One', $renderedText);
         self::assertStringContainsString('هل يمكنك مراجعة الحصة الأخيرة؟', $renderedText);
 
@@ -125,7 +125,7 @@ final class MessageNotificationAndEnrichmentTest extends TestCase
 
         // الراسل قرأ محادثته فور الإرسال، فلا رسائل غير مقروءة له.
         $listForActor = $this->actingAs($actor)->getJson('/api/conversations')->assertOk();
-        $actorItem = collect($listForActor->json('data'))->firstWhere('id', $conversationId);
+        $actorItem = collect((array) $listForActor->json('data'))->firstWhere('id', $conversationId);
         self::assertNotNull($actorItem);
         self::assertSame(0, $actorItem['unread_count']);
         self::assertSame('أول رسالة', $actorItem['last_message']);
@@ -134,7 +134,7 @@ final class MessageNotificationAndEnrichmentTest extends TestCase
 
         // المستلم لم يقرأ بعد، فتظهر له رسالة واحدة غير مقروءة.
         $listForPeer = $this->actingAs($peer)->getJson('/api/conversations')->assertOk();
-        $peerItem = collect($listForPeer->json('data'))->firstWhere('id', $conversationId);
+        $peerItem = collect((array) $listForPeer->json('data'))->firstWhere('id', $conversationId);
         self::assertSame(1, $peerItem['unread_count']);
 
         $messages = $this->actingAs($peer)

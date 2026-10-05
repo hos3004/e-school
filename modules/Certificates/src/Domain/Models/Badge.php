@@ -50,16 +50,25 @@ final class Badge extends Model
         ];
     }
 
+    /** @return HasMany<BadgeAward, $this> */
     public function awards(): HasMany
     {
         return $this->hasMany(BadgeAward::class);
     }
 
+    /**
+     * @param Builder<Badge> $query
+     * @return Builder<Badge>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * @param Builder<Badge> $query
+     * @return Builder<Badge>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);

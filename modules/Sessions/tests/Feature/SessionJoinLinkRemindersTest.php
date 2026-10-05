@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\Academics\Domain\Enums\SessionMode;
 use Modules\Academics\Domain\Models\Course;
@@ -37,7 +36,6 @@ use Modules\Students\Domain\Models\StudentProfile;
  *    ورابط الطالب موقّع ومربوط بمشاركته وحده — واختلافهما هو جوهر الطلب.
  *  · تكرار تشغيل المجدول لا يكرر الرسائل.
  */
-uses(RefreshDatabase::class);
 
 afterEach(function (): void {
     CarbonImmutable::setTestNow();

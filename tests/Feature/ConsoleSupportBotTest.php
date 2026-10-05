@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
+use Modules\AccessControl\Infrastructure\Authorization\PermissionGateRegistrar;
 use Modules\Identity\Domain\Models\User;
 use Modules\Integrations\Domain\Contracts\LlmConnections;
 use Modules\Integrations\Domain\Enums\ConnectionStatus;
 use Modules\Integrations\Domain\Models\IntegrationConnection;
 use Modules\Integrations\Domain\Models\IntegrationProvider;
+use Modules\Organization\Domain\Models\Organization;
 use Modules\SupportBot\Database\Seeders\SupportBotContentSeeder;
 use Modules\SupportBot\Domain\Enums\BotTopic;
 use Modules\SupportBot\Domain\Enums\TopicMode;
-use Modules\AccessControl\Infrastructure\Authorization\PermissionGateRegistrar;
-use Modules\Organization\Domain\Models\Organization;
 use Modules\SupportBot\Domain\Models\BotRule;
 
 function consoleBotUser(string $roleName): User

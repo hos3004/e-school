@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
 use Modules\AccessControl\Domain\Contracts\DirectPermissionGateway;
 use Modules\AccessControl\Domain\Models\ModelHasPermission;
 use Modules\AccessControl\Domain\Models\Permission;
 use Shared\Support\BusinessRuleViolation;
-
-uses(RefreshDatabase::class);
 
 /**
  * البوابة تمنح الصلاحيات الاختيارية المعلنة وحدها. بدون هذا الحارس تتحول

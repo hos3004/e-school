@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Application\Actions\ArchiveCourseAction;
@@ -16,8 +15,6 @@ use Modules\Academics\Application\Actions\UpdateProgramAction;
 use Modules\Academics\Domain\Models\Program;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Gate::define('program.manage', static fn (): bool => true);

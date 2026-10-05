@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -31,7 +30,7 @@ use Modules\VirtualClassroom\Domain\ValueObjects\WebhookEvent;
 use Modules\VirtualClassroom\Infrastructure\Providers\NullProvider;
 use Modules\VirtualClassroom\Presentation\Filament\Pages\ClassroomConnectionSettings;
 
-uses(RefreshDatabase::class, CreatesSessionParticipant::class);
+uses(CreatesSessionParticipant::class);
 
 afterEach(function (): void {
     CarbonImmutable::setTestNow();

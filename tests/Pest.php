@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
 use Tests\TestCase;
 
 /*
@@ -29,3 +30,15 @@ pest()->extend(TestCase::class)->in('../modules');
 | اختبارات Unit تبقى بلا قاعدة بيانات حتى تظل سريعة.
 */
 pest()->use(RefreshDatabase::class)->in('Feature', '../modules/*/tests/Feature');
+
+// Module folders live outside tests/ and their nested Pest.php files are not booted.
+pest()->use(RefreshDatabase::class)->in(
+    '../modules/AcademicReports/tests/Unit',
+    '../modules/Guardians/tests/Unit',
+    '../modules/Organization/tests/Unit',
+    '../modules/Recordings/tests/Unit',
+    '../modules/Reporting/tests/Unit',
+);
+
+pest()->use(CreatesRecordingContext::class)
+    ->in('../modules/Recordings/tests/Unit', '../modules/Recordings/tests/Feature');

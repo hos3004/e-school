@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -12,8 +11,6 @@ use Modules\Assessments\Domain\Models\Question;
 use Modules\Enrollments\Domain\Contracts\EnrollmentAdministrationQueries;
 use Modules\Identity\Domain\Models\User;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // These are the canonical permissions from AccessControlSeeder and

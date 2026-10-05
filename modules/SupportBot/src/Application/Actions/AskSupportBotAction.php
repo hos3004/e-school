@@ -252,7 +252,7 @@ final readonly class AskSupportBotAction
         return new BotReply(
             $body,
             $decision?->topic,
-            $decision?->mode ?? TopicMode::Guide,
+            $decision->mode ?? TopicMode::Guide,
             false,
             (string) $conversation->id,
             $correlationId,

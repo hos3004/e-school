@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\Academics\Domain\Models\Course;
@@ -19,8 +18,6 @@ use Modules\Content\Domain\Models\CourseMaterial;
 use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
 use Shared\Support\BusinessRuleViolation;
-
-uses(RefreshDatabase::class);
 
 it('preserves a complete audited revision history across create update publish and archive', function (): void {
     $organization = Organization::factory()->create();

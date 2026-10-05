@@ -107,7 +107,7 @@ final readonly class LlmConnectionManager implements LlmConnections
                 ->first();
 
             if ($connection === null) {
-                $connection = new IntegrationConnection();
+                $connection = new IntegrationConnection;
                 $connection->organization_id = $organizationId;
                 $connection->provider_id = (string) $provider->id;
                 /*

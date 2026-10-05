@@ -33,6 +33,6 @@ trait ScopesFilamentToOrganization
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->forOrganization($organizationId);
+        return $query->scopes(['forOrganization' => [$organizationId]]);
     }
 }

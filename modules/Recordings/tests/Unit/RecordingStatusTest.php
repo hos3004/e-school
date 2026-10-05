@@ -31,7 +31,7 @@ it('marks terminal states and watchability', function (): void {
 
 it('labels every status through translations', function (): void {
     foreach (RecordingStatus::cases() as $status) {
-        expect($status->label())->toBeString()
+        expect($status->label())->not->toBe('')
             ->and($status->label() === '')->toBeFalse()
             ->and(__('recordings::status.'.$status->value))->toBe($status->label());
     }

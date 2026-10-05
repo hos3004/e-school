@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Modules\Audit\Domain\Models\AuditLog;
@@ -19,14 +18,13 @@ use Modules\Recordings\Domain\Enums\RecordingStatus;
 use Modules\Recordings\Domain\Models\Recording;
 use Modules\Recordings\Domain\Models\RecordingView;
 use Modules\Recordings\Presentation\Filament\Resources\RecordingResource;
-use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
+use Modules\Recordings\Tests\RecordingTestContext;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Presentation\Filament\Resources\SessionResource;
 use Shared\Support\BusinessRuleViolation;
 
-uses(RefreshDatabase::class, CreatesRecordingContext::class);
-
 beforeEach(function (): void {
+    /** @var RecordingTestContext $this */
     $this->context = $this->createSessionWithClassroom();
 });
 

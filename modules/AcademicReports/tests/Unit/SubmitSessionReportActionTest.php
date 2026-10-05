@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -23,8 +22,9 @@ use Shared\Support\BusinessRuleViolation;
 use Shared\Support\Transaction;
 use Shared\Testing\Fixtures;
 
-uses(RefreshDatabase::class);
-
+/**
+ * @return list<array{student_profile_id: string, participation: int, performance: int, commitment: int, strengths?: ?string, weaknesses?: ?string, note?: ?string}>
+ */
 function submitReportPayload(): array
 {
     return [

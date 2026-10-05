@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\Academics\Domain\Enums\SessionMode;
 use Modules\Academics\Domain\Models\Course;
@@ -36,7 +35,6 @@ use Modules\Students\Domain\Models\StudentProfile;
  * بلوغ العتبة يعني تجميد القيد آليًا. والعتبة تُقرأ من config لا من نص القالب،
  * فلو غيّرت المدرسة سياستها تغيّر نص الرسالة معها.
  */
-uses(RefreshDatabase::class);
 
 /** @return array<string, mixed> */
 function absenceNoticeFixture(): array

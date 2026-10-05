@@ -16,6 +16,9 @@ use Shared\Support\BusinessRuleViolation;
 
 uses(RefreshDatabase::class);
 
+/**
+ * @param array<string, int> $blockers
+ */
 function programClosureSnapshot(array $blockers = []): ClosureSnapshot
 {
     return new ClosureSnapshot(

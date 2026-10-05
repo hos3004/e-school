@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Modules\Groups\Application\Actions\ActivateGroupAction;
@@ -12,8 +11,6 @@ use Modules\Groups\Domain\Events\TeacherAssignedToGroup;
 use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupProgram;
 use Modules\Identity\Domain\Models\User;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Gate::define('group.view', fn ($user) => true);

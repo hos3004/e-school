@@ -75,7 +75,7 @@ it('refuses to invent an audience for unknown roles', function (): void {
 */
 
 it('withholds a reply that puts a number next to a currency', function (string $text): void {
-    expect((new OutputFilter())->passes($text))->toBeFalse();
+    expect((new OutputFilter)->passes($text))->toBeFalse();
 })->with([
     'egp word' => 'إجمالي مستحقاتك 3125 جنيه حتى الآن.',
     'egp inflected' => 'المبلغ 3125 جنيهًا.',
@@ -86,7 +86,7 @@ it('withholds a reply that puts a number next to a currency', function (string $
 ]);
 
 it('passes ordinary replies that merely contain numbers', function (string $text): void {
-    expect((new OutputFilter())->passes($text))->toBeTrue();
+    expect((new OutputFilter)->passes($text))->toBeTrue();
 })->with([
     'time' => 'حصتك القادمة يوم الثلاثاء الساعة 7 مساءً بإذن الله.',
     'count' => 'لديك 3 حصص مجدولة هذا الأسبوع.',
@@ -99,5 +99,5 @@ it('passes ordinary replies that merely contain numbers', function (string $text
 it('lets the filter be switched off from configuration', function (): void {
     config(['support_bot.output_filter.enabled' => false]);
 
-    expect((new OutputFilter())->passes('مستحقاتك 3125 جنيه'))->toBeTrue();
+    expect((new OutputFilter)->passes('مستحقاتك 3125 جنيه'))->toBeTrue();
 });

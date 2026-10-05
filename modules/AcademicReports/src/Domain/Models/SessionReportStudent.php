@@ -50,16 +50,25 @@ final class SessionReportStudent extends Model
         ];
     }
 
+    /** @return BelongsTo<SessionReport, $this> */
     public function sessionReport(): BelongsTo
     {
         return $this->belongsTo(SessionReport::class);
     }
 
+    /**
+     * @param Builder<SessionReportStudent> $query
+     * @return Builder<SessionReportStudent>
+     */
     public function scopeForStudent(Builder $query, string $studentProfileId): Builder
     {
         return $query->where('student_profile_id', $studentProfileId);
     }
 
+    /**
+     * @param Builder<SessionReportStudent> $query
+     * @return Builder<SessionReportStudent>
+     */
     public function scopeForReport(Builder $query, string $sessionReportId): Builder
     {
         return $query->where('session_report_id', $sessionReportId);

@@ -14,12 +14,12 @@ use Shared\Support\BusinessRuleViolation;
 uses(RefreshDatabase::class, CreatesSessionParticipant::class);
 
 it('rejects a sheet submitted by a teacher not assigned to the session', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $participant = DB::table('session_participants')->where('id', $participantId)->first();
     $session = DB::table('sessions')->where('id', $participant->session_id)->first();
 
     app(RecordAttendanceSheetAction::class)->execute(
-        organizationId: (string) $this->organizationId, // @phpstan-ignore property.notFound
+        organizationId: (string) $this->organizationId,
         sessionId: (string) $session->id,
         staffProfileId: (string) str()->ulid(),
         statuses: [
@@ -31,7 +31,7 @@ it('rejects a sheet submitted by a teacher not assigned to the session', functio
 })->throws(BusinessRuleViolation::class);
 
 it('allows the assigned teacher to confirm the derived status', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $participant = DB::table('session_participants')->where('id', $participantId)->first();
     $session = DB::table('sessions')->where('id', $participant->session_id)->first();
     $teacherUserId = DB::table('staff_profiles')->where('id', $session->staff_profile_id)->value('user_id');
@@ -43,7 +43,7 @@ it('allows the assigned teacher to confirm the derived status', function (): voi
     );
 
     $result = app(RecordAttendanceSheetAction::class)->execute(
-        organizationId: (string) $this->organizationId, // @phpstan-ignore property.notFound
+        organizationId: (string) $this->organizationId,
         sessionId: (string) $session->id,
         staffProfileId: (string) $session->staff_profile_id,
         statuses: [(string) $participant->student_profile_id => AttendanceStatus::Present->value],
@@ -54,13 +54,13 @@ it('allows the assigned teacher to confirm the derived status', function (): voi
 });
 
 it('rejects the assigned teacher when no room presence was recorded', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $participant = DB::table('session_participants')->where('id', $participantId)->first();
     $session = DB::table('sessions')->where('id', $participant->session_id)->first();
     $teacherUserId = DB::table('staff_profiles')->where('id', $session->staff_profile_id)->value('user_id');
 
     app(RecordAttendanceSheetAction::class)->execute(
-        organizationId: (string) $this->organizationId, // @phpstan-ignore property.notFound
+        organizationId: (string) $this->organizationId,
         sessionId: (string) $session->id,
         staffProfileId: (string) $session->staff_profile_id,
         statuses: [(string) $participant->student_profile_id => AttendanceStatus::Present->value],
@@ -69,7 +69,7 @@ it('rejects the assigned teacher when no room presence was recorded', function (
 })->throws(BusinessRuleViolation::class);
 
 it('rejects a teacher join recorded only after the official session end', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $participant = DB::table('session_participants')->where('id', $participantId)->first();
     $session = DB::table('sessions')->where('id', $participant->session_id)->first();
     $teacherUserId = DB::table('staff_profiles')->where('id', $session->staff_profile_id)->value('user_id');
@@ -81,7 +81,7 @@ it('rejects a teacher join recorded only after the official session end', functi
     );
 
     app(RecordAttendanceSheetAction::class)->execute(
-        organizationId: (string) $this->organizationId, // @phpstan-ignore property.notFound
+        organizationId: (string) $this->organizationId,
         sessionId: (string) $session->id,
         staffProfileId: (string) $session->staff_profile_id,
         statuses: [(string) $participant->student_profile_id => AttendanceStatus::Present->value],

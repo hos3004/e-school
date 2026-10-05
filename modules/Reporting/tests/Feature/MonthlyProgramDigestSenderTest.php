@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Modules\Reporting\Application\Services\MonthlyProgramDigestSender;
 use Modules\Reporting\Domain\Contracts\ProgramDigestRecipientSettings;
@@ -11,8 +10,6 @@ use Modules\Reporting\Domain\Enums\DigestRecipientType;
 use Modules\Reporting\Infrastructure\Mail\MonthlyProgramDigestMail;
 use Modules\Reporting\Tests\Support\DigestSessionContext;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 it('sends nothing when no recipient is configured, and never touches the real transport', function (): void {
     Mail::fake();

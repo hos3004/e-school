@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Recordings\Application\Actions\ArchiveRecordingAction;
 use Modules\Recordings\Application\Actions\DeleteRecordingAction;
@@ -14,13 +13,12 @@ use Modules\Recordings\Domain\Events\RecordingArchived;
 use Modules\Recordings\Domain\Events\RecordingBecameReady;
 use Modules\Recordings\Domain\Events\RecordingDeleted;
 use Modules\Recordings\Domain\Models\Recording;
-use Modules\Recordings\Tests\Concerns\CreatesRecordingContext;
+use Modules\Recordings\Tests\RecordingTestContext;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 
-uses(RefreshDatabase::class, CreatesRecordingContext::class);
-
 beforeEach(function (): void {
+    /** @var RecordingTestContext $this */
     $this->context = $this->createSessionWithClassroom();
 });
 

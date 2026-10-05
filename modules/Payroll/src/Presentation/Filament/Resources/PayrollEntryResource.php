@@ -42,7 +42,7 @@ final class PayrollEntryResource extends Resource
     // القيمة نفسها تُضبط مركزيًا في App\Filament\AdminNavigation.
     protected static ?string $navigationParentItem = null;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('payroll::navigation.group');
     }

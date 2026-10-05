@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -18,8 +17,6 @@ use Modules\Staff\Domain\Enums\StaffGender;
 use Modules\Staff\Domain\Enums\TeacherAvailabilityApprovalStatus;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Staff\Domain\Models\TeacherAvailability;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Gate::before(static fn (): bool => true);

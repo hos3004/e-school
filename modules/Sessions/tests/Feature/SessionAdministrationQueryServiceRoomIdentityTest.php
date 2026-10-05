@@ -3,13 +3,12 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Attendance\Tests\Concerns\CreatesSessionParticipant;
 use Modules\Sessions\Domain\Contracts\SessionAdministrationQueries;
 
-uses(RefreshDatabase::class, CreatesSessionParticipant::class);
+uses(CreatesSessionParticipant::class);
 
 afterEach(function (): void {
     CarbonImmutable::setTestNow();
@@ -45,7 +44,7 @@ function attachScheduleToSession(string $organizationId, string $sessionId): str
 }
 
 it('resolves the room identity to the schedule when the session belongs to one', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $sessionId = (string) DB::table('session_participants')->where('id', $participantId)->value('session_id');
     $scheduleId = attachScheduleToSession($this->organizationId, $sessionId);
 
@@ -55,7 +54,7 @@ it('resolves the room identity to the schedule when the session belongs to one',
 });
 
 it('resolves the room identity for a makeup session by following it back to the original schedule', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $originalSessionId = (string) DB::table('session_participants')->where('id', $participantId)->value('session_id');
     $scheduleId = attachScheduleToSession($this->organizationId, $originalSessionId);
 
@@ -83,7 +82,7 @@ it('resolves the room identity for a makeup session by following it back to the 
 });
 
 it('returns null for a one-off session with neither a schedule nor a makeup origin', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $sessionId = (string) DB::table('session_participants')->where('id', $participantId)->value('session_id');
 
     $identity = app(SessionAdministrationQueries::class)->roomIdentityForSession($this->organizationId, $sessionId);
@@ -92,7 +91,7 @@ it('returns null for a one-off session with neither a schedule nor a makeup orig
 });
 
 it('finds the currently joinable session for a schedule, including a makeup standing in for it', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $originalSessionId = (string) DB::table('session_participants')->where('id', $participantId)->value('session_id');
     $scheduleId = attachScheduleToSession($this->organizationId, $originalSessionId);
 
@@ -135,7 +134,7 @@ it('finds the currently joinable session for a schedule, including a makeup stan
 });
 
 it('returns null when no session on the schedule falls within the join window', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $sessionId = (string) DB::table('session_participants')->where('id', $participantId)->value('session_id');
     $scheduleId = attachScheduleToSession($this->organizationId, $sessionId);
 

@@ -16,12 +16,14 @@ use Modules\Identity\Application\Services\AvatarResolver;
 use Modules\Identity\Application\Services\UserAccountOperationService;
 use Modules\Identity\Application\Services\UserAccountProvisioningService;
 use Modules\Identity\Application\Services\UsernameSuggester;
+use Modules\Identity\Application\Services\UserPushService;
 use Modules\Identity\Domain\Contracts\AvatarQueries;
 use Modules\Identity\Domain\Contracts\PhonePasswordResetOtpDelivery;
 use Modules\Identity\Domain\Contracts\UserAccountDirectory;
 use Modules\Identity\Domain\Contracts\UserAccountOperations;
 use Modules\Identity\Domain\Contracts\UserAccountProvisioner;
 use Modules\Identity\Domain\Contracts\UsernameSuggestionGateway;
+use Modules\Identity\Domain\Contracts\UserPushGateway;
 use Modules\Identity\Domain\Contracts\UserQueryService;
 use Modules\Identity\Domain\Events\PasswordResetCompleted;
 use Modules\Identity\Domain\Models\PasswordResetToken;
@@ -109,6 +111,7 @@ final class IdentityServiceProvider extends BaseModuleServiceProvider
             UserQueryService::class => EloquentUserQueryService::class,
             UserAccountOperations::class => UserAccountOperationService::class,
             AvatarQueries::class => AvatarResolver::class,
+            UserPushGateway::class => UserPushService::class,
         ];
     }
 }

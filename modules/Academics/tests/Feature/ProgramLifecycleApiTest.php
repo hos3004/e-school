@@ -2,14 +2,11 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Events\ProgramArchived;
 use Modules\Academics\Domain\Models\Program;
 use Modules\Identity\Domain\Models\User;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Gate::define('program.manage', fn ($user) => true);

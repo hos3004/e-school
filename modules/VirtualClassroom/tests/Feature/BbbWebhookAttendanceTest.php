@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Tests\Concerns\CreatesSessionParticipant;
 use Modules\VirtualClassroom\Domain\Contracts\ClassroomPresenceQueries;
@@ -13,7 +12,7 @@ use Modules\VirtualClassroom\Domain\Models\Classroom;
 use Modules\VirtualClassroom\Domain\Models\ClassroomEvent;
 use Modules\VirtualClassroom\Infrastructure\Providers\BigBlueButtonProvider;
 
-uses(RefreshDatabase::class, CreatesSessionParticipant::class);
+uses(CreatesSessionParticipant::class);
 
 const BBB_ATTENDANCE_CALLBACK_URL = 'https://eschool.test/api/webhooks/classroom';
 

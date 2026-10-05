@@ -115,7 +115,7 @@ it('answers cross-module queries through the querier only', function (): void {
     $querier = app(AccessControlQuerier::class);
 
     expect($querier->modelHasDirectPermission('users', '01USER0000000000000000000', 'query.me'))->toBeFalse()
-        ->and($querier->rolesForModel('users', '01USER0000000000000000000'))->toBeArray();
+        ->and($querier->rolesForModel('users', '01USER0000000000000000000'))->toBe([]);
 });
 
 it('audits a changed role permission set with the written reason', function (): void {

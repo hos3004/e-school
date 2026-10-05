@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Http\Controllers\Portal\ClassroomJoinController;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -47,8 +46,6 @@ use Modules\Staff\Domain\Enums\StaffGender;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Modules\Students\Domain\Models\StudentProfile;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-
-uses(RefreshDatabase::class);
 
 afterEach(function (): void {
     CarbonImmutable::setTestNow();

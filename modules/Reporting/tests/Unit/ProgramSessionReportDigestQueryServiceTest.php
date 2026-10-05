@@ -3,14 +3,11 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Reporting\Domain\Contracts\ProgramSessionReportDigestQueries;
 use Modules\Reporting\Tests\Support\DigestSessionContext;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 it('resolves the program via course->level->program for an individual session with no group', function (): void {
     $inMonth = CarbonImmutable::parse('2026-03-15 10:00:00', 'UTC');

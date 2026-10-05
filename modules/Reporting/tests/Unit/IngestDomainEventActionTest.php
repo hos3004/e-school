@@ -2,14 +2,11 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Reporting\Application\Actions\IngestDomainEventAction;
 use Modules\Reporting\Domain\Models\ReportEventLog;
 use Shared\Domain\DomainEvent;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 /**
  * حدث تجريبي محلي — يرث DomainEvent بلا الاعتماد على موديول آخر.

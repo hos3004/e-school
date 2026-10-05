@@ -58,7 +58,7 @@ return [
         'custom_email' => 'Adresse e-mail',
         'reason' => 'Motif du changement',
         'reason_placeholder' => 'Écrivez un motif bref (5 caractères minimum)',
-        'save' => "Enregistrer le paramètre",
+        'save' => 'Enregistrer le paramètre',
         'saved' => 'Paramètre du destinataire enregistré avec succès.',
         'not_configured' => "Aucun destinataire configuré pour l'instant.",
         'last_changed_by' => 'Dernière modification par',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Console\Support;
 
+use Modules\Academics\Domain\ValueObjects\AcademicCatalogItemData;
 use Modules\Reporting\Domain\ValueObjects\ProgramSessionReportDigestData;
 
 /**
@@ -15,7 +16,7 @@ final class ProgramSessionReportPresenter
 {
     /**
      * @param list<ProgramSessionReportDigestData> $rows
-     * @param array<string, \Modules\Academics\Domain\ValueObjects\AcademicCatalogItemData> $programsById
+     * @param array<string, AcademicCatalogItemData> $programsById
      * @param array<string, string> $studentNamesById
      * @return list<array{programId: string, programName: array<string, string>, studentCount: int, reportCount: int, students: list<array{studentId: string, studentName: string, entries: list<array<string, mixed>>}>}>
      */
@@ -33,7 +34,7 @@ final class ProgramSessionReportPresenter
 
             $result[] = [
                 'programId' => (string) $programId,
-                'programName' => $program?->name ?? ['ar' => (string) $programId, 'en' => (string) $programId],
+                'programName' => $program->name ?? ['ar' => (string) $programId, 'en' => (string) $programId],
                 'studentCount' => count($students),
                 'reportCount' => count($programRows),
                 'students' => $students,

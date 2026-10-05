@@ -32,11 +32,19 @@ final class BadgeAward extends Model
         ];
     }
 
+    /**
+     * @param Builder<BadgeAward> $query
+     * @return Builder<BadgeAward>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);
     }
 
+    /**
+     * @param Builder<BadgeAward> $query
+     * @return Builder<BadgeAward>
+     */
     public function scopeForUser(Builder $query, string $userId): Builder
     {
         return $query->where('user_id', $userId);

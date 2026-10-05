@@ -2,14 +2,11 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Reporting\Application\Actions\UpdateTeacherDashboardAction;
 use Modules\Reporting\Domain\Events\TeacherDashboardUpdated;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 /**
  * @param array<string, mixed> $overrides

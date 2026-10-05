@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -25,7 +24,7 @@ use Modules\Sessions\Domain\Models\Session;
 use Modules\Sessions\Presentation\Filament\Resources\SessionResource;
 use Shared\Support\BusinessRuleViolation;
 
-uses(RefreshDatabase::class, CreatesSessionParticipant::class);
+uses(CreatesSessionParticipant::class);
 
 it('returns localized portal notifications with a safe deep link and accurate unread count', function (): void {
     /** @var NotificationsPestContext $this */

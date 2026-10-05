@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\Academics\Domain\Models\Course;
 use Modules\Academics\Domain\Models\Level;
@@ -18,9 +17,10 @@ use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Students\Domain\Models\StudentProfile;
 
-uses(RefreshDatabase::class);
-
-/** يبني برنامجًا بمستوى وكورس واحد داخل نفس المؤسسة. */
+/** يبني برنامجًا بمستوى وكورس واحد داخل نفس المؤسسة.
+ *
+ * @return array{Program, Level, Course}
+ */
 function closureProgramFixture(): array
 {
     $program = Program::factory()->create();

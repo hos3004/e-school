@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Modules\AcademicReports\Application\Actions\ApproveMonthlyReportAction;
@@ -21,8 +20,6 @@ use Shared\Testing\Fixtures;
 /*
 | اختبارات دورة حياة التقرير الشهري: توليد ← اعتماد ← إرسال.
 */
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Event::fake([

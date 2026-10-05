@@ -68,6 +68,8 @@ final readonly class SupersedeTeacherRate
         return DB::transaction(function () use ($contract, $scope, $amount, $from, $programId, $courseId, $sessionType, $actorId, $reason): TeacherRate {
             $current = $this->latestRate($contract->id, $scope, $programId, $courseId, $sessionType);
 
+            $previousEnd = $current?->effective_to;
+
             if ($current !== null) {
                 /*
                  * فحص التقاطع في `AddTeacherRate` لا يرى سعرًا يبدأ بعد تاريخ
@@ -80,8 +82,6 @@ final readonly class SupersedeTeacherRate
                         'staff::errors.rate_effective_before_current',
                     );
                 }
-
-                $previousEnd = $current->effective_to;
 
                 if ($previousEnd !== null
                     && CarbonImmutable::instance($previousEnd)->startOfDay()->lte($from->startOfDay())) {

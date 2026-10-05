@@ -60,6 +60,10 @@ final class AuditLog extends Model
     /**
      * قيود مؤسسة معينة.
      */
+    /**
+     * @param Builder<AuditLog> $query
+     * @return Builder<AuditLog>
+     */
     public function scopeForOrganization(Builder $query, ?string $organizationId): Builder
     {
         return $query->when(
@@ -70,6 +74,10 @@ final class AuditLog extends Model
 
     /**
      * قيود فعل معين (نصّ حر أو حالة قياسية).
+     */
+    /**
+     * @param Builder<AuditLog> $query
+     * @return Builder<AuditLog>
      */
     public function scopeForAction(Builder $query, string $action): Builder
     {

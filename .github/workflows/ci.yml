@@ -41,8 +41,19 @@ jobs:
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
   tests:
-    name: Tests (Pest)
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    needs: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Architecture
+            arguments: tests/Architecture --compact
+            coverage: none
+          - name: Tests (Pest)
+            arguments: --coverage --min=70
+            coverage: xdebug
 
     services:
       postgres:
@@ -73,9 +84,14 @@ jobs:
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: pdo_pgsql, redis, gd, zip, intl, bcmath, pcntl
-          coverage: xdebug
+          coverage: ${{ matrix.coverage }}
 
       - run: composer install --no-interaction --prefer-dist --no-progress
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: public/build
 
       - name: Prepare environment
         run: |
@@ -89,7 +105,7 @@ jobs:
           REDIS_HOST: 127.0.0.1
 
       - name: Unit, Feature & Architecture tests (isolated database per run)
-        run: php scripts/test-isolated.php --coverage --min=70
+        run: php scripts/test-isolated.php ${{ matrix.arguments }}
         env:
           TEST_AGENT_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
           DB_HOST: 127.0.0.1
@@ -103,6 +119,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_pgsql, redis, gd, zip, intl, bcmath, pcntl
+          coverage: none
+
+      - name: Install Filament theme dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -113,3 +138,10 @@ jobs:
         run: npm run types
       - name: Build
         run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: public/build
+          retention-days: 3
+          if-no-files-found: error

@@ -38,7 +38,7 @@ final class PayrollPeriodResource extends Resource
 
     protected static ?int $navigationSort = 80;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('payroll::navigation.group');
     }

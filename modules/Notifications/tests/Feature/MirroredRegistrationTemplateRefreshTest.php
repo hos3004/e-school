@@ -2,13 +2,10 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 /*
  * شاشة قوالب واتساب في اللوحة تصنع نسخة مؤسسة لكل حدث، والمحرّك يفضّلها على

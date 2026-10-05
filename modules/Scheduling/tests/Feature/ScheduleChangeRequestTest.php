@@ -11,7 +11,6 @@ declare(strict_types=1);
 */
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -34,8 +33,6 @@ use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
-
-uses(RefreshDatabase::class);
 
 afterEach(function (): void {
     CarbonImmutable::setTestNow();

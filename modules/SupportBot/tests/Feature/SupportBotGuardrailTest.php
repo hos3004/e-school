@@ -15,6 +15,7 @@ use Modules\SupportBot\Domain\Enums\TopicMode;
 use Modules\SupportBot\Domain\Models\BotAccountAccess;
 use Modules\SupportBot\Domain\Models\BotMessage;
 use Modules\SupportBot\Domain\Models\BotUsage;
+use Modules\SupportBot\Domain\ValueObjects\BotReply;
 use Shared\Testing\Fixtures;
 
 /*
@@ -64,7 +65,7 @@ function enableBotConnection(string $organizationId, ConnectionStatus $status = 
     );
 }
 
-function askBot(string $organizationId, string $userId, string $message): object
+function askBot(string $organizationId, string $userId, string $message): BotReply
 {
     return app(AskSupportBotAction::class)->execute(
         $organizationId,

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Application\Actions\BulkCreateIndividualQuranSchedulesAction;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -51,8 +50,6 @@ use Modules\Students\Domain\Models\StudentProfile;
 use Modules\Students\Presentation\Filament\Resources\StudentProfileResource;
 use Modules\Students\Presentation\Filament\Resources\StudentProfileResource\Pages\IndividualQuranPlacement;
 use Shared\Support\BusinessRuleViolation;
-
-uses(RefreshDatabase::class);
 
 afterEach(function (): void {
     CarbonImmutable::setTestNow();
@@ -173,7 +170,7 @@ it('creates an individual schedule and builds its notification from serialized s
     $schedule = Schedule::query()->latest('created_at')->firstOrFail();
     $session = Session::query()->where('schedule_id', $schedule->id)->sole();
     $outbox = NotificationOutbox::query()->where('category', 'schedule_summary')->get();
-    $emailBody = $outbox->firstWhere('channel', 'email')?->body ?? [];
+    $emailBody = $outbox->firstWhere('channel', 'email')->body ?? [];
 
     // صف لكل مستلم في كل قناة مفعّلة للفئة — لا رقم ثابت يتعطّل كلما تغيّرت القنوات.
     $channels = (array) config('notifications.categories.schedule_summary.channels');

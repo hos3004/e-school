@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
 use Modules\AccessControl\Domain\Models\ModelHasRole;
 use Modules\AccessControl\Domain\Models\Role;
@@ -19,8 +18,6 @@ use Modules\Staff\Domain\Enums\StaffGender;
 use Modules\Staff\Domain\Models\StaffProfile;
 use Shared\Support\BusinessRuleViolation;
 use Shared\ValueObjects\Money;
-
-uses(RefreshDatabase::class);
 
 it('prevents cross tenant payroll reads and decisions while auditing a same tenant approval', function (): void {
     $first = payrollSecurityFixture(8);

@@ -8,11 +8,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
+use Modules\Academics\Domain\Enums\SessionMode;
+use Modules\Academics\Domain\Models\Course;
 use Modules\Notifications\Application\Services\NotificationRecipientSilencer;
-use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Database\Seeders\NotificationTemplateSeeder;
+use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Scheduling\Domain\Events\ScheduleTimesChanged;
 use Modules\Scheduling\Presentation\Filament\Resources\ScheduleResource\Pages\CreateSchedule;
+use Modules\Staff\Domain\Enums\TeacherAvailabilityApprovalStatus;
+use Modules\Staff\Domain\Models\TeacherAvailability;
 use Shared\Testing\Fixtures;
 
 /**
@@ -100,10 +104,10 @@ it('creates a schedule without notifying the teacher when the admin turns that t
     Gate::before(static fn (): bool => true);
     Filament::setCurrentPanel('admin');
     $fixture = schedulingFixture();
-    $individualCourse = Modules\Academics\Domain\Models\Course::factory()->create([
+    $individualCourse = Course::factory()->create([
         'organization_id' => $fixture['organization']->id,
         'level_id' => $fixture['level']->id,
-        'session_mode' => Modules\Academics\Domain\Enums\SessionMode::Individual,
+        'session_mode' => SessionMode::Individual,
         'name' => ['ar' => 'القرآن الفردي', 'en' => 'Individual Quran'],
     ]);
     DB::table('teacher_courses')->insert([
@@ -115,7 +119,7 @@ it('creates a schedule without notifying the teacher when the admin turns that t
         'created_at' => now('UTC'),
         'updated_at' => now('UTC'),
     ]);
-    Modules\Staff\Domain\Models\TeacherAvailability::query()->create([
+    TeacherAvailability::query()->create([
         'staff_profile_id' => $fixture['teacher']->id,
         'weekday' => 0,
         'start_time' => '09:00',
@@ -123,7 +127,7 @@ it('creates a schedule without notifying the teacher when the admin turns that t
         'timezone' => 'UTC',
         'effective_from' => '2026-10-01',
         'effective_to' => '2026-12-31',
-        'approval_status' => Modules\Staff\Domain\Enums\TeacherAvailabilityApprovalStatus::Approved,
+        'approval_status' => TeacherAvailabilityApprovalStatus::Approved,
     ]);
     $this->actingAs($fixture['operator']);
     $this->seed(NotificationTemplateSeeder::class);

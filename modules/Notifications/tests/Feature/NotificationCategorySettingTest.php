@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -16,8 +15,6 @@ use Modules\Notifications\Domain\Models\NotificationOutbox;
 use Modules\Notifications\Presentation\Filament\Resources\NotificationCategorySettingResource;
 use Shared\Testing\Fixtures;
 use Tests\TestCase;
-
-uses(RefreshDatabase::class);
 
 function categorySettingRecipient(): string
 {

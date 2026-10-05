@@ -19,33 +19,26 @@ use Illuminate\Support\Facades\Schema;
  */
 return new class extends Migration
 {
-    /** @var list<string> */
-    private array $tables = ['groups'];
-
     public function up(): void
     {
-        foreach ($this->tables as $table) {
-            Schema::table($table, function (Blueprint $blueprint) use ($table): void {
-                $blueprint->timestampTz('closed_at')->nullable();
-                $blueprint->char('closed_by', 26)->nullable();
-                $blueprint->text('closure_reason')->nullable();
-                $blueprint->jsonb('closure_summary')->nullable();
+        Schema::table('groups', function (Blueprint $blueprint): void {
+            $blueprint->timestampTz('closed_at')->nullable();
+            $blueprint->char('closed_by', 26)->nullable();
+            $blueprint->text('closure_reason')->nullable();
+            $blueprint->jsonb('closure_summary')->nullable();
 
-                $blueprint->index(
-                    ['organization_id', 'closed_at'],
-                    $table.'_organization_id_closed_at_index',
-                );
-            });
-        }
+            $blueprint->index(
+                ['organization_id', 'closed_at'],
+                'groups_organization_id_closed_at_index',
+            );
+        });
     }
 
     public function down(): void
     {
-        foreach ($this->tables as $table) {
-            Schema::table($table, function (Blueprint $blueprint) use ($table): void {
-                $blueprint->dropIndex($table.'_organization_id_closed_at_index');
-                $blueprint->dropColumn(['closed_at', 'closed_by', 'closure_reason', 'closure_summary']);
-            });
-        }
+        Schema::table('groups', function (Blueprint $blueprint): void {
+            $blueprint->dropIndex('groups_organization_id_closed_at_index');
+            $blueprint->dropColumn(['closed_at', 'closed_by', 'closure_reason', 'closure_summary']);
+        });
     }
 };

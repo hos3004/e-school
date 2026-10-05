@@ -93,7 +93,7 @@ final class SessionReportResource extends Resource
         );
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('academicreports::navigation.group_operations');
     }

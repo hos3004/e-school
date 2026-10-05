@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -11,8 +10,6 @@ use Modules\Students\Application\Actions\ArchiveStudentAction;
 use Modules\Students\Domain\Models\StudentProfile;
 use Modules\Students\Tests\Support\StudentsPestContext;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     /** @var StudentsPestContext $this */

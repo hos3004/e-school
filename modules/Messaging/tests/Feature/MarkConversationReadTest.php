@@ -42,7 +42,7 @@ final class MarkConversationReadTest extends TestCase
 
         $conversationId = (string) $created->json('data.id');
 
-        $before = collect($this->actingAs($actor)->getJson('/api/conversations')->json('data'))
+        $before = collect((array) $this->actingAs($actor)->getJson('/api/conversations')->json('data'))
             ->firstWhere('id', $conversationId);
         self::assertSame(1, $before['unread_count']);
 
@@ -50,7 +50,7 @@ final class MarkConversationReadTest extends TestCase
             ->postJson("/api/conversations/{$conversationId}/read")
             ->assertNoContent();
 
-        $after = collect($this->actingAs($actor)->getJson('/api/conversations')->json('data'))
+        $after = collect((array) $this->actingAs($actor)->getJson('/api/conversations')->json('data'))
             ->firstWhere('id', $conversationId);
         self::assertSame(0, $after['unread_count']);
 

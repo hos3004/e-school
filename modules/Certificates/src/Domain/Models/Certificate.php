@@ -42,11 +42,19 @@ final class Certificate extends Model
         ];
     }
 
+    /**
+     * @param Builder<Certificate> $query
+     * @return Builder<Certificate>
+     */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
         return $query->where('organization_id', $organizationId);
     }
 
+    /**
+     * @param Builder<Certificate> $query
+     * @return Builder<Certificate>
+     */
     public function scopeExpired(Builder $query): Builder
     {
         return $query->whereNotNull('expires_at')->where('expires_at', '<=', now());

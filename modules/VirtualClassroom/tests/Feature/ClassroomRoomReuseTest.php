@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Mockery\MockInterface;
 use Modules\Attendance\Tests\Concerns\CreatesSessionParticipant;
 use Modules\Identity\Domain\Models\User;
 use Modules\VirtualClassroom\Application\Actions\ProvisionClassroomAction;
@@ -16,7 +16,7 @@ use Modules\VirtualClassroom\Domain\Models\Classroom;
 use Modules\VirtualClassroom\Domain\ValueObjects\ClassroomSpec;
 use Modules\VirtualClassroom\Domain\ValueObjects\RemoteClassroom;
 
-uses(RefreshDatabase::class, CreatesSessionParticipant::class);
+uses(CreatesSessionParticipant::class);
 
 /** @return array{session_id: string, organization_id: string, operator_id: string} */
 function roomReuseContext(string $participantId): array
@@ -62,7 +62,7 @@ function enterRoom(array $context, bool $ensureRemote = true): Classroom
 }
 
 it('keeps everyone in one room when join links are issued before anyone enters', function (): void {
-    $context = roomReuseContext($this->createSessionParticipant()); // @phpstan-ignore method.notFound
+    $context = roomReuseContext($this->createSessionParticipant());
     // الغرفة قائمة عند المزوّد لكن لم يدخلها أحد: كان هذا يُعيد التجهيز لكل طالب.
     roomReuseProvider(creations: 1, available: true);
 
@@ -76,7 +76,7 @@ it('keeps everyone in one room when join links are issued before anyone enters',
 });
 
 it('reopens a room the provider ended while the session is still joinable', function (): void {
-    $context = roomReuseContext($this->createSessionParticipant()); // @phpstan-ignore method.notFound
+    $context = roomReuseContext($this->createSessionParticipant());
     roomReuseProvider(creations: 2, available: false);
 
     $first = enterRoom($context, ensureRemote: false);
@@ -146,7 +146,7 @@ function cloneSessionOccurrence(string $sourceSessionId, ?string $scheduleId, ?s
 }
 
 it('reuses the same persistent room and external id across weekly occurrences of a schedule', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $context = roomReuseContext($participantId);
     $scheduleId = attachPersistentSchedule($context['organization_id'], $context['session_id']);
     roomReuseProvider(creations: 1, available: true);
@@ -166,7 +166,7 @@ it('reuses the same persistent room and external id across weekly occurrences of
 });
 
 it('reuses the schedule room for a makeup session standing in for a cancelled occurrence', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $context = roomReuseContext($participantId);
     $scheduleId = attachPersistentSchedule($context['organization_id'], $context['session_id']);
     roomReuseProvider(creations: 1, available: true);
@@ -183,7 +183,7 @@ it('reuses the schedule room for a makeup session standing in for a cancelled oc
 });
 
 it('lets an administrator rotate a persistent link, invalidating the previous one', function (): void {
-    $participantId = $this->createSessionParticipant(); // @phpstan-ignore method.notFound
+    $participantId = $this->createSessionParticipant();
     $context = roomReuseContext($participantId);
     $scheduleId = attachPersistentSchedule($context['organization_id'], $context['session_id']);
     roomReuseProvider(creations: 2, available: true);
@@ -192,6 +192,7 @@ it('lets an administrator rotate a persistent link, invalidating the previous on
     expect($before->external_id)->toBe('SCH-'.$scheduleId)
         ->and($before->link_generation)->toBe(1);
 
+    /** @var VirtualClassroomProvider&MockInterface $provider */
     $provider = app(VirtualClassroomProvider::class);
     $provider->shouldReceive('endClassroom')->once()->with($before->external_id, $before->moderator_secret);
 

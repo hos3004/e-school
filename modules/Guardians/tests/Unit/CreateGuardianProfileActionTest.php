@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Guardians\Application\Actions\CreateGuardianProfile;
 use Modules\Guardians\Domain\Enums\ContactChannel;
@@ -11,8 +10,6 @@ use Modules\Guardians\Domain\Models\GuardianProfile;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
 use Tests\TestCase;
-
-uses(RefreshDatabase::class);
 
 it('creates a guardian profile and dispatches GuardianProfileCreated', function (): void {
     /** @var TestCase $this */

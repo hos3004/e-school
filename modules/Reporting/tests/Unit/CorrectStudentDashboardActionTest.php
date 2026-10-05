@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Reporting\Application\Actions\CorrectStudentDashboardAction;
 use Modules\Reporting\Domain\Models\StudentDashboard;
 use Shared\Support\BusinessRuleViolation;
 
-uses(RefreshDatabase::class);
-
+/**
+ * @return array<string, mixed>
+ */
 function correctionData(): array
 {
     return [

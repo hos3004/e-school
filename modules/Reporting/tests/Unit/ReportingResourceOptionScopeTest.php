@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Mockery\MockInterface;
 use Modules\Reporting\Domain\Models\StudentDashboard;
@@ -13,8 +12,6 @@ use Modules\Reporting\Tests\Support\ApiUser;
 use Modules\Staff\Domain\Contracts\StaffQueries;
 use Modules\Students\Domain\Contracts\StudentDirectoryQueries;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 it('loads student filter options only from the current organization without a stale static cache', function (): void {
     $firstOrganizationId = Fixtures::organizationId();

@@ -7,6 +7,7 @@ namespace Modules\Audit\Infrastructure\Persistence;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Audit\Application\Queries\AuditEntryData;
 use Modules\Audit\Domain\Contracts\AuditQueryService;
+use Modules\Audit\Domain\Enums\AuditActorType;
 use Modules\Audit\Domain\Models\AuditLog;
 
 /**

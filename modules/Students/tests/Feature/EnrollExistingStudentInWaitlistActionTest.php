@@ -20,6 +20,9 @@ final class EnrollExistingStudentInWaitlistActionTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * @return array{string, string}
+     */
     private function programAndCourse(): array
     {
         $courseId = Fixtures::courseId();

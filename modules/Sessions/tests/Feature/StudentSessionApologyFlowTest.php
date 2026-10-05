@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Listeners\FinalizeClassroomAttendance;
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -18,8 +17,6 @@ use Modules\Sessions\Domain\Models\SessionParticipant;
 use Modules\VirtualClassroom\Domain\Events\ClassroomEnded;
 use Shared\Support\BusinessRuleViolation;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Fixtures::flush();

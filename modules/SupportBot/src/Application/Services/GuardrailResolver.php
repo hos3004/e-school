@@ -35,7 +35,7 @@ final readonly class GuardrailResolver
     {
         $rule = $this->rule($organizationId, $topic, $audience);
 
-        $mode = $rule?->mode ?? $this->defaultMode();
+        $mode = $rule->mode ?? $this->defaultMode();
         $replyKey = $this->replyKey($rule?->reply_key);
 
         /*

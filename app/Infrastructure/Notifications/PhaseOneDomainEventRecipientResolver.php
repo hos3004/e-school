@@ -186,7 +186,11 @@ final readonly class PhaseOneDomainEventRecipientResolver implements DomainEvent
             ->all();
     }
 
-    /** @return list<string> */
+    /**
+     * @param list<string> $recipientFields
+     * @param array<string, mixed> $payload
+     * @return list<string>
+     */
     private function payloadUserIds(array $recipientFields, array $payload): array
     {
         $ids = [];
@@ -207,7 +211,11 @@ final readonly class PhaseOneDomainEventRecipientResolver implements DomainEvent
         return array_values(array_unique($ids));
     }
 
-    /** @param list<string> $keys @return list<string> */
+    /**
+     * @param array<string, mixed> $payload
+     * @param list<string> $keys
+     * @return list<string>
+     */
     private function stringValues(array $payload, array $keys): array
     {
         $values = [];
@@ -224,7 +232,10 @@ final readonly class PhaseOneDomainEventRecipientResolver implements DomainEvent
         return array_values(array_unique($values));
     }
 
-    /** @param list<string> $expected */
+    /**
+     * @param list<string> $audiences
+     * @param list<string> $expected
+     */
     private function hasAnyAudience(array $audiences, array $expected): bool
     {
         return array_intersect($audiences, $expected) !== [];
@@ -297,7 +308,10 @@ final readonly class PhaseOneDomainEventRecipientResolver implements DomainEvent
             ->all();
     }
 
-    /** @param list<string> $permissions @return list<string> */
+    /**
+     * @param list<string> $permissions
+     * @return list<string>
+     */
     private function usersWithAnyPermission(string $organizationId, array $permissions): array
     {
         if ($permissions === []) {

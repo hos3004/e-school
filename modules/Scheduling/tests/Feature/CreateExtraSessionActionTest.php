@@ -3,15 +3,12 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Groups\Domain\Enums\MembershipStatus;
 use Modules\Groups\Domain\Models\GroupMembership;
 use Modules\Scheduling\Application\Actions\CreateExtraSessionAction;
 use Modules\Sessions\Domain\Enums\SessionStatus;
 use Modules\Sessions\Domain\Models\Session;
 use Shared\Support\BusinessRuleViolation;
-
-uses(RefreshDatabase::class);
 
 afterEach(function (): void {
     CarbonImmutable::setTestNow();

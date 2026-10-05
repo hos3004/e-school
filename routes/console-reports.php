@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Console\ProgramSessionReportSettingsController;
 use App\Http\Controllers\Console\ProgramSessionReportsController;
+use App\Http\Controllers\Console\ProgramSessionReportSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('reports/session-reports')->name('reports.session-reports.')->group(function (): void {

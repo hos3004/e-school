@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -12,8 +11,6 @@ use Modules\Assessments\Domain\Models\Assessment;
 use Modules\Assessments\Domain\Models\AssessmentAttempt;
 use Modules\Identity\Domain\Models\User;
 use Shared\Testing\Fixtures;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // القدرات الحقيقية التي تفحصها السياسات والطلبات — لا أسماء أدوار.
@@ -45,6 +42,10 @@ function assessmentApiForeignOrganizationId(): string
     return $organizationId;
 }
 
+/**
+ * @param array<string, mixed> $overrides
+ * @return array<string, mixed>
+ */
 function assessmentJsonPayload(array $overrides = []): array
 {
     return array_merge([

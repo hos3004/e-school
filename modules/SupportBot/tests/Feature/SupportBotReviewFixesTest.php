@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Support\SupportBot\PlatformDataSource;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Str;
 use Modules\AccessControl\Database\Seeders\AccessControlSeeder;
+use Modules\AccessControl\Infrastructure\Authorization\PermissionGateRegistrar;
 use Modules\Identity\Domain\Models\User;
 use Modules\Integrations\Domain\Contracts\LlmConnections;
 use Modules\Integrations\Domain\Enums\ConnectionStatus;
@@ -20,6 +22,8 @@ use Modules\SupportBot\Domain\Enums\TopicMode;
 use Modules\SupportBot\Domain\Models\BotConversation;
 use Modules\SupportBot\Domain\Models\BotMessage;
 use Modules\SupportBot\Domain\Models\BotUsage;
+use Modules\SupportBot\Domain\ValueObjects\BotReply;
+use PHPUnit\Framework\Assert;
 
 /*
 | اختبارات انحدار من طرف إلى طرف لما كشفته المراجعة المستقلة.
@@ -54,7 +58,7 @@ function reviewActor(string $roleName): User
     return $user->refresh();
 }
 
-function reviewAsk(User $user, string $message): object
+function reviewAsk(User $user, string $message): BotReply
 {
     return app(AskSupportBotAction::class)->execute(
         (string) $user->getAttribute('organization_id'),
@@ -82,7 +86,7 @@ beforeEach(function (): void {
 
 it('binds the real platform data source, not the module null default', function (): void {
     // AppServiceProvider يُسجَّل قبل الموديولات، فالربط فيه كان يُدهس صامتًا.
-    expect(app(SupportBotDataSource::class))->toBeInstanceOf(PlatformDataSource::class);
+    Assert::assertInstanceOf(PlatformDataSource::class, app(SupportBotDataSource::class));
 });
 
 it('withholds a dues question even when the classifier is fooled into platform_help', function (string $message): void {
@@ -138,7 +142,7 @@ it('never lets one user hold two open conversations', function (): void {
 it('rejects a duplicate shipped global rule row', function (): void {
     // NULLS NOT DISTINCT: بدونه كان صفّان عامّان للموضوع نفسه ممكنين.
     expect(fn () => DB::table('support_bot_rules')->insert([
-        'id' => (string) Illuminate\Support\Str::ulid(),
+        'id' => (string) Str::ulid(),
         'organization_id' => null,
         'topic' => BotTopic::PayrollDues->value,
         'audience' => 'teacher',
@@ -169,7 +173,7 @@ it('does not send the current question to the model twice', function (): void {
 
 it('saves the enabled audiences from the console without a 500', function (): void {
     $user = reviewActor('platform_admin');
-    app(Modules\AccessControl\Infrastructure\Authorization\PermissionGateRegistrar::class)->register();
+    app(PermissionGateRegistrar::class)->register();
 
     $this->actingAs($user)
         ->post('/manage/bot/audiences', [
@@ -189,7 +193,7 @@ it('saves the enabled audiences from the console without a 500', function (): vo
 
 it('rejects an unknown audience instead of widening the entry to everyone', function (): void {
     $user = reviewActor('platform_admin');
-    app(Modules\AccessControl\Infrastructure\Authorization\PermissionGateRegistrar::class)->register();
+    app(PermissionGateRegistrar::class)->register();
 
     $this->actingAs($user)
         ->post('/manage/bot/entry', [

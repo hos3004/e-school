@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Modules\Academics\Domain\Models\Level;
@@ -20,8 +19,6 @@ use Modules\Identity\Domain\Models\User;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Students\Domain\Models\StudentProfile;
 use Shared\Support\BusinessRuleViolation;
-
-uses(RefreshDatabase::class);
 
 it('creates and transitions an enrollment with tenant validation history and audit', function (): void {
     Gate::before(static fn (): bool => true);
