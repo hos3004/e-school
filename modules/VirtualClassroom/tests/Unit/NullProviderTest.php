@@ -7,6 +7,7 @@ use Modules\VirtualClassroom\Domain\Enums\JoinRole;
 use Modules\VirtualClassroom\Domain\ValueObjects\ClassroomSpec;
 use Modules\VirtualClassroom\Domain\ValueObjects\JoinRequest;
 use Modules\VirtualClassroom\Infrastructure\Providers\NullProvider;
+use PHPUnit\Framework\Assert;
 
 it('simulates the classroom lifecycle without network access', function (): void {
     $provider = new NullProvider;
@@ -68,5 +69,5 @@ it('is resolved from the configured provider binding', function (): void {
     config(['virtual-classroom.default' => 'null']);
     app()->forgetInstance(VirtualClassroomProvider::class);
 
-    expect(app(VirtualClassroomProvider::class))->toBeInstanceOf(NullProvider::class);
+    Assert::assertInstanceOf(NullProvider::class, app(VirtualClassroomProvider::class));
 });

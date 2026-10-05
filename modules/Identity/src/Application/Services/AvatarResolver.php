@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Identity\Application\Services;
 
-use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Modules\Identity\Domain\Contracts\AvatarQueries;
 use Modules\Identity\Domain\Contracts\DTOs\AvatarPresentation;
@@ -23,7 +23,7 @@ final readonly class AvatarResolver implements AvatarQueries
     public function resolve(?string $avatarPath, ?string $gender): AvatarPresentation
     {
         if (is_string($avatarPath) && $avatarPath !== '') {
-            /** @var Filesystem $disk */
+            /** @var FilesystemAdapter $disk */
             $disk = Storage::disk((string) config('avatars.disk'));
 
             if ($disk->exists($avatarPath)) {
