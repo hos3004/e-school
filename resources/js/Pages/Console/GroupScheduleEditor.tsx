@@ -103,6 +103,8 @@ export default function GroupScheduleEditor({
     timezone: schedule.timezone,
     starts_on: schedule.starts_on,
     ends_on: schedule.ends_on ?? "",
+    apply_immediately: false,
+    override_reason: "",
   });
   const [dayChecks, setDayChecks] = useState<
     Record<
@@ -142,6 +144,8 @@ export default function GroupScheduleEditor({
       timezone: schedule.timezone,
       starts_on: schedule.starts_on,
       ends_on: schedule.ends_on ?? "",
+      apply_immediately: false,
+      override_reason: "",
     });
     setDayChecks({});
     setTeacherRate(null);
@@ -267,9 +271,20 @@ export default function GroupScheduleEditor({
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (schedule.id)
+    if (schedule.id) {
+      form.transform((data) => ({
+        ...data,
+        override_reason: data.apply_immediately ? data.override_reason : "",
+      }));
       form.patch("/manage/schedules/" + schedule.id, { preserveScroll: true });
-    else form.post("/manage/schedules", { preserveScroll: true });
+    } else {
+      // apply_immediately لا يُقبل إلا عند تعديل جدول قائم.
+      form.transform(
+        ({ apply_immediately: _apply, override_reason: _reason, ...data }) =>
+          data,
+      );
+      form.post("/manage/schedules", { preserveScroll: true });
+    }
   };
   const checkDayAvailability = async (day: number) => {
     setDayChecks((prev) => ({
@@ -763,6 +778,47 @@ export default function GroupScheduleEditor({
               {t("console_sessions." + outsideAvailability)}
             </p>
           </Section>
+          {schedule.id && (
+            <div className="field quran-override">
+              <label htmlFor="group-apply-immediately">
+                <input
+                  id="group-apply-immediately"
+                  type="checkbox"
+                  checked={form.data.apply_immediately}
+                  disabled={form.processing}
+                  onChange={(event) => {
+                    set("apply_immediately", event.target.checked);
+                    if (!event.target.checked) set("override_reason", "");
+                  }}
+                />
+                {t("console_sessions.apply_immediately")}
+              </label>
+              <small className="cell-sub">
+                {t("console_sessions.apply_immediately_help").replace(
+                  ":hours",
+                  String(editLockHours),
+                )}
+              </small>
+              {form.data.apply_immediately && (
+                <>
+                  <label htmlFor="group-override-reason">
+                    {t("console_sessions.override_reason")}
+                  </label>
+                  <textarea
+                    id="group-override-reason"
+                    className="console-control"
+                    required
+                    minLength={3}
+                    maxLength={1000}
+                    placeholder={t("console_sessions.override_reason_placeholder")}
+                    value={form.data.override_reason}
+                    disabled={form.processing}
+                    onChange={(event) => set("override_reason", event.target.value)}
+                  />
+                </>
+              )}
+            </div>
+          )}
           <footer className="panel-foot">
             <span>
               {schedule.materialized_until

@@ -38,9 +38,9 @@ final readonly class ConsoleGroupScheduleService
     }
 
     /** @param array<string, mixed> $data */
-    public function save(string $organizationId, ?string $scheduleId, array $data, string $actorId): string
+    public function save(string $organizationId, ?string $scheduleId, array $data, string $actorId, bool $applyImmediately = false, ?string $overrideReason = null): string
     {
-        return $this->transaction->run(function () use ($organizationId, $scheduleId, $data, $actorId): string {
+        return $this->transaction->run(function () use ($organizationId, $scheduleId, $data, $actorId, $applyImmediately, $overrideReason): string {
             $data['target_type'] = 'group';
             $data['student_profile_id'] = null;
             if ($scheduleId === null) {
@@ -54,7 +54,10 @@ final readonly class ConsoleGroupScheduleService
                 throw BusinessRuleViolation::make('scheduling.target_invalid', 'scheduling::errors.target_invalid');
             }
 
-            return (string) $this->update->execute($schedule, $data, $actorId, __('console_sessions.audit_update'))->id;
+            // التطبيق الفوري يمس حصصًا قريبة، فالسبب المعروض للمعلم والطلاب هو ما كتبه الإداري.
+            $reason = $applyImmediately ? trim((string) $overrideReason) : __('console_sessions.audit_update');
+
+            return (string) $this->update->execute($schedule, $data, $actorId, $reason, $applyImmediately)->id;
         });
     }
 

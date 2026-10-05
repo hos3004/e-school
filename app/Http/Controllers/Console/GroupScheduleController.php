@@ -124,15 +124,19 @@ final class GroupScheduleController extends Controller
     private function persist(GroupScheduleRequest $request, ?string $schedule): RedirectResponse
     {
         $organizationId = $this->organization($request);
+        $data = $request->validated();
+        $applyImmediately = $schedule !== null && (bool) ($data['apply_immediately'] ?? false);
+        $overrideReason = $applyImmediately ? trim((string) ($data['override_reason'] ?? '')) : null;
+        unset($data['apply_immediately'], $data['override_reason']);
         try {
-            $id = DB::transaction(function () use ($request, $organizationId, $schedule): string {
+            $id = DB::transaction(function () use ($request, $organizationId, $schedule, $data, $applyImmediately, $overrideReason): string {
                 $this->recordRate(
                     $request, $organizationId,
                     (string) $request->validated('course_id'), (string) $request->validated('staff_profile_id'),
                     (string) $request->validated('starts_on'),
                 );
 
-                return $this->schedules->save($organizationId, $schedule, $request->validated(), (string) $request->user()?->getAuthIdentifier());
+                return $this->schedules->save($organizationId, $schedule, $data, (string) $request->user()?->getAuthIdentifier(), $applyImmediately, $overrideReason);
             });
         } catch (BusinessRuleViolation $error) {
             throw ValidationException::withMessages(['form' => $error->getMessage()]);

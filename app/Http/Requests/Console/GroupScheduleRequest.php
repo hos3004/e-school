@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Console;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class GroupScheduleRequest extends FormRequest
 {
@@ -46,6 +47,10 @@ final class GroupScheduleRequest extends FormRequest
             'starts_on' => ['required', 'date_format:Y-m-d', ...($this->isMethod('POST') ? ['after_or_equal:'.$today] : [])],
             'ends_on' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:starts_on'],
             'schedule_id' => [$this->isMethod('GET') ? 'nullable' : 'prohibited', 'ulid'],
+            // تجاوز مهلة حماية الحصص القريبة (recurrence.edit_lock_hours) عند تعديل جدول
+            // قائم فقط — استثنائي، ويحتاج سببًا صريحًا يصل للمعلم والطلاب. نفس عقد القرآن الفردي.
+            'apply_immediately' => [$this->isMethod('PATCH') ? 'sometimes' : 'prohibited', 'boolean'],
+            'override_reason' => [$this->isMethod('PATCH') ? Rule::requiredIf($this->boolean('apply_immediately')) : 'prohibited', 'nullable', 'string', 'min:3', 'max:1000'],
         ];
     }
 
