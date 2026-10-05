@@ -16,6 +16,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Academics\Domain\Contracts\AcademicCatalogQueries;
 use Modules\Groups\Domain\Contracts\GroupAdministrationQueries;
+use Modules\Notifications\Application\Services\NotificationRecipientSilencer;
 use Modules\Organization\Domain\Contracts\SchoolClockQueries;
 use Modules\Scheduling\Application\Services\ConsoleGroupScheduleService;
 use Modules\Scheduling\Application\Services\TeacherAvailabilityPlanner;
@@ -127,7 +128,14 @@ final class GroupScheduleController extends Controller
         $data = $request->validated();
         $applyImmediately = $schedule !== null && (bool) ($data['apply_immediately'] ?? false);
         $overrideReason = $applyImmediately ? trim((string) ($data['override_reason'] ?? '')) : null;
-        unset($data['apply_immediately'], $data['override_reason']);
+        // يُفحص قبل الإجراء لأن حدث الجدول يُطلَق أثناء تنفيذه والمستمع المتزامن يقرأ الكتم فورًا.
+        if (($data['notify_student'] ?? true) === false) {
+            app(NotificationRecipientSilencer::class)->silence('student');
+        }
+        if (($data['notify_teacher'] ?? true) === false) {
+            app(NotificationRecipientSilencer::class)->silence('teacher');
+        }
+        unset($data['apply_immediately'], $data['override_reason'], $data['notify_student'], $data['notify_teacher']);
         try {
             $id = DB::transaction(function () use ($request, $organizationId, $schedule, $data, $applyImmediately, $overrideReason): string {
                 $this->recordRate(

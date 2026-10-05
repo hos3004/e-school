@@ -51,6 +51,9 @@ final class GroupScheduleRequest extends FormRequest
             // قائم فقط — استثنائي، ويحتاج سببًا صريحًا يصل للمعلم والطلاب. نفس عقد القرآن الفردي.
             'apply_immediately' => [$this->isMethod('PATCH') ? 'sometimes' : 'prohibited', 'boolean'],
             'override_reason' => [$this->isMethod('PATCH') ? Rule::requiredIf($this->boolean('apply_immediately')) : 'prohibited', 'nullable', 'string', 'min:3', 'max:1000'],
+            // إيقاف اختياري لإشعار هذا التعديل وحده — الإرسال هو الافتراضي.
+            'notify_student' => [$this->isMethod('PATCH') ? 'sometimes' : 'prohibited', 'boolean'],
+            'notify_teacher' => [$this->isMethod('PATCH') ? 'sometimes' : 'prohibited', 'boolean'],
         ];
     }
 
