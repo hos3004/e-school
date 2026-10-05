@@ -19,6 +19,7 @@ use Modules\Groups\Domain\Models\Group;
 use Modules\Groups\Domain\Models\GroupProgram;
 use Modules\Groups\Domain\Models\GroupTeacher;
 use Modules\Identity\Domain\Models\User;
+use Modules\Notifications\Application\Services\NotificationRecipientSilencer;
 use Modules\Organization\Domain\Models\Organization;
 use Modules\Scheduling\Domain\Models\Schedule;
 use Modules\Sessions\Domain\Models\Session;
@@ -117,6 +118,18 @@ final class ConsoleGroupScheduleApplyImmediatelyTest extends TestCase
             ->assertForbidden();
 
         $this->assertDatabaseHas('sessions', ['id' => $protected->id, 'status' => 'scheduled']);
+    }
+
+    public function test_notifications_are_sent_by_default_and_each_party_can_be_silenced_for_one_edit(): void
+    {
+        [$schedule] = $this->scheduleWithProtectedSession();
+
+        $this->patch('/manage/schedules/'.$schedule->id, $this->payload('10:00'))->assertSessionHasNoErrors();
+        $this->assertSame([], app(NotificationRecipientSilencer::class)->silencedRoles());
+
+        $this->patch('/manage/schedules/'.$schedule->id, [...$this->payload('11:00'), 'notify_student' => false, 'notify_teacher' => false])
+            ->assertSessionHasNoErrors();
+        $this->assertEqualsCanonicalizing(['student', 'teacher'], app(NotificationRecipientSilencer::class)->silencedRoles());
     }
 
     public function test_apply_immediately_is_not_accepted_when_creating_a_schedule(): void

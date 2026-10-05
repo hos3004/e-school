@@ -105,6 +105,8 @@ export default function GroupScheduleEditor({
     ends_on: schedule.ends_on ?? "",
     apply_immediately: false,
     override_reason: "",
+    notify_student: true,
+    notify_teacher: true,
   });
   const [dayChecks, setDayChecks] = useState<
     Record<
@@ -146,6 +148,8 @@ export default function GroupScheduleEditor({
       ends_on: schedule.ends_on ?? "",
       apply_immediately: false,
       override_reason: "",
+      notify_student: true,
+      notify_teacher: true,
     });
     setDayChecks({});
     setTeacherRate(null);
@@ -280,8 +284,13 @@ export default function GroupScheduleEditor({
     } else {
       // apply_immediately لا يُقبل إلا عند تعديل جدول قائم.
       form.transform(
-        ({ apply_immediately: _apply, override_reason: _reason, ...data }) =>
-          data,
+        ({
+          apply_immediately: _apply,
+          override_reason: _reason,
+          notify_student: _student,
+          notify_teacher: _teacher,
+          ...data
+        }) => data,
       );
       form.post("/manage/schedules", { preserveScroll: true });
     }
@@ -817,6 +826,27 @@ export default function GroupScheduleEditor({
                   />
                 </>
               )}
+              <label htmlFor="group-notify-student">
+                <input
+                  id="group-notify-student"
+                  type="checkbox"
+                  checked={form.data.notify_student}
+                  disabled={form.processing}
+                  onChange={(event) => set("notify_student", event.target.checked)}
+                />
+                {t("console_sessions.notify_student")}
+              </label>
+              <label htmlFor="group-notify-teacher">
+                <input
+                  id="group-notify-teacher"
+                  type="checkbox"
+                  checked={form.data.notify_teacher}
+                  disabled={form.processing}
+                  onChange={(event) => set("notify_teacher", event.target.checked)}
+                />
+                {t("console_sessions.notify_teacher")}
+              </label>
+              <small className="cell-sub">{t("console_sessions.notify_help")}</small>
             </div>
           )}
           <footer className="panel-foot">
